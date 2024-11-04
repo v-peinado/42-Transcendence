@@ -19,3 +19,38 @@ Para acceder a la página "hola mundo":
   - [X] `README.md` para la documentación del proyecto.
 
 ---
+
+## 2. Parte Obligatoria
+### A. Frontend
+- [ ] **Implementación de Pong Básico**:
+  - [ ] Diseñar la interfaz de usuario con HTML y CSS.
+  - [ ] Programar la lógica del juego en JavaScript puro:
+    - [ ] Inicializar el juego.
+    - [ ] Manejar el movimiento de las palas.
+    - [ ] Detectar colisiones entre la bola y las palas.
+    - [ ] Actualizar el marcador en tiempo real.
+    - [ ] Implementar reinicio del juego.
+
+### B. Backend
+- [ ] **Configuración del Servidor**:
+  - [ ] Configurar un servidor básico usando Node.js y Express.
+  - [ ] **Configurar la Base de Datos**:
+    - [ ] Elegir un sistema de base de datos.
+    - [ ] Definir el esquema de la base de datos para almacenar usuarios y puntuaciones.
+    - [ ] Implementar la conexión a la base de datos.
+  
+- [ ] **Implementar la Lógica del Juego**:
+  - [ ] Manejar el estado del juego.
+  - [ ] Sincronizar la lógica del juego entre jugadores.
+
+### C. API
+- [ ] **Desarrollar la API para el Juego**:
+  - [ ] Definir las rutas de la API:
+    - [ ] `POST /game/start` - Inicializa el juego.
+    - [ ] `POST /game/move` - Envía el movimiento de los jugadores.
+    - [ ] `GET /game/state` - Devuelve el estado actual del juego.
+    - [ ] `POST /scores` - Guarda las puntuaciones en la base de datos.
+    - [ ] `GET /scores` - Obtiene las puntuaciones para mostrar en la interfaz.
+  - [ ] Documentar la API para facilitar el uso y la integración.
+
+---
