@@ -21,36 +21,32 @@ Para acceder a la página "hola mundo":
 ---
 
 ## 2. Parte Obligatoria
-### A. Frontend
-- [ ] **Implementación de Pong Básico**:
-  - [ ] Diseñar la interfaz de usuario con HTML y CSS.
-  - [ ] Programar la lógica del juego en JavaScript puro:
-    - [ ] Inicializar el juego.
-    - [ ] Manejar el movimiento de las palas.
-    - [ ] Detectar colisiones entre la bola y las palas.
-    - [ ] Actualizar el marcador en tiempo real.
-    - [ ] Implementar reinicio del juego.
-
-### B. Backend
-- [ ] **Configuración del Servidor**:
-  - [ ] Configurar un servidor básico usando Node.js y Express.
-  - [ ] **Configurar la Base de Datos**:
-    - [ ] Elegir un sistema de base de datos.
-    - [ ] Definir el esquema de la base de datos para almacenar usuarios y puntuaciones.
-    - [ ] Implementar la conexión a la base de datos.
+### A. Backend (Django)
+- [ ] **Configuración del Servidor con Django**:
+  - [ ] Instalar Django y configurar un nuevo proyecto.
+  - [ ] Definir la estructura de la aplicación Django.
+  
+- [ ] **Configuración de la Base de Datos (PostgreSQL)**:
+  - [ ] Instalar PostgreSQL.
+  - [ ] Configurar la conexión de Django a PostgreSQL.
+  - [ ] Definir modelos en Django para usuarios y puntuaciones.
   
 - [ ] **Implementar la Lógica del Juego**:
-  - [ ] Manejar el estado del juego.
-  - [ ] Sincronizar la lógica del juego entre jugadores.
+  - [ ] Crear vistas y controladores para manejar el estado del juego.
+  - [ ] Sincronizar la lógica del juego entre los jugadores a través de Django.
+
+### B. Frontend (Bootstrap)
+- [ ] **Desarrollo de la Interfaz de Usuario**:
+  - [ ] Usar Bootstrap para crear un diseño responsivo.
+  - [ ] Implementar la lógica del juego en JavaScript:
+    - [ ] Crear elementos para las palas y la bola.
+    - [ ] Manejar el estado del juego usando JavaScript.
+    - [ ] Detectar colisiones y actualizar el marcador en tiempo real.
+    - [ ] Implementar reinicio del juego.
 
 ### C. API
 - [ ] **Desarrollar la API para el Juego**:
-  - [ ] Definir las rutas de la API:
-    - [ ] `POST /game/start` - Inicializa el juego.
-    - [ ] `POST /game/move` - Envía el movimiento de los jugadores.
-    - [ ] `GET /game/state` - Devuelve el estado actual del juego.
-    - [ ] `POST /scores` - Guarda las puntuaciones en la base de datos.
-    - [ ] `GET /scores` - Obtiene las puntuaciones para mostrar en la interfaz.
+  - [ ] Definir las rutas de la API en Django.
   - [ ] Documentar la API para facilitar el uso y la integración.
 
 ---
