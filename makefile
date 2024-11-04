@@ -1,5 +1,5 @@
 # Nombre del archivo de composición de Docker por defecto
-COMPOSE_FILE = docker-compose.yml
+COMPOSE_FILE = srcs/docker-compose.yml
 
 # Variables de colores para los mensajes
 COLOR_GREEN = \033[0;32m
@@ -27,12 +27,10 @@ reset: down up
 # Limpia todos los contenedores detenidos, imágenes y volúmenes no utilizados
 clean:
 	@echo "$(COLOR_GREEN)Limpiando recursos no utilizados...$(COLOR_RESET)"
-	docker system prune -f
+	docker system prune -af
 
-# Apaga los servicios y ejecuta un prune
-close: down
-	@echo "$(COLOR_GREEN)Ejecutando prune tras apagar servicios...$(COLOR_RESET)"
-	docker system prune -f
+fclean: down clean
+	@echo "$(COLOR_GREEN)Eliminando todos los recursos...$(COLOR_RESET)"
 
 # Ejecuta docker-compose up sin el modo de detach (para depurar)
 debug:
@@ -52,9 +50,9 @@ help:
 	@echo "  make logs     - Muestra los logs en tiempo real"
 	@echo "  make reset    - Reinicia los servicios (down + up)"
 	@echo "  make clean    - Limpia contenedores, imágenes y volúmenes no utilizados"
-	@echo "  make close    - Apaga servicios y ejecuta prune"
+	@echo "  make fclean   - Elimina todos los recursos"
 	@echo "  make debug    - Levanta los servicios sin detach para depuración"
 	@echo "  make status   - Muestra el estado de los contenedores"
 	@echo "  make help     - Muestra esta ayuda"
 
-.PHONY: up down logs reset clean close debug status help
+.PHONY: up down logs reset clean fclean debug status help
