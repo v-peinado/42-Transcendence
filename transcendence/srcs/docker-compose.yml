@@ -1,8 +1,0 @@
-
-services:
-  web:
-    build: ./django
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
