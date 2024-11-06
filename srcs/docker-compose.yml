@@ -15,9 +15,24 @@ services:
       - ./django:/app  # Actualiza la ruta del volumen para reflejar la nueva ubicación
     networks:
       - trancendence-backend
-    #depends_on:
-      #- db
+    depends_on:
+      - db
     env_file:
       - .env
+  
+  db:
+    image: postgres:17
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - trancendence-backend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+volumes:
+  postgres_data: # Volumen para almacenar los datos de la base de datos
 
 

@@ -8,6 +8,10 @@ COMPOSE_CMD = docker compose
 COLOR_GREEN = \033[0;32m
 COLOR_RESET = \033[0m
 
+# Cargar las variables del archivo .env
+include srcs/.env
+export $(shell cat srcs/.env | xargs)
+
 # Levanta los servicios definidos en el archivo de composición
 up:
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
@@ -71,6 +75,22 @@ destroy-images:
         docker rmi $$image || true; \
     done
 
+fclean: close destroy-images
+
+re: fclean up
+
+# Regla principal para verificar la base de datos y las tablas
+check_db_tables:
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) exec $(SQL_HOST) psql --username=$(POSTGRES_USER) --dbname=$(POSTGRES_DB) -c "\dt"
+
+# Regla para conectarse a la base de datos (solo para verificar conexión)
+connect_db:
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) exec $(SQL_HOST) psql --username=$(POSTGRES_USER) --dbname=$(POSTGRES_DB)
+
+# Regla para listar las bases de datos
+list_databases:
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) exec $(SQL_HOST) psql --username=$(POSTGRES_USER) -c "\l"
+
 # Ayuda para ver las reglas disponibles
 help:
 	@echo "Reglas disponibles:"
@@ -85,6 +105,11 @@ help:
 	@echo "  make images   			- Muestra un resumen de las imágenes de Docker"
 	@echo "  make rebuild-images 	- Reconstruye todas las imágenes"
 	@echo "  make destroy-images 	- Destruye todas las imágenes"
+	@echo "  make fclean   			- Cierra servicios y destruye todas las imágenes"
+	@echo "  make re       			- Ejecuta fclean y luego up"
+	@echo "  make check_db_tables 	- Verifica la base de datos y las tablas"
+	@echo "  make connect_db 		- Conéctate a la base de datos"
+	@echo "  make list_databases 	- Lista las bases de datos"
 	@echo "  make help     			- Muestra esta ayuda"
 
-.PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images
+.PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re
