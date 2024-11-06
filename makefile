@@ -6,6 +6,7 @@ COMPOSE_CMD = docker compose
 
 # Variables de colores para los mensajes
 COLOR_GREEN = \033[0;32m
+COLOR_RED = \033[0;31m
 COLOR_RESET = \033[0m
 
 # Cargar las variables del archivo .env
@@ -20,7 +21,16 @@ up:
 # Detiene y elimina los contenedores, redes y volúmenes asociados
 down:
 	@echo "$(COLOR_GREEN)Apagando y eliminando servicios...$(COLOR_RESET)"
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) down
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) down --volumes 
+
+clean-postgres-data:
+	@echo "$(COLOR_GREEN)Verificando si existe el volumen de datos de postgres para eliminar...$(COLOR_RESET)"
+	@if docker volume inspect postgres_data > /dev/null 2>&1; then \
+		echo "$(COLOR_GREEN)Eliminando volumen de datos de postgres...$(COLOR_RESET)"; \
+		docker volume rm -f postgres_data; \
+	else \
+		echo "$(COLOR_GREEN)No hay volumen de datos de postgres para eliminar.$(COLOR_RESET)"; \
+	fi
 
 # Muestra los logs de los contenedores en tiempo real
 logs:
@@ -61,21 +71,25 @@ IMAGES = srcs-web
 
 # Regla para reconstruir todas las imágenes, para cambios en dockerfile
 rebuild-images:
-	@echo "$(COLOR_GREEN)Rebuild all Docker images...$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)Reconstruyendo todas las imágenes de Docker...$(COLOR_RESET)"
 	@for image in $(IMAGES); do \
-        echo "Rebuilding $$image..."; \
-        docker build -t $$image .; \
+		echo "Reconstruyendo $$image..."; \
+		docker build -t $$image . || exit 1; \
 	done
 
 # Regla para destruir (eliminar) todas las imágenes
 destroy-images:
-	@echo "$(COLOR_GREEN)Destroying all Docker images...$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)Destruyendo todas las imágenes de Docker...$(COLOR_RESET)"
 	@for image in $(IMAGES); do \
-        echo "Removing $$image..."; \
-        docker rmi $$image || true; \
-    done
+		if docker images $$image --format '{{.Repository}}' | grep -q "^$$image$$"; then \
+			echo "Eliminando $$image..."; \
+			docker rmi -f $$image || true; \
+		else \
+			echo "Imagen $$image no encontrada, omitiendo..."; \
+		fi; \
+	done
 
-fclean: close destroy-images
+fclean: close destroy-images clean-postgres-data
 
 re: fclean up
 
@@ -94,22 +108,23 @@ list_databases:
 # Ayuda para ver las reglas disponibles
 help:
 	@echo "Reglas disponibles:"
-	@echo "  make up       			- Levanta los servicios en modo detach"
-	@echo "  make down     			- Detiene y elimina los servicios"
-	@echo "  make logs     			- Muestra los logs en tiempo real"
-	@echo "  make reset    			- Reinicia los servicios (down + up)"
-	@echo "  make clean    			- Limpia contenedores, imágenes y volúmenes no utilizados"
-	@echo "  make close    			- Apaga servicios y ejecuta prune"
-	@echo "  make debug    			- Levanta los servicios sin detach para depuración"
-	@echo "  make status   			- Muestra el estado de los contenedores"
-	@echo "  make images   			- Muestra un resumen de las imágenes de Docker"
-	@echo "  make rebuild-images			- Reconstruye todas las imágenes"
-	@echo "  make destroy-images			- Destruye todas las imágenes"
-	@echo "  make fclean   			- Cierra servicios y destruye todas las imágenes"
-	@echo "  make re       			- Ejecuta fclean y luego up"
-	@echo "  make check_db_tables			- Verifica la base de datos y las tablas"
-	@echo "  make connect_db			- Conéctate a la base de datos"
-	@echo "  make list_databases			- Lista las bases de datos"
-	@echo "  make help     			- Muestra esta ayuda"
+	@echo "  make up                    - Levanta los servicios en modo detach"
+	@echo "  make down                  - Detiene y elimina los servicios"
+	@echo "  make logs                  - Muestra los logs en tiempo real"
+	@echo "  make reset                 - Reinicia los servicios (down + up)"
+	@echo "  make clean                 - Limpia contenedores, imágenes y volúmenes no utilizados"
+	@echo "  make close                 - Apaga servicios y ejecuta prune"
+	@echo "  make debug                 - Levanta los servicios sin detach para depuración"
+	@echo "  make status                - Muestra el estado de los contenedores"
+	@echo "  make images                - Muestra un resumen de las imágenes de Docker"
+	@echo "  make rebuild-images        - Reconstruye todas las imágenes"
+	@echo "  make destroy-images        - Destruye todas las imágenes"
+	@echo "  make clean-postgres-data   - Elimina el volumen de datos de postgres"
+	@echo "  make fclean                - Cierra servicios y destruye todas las imágenes"
+	@echo "  make re                    - Ejecuta fclean y luego up"
+	@echo "  make check_db_tables       - Verifica la base de datos y las tablas"
+	@echo "  make connect_db            - Conéctate a la base de datos"
+	@echo "  make list_databases        - Lista las bases de datos"
+	@echo "  make help                  - Muestra esta ayuda"
 
-.PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re
+.PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean
