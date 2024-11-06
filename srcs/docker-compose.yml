@@ -1,11 +1,23 @@
+networks:
+  trancendence-backend:
+    name: trancendence-backend
+    driver: bridge
 
 services:
   web:
     build:
-      context: ./django  		# Directorio donde está el código de la app y el Dockerfile
-      dockerfile: Dockerfile  	# Nombre del Dockerfile en ese directorio
+      context: ./django  # Directorio donde está el código de la app y el Dockerfile
+      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
     container_name: django
     ports:
       - "8000:8000"
     volumes:
-      - ./django:/app  			# Actualiza la ruta del volumen para reflejar la nueva ubicación
+      - ./django:/app  # Actualiza la ruta del volumen para reflejar la nueva ubicación
+    networks:
+      - trancendence-backend
+    #depends_on:
+      #- db
+    env_file:
+      - .env
+
+

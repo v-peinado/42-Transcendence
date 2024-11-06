@@ -52,18 +52,39 @@ images:
 	@echo "$(COLOR_GREEN)Mostrando imágenes de Docker...$(COLOR_RESET)"
 	docker images
 
+# Nombre de las imágenes
+IMAGES = srcs-web
+
+# Regla para reconstruir todas las imágenes, para cambios en dockerfile
+rebuild-images:
+	@echo "$(COLOR_GREEN)Rebuild all Docker images...$(COLOR_RESET)"
+	@for image in $(IMAGES); do \
+        echo "Rebuilding $$image..."; \
+        docker build -t $$image .; \
+	done
+
+# Regla para destruir (eliminar) todas las imágenes
+destroy-images:
+	@echo "$(COLOR_GREEN)Destroying all Docker images...$(COLOR_RESET)"
+	@for image in $(IMAGES); do \
+        echo "Removing $$image..."; \
+        docker rmi $$image || true; \
+    done
+
 # Ayuda para ver las reglas disponibles
 help:
 	@echo "Reglas disponibles:"
-	@echo "  make up       - Levanta los servicios en modo detach"
-	@echo "  make down     - Detiene y elimina los servicios"
-	@echo "  make logs     - Muestra los logs en tiempo real"
-	@echo "  make reset    - Reinicia los servicios (down + up)"
-	@echo "  make clean    - Limpia contenedores, imágenes y volúmenes no utilizados"
-	@echo "  make close    - Apaga servicios y ejecuta prune"
-	@echo "  make debug    - Levanta los servicios sin detach para depuración"
-	@echo "  make status   - Muestra el estado de los contenedores"
-	@echo "  make images   - Muestra un resumen de las imágenes de Docker"
-	@echo "  make help     - Muestra esta ayuda"
+	@echo "  make up       			- Levanta los servicios en modo detach"
+	@echo "  make down     			- Detiene y elimina los servicios"
+	@echo "  make logs     			- Muestra los logs en tiempo real"
+	@echo "  make reset    			- Reinicia los servicios (down + up)"
+	@echo "  make clean    			- Limpia contenedores, imágenes y volúmenes no utilizados"
+	@echo "  make close    			- Apaga servicios y ejecuta prune"
+	@echo "  make debug    			- Levanta los servicios sin detach para depuración"
+	@echo "  make status   			- Muestra el estado de los contenedores"
+	@echo "  make images   			- Muestra un resumen de las imágenes de Docker"
+	@echo "  make rebuild-images 	- Reconstruye todas las imágenes"
+	@echo "  make destroy-images 	- Destruye todas las imágenes"
+	@echo "  make help     			- Muestra esta ayuda"
 
-.PHONY: up down logs reset clean close debug status images help
+.PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images
