@@ -103,13 +103,13 @@ help:
 	@echo "  make debug    			- Levanta los servicios sin detach para depuración"
 	@echo "  make status   			- Muestra el estado de los contenedores"
 	@echo "  make images   			- Muestra un resumen de las imágenes de Docker"
-	@echo "  make rebuild-images 	- Reconstruye todas las imágenes"
-	@echo "  make destroy-images 	- Destruye todas las imágenes"
+	@echo "  make rebuild-images			- Reconstruye todas las imágenes"
+	@echo "  make destroy-images			- Destruye todas las imágenes"
 	@echo "  make fclean   			- Cierra servicios y destruye todas las imágenes"
 	@echo "  make re       			- Ejecuta fclean y luego up"
-	@echo "  make check_db_tables 	- Verifica la base de datos y las tablas"
-	@echo "  make connect_db 		- Conéctate a la base de datos"
-	@echo "  make list_databases 	- Lista las bases de datos"
+	@echo "  make check_db_tables			- Verifica la base de datos y las tablas"
+	@echo "  make connect_db			- Conéctate a la base de datos"
+	@echo "  make list_databases			- Lista las bases de datos"
 	@echo "  make help     			- Muestra esta ayuda"
 
 .PHONY: up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re
