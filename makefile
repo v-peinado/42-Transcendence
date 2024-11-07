@@ -41,7 +41,7 @@ reset: down up
 # Limpia todos los contenedores detenidos, imágenes y volúmenes no utilizados
 clean:
 	@echo "$(COLOR_GREEN)Limpiando recursos no utilizados...$(COLOR_RESET)"
-	docker system prune -f
+	docker system prune -f --all
 
 # Apaga los servicios y ejecuta un prune
 close: down
@@ -68,7 +68,7 @@ images:
 	docker images
 
 # Nombre de las imágenes
-IMAGES = srcs-web
+IMAGES = srcs-web postgres:17
 
 # Regla para reconstruir todas las imágenes, para cambios en dockerfile
 rebuild-images:
@@ -89,6 +89,10 @@ destroy-images:
 			echo "Imagen $$image no encontrada, omitiendo..."; \
 		fi; \
 	done
+	# Eliminar todas las imágenes huérfanas que no están siendo usadas por contenedores activos
+	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
+	docker image prune -f
+
 
 fclean: close destroy-images clean-postgres-data
 
