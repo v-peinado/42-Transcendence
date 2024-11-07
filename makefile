@@ -91,7 +91,7 @@ destroy-images:
 	done
 	# Eliminar todas las imágenes huérfanas que no están siendo usadas por contenedores activos
 	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
-	docker image prune -f
+	docker image prune -a -f
 
 
 fclean: close destroy-images clean-postgres-data
