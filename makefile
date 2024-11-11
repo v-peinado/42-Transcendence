@@ -18,7 +18,7 @@ all: up help
 # Levanta los servicios definidos en el archivo de composición
 up:
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
+	@docker-compose -f srcs/docker-compose.yml up -d
 
 # Detiene y elimina los contenedores, redes y volúmenes asociados
 down:
@@ -96,7 +96,7 @@ destroy-images:
 
 fclean: close destroy-images clean-postgres-data
 
-re: fclean up
+re: fclean all
 
 # Regla principal para verificar la base de datos y las tablas
 check_db_tables:
@@ -109,6 +109,15 @@ connect_db:
 # Regla para listar las bases de datos
 list_databases:
 	$(COMPOSE_CMD) -f $(COMPOSE_FILE) exec $(SQL_HOST) psql --username=$(POSTGRES_USER) -c "\l"
+
+# Makefile para acceder a la base de datos PostgreSQL y ver los usuarios registrados
+
+-include ./srcs/env
+
+# Regla para ver todos los usuarios y sus campos
+view-users:
+	@echo "Conectando a la base de datos PostgreSQL y mostrando todos los campos de los usuarios..."
+	@docker exec -it postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "SELECT * FROM auth_user;"
 
 # Ayuda para ver las reglas disponibles
 help:
@@ -132,10 +141,12 @@ help:
 	@echo "  make destroy-images        - Destruye todas las imágenes"
 	@echo "  make clean-postgres-data   - Elimina el volumen de datos de postgres"
 	@echo ""
-	@echo "  make check_db_tables       - Verifica la base de datos y las tablas"
-	@echo "  make connect_db            - Conéctate a la base de datos"
-	@echo "  make list_databases        - Lista las bases de datos"
+	@echo "  make view-users            - Muestra los usuarios autorizados en la base de datos"
 	@echo ""
 	@echo "  make help                  - Muestra esta ayuda"
+	@echo ""
+	@echo "  para ver la web, accede a http://localhost:8000"
+	@echo ""
+	
+.PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
 
-.PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean

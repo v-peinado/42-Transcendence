@@ -1,3 +1,6 @@
 from django.contrib import admin
 
-# Register your models here.
+
+# Registra el modelo User de Django en el admin
+
+

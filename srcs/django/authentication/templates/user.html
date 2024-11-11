@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+  <ul>
+    <li>Username: {{ user.username }}</li>
+    <li>Email: {{ user.email }}</li>
+
+    {% if user.is_staff %}
+      <li>User is staff</li>
+    {% else %}
+      <li>User is not staff</li>
+    {% endif %}
+
+    {% if user.is_superuser %}
+      <li>User is superuser</li>
+    {% else %}
+      <li>User is not superuser</li>
+    {% endif %}
+
+    <li><a href="{% url 'logout' %}">Logout</a></li>
+  </ul>
+{% endblock %}

@@ -19,6 +19,7 @@ services:
       - db
     env_file:
       - .env
+    restart: on-failure
   
   db:
     image: postgres:17
@@ -31,6 +32,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
+    restart: on-failure
 
 volumes:
   postgres_data: # Volumen para almacenar los datos de la base de datos
