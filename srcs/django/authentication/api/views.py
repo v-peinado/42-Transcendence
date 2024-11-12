@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
-from .serializers import UserSerializer
+from ..serializers.user_serializers import UserSerializer
 import qrcode
 import io
 from django.http import HttpResponse

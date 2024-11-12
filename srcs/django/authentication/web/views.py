@@ -5,11 +5,11 @@ from django.contrib import messages
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import UserSerializer
+from ..serializers.user_serializers import UserSerializer
 
 # Vista principal
 def home(request):
-    return render(request, 'home.html')
+    return render(request, 'authentication/home.html')
 
 # Vista de inicio de sesión
 def login(request):
@@ -25,7 +25,7 @@ def login(request):
             messages.error(request, "Usuario o contraseña incorrectos")
             return redirect('login')
 
-    return render(request, 'login.html')
+    return render(request, 'authentication/login.html')
 
 # Vista de registro
 def register(request):
@@ -55,7 +55,7 @@ def register(request):
             messages.error(request, "Error al crear el usuario")
             return redirect('register')
 
-    return render(request, 'register.html')
+    return render(request, 'authentication/register.html')
 
 # Vista para mostrar todos los usuarios
 def user(request):
@@ -63,7 +63,7 @@ def user(request):
         return redirect('login')
 
     users = User.objects.all()
-    return render(request, 'user.html', {'users': users})
+    return render(request, 'authentication/user.html', {'users': users})
 
 # Vista personalizada de logout
 def custom_logout(request):

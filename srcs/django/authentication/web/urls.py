@@ -10,5 +10,5 @@ urlpatterns = [
     path('user/', views.user, name='user'),
     
     # Incluir rutas API - Corregida la ruta
-    path('api/', include('authentication.api_urls')),
+    path('api/', include('authentication.api.urls')),  # No authentication.api_urls
 ]
