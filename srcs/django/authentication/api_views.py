@@ -9,8 +9,13 @@ import qrcode
 import io
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
+@method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, username):
         user = User.objects.filter(username=username).first()
         if not user:
@@ -27,7 +32,10 @@ class GenerateQRCodeView(APIView):
         
         return HttpResponse(buffer, content_type="image/png")
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ValidateQRCodeView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username')
         user = User.objects.filter(username=username).first()
@@ -36,6 +44,7 @@ class ValidateQRCodeView(APIView):
             return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid QR code"}, status=status.HTTP_400_BAD_REQUEST)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Permite acceso sin autenticación
     
@@ -48,7 +57,68 @@ class LoginView(APIView):
             return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(APIView):
     def post(self, request):
         auth_logout(request)
         return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password1 = request.data.get('password1')
+        password2 = request.data.get('password2')
+
+        # Validar campos requeridos
+        if not all([username, email, password1, password2]):
+            return Response({
+                "status": "error",
+                "code": "missing_fields",
+                "message": "Todos los campos son requeridos"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar contraseñas
+        if password1 != password2:
+            return Response({
+                "status": "error",
+                "code": "password_mismatch",
+                "message": "Las contraseñas no coinciden"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar email
+        if User.objects.filter(email=email).exists():
+            return Response({
+                "status": "error",
+                "code": "email_exists",
+                "message": "El email ya está registrado"
+            }, status=status.HTTP_409_CONFLICT)
+
+        # Validar username
+        if User.objects.filter(username=username).exists():
+            return Response({
+                "status": "error",
+                "code": "username_exists",
+                "message": "El nombre de usuario ya está registrado"
+            }, status=status.HTTP_409_CONFLICT)
+
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password1
+            )
+            return Response({
+                "status": "success",
+                "code": "user_created",
+                "message": "Usuario creado correctamente"
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "code": "creation_failed",
+                "message": "Error al crear el usuario"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
