@@ -55,6 +55,7 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         
         if user:
+            auth_login(request, user)
             token, _ = Token.objects.get_or_create(user=user)
             return Response({
                 'token': token.key,
@@ -62,7 +63,9 @@ class LoginView(APIView):
                 'username': user.username,
                 "message": "Login successful"
             })
-        return Response({"error": "Invalid credentials"}, status=400)
+        
+        return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(APIView):

@@ -61,9 +61,8 @@ def register(request):
 def user(request):
     if not request.user.is_authenticated:
         return redirect('login')
-
-    users = User.objects.all()
-    return render(request, 'authentication/user.html', {'users': users})
+    
+    return render(request, 'authentication/user.html', {'user': request.user})
 
 # Vista personalizada de logout
 def custom_logout(request):
