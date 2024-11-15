@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="css/user.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <header>
+      <h1>Welcome to Your Dashboard</h1>
+    </header>
+
+    <section class="content">
+      <p>Welcome, <strong id="usernameDisplay">User</strong>! You are now logged in.</p>
+      <!-- Agrega estas líneas si deseas mostrar email e imagen de perfil -->
+      <p id="emailDisplay"></p>
+      <img id="profileImage" style="display: none;">
+    </section>
+
+    <footer>
+      <button id="logoutButton">Logout</button>
+    </footer>
+  </div>
+
+  <script src="js/logout.js"></script>
+  <!--<script src="js/user.js"></script> -->
+</body>
+</html>
+
+

@@ -71,7 +71,7 @@ CORS_ALLOW_METHODS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:80',  # Agrega el puerto desde donde Nginx hace la solicitud
+    'http://localhost:80',
 ]
 
 ROOT_URLCONF = 'main.urls'
@@ -163,7 +163,7 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Cambiar a AllowAny
+        'rest_framework.permissions.AllowAny',
     ],
 }
 
@@ -174,3 +174,10 @@ LOGOUT_REDIRECT_URL = '/'
 FORTYTWO_CLIENT_ID = os.environ.get('FORTYTWO_CLIENT_ID')
 FORTYTWO_CLIENT_SECRET = os.environ.get('FORTYTWO_CLIENT_SECRET')
 FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
+
+# 42 OAuth api
+FORTYTWO_API_UID = os.environ.get('FORTYTWO_API_UID')
+FORTYTWO_API_SECRET = os.environ.get('FORTYTWO_API_SECRET')
+FORTYTWO_API_URL = os.environ.get('FORTYTWO_API_URL')
+
+AUTH_USER_MODEL = 'authentication.CustomUser'

@@ -4,48 +4,63 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="mb-4">Register</h2>
-
-    <div class="text-center mb-4">
-        <a href="{% url 'fortytwo_auth:login' %}" class="button-42">
-            Register with 42
-        </a>
-    </div>
-
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="text-center mb-3">
-                <hr>
-                <span class="px-3 bg-white" style="position: relative; top: -12px;">O</span>
+            <!-- Formulario de registro tradicional -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h4 class="text-center mb-4">Registro</h4>
+                    <form method="POST" action="{% url 'register' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username:</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password1" class="form-label">Password:</label>
+                            <input type="password" class="form-control" id="password1" name="password1" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password2" class="form-label">Confirm Password:</label>
+                            <input type="password" class="form-control" id="password2" name="password2" required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            
-            <form method="POST" action="{% url 'register' %}">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="username" class="form-label">Username:</label>
-                    <input type="text" class="form-control" id="username" name="username" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email:</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                </div>
 
-                <div class="mb-3">
-                    <label for="password1" class="form-label">Password:</label>
-                    <input type="password" class="form-control" id="password1" name="password1" required>
-                </div>
+            <!-- Separador -->
+            <div class="text-center my-4">
+                <hr>
+                <span class="bg-white px-3 text-muted" style="position: relative; top: -12px;">
+                    o regístrate con
+                </span>
+            </div>
 
-                <div class="mb-3">
-                    <label for="password2" class="form-label">Confirm Password:</label>
-                    <input type="password" class="form-control" id="password2" name="password2" required>
+            <!-- Botón de 42 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-grid">
+                        <a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">
+                            Register with 42
+                        </a>
+                    </div>
                 </div>
-                
-                <button type="submit" class="btn btn-primary mb-3">Register</button>
-            </form>
-            
-            <div class="text-center mt-3">
-                <p>¿Ya tienes una cuenta? <a href="{% url 'login' %}">Iniciar sesión</a></p>
+            </div>
+
+            <!-- Link de login -->
+            <div class="text-center mt-4">
+                <p class="text-muted">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
             </div>
         </div>
     </div>
@@ -53,17 +68,14 @@
 
 <style>
 .button-42 {
-    background-color: #00BABC;
+    background-color: #007BFF;
     color: white;
-    padding: 12px 24px;
-    border-radius: 6px;
+    padding: 15px 20px;
+    border-radius: 5px;
     text-decoration: none;
-    font-weight: 600;
-    margin: 10px 0;
     transition: all 0.3s ease;
-    border: none;
-    display: inline-block;
-    min-width: 200px;
+    display: block;
+    text-align: center;
 }
 
 .button-42:hover {

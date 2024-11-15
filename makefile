@@ -117,7 +117,7 @@ list_databases:
 # Regla para ver todos los usuarios y sus campos
 view-users:
 	@echo "Conectando a la base de datos PostgreSQL y mostrando todos los campos de los usuarios..."
-	@docker exec -it postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "SELECT * FROM auth_user;"
+	@docker exec -it postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "SELECT * FROM authentication_customuser;"
 
 # Ayuda para ver las reglas disponibles
 help:
@@ -145,7 +145,8 @@ help:
 	@echo ""
 	@echo "  make help                  - Muestra esta ayuda"
 	@echo ""
-	@echo "  para ver la web, accede a http://localhost:8000"
+	@echo "  para ver la web desde django, accede a http://localhost:8000"
+	@echo "  para ver la web desde nginx, accede a http://localhost:80"
 	@echo ""
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields

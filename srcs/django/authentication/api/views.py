@@ -1,9 +1,8 @@
-# authentication/api_views.py
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from django.contrib.auth.models import User
+from authentication.models import CustomUser
 from ..serializers.user_serializers import UserSerializer
 import qrcode
 import io
@@ -18,32 +17,70 @@ class GenerateQRCodeView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, username):
-        user = User.objects.filter(username=username).first()
-        if not user:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        qr = qrcode.QRCode(version=1, box_size=10, border=4)
-        qr.add_data(username)
-        qr.make(fit=True)
-        
-        img = qr.make_image(fill='black', back_color='white')
-        buffer = io.BytesIO()
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-        
-        return HttpResponse(buffer, content_type="image/png")
+        try:
+            user = CustomUser.objects.filter(username=username).first()
+            if not user:
+                return Response(
+                    {"error": "Usuario no encontrado"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Generar QR con datos seguros
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4
+            )
+            qr.add_data(username)
+            qr.make(fit=True)
+            
+            # Generar imagen
+            img = qr.make_image(fill='black', back_color='white')
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            buffer.seek(0)
+            
+            return HttpResponse(
+                buffer.getvalue(), 
+                content_type="image/png"
+            )
+        except Exception as e:
+            return Response(
+                {"error": "Error al generar QR"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ValidateQRCodeView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
-        user = User.objects.filter(username=username).first()
-        if user:
+        try:
+            username = request.data.get('username')
+            if not username:
+                return Response(
+                    {"error": "Username requerido"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = CustomUser.objects.filter(username=username).first()
+            if not user:
+                return Response(
+                    {"error": "Usuario no encontrado"}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
             auth_login(request, user)
-            return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid QR code"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "success": True,
+                "message": "Login exitoso"
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "error": "Error en la validación del QR"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginView(APIView):
@@ -51,89 +88,63 @@ class LoginView(APIView):
 
     def post(self, request):
         username = request.data.get('username')
-        password = request.data.get('password1')
-        user = authenticate(username=username, password=password)
+        password = request.data.get('password')
         
+        if not username or not password:
+            return Response({
+                "error": "Usuario y contraseña son requeridos"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=username, password=password)
         if user:
             auth_login(request, user)
             token, _ = Token.objects.get_or_create(user=user)
             return Response({
-                'token': token.key,
-                'user_id': user.pk,
-                'username': user.username,
-                "message": "Login successful"
+                "status": "success",
+                "message": "Login exitoso",
+                "token": token.key,
+                "user": UserSerializer(user).data
             })
-        
-        return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response({
+            "error": "Credenciales inválidas"
+        }, status=status.HTTP_401_UNAUTHORIZED)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LogoutView(APIView):
     def post(self, request):
         auth_logout(request)
-        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        return Response({
+            "status": "success",
+            "message": "Logout successful"
+            }, status=status.HTTP_200_OK)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
-        email = request.data.get('email')
-        password1 = request.data.get('password1')
-        password2 = request.data.get('password2')
-
-        # Validar campos requeridos
-        if not all([username, email, password1, password2]):
-            return Response({
-                "status": "error",
-                "code": "missing_fields",
-                "message": "Todos los campos son requeridos"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validar contraseñas
-        if password1 != password2:
-            return Response({
-                "status": "error",
-                "code": "password_mismatch",
-                "message": "Las contraseñas no coinciden"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validar email
-        if User.objects.filter(email=email).exists():
-            return Response({
-                "status": "error",
-                "code": "email_exists",
-                "message": "El email ya está registrado"
-            }, status=status.HTTP_409_CONFLICT)
-
-        # Validar username
-        if User.objects.filter(username=username).exists():
-            return Response({
-                "status": "error",
-                "code": "username_exists",
-                "message": "El nombre de usuario ya está registrado"
-            }, status=status.HTTP_409_CONFLICT)
-
+        serializer = UserSerializer(data=request.data)
         try:
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                password=password1
-            )
-            token, _ = Token.objects.get_or_create(user=user)
+            if CustomUser.objects.filter(username=request.data.get('username')).exists():
+                return Response({
+                    "status": "error",
+                    "message": "El nombre de usuario ya existe"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if serializer.is_valid():
+                user = serializer.save()
+                return Response({
+                    "status": "success",
+                    "message": "Usuario creado correctamente",
+                    "data": UserSerializer(user).data
+                }, status=status.HTTP_201_CREATED)
+            
             return Response({
-                "status": "success",
-                "code": "user_created",
-                "data": {
-                    'token': token.key,
-                    'user_id': user.pk,
-                    'username': user.username
-                }
-            }, status=status.HTTP_201_CREATED)
+                "status": "error",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
                 "status": "error",
-                "code": "creation_failed",
                 "message": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)

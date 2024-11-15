@@ -3,25 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Welcome</title>
+  <style>
+    /* Estilos básicos para el contenedor */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+    }
+
+    .container {
+      text-align: center;
+      background: white;
+      padding: 2em;
+      width: 300px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 1.5em;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
+
+    .button {
+      padding: 0.75em;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
-  <div class="login-container">
-    <form id="loginForm">
-      <h2>Login- ESto que cojones es</h2>
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      <button type="submit">Login</button>
-      <p id="error" class="error-message"></p>
-    </form>
+  <div class="container">
+    <h1>Welcome</h1>
+    <div class="button-group">
+      <!-- Enlaces al login y al registro -->
+      <a href="/login.html" class="button">Login</a>
+      <a href="/register.html" class="button">Register</a>
+    </div>
   </div>
-  <script src="js/app.js"></script>
 </body>
 </html>
+
+

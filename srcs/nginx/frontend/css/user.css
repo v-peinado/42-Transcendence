@@ -1,0 +1,64 @@
+/* General Styles */
+* {
+    box-sizing: border-box;
+  }
+  
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #f3f4f6;
+  }
+  
+  /* Dashboard Container */
+  .dashboard-container {
+    background: white;
+    width: 350px;
+    padding: 2em;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    text-align: center;
+  }
+  
+  /* Header Styles */
+  header h1 {
+    color: #333;
+    margin-bottom: 1em;
+    font-size: 1.5em;
+  }
+  
+  /* Content Section */
+  .content {
+    margin-bottom: 1.5em;
+  }
+  
+  .content p {
+    color: #555;
+    font-size: 1em;
+    margin-bottom: 1em;
+  }
+  
+  .placeholder {
+    font-style: italic;
+    color: #888;
+  }
+  
+  /* Footer and Logout Button */
+  footer {
+    margin-top: 1em;
+  }
+  
+  button {
+    width: 100%;
+    padding: 0.75em;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  
