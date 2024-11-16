@@ -94,13 +94,13 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 function onScanSuccess(decodedText, decodedResult) {
-    fetch('/validate_qr/', {
+    fetch('/api/authentication/validate_qr/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            qr_data: decodedText
+            username: decodedText  // Cambiar qr_data por username
         })
     })
     .then(response => response.json())

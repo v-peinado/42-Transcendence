@@ -110,22 +110,24 @@ def generate_qr(request, username):
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
 # Función para validar QR
-@csrf_exempt
-@login_required
+@csrf_exempt  # Mantener csrf_exempt
 def validate_qr(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            qr_data = data.get('qr_data')
+            username = data.get('username')  # Cambiar qr_data por username
             
-            if not qr_data:
+            if not username:
                 return JsonResponse({'success': False, 'error': 'Código QR inválido'})
                 
-            user = CustomUser.objects.filter(username=qr_data).first()
+            user = CustomUser.objects.filter(username=username).first()
             
             if user:
                 auth_login(request, user)
-                return JsonResponse({'success': True})
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': '/user/'  # Añadir URL de redirección
+                })
             else:
                 return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
                 
