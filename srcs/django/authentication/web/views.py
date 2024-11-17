@@ -165,7 +165,14 @@ def edit_profile(request):
     if request.method == 'POST':
         user = request.user
         
-        # Permitir cambiar la imagen de perfil para todos los usuarios
+        # Manejar la restauración de la imagen de 42
+        if user.is_fortytwo_user and 'restore_42_image' in request.POST:
+            user.profile_image = None  # Limpiar imagen personalizada
+            user.save()
+            messages.success(request, 'Imagen de perfil restaurada a la imagen de 42')
+            return redirect('user')
+            
+        # Manejar cambio de imagen normal
         if 'profile_image' in request.FILES:
             user.profile_image = request.FILES['profile_image']
             user.save()

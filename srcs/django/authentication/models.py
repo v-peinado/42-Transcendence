@@ -23,6 +23,8 @@ class CustomUser(AbstractUser):
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, 'url'):
             return self.profile_image.url
+        if self.is_fortytwo_user and self.fortytwo_image:
+            return self.fortytwo_image
         initials = self.username[:2].upper()
         return self.DEFAULT_PROFILE_IMAGE.format(initials)
 
