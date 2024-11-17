@@ -165,12 +165,14 @@ def edit_profile(request):
     if request.method == 'POST':
         user = request.user
         
-        # Si es usuario de 42, solo permitir cambiar la imagen de perfil
+        # Permitir cambiar la imagen de perfil para todos los usuarios
+        if 'profile_image' in request.FILES:
+            user.profile_image = request.FILES['profile_image']
+            user.save()
+            messages.success(request, 'Imagen de perfil actualizada correctamente')
+            
+        # Si es usuario de 42, solo permitir cambiar la imagen
         if user.is_fortytwo_user:
-            if 'profile_image' in request.FILES:
-                user.profile_image = request.FILES['profile_image']
-                user.save()
-                messages.success(request, 'Imagen de perfil actualizada correctamente')
             return redirect('user')
             
         # Para usuarios normales, permitir todos los cambios

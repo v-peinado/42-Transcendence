@@ -26,14 +26,19 @@
                         
                         <!-- Vista previa de imagen actual -->
                         <div class="text-center mb-4">
-                            {% if user.profile_image and user.profile_image.url %}
+                            {% if user.is_fortytwo_user and not user.profile_image %}
+                                <img src="{{ user.fortytwo_image_url }}" 
+                                     alt="42 Profile" 
+                                     class="rounded-circle" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
+                            {% elif user.profile_image and user.profile_image.url %}
                                 <img src="{{ user.profile_image.url }}" 
-                                     alt="Foto de perfil actual" 
+                                     alt="Profile" 
                                      class="rounded-circle" 
                                      style="width: 150px; height: 150px; object-fit: cover;">
                             {% else %}
                                 <img src="{{ user.get_profile_image_url|safe }}" 
-                                     alt="Avatar por defecto" 
+                                     alt="Default Profile" 
                                      class="rounded-circle" 
                                      style="width: 150px; height: 150px; object-fit: cover;">
                             {% endif %}

@@ -22,24 +22,25 @@ class FortyTwoAuth:
             token_data = service.get_access_token(code)
             user_data = service.get_user_info(token_data['access_token'])
             
-            # Extraer la URL de la imagen del perfil correctamente
-            profile_image = user_data.get('image', {}).get('link') if user_data.get('image') else None
-            
+            # Obtener la URL de la imagen de 42
+            fortytwo_image = None
+            if user_data.get('image'):
+                fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
+
             user, created = CustomUser.objects.get_or_create(
                 username=user_data['login'],
                 defaults={
                     'email': user_data['email'],
-                    'profile_image': profile_image,  # Usar la URL extraída
                     'fortytwo_id': str(user_data['id']),
-                    'is_fortytwo_user': True
+                    'is_fortytwo_user': True,
+                    'fortytwo_image': fortytwo_image  # Guardar la URL de la imagen de 42
                 }
             )
-            
-            # Actualizar la imagen de perfil incluso si el usuario ya existe
-            if not created and profile_image:
-                user.profile_image = profile_image
+
+            if not created and not user.fortytwo_image:
+                user.fortytwo_image = fortytwo_image
                 user.save()
-                
+
             return user
         except Exception as e:
             print("Error in process_callback:", str(e))

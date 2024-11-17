@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
         filename = f'{instance.username}.{ext}'
         return f'profile_images/{filename}'
     
+    fortytwo_image = models.URLField(max_length=500, blank=True, null=True)  # Nuevo campo
     profile_image = models.ImageField(
         upload_to=profile_image_path,
         null=True,
@@ -22,9 +23,14 @@ class CustomUser(AbstractUser):
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, 'url'):
             return self.profile_image.url
-        # Tomar las dos primeras letras del username para la imagen por defecto
         initials = self.username[:2].upper()
         return self.DEFAULT_PROFILE_IMAGE.format(initials)
+
+    @property
+    def fortytwo_image_url(self):
+        if self.is_fortytwo_user:
+            return self.fortytwo_image or self.get_profile_image_url()
+        return self.get_profile_image_url()
 
     def save(self, *args, **kwargs):
         if not self.profile_image and not self.is_fortytwo_user:

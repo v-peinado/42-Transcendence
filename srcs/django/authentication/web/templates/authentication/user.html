@@ -14,20 +14,21 @@
                     <div class="row">
                         <div class="col-md-3 text-center">
                             <div class="profile-image-container" style="width: 150px; height: 150px; margin: 0 auto;">
-                                {% if user.profile_image and user.profile_image.url %}
+                                {% if user.is_fortytwo_user and not user.profile_image %}
+                                    <img src="{{ user.fortytwo_image_url }}" 
+                                         alt="42 Profile" 
+                                         class="rounded-circle shadow-sm" 
+                                         style="width: 100%; height: 100%; object-fit: cover;">
+                                {% elif user.profile_image and user.profile_image.url %}
                                     <img src="{{ user.profile_image.url }}" 
                                          alt="Profile" 
                                          class="rounded-circle shadow-sm" 
-                                         style="width: 100%; 
-                                                height: 100%; 
-                                                object-fit: cover;">
+                                         style="width: 100%; height: 100%; object-fit: cover;">
                                 {% else %}
                                     <img src="{{ user.get_profile_image_url|safe }}" 
-                                         alt="Profile" 
+                                         alt="Default Profile" 
                                          class="rounded-circle shadow-sm" 
-                                         style="width: 100%; 
-                                                height: 100%; 
-                                                object-fit: cover;">
+                                         style="width: 100%; height: 100%; object-fit: cover;">
                                 {% endif %}
                             </div>
                         </div>
