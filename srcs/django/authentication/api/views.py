@@ -11,6 +11,10 @@ from rest_framework.permissions import AllowAny
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authtoken.models import Token
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.core.exceptions import ValidationError
+import re
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
@@ -115,8 +119,8 @@ class LogoutView(APIView):
         auth_logout(request)
         return Response({
             "status": "success",
-            "message": "Logout successful"
-            }, status=status.HTTP_200_OK)
+            "message": "Logout exitoso"
+        }, status=status.HTTP_200_OK)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterView(APIView):
@@ -148,3 +152,101 @@ class RegisterView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class EditProfileView(APIView):
+    def post(self, request):
+        user = request.user
+        
+        # Manejar la restauración de la imagen de 42
+        if user.is_fortytwo_user and 'restore_42_image' in request.data:
+            user.profile_image = None
+            user.save()
+            return Response({
+                "status": "success",
+                "message": "Imagen de perfil restaurada a la imagen de 42"
+            }, status=status.HTTP_200_OK)
+            
+        # Manejar cambio de imagen normal
+        if 'profile_image' in request.FILES:
+            user.profile_image = request.FILES['profile_image']
+            
+        # Para usuarios normales, permitir cambios excepto username
+        if not user.is_fortytwo_user:
+            email = request.data.get('email')
+            
+            # Validar que el email no sea de 42
+            if email and email != user.email:
+                if re.match(r'.*@student\.42.*\.com$', email.lower()):
+                    return Response({
+                        "status": "error",
+                        "message": "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if CustomUser.objects.exclude(id=user.id).filter(email=email).exists():
+                    return Response({
+                        "status": "error",
+                        "message": "Este email ya está en uso"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                user.email = email
+            
+            # Validar y actualizar contraseña si se proporcionó
+            current_password = request.data.get('current_password')
+            new_password1 = request.data.get('new_password1')
+            new_password2 = request.data.get('new_password2')
+            
+            if current_password and new_password1 and new_password2:
+                if not user.check_password(current_password):
+                    return Response({
+                        "status": "error",
+                        "message": "La contraseña actual es incorrecta"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                if new_password1 != new_password2:
+                    return Response({
+                        "status": "error",
+                        "message": "Las nuevas contraseñas no coinciden"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                user.set_password(new_password1)
+                update_session_auth_hash(request, user)
+        
+        try:
+            user.save()
+            return Response({
+                "status": "success",
+                "message": "Perfil actualizado correctamente"
+            }, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DeleteAccountView(APIView):
+    def post(self, request):
+        user = request.user
+        password = request.data.get('confirm_password')
+
+        # Si es un usuario de 42, permitir la eliminación sin contraseña
+        if user.is_fortytwo_user:
+            user.delete()
+            auth_logout(request)
+            return Response({
+                "status": "success",
+                "message": "Tu cuenta ha sido eliminada correctamente"
+            }, status=status.HTTP_200_OK)
+        # Para usuarios normales, verificar la contraseña
+        else:
+            if user.check_password(password):
+                user.delete()
+                auth_logout(request)
+                return Response({
+                    "status": "success",
+                    "message": "Tu cuenta ha sido eliminada correctamente"
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    "status": "error",
+                    "message": "Contraseña incorrecta"
+                }, status=status.HTTP_400_BAD_REQUEST)
