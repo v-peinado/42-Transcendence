@@ -27,8 +27,11 @@ class FortyTwoAuth:
             if user_data.get('image'):
                 fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
 
+            # Añadir prefijo 42. al username
+            fortytwo_username = f"42.{user_data['login']}"
+            
             user, created = CustomUser.objects.get_or_create(
-                username=user_data['login'],
+                username=fortytwo_username,
                 defaults={
                     'email': user_data['email'],
                     'fortytwo_id': str(user_data['id']),

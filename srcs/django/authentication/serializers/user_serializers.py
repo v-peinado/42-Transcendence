@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from authentication.models import CustomUser
+import re
 
 class UserSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True, style={'input_type': 'password'})
@@ -25,36 +26,87 @@ class UserSerializer(serializers.ModelSerializer):
             'email': {'required': True}
         }
 
+    def validate_username(self, value):
+        # Validaciones existentes
+        if value.startswith('42.'):
+            raise serializers.ValidationError(
+                "El prefijo '42.' está reservado para usuarios de 42"
+            )
+        
+        # Nueva validación de caracteres
+        if not all(char.isprintable() and not char.isspace() for char in value):
+            raise serializers.ValidationError(
+                "El nombre de usuario no puede contener espacios ni caracteres especiales"
+            )
+        
+        return value.lower()
+
+    def validate_email(self, value):
+        # Validaciones existentes
+        if re.match(r'.*@student\.42.*\.com$', value.lower()):
+            raise serializers.ValidationError(
+                "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
+            )
+        
+        # Nueva validación de caracteres en la parte local del email
+        local_part = value.split('@')[0]
+        if not all(char.isprintable() and not char.isspace() for char in local_part):
+            raise serializers.ValidationError(
+                "El email no puede contener espacios ni caracteres especiales en la parte local"
+            )
+        
+        return value.lower()
+
+    def validate_password1(self, value):
+        if not all(char.isprintable() and not char.isspace() for char in value):
+            raise serializers.ValidationError(
+                "La contraseña no puede contener espacios ni caracteres especiales"
+            )
+        return value
+
     def validate(self, data):
-        # Validar nombre de usuario primero
-        if CustomUser.objects.filter(username=data.get('username')).exists():
-            raise serializers.ValidationError({
-                "username": "Este nombre de usuario ya está en uso"
-            })
-
-        # Validar email
-        if CustomUser.objects.filter(email=data.get('email')).exists():
-            raise serializers.ValidationError({
-                "email": "Este email ya está registrado"
-            })
-
-        # Validar contraseñas
+        # Validación de contraseñas
         if data.get('password1') != data.get('password2'):
             raise serializers.ValidationError({
                 "password": "Las contraseñas no coinciden"
             })
 
+        # Validación adicional de nombre de usuario y email
+        username = data.get('username', '')
+        email = data.get('email', '')
+
+        # Doble verificación para el prefijo 42.
+        if '42.' in username.lower():
+            raise serializers.ValidationError({
+                "username": "No se permite usar '42.' en el nombre de usuario"
+            })
+
+        # Doble verificación para email de 42
+        if re.search(r'@student\.42.*\.com$', email.lower()):
+            raise serializers.ValidationError({
+                "email": "No se permite usar correos de 42"
+            })
+
+        # Verificar duplicados
+        if CustomUser.objects.filter(username=username).exists():
+            raise serializers.ValidationError({
+                "username": "Este nombre de usuario ya está en uso"
+            })
+        
+        if CustomUser.objects.filter(email=email).exists():
+            raise serializers.ValidationError({
+                "email": "Este correo electrónico ya está registrado"
+            })
+
         return data
 
     def create(self, validated_data):
-        try:
-            user = CustomUser.objects.create_user(
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password1']
-            )
-            return user
-        except Exception as e:
-            raise serializers.ValidationError({
-                "error": "Error inesperado al crear el usuario"
-            })
+        validated_data.pop('password2', None)
+        password = validated_data.pop('password1', None)
+        user = CustomUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=password,
+            is_fortytwo_user=False
+        )
+        return user

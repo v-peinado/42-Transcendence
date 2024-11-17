@@ -6,6 +6,7 @@ from authentication.models import CustomUser
 import qrcode
 import io
 import json
+import re 
 from django.views.decorators.csrf import csrf_exempt  
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -43,33 +44,47 @@ def register(request):
         password = request.POST.get('password1')
         confirm_password = request.POST.get('password2')
 
+        # Validar caracteres no permitidos en username
+        if not validate_printable_chars(username):
+            messages.error(request, "El nombre de usuario no puede contener espacios ni caracteres especiales")
+            return redirect('register')
+
+        # Validar caracteres no permitidos en email
+        email_local_part = email.split('@')[0] if '@' in email else email
+        if not validate_printable_chars(email_local_part):
+            messages.error(request, "El email no puede contener espacios ni caracteres especiales")
+            return redirect('register')
+
+        # Validar caracteres no permitidos en password
+        if not validate_printable_chars(password):
+            messages.error(request, "La contraseña no puede contener espacios ni caracteres especiales")
+            return redirect('register')
+
+        # Validar username y email de 42
+        if username.startswith('42.'):
+            messages.error(request, "El prefijo '42.' está reservado para usuarios de 42")
+            return redirect('register')
+
+        if re.match(r'.*@student\.42.*\.com$', email.lower()):
+            messages.error(request, "Los correos con dominio @student.42*.com están reservados para usuarios de 42")
+            return redirect('register')
+
+        # Resto de las validaciones...
         if password != confirm_password:
-            messages.error(request, "Usuario no registrado. Las contraseñas no coinciden")
+            messages.error(request, "Las contraseñas no coinciden")
             return redirect('register')
 
         try:
-            # Validar si el usuario ya existe
-            if CustomUser.objects.filter(username=username).exists():
-                messages.error(request, "Usuario no registrado. El nombre de usuario ya está en uso")
-                return redirect('register')
-            
-            # Validar si el email ya existe
-            if CustomUser.objects.filter(email=email).exists():
-                messages.error(request, "Usuario no registrado. El email ya está registrado")
-                return redirect('register')
-            
-            # Crear usuario con imagen por defecto
             user = CustomUser.objects.create_user(
-                username=username, 
-                email=email, 
-                password=password
+                username=username,
+                email=email,
+                password=password,
+                is_fortytwo_user=False  # Asegurarse que se crea como usuario normal
             )
-            # La imagen por defecto se generará automáticamente en el save() del modelo
-            messages.success(request, "Usuario creado correctamente. Puedes iniciar sesión ahora.")
+            messages.success(request, "Usuario creado correctamente")
             return redirect('login')
-
         except Exception as e:
-            messages.error(request, "Error inesperado al crear el usuario")
+            messages.error(request, str(e))
             return redirect('register')
 
     return render(request, 'authentication/register.html')
@@ -167,7 +182,7 @@ def edit_profile(request):
         
         # Manejar la restauración de la imagen de 42
         if user.is_fortytwo_user and 'restore_42_image' in request.POST:
-            user.profile_image = None  # Limpiar imagen personalizada
+            user.profile_image = None
             user.save()
             messages.success(request, 'Imagen de perfil restaurada a la imagen de 42')
             return redirect('user')
@@ -175,45 +190,49 @@ def edit_profile(request):
         # Manejar cambio de imagen normal
         if 'profile_image' in request.FILES:
             user.profile_image = request.FILES['profile_image']
+            
+        # Para usuarios normales, permitir cambios excepto username
+        if not user.is_fortytwo_user:
+            email = request.POST.get('email')
+            
+            # Validar que el email no sea de 42
+            if email and email != user.email:
+                if re.match(r'.*@student\.42.*\.com$', email.lower()):
+                    messages.error(request, 'Los correos con dominio @student.42*.com están reservados para usuarios de 42')
+                    return redirect('edit_profile')
+                    
+                if CustomUser.objects.exclude(id=user.id).filter(email=email).exists():
+                    messages.error(request, 'Este email ya está en uso')
+                    return redirect('edit_profile')
+                    
+                user.email = email
+
+            # Validar y actualizar contraseña si se proporcionó
+            current_password = request.POST.get('current_password')
+            new_password1 = request.POST.get('new_password1')
+            new_password2 = request.POST.get('new_password2')
+            
+            if current_password and new_password1 and new_password2:
+                if not user.check_password(current_password):
+                    messages.error(request, 'La contraseña actual es incorrecta')
+                    return redirect('edit_profile')
+                if new_password1 != new_password2:
+                    messages.error(request, 'Las nuevas contraseñas no coinciden')
+                    return redirect('edit_profile')
+                user.set_password(new_password1)
+                update_session_auth_hash(request, user)
+
+        try:
             user.save()
-            messages.success(request, 'Imagen de perfil actualizada correctamente')
-            
-        # Si es usuario de 42, solo permitir cambiar la imagen
-        if user.is_fortytwo_user:
+            messages.success(request, 'Perfil actualizado correctamente')
             return redirect('user')
+        except ValidationError as e:
+            # Capturar y mostrar errores de validación del modelo
+            for field, errors in e.message_dict.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+            return redirect('edit_profile')
             
-        # Para usuarios normales, permitir todos los cambios
-        email = request.POST.get('email')
-        current_password = request.POST.get('current_password')
-        new_password1 = request.POST.get('new_password1')
-        new_password2 = request.POST.get('new_password2')
-        
-        # Actualizar email
-        if email and email != user.email:
-            if CustomUser.objects.exclude(id=user.id).filter(email=email).exists():
-                messages.error(request, 'Este email ya está en uso')
-                return redirect('edit_profile')
-            user.email = email
-            
-        # Actualizar imagen de perfil
-        if 'profile_image' in request.FILES:
-            user.profile_image = request.FILES['profile_image']
-            
-        # Actualizar contraseña si se proporcionó
-        if current_password and new_password1 and new_password2:
-            if not user.check_password(current_password):
-                messages.error(request, 'La contraseña actual es incorrecta')
-                return redirect('edit_profile')
-            if new_password1 != new_password2:
-                messages.error(request, 'Las nuevas contraseñas no coinciden')
-                return redirect('edit_profile')
-            user.set_password(new_password1)
-            update_session_auth_hash(request, user)
-            
-        user.save()
-        messages.success(request, 'Perfil actualizado correctamente')
-        return redirect('user')
-        
     return render(request, 'authentication/edit_profile.html')
 
 @login_required
@@ -240,3 +259,12 @@ def delete_account(request):
                 return redirect('edit_profile')
 
     return redirect('edit_profile')
+
+def validate_printable_chars(text):
+    if not text:
+        return False
+    # Comprobar espacios y tabulaciones
+    if any(char.isspace() for char in text):
+        return False
+    # Validar que todos los caracteres sean imprimibles
+    return all(char.isprintable() and not char.isspace() for char in text)

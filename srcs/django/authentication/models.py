@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 import os
+from django.core.exceptions import ValidationError
+import re
 
 class CustomUser(AbstractUser):
     # Modificar la URL para usar las dos primeras letras del username
@@ -35,10 +37,24 @@ class CustomUser(AbstractUser):
         return self.get_profile_image_url()
 
     def save(self, *args, **kwargs):
+        self.clean()  # Ejecutar validaciones antes de guardar
         if not self.profile_image and not self.is_fortytwo_user:
             # No establecer la URL directamente en profile_image
             pass
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        
+        if self.username and self.username.startswith('42.') and not self.is_fortytwo_user:
+            raise ValidationError({
+                'username': "El prefijo '42.' está reservado para usuarios de 42"
+            })
+            
+        if self.email and re.match(r'.*@student\.42.*\.com$', self.email.lower()) and not self.is_fortytwo_user:
+            raise ValidationError({
+                'email': "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
+            })
 
     class Meta:
         verbose_name = 'Usuario'
