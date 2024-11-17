@@ -26,10 +26,16 @@
                         
                         <!-- Vista previa de imagen actual -->
                         <div class="text-center mb-4">
-                            {% if user.profile_image %}
-                                <img src="{{ user.profile_image.url }}" alt="Foto de perfil actual" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% if user.profile_image and user.profile_image.url %}
+                                <img src="{{ user.profile_image.url }}" 
+                                     alt="Foto de perfil actual" 
+                                     class="rounded-circle" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
                             {% else %}
-                                <img src="/static/images/default-avatar.png" alt="Avatar por defecto" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                                <img src="{{ user.get_profile_image_url|safe }}" 
+                                     alt="Avatar por defecto" 
+                                     class="rounded-circle" 
+                                     style="width: 150px; height: 150px; object-fit: cover;">
                             {% endif %}
                         </div>
 
