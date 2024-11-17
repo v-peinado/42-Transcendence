@@ -21,8 +21,25 @@
                     {% endif %}
                     
                     <!-- Formulario de edición -->
-                    <form method="post" class="needs-validation" novalidate>
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                        
+                        <!-- Vista previa de imagen actual -->
+                        <div class="text-center mb-4">
+                            {% if user.profile_image %}
+                                <img src="{{ user.profile_image.url }}" alt="Foto de perfil actual" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <img src="/static/images/default-avatar.png" alt="Avatar por defecto" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+
+                        <!-- Campo para subir nueva imagen -->
+                        <div class="mb-3">
+                            <label for="profile_image" class="form-label">Foto de perfil</label>
+                            <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                            <div class="form-text">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB</div>
+                        </div>
+
                         <div class="mb-3">
                             <label for="username" class="form-label">Nombre de usuario</label>
                             <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" readonly>

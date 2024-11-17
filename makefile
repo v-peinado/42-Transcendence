@@ -15,8 +15,14 @@ export $(shell cat srcs/.env | xargs)
 
 all: up help
 
+# Añadir una nueva regla para crear los directorios necesarios
+create-media-dirs:
+	@echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
+	@mkdir -p srcs/django/media/profile_images
+	@chmod 777 srcs/django/media/profile_images
+
 # Levanta los servicios definidos en el archivo de composición
-up:
+up: create-media-dirs
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
 	@docker-compose -f srcs/docker-compose.yml up -d
 
@@ -33,6 +39,12 @@ clean-postgres-data:
 	else \
 		echo "$(COLOR_GREEN)No hay volumen de datos de postgres para eliminar.$(COLOR_RESET)"; \
 	fi
+
+# Regla para limpiar volúmenes y medios
+clean-volumes:
+	@echo "$(COLOR_RED)Eliminando volúmenes y archivos media...$(COLOR_RESET)"
+	@docker volume rm -f django_media 2>/dev/null || true
+	@rm -rf srcs/django/media/profile_images/* 2>/dev/null || true  # Solo elimina el contenido, no el directorio
 
 # Reinicia los servicios (down y luego up)
 reset: down up
@@ -89,12 +101,12 @@ destroy-images:
 			echo "Imagen $$image no encontrada, omitiendo..."; \
 		fi; \
 	done
-	# Eliminar todas las imágenes huérfanas que no están siendo usadas por contenedores activos
+	# Eliminar todas las imágenes huérfanas
 	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
 	docker image prune -a -f
 
-
-fclean: close destroy-images clean-postgres-data
+fclean: close destroy-images clean-postgres-data clean-volumes
+	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
 
 re: fclean all
 

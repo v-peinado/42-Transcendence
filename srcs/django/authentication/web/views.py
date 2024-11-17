@@ -167,47 +167,44 @@ def edit_profile(request):
         
         # Si es usuario de 42, solo permitir cambiar la imagen de perfil
         if user.is_fortytwo_user:
-            profile_image = request.POST.get('profile_image')
-            if profile_image:
-                user.profile_image = profile_image
+            if 'profile_image' in request.FILES:
+                user.profile_image = request.FILES['profile_image']
                 user.save()
-            messages.success(request, 'Perfil actualizado correctamente')
+                messages.success(request, 'Imagen de perfil actualizada correctamente')
             return redirect('user')
             
         # Para usuarios normales, permitir todos los cambios
         email = request.POST.get('email')
-        profile_image = request.POST.get('profile_image')
         current_password = request.POST.get('current_password')
         new_password1 = request.POST.get('new_password1')
         new_password2 = request.POST.get('new_password2')
-
-        # Actualizar email y foto de perfil
-        if email:
+        
+        # Actualizar email
+        if email and email != user.email:
             if CustomUser.objects.exclude(id=user.id).filter(email=email).exists():
                 messages.error(request, 'Este email ya está en uso')
                 return redirect('edit_profile')
             user.email = email
-        if profile_image:
-            user.profile_image = profile_image
-
+            
+        # Actualizar imagen de perfil
+        if 'profile_image' in request.FILES:
+            user.profile_image = request.FILES['profile_image']
+            
         # Actualizar contraseña si se proporcionó
         if current_password and new_password1 and new_password2:
-            if user.check_password(current_password):
-                if new_password1 == new_password2:
-                    user.set_password(new_password1)
-                    update_session_auth_hash(request, user)  # Mantener la sesión activa
-                    messages.success(request, 'Contraseña actualizada correctamente')
-                else:
-                    messages.error(request, 'Las nuevas contraseñas no coinciden')
-                    return redirect('edit_profile')
-            else:
+            if not user.check_password(current_password):
                 messages.error(request, 'La contraseña actual es incorrecta')
                 return redirect('edit_profile')
-
+            if new_password1 != new_password2:
+                messages.error(request, 'Las nuevas contraseñas no coinciden')
+                return redirect('edit_profile')
+            user.set_password(new_password1)
+            update_session_auth_hash(request, user)
+            
         user.save()
         messages.success(request, 'Perfil actualizado correctamente')
         return redirect('user')
-
+        
     return render(request, 'authentication/edit_profile.html')
 
 @login_required

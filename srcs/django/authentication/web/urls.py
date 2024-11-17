@@ -1,4 +1,6 @@
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -12,5 +14,5 @@ urlpatterns = [
     path('validate_qr/', views.validate_qr, name='validate_qr'),
     path('edit-profile/', views.edit_profile, name='edit_profile'),
     path('delete-account/', views.delete_account, name='delete_account'),
-	path('edit-profile/', views.edit_profile, name='edit_profile'),
+    path('edit-profile/', views.edit_profile, name='edit_profile'),
 ]

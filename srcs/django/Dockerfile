@@ -17,6 +17,9 @@ COPY . .
 # Instala las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN mkdir -p /app/media/profile_images
+RUN chmod 777 /app/media/profile_images
+
 # Expone el puerto 8000
 EXPOSE 8000
 

@@ -12,7 +12,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./django:/app  # Actualiza la ruta del volumen para reflejar la nueva ubicación
+      - ./django:/app  
+      - django_media:/app/media 
     networks:
       - trancendence-backend
     depends_on:
@@ -45,11 +46,13 @@ services:
       - trancendence-backend
     volumes:
       - ./nginx/frontend:/usr/share/nginx/html # Directorio donde está el front en el contenedor
+      - django_media:/usr/share/nginx/html/media  # Añadir este volumen
     depends_on:
       - web
     restart: on-failure
 
 volumes:
-  postgres_data: # Volumen para almacenar los datos de la base de datos
+  postgres_data: 
+  django_media:
 
 
