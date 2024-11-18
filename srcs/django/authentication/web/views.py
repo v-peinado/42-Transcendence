@@ -18,6 +18,8 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.views import PasswordResetView
 from django.db.models import Q
 from django.urls import reverse_lazy
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 # Vista principal
 def home(request):
@@ -72,15 +74,21 @@ def register(request):
             messages.error(request, "Los correos con dominio @student.42*.com están reservados para usuarios de 42")
             return redirect('register')
 
-        # Resto de las validaciones...
+        # Validar contraseña segura
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            messages.error(request, e.messages[0])
+            return redirect('register')
+
         if password != confirm_password:
             messages.error(request, "Las contraseñas no coinciden")
             return redirect('register')
 
         try:
             user = CustomUser.objects.create_user(
-                username=username,
-                email=email,
+                username=username.lower(),
+                email=email.lower(),
                 password=password,
                 is_fortytwo_user=False  # Asegurarse que se crea como usuario normal
             )

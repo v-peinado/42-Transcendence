@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from authentication.models import CustomUser
 import re
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 class UserSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True, style={'input_type': 'password'})
@@ -58,6 +60,11 @@ class UserSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_password1(self, value):
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+
         if not all(char.isprintable() and not char.isspace() for char in value):
             raise serializers.ValidationError(
                 "La contraseña no puede contener espacios ni caracteres especiales"
