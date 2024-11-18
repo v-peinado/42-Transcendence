@@ -190,16 +190,21 @@ FORTYTWO_API_URL = os.environ.get('FORTYTWO_API_URL')
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 # Configuración de email
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Cambiar a SMTP real
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
-EMAIL_PORT = os.environ.get('EMAIL_PORT')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))  # Asegurarse de que sea int
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
+# Configuración adicional para SendGrid
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
+EMAIL_USE_SSL = False
+
 # URL base para enlaces en emails
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = 'noreply@pongorama.com'  # Cambiar a tu dominio
+SITE_URL = 'http://localhost:8000'  # Agregar esta línea para los enlaces de reset
 
 # Configuración para las URLs de reset de contraseña
 LOGIN_URL = 'login'
