@@ -15,6 +15,11 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.core.exceptions import ValidationError
 import re
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
@@ -250,3 +255,102 @@ class DeleteAccountView(APIView):
                     "status": "error",
                     "message": "Contraseña incorrecta"
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        
+        # Verificar si es email de 42
+        if re.match(r'.*@student\.42.*\.com$', email.lower()):
+            return Response({
+                "status": "error",
+                "message": "Los usuarios de 42 deben iniciar sesión a través de la API de 42."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verificar si existe el usuario
+        users = CustomUser.objects.filter(
+            email__iexact=email,
+            is_active=True,
+            is_fortytwo_user=False
+        )
+
+        if not list(users):
+            return Response({
+                "status": "error",
+                "message": "No existe una cuenta con este correo electrónico."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        user = users[0]
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+        # Enviar email
+        reset_url = f"{settings.SITE_URL}/reset/{uid}/{token}/"
+        email_body = render_to_string('authentication/password_reset_email.html', {
+            'user': user,
+            'reset_url': reset_url,
+            'domain': settings.SITE_URL,
+        })
+
+        send_mail(
+            'Recuperación de contraseña',
+            email_body,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+
+        return Response({
+            "status": "success",
+            "message": "Se ha enviado un correo con instrucciones para restablecer tu contraseña."
+        })
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        password = request.data.get('new_password1')
+        confirm_password = request.data.get('new_password2')
+
+        try:
+            uid = urlsafe_base64_decode(uid).decode()
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            return Response({
+                "status": "error",
+                "message": "Token inválido"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({
+                "status": "error",
+                "message": "Token inválido o expirado"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != confirm_password:
+            return Response({
+                "status": "error",
+                "message": "Las contraseñas no coinciden"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(password, user)
+        except ValidationError as e:
+            return Response({
+                "status": "error",
+                "message": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.save()
+
+        return Response({
+            "status": "success",
+            "message": "Contraseña actualizada correctamente"
+        })

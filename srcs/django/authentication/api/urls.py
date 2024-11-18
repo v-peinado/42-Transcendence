@@ -6,7 +6,9 @@ from .views import (
     LogoutView,
     RegisterView,
     EditProfileView,
-    DeleteAccountView
+    DeleteAccountView,
+    PasswordResetView,  # Nueva vista
+    PasswordResetConfirmView  # Nueva vista
 )
 
 # URLs específicas de autenticación
@@ -19,6 +21,8 @@ auth_patterns = [
     path('edit-profile/', EditProfileView.as_view(), name='api_edit_profile'),
     path('delete-account/', DeleteAccountView.as_view(), name='api_delete_account'),
     path('42/', include('authentication.fortytwo_auth.urls')),
+    path('reset_password/', PasswordResetView.as_view(), name='api_password_reset'),
+    path('reset_password/confirm/', PasswordResetConfirmView.as_view(), name='api_password_reset_confirm'),
 ]
 
 # Patrón principal que incluye todas las rutas de autenticación
@@ -37,6 +41,8 @@ urlpatterns = [
 # - /api/authentication/edit-profile/
 # - /api/authentication/delete-account/
 # - /api/authentication/42/ -->>> /api/authentication/42/api/42/login/ y /api/authentication/42/api/42/callback/
+# - /api/authentication/reset_password/
+# - /api/authentication/reset_password/confirm/
 
 # Para acceder a la vista de generación de QR, se debe hacer una petición GET a /api/authentication/generate_qr/<str:username>/
 # Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate_qr/
@@ -46,3 +52,5 @@ urlpatterns = [
 # Para acceder a la vista de edición de perfil, se debe hacer una petición POST a /api/authentication/edit-profile/
 # Para acceder a la vista de eliminación de cuenta, se debe hacer una petición POST a /api/authentication/delete-account/
 # Para acceder a la vista de autenticación con 42, se debe hacer una petición GET a /api/authentication/42/
+# Para acceder a la vista de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/
+# Para acceder a la vista de confirmación de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/confirm/
