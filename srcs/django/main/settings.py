@@ -190,7 +190,8 @@ FORTYTWO_API_URL = os.environ.get('FORTYTWO_API_URL')
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 # Configuración de email
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_PORT = os.environ.get('EMAIL_PORT')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
@@ -199,3 +200,11 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
 # URL base para enlaces en emails
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Configuración para las URLs de reset de contraseña
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'user'
+LOGOUT_REDIRECT_URL = 'login'
+
+# URLs para los emails de reset
+PASSWORD_RESET_TIMEOUT = 300 # 5 minutos
