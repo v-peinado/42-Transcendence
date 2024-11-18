@@ -15,6 +15,9 @@ from ..models import CustomUser
 from ..serializers.user_serializers import UserSerializer
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.views import PasswordResetView
+from django.db.models import Q
+from django.urls import reverse_lazy
 
 # Vista principal
 def home(request):
@@ -268,3 +271,40 @@ def validate_printable_chars(text):
         return False
     # Validar que todos los caracteres sean imprimibles
     return all(char.isprintable() and not char.isspace() for char in text)
+
+class CustomPasswordResetView(PasswordResetView):
+    success_url = reverse_lazy('password_reset_done')
+    email_template_name = 'authentication/password_reset_email.html'
+    template_name = 'authentication/password_reset.html'
+
+    def form_valid(self, form):
+        email = form.cleaned_data["email"]
+        
+        # Primero verificar si es un email de 42
+        if re.match(r'.*@student\.42.*\.com$', email.lower()):
+            messages.error(
+                self.request, 
+                "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42."
+            )
+            return self.form_invalid(form)
+        
+        # Luego verificar si existe el usuario
+        users = CustomUser.objects.filter(
+            email__iexact=email,
+            is_active=True,
+            is_fortytwo_user=False
+        )
+        
+        if not list(users):
+            messages.error(self.request, "No existe una cuenta con este correo electrónico.")
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
+
+    def get_users(self, email):
+        active_users = CustomUser.objects.filter(
+            email__iexact=email, 
+            is_active=True,
+            is_fortytwo_user=False
+        )
+        return (u for u in active_users if u.has_usable_password())
