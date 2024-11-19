@@ -74,13 +74,29 @@ clean:
 	@echo "$(COLOR_GREEN)Limpiando recursos no utilizados...$(COLOR_RESET)"
 	docker system prune -f --all
 
+# Limpia recursos de Docker
+clean-docker:
+	@echo "$(COLOR_RED)Limpiando recursos de Docker...$(COLOR_RESET)"
+	@docker container prune -f
+	@docker network prune -f
+	@docker volume prune -f
+
+# Limpia archivos temporales de Django
+clean-django:
+	@echo "$(COLOR_RED)Limpiando archivos temporales de Django...$(COLOR_RESET)"
+	@find $(DJANGO_CODE_PATH) -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find $(DJANGO_CODE_PATH) -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find $(DJANGO_CODE_PATH) -type f -name "*.pyo" -delete 2>/dev/null || true
+	@find $(DJANGO_CODE_PATH) -type f -name "*.pyd" -delete 2>/dev/null || true
+	@find $(DJANGO_CODE_PATH) -type f -name ".DS_Store" -delete 2>/dev/null || true
+
 # Apaga servicios y ejecuta prune
 close: down
 	@echo "$(COLOR_GREEN)Ejecutando prune tras apagar servicios...$(COLOR_RESET)"
 	docker system prune -f
 
 # Limpia completamente contenedores, imágenes y datos persistentes
-fclean: close destroy-images clean-postgres-data clean-volumes
+fclean: close destroy-images clean-postgres-data clean-volumes clean-docker clean-django
 	@echo "$(COLOR_RED)Eliminando carpetas y rutas creadas...$(COLOR_RESET)"
 	@rm -rf srcs/django/media/profile_images 2>/dev/null || true
 	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
@@ -167,4 +183,4 @@ help:
 	@echo "  para ver la web desde nginx, accede a http://localhost:80"
 	@echo ""
 
-.PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean-volumes view-users
+.PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean-volumes view-users clean-docker clean-django
