@@ -12,7 +12,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./django:/app  
+      - django_code:/app  
       - django_media:/app/media 
     networks:
       - trancendence-backend
@@ -21,6 +21,8 @@ services:
     env_file:
       - .env
     restart: on-failure
+    environment:
+      - DOCKER_BUILDKIT=1
   
   db:
     image: postgres:17
@@ -45,14 +47,23 @@ services:
     networks:
       - trancendence-backend
     volumes:
-      - ./nginx/frontend:/usr/share/nginx/html # Directorio donde está el front en el contenedor
-      - django_media:/usr/share/nginx/html/media  # Añadir este volumen
+      - type: volume
+        source: nginx_static
+        target: /usr/share/nginx/html
+        read_only: false
+      - type: volume
+        source: django_media
+        target: /usr/share/nginx/html/media
+        read_only: false
     depends_on:
       - web
     restart: on-failure
+    user: "1000:1000"  # Asegura que se ejecute como usuario no root
 
 volumes:
   postgres_data: 
   django_media:
+  django_code:
+  nginx_static:
 
 

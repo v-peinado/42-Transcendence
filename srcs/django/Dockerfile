@@ -1,27 +1,18 @@
 # Usa la imagen oficial de Python como base
 FROM python:3.10-slim
 
-# Actualiza los paquetes y instala las dependencias necesarias
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia los archivos de requerimientos y el proyecto
-COPY requirements.txt requirements.txt
-COPY . .
+# Copia los archivos del proyecto
+COPY requirements.txt .
 
 # Instala las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install gunicorn
 
-RUN mkdir -p /app/media/profile_images
-RUN chmod 777 /app/media/profile_images
-
-# Expone el puerto 8000
-EXPOSE 8000
+# Copia los archivos del proyecto
+COPY . .
 
 # Comando para ejecutar el servidor
-CMD ["python", "django-entrypoint.py"]
+CMD ["gunicorn", "main.wsgi:application", "--bind", "0.0.0.0:8000"]

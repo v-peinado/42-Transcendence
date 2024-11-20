@@ -13,6 +13,18 @@ COLOR_RESET = \033[0m
 include srcs/.env
 export $(shell cat srcs/.env | xargs)
 
+# Detectar sistema operativo
+UNAME_S := $(shell uname -s)
+
+# Configurar directorios según el sistema operativo
+ifeq ($(UNAME_S),Linux)
+    DOCKER_HOME=/goinfre/$(USER)
+    DOCKER_SOCKET=$(DOCKER_HOME)/.docker/run/docker.sock
+else
+    DOCKER_HOME=$(HOME)
+    DOCKER_SOCKET=/var/run/docker.sock
+endif
+
 all: up help
 
 # Añadir una nueva regla para crear los directorios necesarios
@@ -21,10 +33,19 @@ create-media-dirs:
 	@mkdir -p srcs/django/media/profile_images
 	@chmod 777 srcs/django/media/profile_images
 
+# Configurar Docker rootless en Linux
+configure-rootless:
+ifeq ($(UNAME_S),Linux)
+    @echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
+    @mkdir -p $(DOCKER_HOME)/.docker
+    @dockerd-rootless-setuptool.sh install
+    @echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.bashrc
+endif
+
 # Levanta los servicios definidos en el archivo de composición
-up: create-media-dirs
+up: create-media-dirs configure-rootless
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
-	@docker-compose -f srcs/docker-compose.yml up -d
+	@DOCKER_HOST=unix://$(DOCKER_SOCKET) $(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
 
 # Detiene y elimina los contenedores, redes y volúmenes asociados
 down:
