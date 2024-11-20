@@ -1,4 +1,3 @@
-
 networks:
   trancendence-backend:
     name: trancendence-backend
@@ -7,22 +6,22 @@ networks:
 services:
   web:
     build:
-      context: ./django
-      dockerfile: Dockerfile
+      context: ./django  # Directorio donde está el código de la app y el Dockerfile
+      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
     container_name: django
     ports:
       - "8000:8000"
     volumes:
-      - ${DJANGO_CODE_PATH}:/app
-      - ${DJANGO_MEDIA_PATH}:/app/media
+      - ./django:/app  
+      - django_media:/app/media 
     networks:
       - trancendence-backend
     depends_on:
       - db
     env_file:
       - .env
-    restart: always
-
+    restart: on-failure
+  
   db:
     image: postgres:17
     container_name: postgres
@@ -31,27 +30,29 @@ services:
     networks:
       - trancendence-backend
     volumes:
-      - ${POSTGRES_DATA_PATH}:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
-    restart: always
+    restart: on-failure
 
   nginx:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: ./nginx  # Directorio donde está el código de la app y el Dockerfile
+      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
     container_name: nginx
     ports:
       - "80:80"
     networks:
       - trancendence-backend
     volumes:
-      - ${NGINX_FRONTEND_PATH}:/usr/share/nginx/html
-      - ${DJANGO_MEDIA_PATH}:/usr/share/nginx/html/media
+      - ./nginx/frontend:/usr/share/nginx/html # Directorio donde está el front en el contenedor
+      - django_media:/usr/share/nginx/html/media  # Añadir este volumen
     depends_on:
       - web
-    restart: always
+    restart: on-failure
 
 volumes:
-  postgres_data:
+  postgres_data: 
   django_media:
+
+
