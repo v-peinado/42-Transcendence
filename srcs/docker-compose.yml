@@ -6,8 +6,8 @@ networks:
 services:
   web:
     build:
-      context: ./django
-      dockerfile: Dockerfile
+      context: ./django  # Directorio donde está el código de la app y el Dockerfile
+      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
     container_name: django
     ports:
       - "8000:8000"
@@ -37,16 +37,16 @@ services:
 
   nginx:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
+      context: ./nginx  # Directorio donde está el código de la app y el Dockerfile
+      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
     container_name: nginx
     ports:
       - "80:80"
     networks:
       - trancendence-backend
     volumes:
-      - ./nginx/frontend:/usr/share/nginx/html
-      - django_media:/usr/share/nginx/html/media
+      - ./nginx/frontend:/usr/share/nginx/html # Directorio donde está el front en el contenedor
+      - django_media:/usr/share/nginx/html/media  # Añadir este volumen
     depends_on:
       - web
     restart: on-failure

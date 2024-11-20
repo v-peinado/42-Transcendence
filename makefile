@@ -1,23 +1,17 @@
+# Nombre del archivo de composición de Docker por defecto
+COMPOSE_FILE = ./srcs/docker-compose.yml
+
+# Comando para Docker Compose (compatible con V2)
+COMPOSE_CMD = docker compose
+
 # Variables de colores para los mensajes
 COLOR_GREEN = \033[0;32m
 COLOR_RED = \033[0;31m
 COLOR_RESET = \033[0m
 
-# Comando para Docker Compose (compatible con V2)
-COMPOSE_CMD = docker compose
-COMPOSE_FILE = ./srcs/docker-compose.yml
-
 # Cargar las variables del archivo .env
 include srcs/.env
 export $(shell cat srcs/.env | xargs)
-
-# Detectar el sistema operativo y configurar las variables
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-    export DOCKER_BIND_MOUNT=./django
-else
-    export DOCKER_BIND_MOUNT=django_code
-endif
 
 all: up help
 
@@ -28,14 +22,14 @@ create-media-dirs:
 	@chmod 777 srcs/django/media/profile_images
 
 # Levanta los servicios definidos en el archivo de composición
-up: create-media-dirs configure-rootless
+up: create-media-dirs
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
-	@DOCKER_HOST=unix:///$(DOCKER_HOME)/.docker/run/docker.sock $(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
+	@docker-compose -f srcs/docker-compose.yml up -d
 
-# Detiene y elimina los contenedores
+# Detiene y elimina los contenedores, redes y volúmenes asociados
 down:
-	@echo "$(COLOR_GREEN)Apagando servicios...$(COLOR_RESET)"
-	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) down
+	@echo "$(COLOR_GREEN)Apagando y eliminando servicios...$(COLOR_RESET)"
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) down --volumes 
 
 clean-postgres-data:
 	@echo "$(COLOR_GREEN)Verificando si existe el volumen de datos de postgres para eliminar...$(COLOR_RESET)"
@@ -56,18 +50,10 @@ clean-volumes:
 reset: down up
 	@echo "$(COLOR_GREEN)Reinicio completado.$(COLOR_RESET)"
 
-# Limpia contenedores y redes
-clean: down
-	@echo "$(COLOR_RED)Limpiando contenedores y redes...$(COLOR_RESET)"
-	@docker container prune -f
-	@docker network prune -f
-
-# Limpieza completa incluyendo volúmenes
-fclean: clean
-	@echo "$(COLOR_RED)Limpiando todos los recursos, incluyendo volúmenes...$(COLOR_RESET)"
-	@docker volume rm -f $$(docker volume ls -q | grep "srcs_")
-	@docker system prune -af --volumes
-	@rm -rf srcs/django/media/profile_images/*
+# Limpia todos los contenedores detenidos, imágenes y volúmenes no utilizados
+clean:
+	@echo "$(COLOR_GREEN)Limpiando recursos no utilizados...$(COLOR_RESET)"
+	docker system prune -f --all
 
 # Apaga los servicios y ejecuta un prune
 close: down
@@ -119,6 +105,9 @@ destroy-images:
 	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
 	docker image prune -a -f
 
+fclean: close destroy-images clean-postgres-data clean-volumes
+	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
+
 re: fclean all
 
 # Regla principal para verificar la base de datos y las tablas
@@ -141,15 +130,6 @@ list_databases:
 view-users:
 	@echo "Conectando a la base de datos PostgreSQL y mostrando todos los campos de los usuarios..."
 	@docker exec -it postgres psql -U $(POSTGRES_USER) -d $(POSTGRES_DB) -c "SELECT * FROM authentication_customuser;"
-
-# Configurar Docker rootless
-configure-rootless:
-ifeq ($(UNAME_S),Linux)
-	@echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
-	@mkdir -p $(DOCKER_HOME)/.docker
-	@dockerd-rootless-setuptool.sh install
-	@echo "export DOCKER_HOST=unix:///$(DOCKER_HOME)/.docker/run/docker.sock" >> ~/.bashrc
-endif
 
 # Ayuda para ver las reglas disponibles
 help:
