@@ -31,8 +31,23 @@ create-media-dirs:
 	@mkdir -p srcs/django/media/profile_images
 	@chmod 777 srcs/django/media/profile_images
 
+# Comprobar y crear directorio goinfre en Linux
+check-goinfre:
+ifeq ($(UNAME_S),Linux)
+    @echo "$(COLOR_GREEN)Comprobando directorio goinfre...$(COLOR_RESET)"
+    @if [ ! -d "/goinfre" ]; then \
+        echo "$(COLOR_RED)Directorio /goinfre no existe, creando...$(COLOR_RESET)"; \
+        sudo mkdir -p /goinfre/$(USER); \
+        sudo chown $(USER):$(USER) /goinfre/$(USER); \
+    fi
+    @if [ ! -d "/goinfre/$(USER)" ]; then \
+        echo "$(COLOR_GREEN)Creando directorio de usuario en goinfre...$(COLOR_RESET)"; \
+        mkdir -p /goinfre/$(USER); \
+    fi
+endif
+
 # Levanta los servicios definidos en el archivo de composición
-up: create-media-dirs configure-rootless
+up: check-goinfre create-media-dirs configure-rootless
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
 	@DOCKER_HOST=unix:///$(DOCKER_HOME)/.docker/run/docker.sock $(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
 
