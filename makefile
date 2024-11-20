@@ -1,13 +1,11 @@
-# Nombre del archivo de composición de Docker por defecto
-COMPOSE_FILE = ./srcs/docker-compose.yml
-
-# Comando para Docker Compose (compatible con V2)
-COMPOSE_CMD = docker compose
-
 # Variables de colores para los mensajes
 COLOR_GREEN = \033[0;32m
 COLOR_RED = \033[0;31m
 COLOR_RESET = \033[0m
+
+# Comando para Docker Compose (compatible con V2)
+COMPOSE_CMD = docker compose
+COMPOSE_FILE = ./srcs/docker-compose.yml
 
 # Cargar las variables del archivo .env
 include srcs/.env
@@ -17,37 +15,20 @@ export $(shell cat srcs/.env | xargs)
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     export DOCKER_BIND_MOUNT=./django
-    export DOCKER_HOME=$(HOME)
 else
     export DOCKER_BIND_MOUNT=django_code
-    export DOCKER_HOME=/goinfre/$(USER)
 endif
 
 all: up help
 
 # Añadir una nueva regla para crear los directorios necesarios
 create-media-dirs:
-	@echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
-	@mkdir -p srcs/django/media/profile_images
-	@chmod 777 srcs/django/media/profile_images
-
-# Comprobar y crear directorio goinfre en Linux
-check-goinfre:
-ifeq ($(UNAME_S),Linux)
-	@echo "$(COLOR_GREEN)Comprobando directorio goinfre...$(COLOR_RESET)"
-	@if [ ! -d "/goinfre" ]; then \
-        echo "$(COLOR_RED)Directorio /goinfre no existe, creando...$(COLOR_RESET)"; \
-        sudo mkdir -p /goinfre/$(USER); \
-        sudo chown $(USER):$(USER) /goinfre/$(USER); \
-    fi
-	@if [ ! -d "/goinfre/$(USER)" ]; then \
-        echo "$(COLOR_GREEN)Creando directorio de usuario en goinfre...$(COLOR_RESET)"; \
-        mkdir -p /goinfre/$(USER); \
-    fi
-endif
+    @echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
+    @mkdir -p srcs/django/media/profile_images
+    @chmod 777 srcs/django/media/profile_images
 
 # Levanta los servicios definidos en el archivo de composición
-up: check-goinfre create-media-dirs configure-rootless
+up: create-media-dirs configure-rootless
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
 	@DOCKER_HOST=unix:///$(DOCKER_HOME)/.docker/run/docker.sock $(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
 
