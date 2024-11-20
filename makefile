@@ -38,14 +38,29 @@ configure-rootless:
 ifeq ($(UNAME_S),Linux)
 	@echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
 	@mkdir -p $(DOCKER_HOME)/.docker
-	@dockerd-rootless-setuptool.sh install
+	@if ! command -v dockerd-rootless-setuptool.sh >/dev/null 2>&1; then \
+		echo "$(COLOR_GREEN)Instalando Docker rootless prerequisites...$(COLOR_RESET)"; \
+		sudo apt-get update && sudo apt-get install -y uidmap dbus-user-session; \
+	fi
+	@if ! pgrep -f "dockerd" >/dev/null; then \
+		echo "$(COLOR_GREEN)Iniciando Docker daemon en modo rootless...$(COLOR_RESET)"; \
+		dockerd-rootless-setuptool.sh install --force || true; \
+		systemctl --user start docker; \
+	fi
 	@echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.bashrc
+	@echo "export PATH=/usr/bin:$$PATH" >> ~/.bashrc
+	@echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.profile
 endif
 
 # Levanta los servicios definidos en el archivo de composición
 up: create-media-dirs configure-rootless
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
-	@DOCKER_HOST=unix://$(DOCKER_SOCKET) $(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
+	@if [ "$(UNAME_S)" = "Linux" ]; then \
+		export DOCKER_HOST=unix://$(DOCKER_SOCKET); \
+		export XDG_RUNTIME_DIR=/run/user/$$(id -u); \
+		systemctl --user start docker || true; \
+	fi
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
 
 # Detiene y elimina los contenedores, redes y volúmenes asociados
 down:
