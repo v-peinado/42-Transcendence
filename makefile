@@ -34,13 +34,13 @@ create-media-dirs:
 # Comprobar y crear directorio goinfre en Linux
 check-goinfre:
 ifeq ($(UNAME_S),Linux)
-    @echo "$(COLOR_GREEN)Comprobando directorio goinfre...$(COLOR_RESET)"
-    @if [ ! -d "/goinfre" ]; then \
+	@echo "$(COLOR_GREEN)Comprobando directorio goinfre...$(COLOR_RESET)"
+	@if [ ! -d "/goinfre" ]; then \
         echo "$(COLOR_RED)Directorio /goinfre no existe, creando...$(COLOR_RESET)"; \
         sudo mkdir -p /goinfre/$(USER); \
         sudo chown $(USER):$(USER) /goinfre/$(USER); \
     fi
-    @if [ ! -d "/goinfre/$(USER)" ]; then \
+	@if [ ! -d "/goinfre/$(USER)" ]; then \
         echo "$(COLOR_GREEN)Creando directorio de usuario en goinfre...$(COLOR_RESET)"; \
         mkdir -p /goinfre/$(USER); \
     fi
