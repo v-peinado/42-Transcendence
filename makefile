@@ -23,9 +23,9 @@ all: up help
 
 # Añadir una nueva regla para crear los directorios necesarios
 create-media-dirs:
-    @echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
-    @mkdir -p srcs/django/media/profile_images
-    @chmod 777 srcs/django/media/profile_images
+	@echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
+	@mkdir -p srcs/django/media/profile_images
+	@chmod 777 srcs/django/media/profile_images
 
 # Levanta los servicios definidos en el archivo de composición
 up: create-media-dirs configure-rootless
