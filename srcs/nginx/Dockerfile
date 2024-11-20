@@ -6,11 +6,18 @@ WORKDIR /app
 RUN adduser -D -u 1000 nginxuser
 
 # Copiar la configuración de nginx y los archivos del frontend
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY frontend /usr/share/nginx/html
 
-# Cambiar los permisos para que el usuario no root pueda acceder
-RUN chown -R nginxuser:nginxuser /usr/share/nginx/html && \
+# Crear directorios temporales con permisos correctos
+RUN mkdir -p /tmp/client_temp \
+    /tmp/proxy_temp_path \
+    /tmp/fastcgi_temp \
+    /tmp/uwsgi_temp \
+    /tmp/scgi_temp && \
+    chown -R nginxuser:nginxuser /tmp && \
+    chmod -R 755 /tmp && \
+    chown -R nginxuser:nginxuser /usr/share/nginx/html && \
     chown -R nginxuser:nginxuser /var/cache/nginx && \
     chown -R nginxuser:nginxuser /var/log/nginx && \
     touch /var/run/nginx.pid && \

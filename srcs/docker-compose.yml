@@ -39,26 +39,22 @@ services:
 
   nginx:
     build:
-      context: ./nginx  # Directorio donde está el código de la app y el Dockerfile
-      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
+      context: ./nginx
+      dockerfile: Dockerfile
     container_name: nginx
     ports:
-      - "80:80"
+      - "8080:80"
     networks:
       - trancendence-backend
     volumes:
       - type: volume
         source: nginx_static
         target: /usr/share/nginx/html
-        read_only: false
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
-        read_only: false
     depends_on:
       - web
-    restart: on-failure
-    user: "1000:1000"  # Asegura que se ejecute como usuario no root
 
 volumes:
   postgres_data: 

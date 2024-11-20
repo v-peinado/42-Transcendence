@@ -194,7 +194,7 @@ help:
 	@echo "  make help                  - Muestra esta ayuda"
 	@echo ""
 	@echo "  para ver la web desde django, accede a http://localhost:8000"
-	@echo "  para ver la web desde nginx, accede a http://localhost:80"
+	@echo "  para ver la web desde nginx, accede a http://localhost:8080"
 	@echo ""
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
