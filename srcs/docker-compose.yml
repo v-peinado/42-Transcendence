@@ -20,7 +20,7 @@ services:
       - db
     env_file:
       - .env
-    restart: on-failure
+    restart: always
     environment:
       - DOCKER_BUILDKIT=1
   
@@ -35,7 +35,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
-    restart: on-failure
+    restart: always
 
   nginx:
     build:
@@ -55,6 +55,7 @@ services:
         target: /usr/share/nginx/html/media
     depends_on:
       - web
+    restart: always
 
 volumes:
   postgres_data: 
