@@ -36,10 +36,10 @@ create-media-dirs:
 # Configurar Docker rootless en Linux
 configure-rootless:
 ifeq ($(UNAME_S),Linux)
-    @echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
-    @mkdir -p $(DOCKER_HOME)/.docker
-    @dockerd-rootless-setuptool.sh install
-    @echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.bashrc
+	@echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
+	@mkdir -p $(DOCKER_HOME)/.docker
+	@dockerd-rootless-setuptool.sh install
+	@echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.bashrc
 endif
 
 # Levanta los servicios definidos en el archivo de composición
