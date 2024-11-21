@@ -40,7 +40,7 @@ services:
     container_name: nginx
     ports:
       - "8443:443"  # Cambiar 443 por 8443 en el host
-      - "8080:80"   # Este ya está bien porque es >1024
+      - "8080:80"   
     networks:
       - trancendence-backend
     volumes:

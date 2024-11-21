@@ -7,11 +7,10 @@ from .views import (
     RegisterView,
     EditProfileView,
     DeleteAccountView,
-    PasswordResetView,  # Nueva vista
-    PasswordResetConfirmView  # Nueva vista
+    PasswordResetView, 
+    PasswordResetConfirmView  
 )
 
-# URLs específicas de autenticación
 auth_patterns = [
     path('generate_qr/<str:username>/', GenerateQRCodeView.as_view(), name='generate_qr'),
     path('validate_qr/', ValidateQRCodeView.as_view(), name='validate_qr'),

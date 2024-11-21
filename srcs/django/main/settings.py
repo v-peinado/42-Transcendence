@@ -155,7 +155,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Añade esto para asegurar que los archivos se guardan con permisos correctos
+# File upload permissions
 FILE_UPLOAD_PERMISSIONS = 0o644
 
 # Default primary key field type
@@ -193,7 +193,7 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Cambiar a SMTP real
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))  # Asegurarse de que sea int
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))  
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
@@ -216,9 +216,9 @@ PASSWORD_RESET_TIMEOUT = 300 # 5 minutos
 
 # Configuración de seguridad
 if DEBUG:
-    SECURE_SSL_REDIRECT = False  # Cambiar a False durante desarrollo
-    SESSION_COOKIE_SECURE = False  # Cambiar a False durante desarrollo
-    CSRF_COOKIE_SECURE = False  # Cambiar a False durante desarrollo
+    SECURE_SSL_REDIRECT = False 
+    SESSION_COOKIE_SECURE = False 
+    CSRF_COOKIE_SECURE = False  
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 else:
