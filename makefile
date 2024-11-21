@@ -200,11 +200,9 @@ help:
 	@echo ""
 	@echo "  make view-users            - Muestra los usuarios autorizados en la base de datos"
 	@echo ""
-	@echo "  make help                  - Muestra esta ayuda"
-	@echo ""
 	@echo "  http://localhost:8000      - Accede a la web desde Django (backend sin Nginx)"
 	@echo "  http://localhost:8080      - Accede a la web desde Nginx (frontend sin SSL)"
-	@echo "  https://localhost          - Accede a la web desde Nginx (frontend con SSL)"
+	@echo "  https://localhost:8443     - Accede a la web desde Nginx (frontend con SSL)"
 	@echo ""
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
