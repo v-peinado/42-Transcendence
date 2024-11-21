@@ -6,14 +6,13 @@ networks:
 services:
   web:
     build:
-      context: ./django  # Directorio donde está el código de la app y el Dockerfile
-      dockerfile: Dockerfile  # Nombre del Dockerfile en ese directorio
+      context: ./django
     container_name: django
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Acceso directo a Django
     volumes:
-      - django_code:/app  
-      - django_media:/app/media 
+      - django_code:/app
+      - django_media:/app/media
     networks:
       - trancendence-backend
     depends_on:
@@ -21,9 +20,7 @@ services:
     env_file:
       - .env
     restart: always
-    environment:
-      - DOCKER_BUILDKIT=1
-  
+
   db:
     image: postgres:17
     container_name: postgres
@@ -40,10 +37,10 @@ services:
   nginx:
     build:
       context: ./nginx
-      dockerfile: Dockerfile
     container_name: nginx
     ports:
-      - "8080:80"
+      - "443:443"  # HTTPS
+      - "8080:80"  # HTTP para frontend estático
     networks:
       - trancendence-backend
     volumes:
@@ -53,6 +50,7 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # Montar certificados SSL
     depends_on:
       - web
     restart: always

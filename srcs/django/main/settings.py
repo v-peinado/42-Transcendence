@@ -204,7 +204,7 @@ EMAIL_USE_SSL = False
 
 # URL base para enlaces en emails
 DEFAULT_FROM_EMAIL = 'noreply@pongorama.com'  # Cambiar a tu dominio
-SITE_URL = 'http://localhost:8000'  # Agregar esta línea para los enlaces de reset
+SITE_URL = 'https://localhost'  # En settings.py
 
 # Configuración para las URLs de reset de contraseña
 LOGIN_URL = 'login'
@@ -213,3 +213,15 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # URLs para los emails de reset
 PASSWORD_RESET_TIMEOUT = 300 # 5 minutos
+
+# Configuración de seguridad
+if DEBUG:
+    SECURE_SSL_REDIRECT = False  # Cambiar a False durante desarrollo
+    SESSION_COOKIE_SECURE = False  # Cambiar a False durante desarrollo
+    CSRF_COOKIE_SECURE = False  # Cambiar a False durante desarrollo
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+else:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
