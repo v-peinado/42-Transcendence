@@ -1,34 +1,59 @@
-import subprocess
-import time
 import socket
+import time
+import subprocess
+import os
 
 # Función para verificar si el servicio de base de datos está disponible
 def wait_for_db(host, port):
     print(f"Esperando a que la base de datos en {host}:{port} esté lista...")
-    while True:
+    retries = 0
+    max_retries = 30  # 1 minuto máximo de espera
+    
+    while retries < max_retries:
         try:
             with socket.create_connection((host, port), timeout=2):
                 print("Base de datos lista.")
-                break
+                return True
         except (ConnectionRefusedError, socket.timeout):
             print("Base de datos no está lista, esperando 2 segundos...")
+            retries += 1
             time.sleep(2)
+    
+    print("Error: No se pudo conectar a la base de datos después de varios intentos")
+    return False
 
 # Función para ejecutar un comando en la terminal
 def run_command(command):
-    process = subprocess.run(command, shell=True, text=True)
-    if process.returncode != 0:
-        print(f"Error al ejecutar: {command}")
-    else:
+    try:
+        process = subprocess.run(command, shell=True, text=True, check=True)
         print(f"Ejecutado con éxito: {command}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error al ejecutar: {command}")
+        print(f"Código de error: {e.returncode}")
+        return False
 
-# Espera a que el servicio de base de datos esté disponible
-wait_for_db("db", 5432)
+def main():
+    # Obtener variables de entorno
+    db_host = os.getenv('SQL_HOST', 'db')
+    db_port = int(os.getenv('SQL_PORT', '5432'))
 
-# Ejecuta las migraciones de Django
-run_command("python manage.py makemigrations")
-run_command("python manage.py migrate")
+    # Esperar a que la base de datos esté disponible
+    if not wait_for_db(db_host, db_port):
+        print("Error crítico: No se pudo conectar a la base de datos")
+        exit(1)
 
-# Inicia el servidor de producción de Gunicorn
-run_command("gunicorn main.wsgi:application --bind 0.0.0.0:8000")
+    # Ejecutar migraciones
+    if not run_command("python manage.py makemigrations"):
+        exit(1)
+    if not run_command("python manage.py migrate"):
+        exit(1)
+
+    # Iniciar Gunicorn con workers automáticos
+    workers = (os.cpu_count() or 1) * 2 + 1
+    gunicorn_cmd = f"gunicorn main.wsgi:application --bind 0.0.0.0:8000 --workers {workers}"
+    run_command(gunicorn_cmd)
+
+if __name__ == "__main__":
+    main()
 

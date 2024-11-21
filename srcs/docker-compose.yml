@@ -20,6 +20,9 @@ services:
     env_file:
       - .env
     restart: always
+    environment:
+      - SQL_HOST=db
+      - SQL_PORT=5432
 
   db:
     image: postgres:17
