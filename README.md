@@ -1,19 +1,19 @@
 ### Requisitos Básicos (25% del proyecto total)
-•⁠  ⁠✅ Configuración Docker básica
-•⁠  ⁠✅ Base de datos PostgreSQL
-•⁠  ⁠✅ Nginx configurado con HTTPS
-•⁠  ⁠✅ Django como backend
-•⁠  ⁠✅ Configuración Docker rootless para Linux
-•⁠  ⁠❌ Falta implementación del juego básico Pong
-•⁠  ⁠❌ Falta sistema de torneos básico
+-  ⁠✅ Configuración Docker básica
+-  ⁠✅ Base de datos PostgreSQL
+-  ⁠✅ Nginx configurado con HTTPS
+-  ⁠✅ Django como backend
+-  ⁠✅ Configuración Docker rootless para Linux
+-  ⁠❌ Falta implementación del juego básico Pong
+-  ⁠❌ Falta sistema de torneos básico
 
 ### Requisitos de Seguridad (Implementados)
-- ✅ Contraseñas hasheadas en base de datos
-- ✅ Protección contra SQL injection/XSS
-- ✅ HTTPS/SSL configurado
-- ✅ Validación de formularios
-- ✅ Rutas API protegidas
-- ✅ Variables de entorno en .env
+-  ✅ Contraseñas hasheadas en base de datos
+-  ✅ Protección contra SQL injection/XSS
+-  ✅ HTTPS/SSL configurado
+-  ✅ Validación de formularios
+-  ✅ Rutas API protegidas
+-  ✅ Variables de entorno en .env
 
 *Progreso en requisitos básicos*: ~25% (La infraestructura está completa)
 
