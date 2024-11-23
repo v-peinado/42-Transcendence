@@ -25,7 +25,6 @@ from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.conf import settings
-import uuid
 from .utils import generate_jwt_token, decode_jwt_token
 
 # Vista principal
@@ -102,8 +101,7 @@ def register(request):
                 is_active=False  # Usuario inactivo hasta verificar email
             )
             
-            # Generar token
-            token = str(uuid.uuid4())
+            token = generate_jwt_token(user)
             user.email_verification_token = token
             user.save()
             
@@ -355,21 +353,24 @@ def verify_email(request, uidb64, token):
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
         
-        if user and user.email_verification_token == token:
+        # Decodificar el token JWT
+        payload = decode_jwt_token(token)
+        
+        if user and payload and payload['user_id'] == user.id:
             user.email_verified = True
             user.is_active = True
             user.email_verification_token = None
             user.save()
             
-            # Enviar email de bienvenida después de la verificación
-            subject_welcome = '¡Bienvenido a PongOrama!'
-            message_welcome = render_to_string('authentication/welcome_email.html', {
+            # Enviar email de bienvenida
+            subject = '¡Bienvenido a PongOrama!'
+            message = render_to_string('authentication/welcome_email.html', {
                 'user': user,
             })
             
             send_mail(
-                subject_welcome,
-                message_welcome,
+                subject,
+                message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
@@ -380,6 +381,6 @@ def verify_email(request, uidb64, token):
         else:
             messages.error(request, "El enlace de verificación no es válido")
             return redirect('login')
-    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-        messages.error(request, "El enlace de verificación no es válido")
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        messages.error(request, "El enlace de verificación no es válido o ha expirado")
         return redirect('login')

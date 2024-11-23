@@ -53,10 +53,21 @@
             <!-- Botón de 42 -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body p-4">
-                    <div class="d-grid">  <!-- Usar d-grid para ancho completo -->
-                        <a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">  <!-- Añadir w-100 -->
-                            Login with 42
+                    <div class="d-grid">
+                        <a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">
+                            {% if request.GET.first_time %}
+                                Register with 42
+                            {% else %}
+                                Login with 42
+                            {% endif %}
                         </a>
+                        <small class="text-muted text-center mt-2">
+                            {% if request.GET.first_time %}
+                                Primera vez? Regístrate con tu cuenta de 42
+                            {% else %}
+                                Inicia sesión con tu cuenta de 42
+                            {% endif %}
+                        </small>
                     </div>
                 </div>
             </div>

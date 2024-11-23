@@ -21,7 +21,6 @@ from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
-import uuid
 from django.conf import settings
 from .utils import generate_jwt_token, decode_jwt_token
 
@@ -149,7 +148,7 @@ class RegisterView(APIView):
                 user = serializer.save(is_active=False)
                 
                 # Generar token
-                token = str(uuid.uuid4())
+                token = generate_jwt_token(user)
                 user.email_verification_token = token
                 user.save()
                 
@@ -271,7 +270,7 @@ def verify_email(request, uidb64, token):
             user.email_verified = True
             user.is_active = True
             user.save()
-            messages.success(request, "Tu cuenta ha sido verificada correctamente")
+            messages.success(request, "Tu cuenta ha sido verificada correctamente, ahora puedes iniciar sesión")
             return redirect('login')
         else:
             messages.error(request, "El enlace de verificación no es válido")

@@ -34,7 +34,7 @@ class FortyTwoAuth:
             if user_data.get('image'):
                 fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
                 
-            # Obtener o crear usuario
+            # Obtener o crear usuario (inactivo inicialmente)
             user, created = CustomUser.objects.get_or_create(
                 username=f"42.{user_data['login']}",
                 defaults={
@@ -53,7 +53,7 @@ class FortyTwoAuth:
                 user.email_verification_token = token
                 user.save()
                 
-                # Preparar email de verificación
+                # Email de verificación
                 subject = 'Verifica tu cuenta de PongOrama'
                 message = render_to_string('authentication/email_verification.html', {
                     'user': user,
@@ -63,17 +63,14 @@ class FortyTwoAuth:
                     'protocol': 'https'
                 })
                 
-                # Enviar email de verificación
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    fail_silently=False,
-                )
+                return user, True  # Retornamos el usuario y un booleano indicando si es nuevo
             
-            return user
-            
+            # Si el usuario ya existe y está verificado
+            if user.email_verified and user.is_active:
+                return user, False
+            else:
+                return user, False
+                
         except Exception as e:
             print(f"Error en process_callback: {str(e)}")
             raise
@@ -95,14 +92,13 @@ def fortytwo_callback(request):
         return redirect('login')
     
     try:
-        user = FortyTwoAuth.process_callback(code)
+        user, is_new_user = FortyTwoAuth.process_callback(code)
         if user:
             login(request, user)
-            # Verificar si el usuario fue creado recientemente
-            if user.date_joined > timezone.now() - timedelta(seconds=5):
+            if is_new_user:
                 messages.success(
                     request, 
-                    '¡Bienvenido! Tu cuenta con 42 ha sido creada exitosamente. '
+                    '¡Bienvenido! Tu cuenta con 42 ha sido creada exitosamente. ' 
                     'Por favor, revisa tu correo electrónico para completar la verificación.'
                 )
             else:
@@ -125,7 +121,7 @@ class FortyTwoCallbackAPIView(APIView):
             return Response({'error': 'No code provided'}, status=400)
 
         try:
-            user = FortyTwoAuth.process_callback(code, is_api=True)
+            user, is_new = FortyTwoAuth.process_callback(code, is_api=True)
             login(request, user)
             
             # Crear una respuesta de redirección
