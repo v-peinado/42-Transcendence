@@ -12,6 +12,9 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
+from .utils import generate_jwt_token, decode_jwt_token 
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
 
 class FortyTwoAuth:
     @staticmethod
@@ -39,30 +42,36 @@ class FortyTwoAuth:
                     'fortytwo_id': str(user_data['id']),
                     'is_fortytwo_user': True,
                     'fortytwo_image': fortytwo_image,
-                    'is_active': True,
-                    'email_verified': True
+                    'is_active': False,  # Usuario inactivo hasta verificar email
+                    'email_verified': False  # Email no verificado
                 }
             )
             
-            # Si el usuario fue creado ahora, enviar email de bienvenida
             if created:
-                subject = '¡Bienvenido a PongOrama!'
-                message = render_to_string('authentication/welcome_email.html', {
+                # Generar token JWT
+                token = generate_jwt_token(user)
+                user.email_verification_token = token
+                user.save()
+                
+                # Preparar email de verificación
+                subject = 'Verifica tu cuenta de PongOrama'
+                message = render_to_string('authentication/email_verification.html', {
                     'user': user,
+                    'domain': settings.SITE_URL,
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': token,
+                    'protocol': 'https'
                 })
                 
-                try:
-                    send_mail(
-                        subject,
-                        message,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [user.email],
-                        fail_silently=False,
-                    )
-                except Exception as e:
-                    print(f"Error enviando email de bienvenida: {str(e)}")
-                    # No fallamos si el email falla, solo registramos el error
-                    
+                # Enviar email de verificación
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+            
             return user
             
         except Exception as e:
@@ -89,7 +98,15 @@ def fortytwo_callback(request):
         user = FortyTwoAuth.process_callback(code)
         if user:
             login(request, user)
-            messages.success(request, 'Login exitoso con 42')
+            # Verificar si el usuario fue creado recientemente
+            if user.date_joined > timezone.now() - timedelta(seconds=5):
+                messages.success(
+                    request, 
+                    '¡Bienvenido! Tu cuenta con 42 ha sido creada exitosamente. '
+                    'Por favor, revisa tu correo electrónico para completar la verificación.'
+                )
+            else:
+                messages.success(request, 'Login exitoso con 42')
             return redirect('user')
     except Exception as e:
         messages.error(request, f'Error en la autenticación: {str(e)}')
