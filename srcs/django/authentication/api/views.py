@@ -172,6 +172,28 @@ class RegisterView(APIView):
                     fail_silently=False,
                 )
                 
+                # Email de verificación
+                subject_verification = 'Verifica tu cuenta de PongOrama'
+                message_verification = render_to_string('authentication/email_verification.html', {
+                    'user': user,
+                    'domain': settings.SITE_URL,
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': token,
+                    'protocol': 'https'
+                })
+                
+                # Email de bienvenida
+                subject_welcome = '¡Bienvenido a PongOrama!'
+                message_welcome = render_to_string('authentication/welcome_email.html', {
+                    'user': user,
+                })
+                
+                # Enviar ambos emails
+                send_mail(subject_verification, message_verification, 
+                         settings.DEFAULT_FROM_EMAIL, [user.email])
+                send_mail(subject_welcome, message_welcome,
+                         settings.DEFAULT_FROM_EMAIL, [user.email])
+                
                 return Response({
                     "status": "success",
                     "message": "Te hemos enviado un email para verificar tu cuenta",

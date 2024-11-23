@@ -8,6 +8,10 @@ from django.conf import settings
 from ..models import CustomUser
 from django.http import HttpResponseRedirect
 import json
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
 
 class FortyTwoAuth:
     @staticmethod
@@ -26,41 +30,67 @@ class FortyTwoAuth:
             fortytwo_image = None
             if user_data.get('image'):
                 fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
-
-            # Añadir prefijo 42. al username
-            fortytwo_username = f"42.{user_data['login']}"
-            
+                
+            # Obtener o crear usuario
             user, created = CustomUser.objects.get_or_create(
-                username=fortytwo_username,
+                username=f"42.{user_data['login']}",
                 defaults={
                     'email': user_data['email'],
                     'fortytwo_id': str(user_data['id']),
                     'is_fortytwo_user': True,
-                    'fortytwo_image': fortytwo_image  # Guardar la URL de la imagen de 42
+                    'fortytwo_image': fortytwo_image,
+                    'is_active': True,
+                    'email_verified': True
                 }
             )
-
-            if not created and not user.fortytwo_image:
-                user.fortytwo_image = fortytwo_image
-                user.save()
-
+            
+            # Si el usuario fue creado ahora, enviar email de bienvenida
+            if created:
+                subject = '¡Bienvenido a PongOrama!'
+                message = render_to_string('authentication/welcome_email.html', {
+                    'user': user,
+                })
+                
+                try:
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"Error enviando email de bienvenida: {str(e)}")
+                    # No fallamos si el email falla, solo registramos el error
+                    
             return user
+            
         except Exception as e:
-            print("Error in process_callback:", str(e))
+            print(f"Error en process_callback: {str(e)}")
             raise
 
 # Vista Web para login con 42
 def fortytwo_login(request):
-    return redirect(FortyTwoAuth.get_auth_url())
+    try:
+        auth_url = FortyTwoAuth.get_auth_url()
+        return redirect(auth_url)
+    except Exception as e:
+        messages.error(request, f'Error al iniciar la autenticación: {str(e)}')
+        return redirect('login')
 
 # Vista Web para callback de 42
 def fortytwo_callback(request):
     code = request.GET.get('code')
+    if not code:
+        messages.error(request, 'No se recibió código de autorización')
+        return redirect('login')
+    
     try:
         user = FortyTwoAuth.process_callback(code)
-        login(request, user)
-        messages.success(request, 'Login exitoso con 42')
-        return redirect('user')
+        if user:
+            login(request, user)
+            messages.success(request, 'Login exitoso con 42')
+            return redirect('user')
     except Exception as e:
         messages.error(request, f'Error en la autenticación: {str(e)}')
         return redirect('login')

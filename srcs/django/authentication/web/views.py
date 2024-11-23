@@ -107,7 +107,7 @@ def register(request):
             user.email_verification_token = token
             user.save()
             
-            # Preparar email
+            # Enviar SOLO el email de verificación
             subject = 'Verifica tu cuenta de PongOrama'
             message = render_to_string('authentication/email_verification.html', {
                 'user': user,
@@ -117,7 +117,6 @@ def register(request):
                 'protocol': 'https'
             })
             
-            # Enviar email
             send_mail(
                 subject,
                 message,
@@ -361,6 +360,21 @@ def verify_email(request, uidb64, token):
             user.is_active = True
             user.email_verification_token = None
             user.save()
+            
+            # Enviar email de bienvenida después de la verificación
+            subject_welcome = '¡Bienvenido a PongOrama!'
+            message_welcome = render_to_string('authentication/welcome_email.html', {
+                'user': user,
+            })
+            
+            send_mail(
+                subject_welcome,
+                message_welcome,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            
             messages.success(request, "Tu cuenta ha sido verificada correctamente")
             return redirect('login')
         else:
