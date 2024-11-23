@@ -198,8 +198,12 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 
+# Configuración adicional para SendGrid
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
+EMAIL_USE_SSL = False
+
 # URL base para enlaces en emails
-DEFAULT_FROM_EMAIL = 'noreply@pongorama.com'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 SITE_URL = 'https://localhost:8443'  # Actualizar con el puerto correcto
 
 # Configuración para las URLs de reset de contraseña
