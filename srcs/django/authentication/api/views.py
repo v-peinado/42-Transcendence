@@ -20,6 +20,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.contrib.sites.shortcuts import get_current_site
+import uuid
+from django.conf import settings
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
@@ -141,10 +144,36 @@ class RegisterView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             if serializer.is_valid():
-                user = serializer.save()
+                # Crear usuario pero no activarlo
+                user = serializer.save(is_active=False)
+                
+                # Generar token
+                token = str(uuid.uuid4())
+                user.email_verification_token = token
+                user.save()
+                
+                # Preparar email
+                subject = 'Verifica tu cuenta de PongOrama'
+                message = render_to_string('authentication/email_verification.html', {
+                    'user': user,
+                    'domain': settings.SITE_URL,
+                    'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    'token': token,
+                    'protocol': 'https'
+                })
+                
+                # Enviar email
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+                
                 return Response({
                     "status": "success",
-                    "message": "Usuario creado correctamente",
+                    "message": "Te hemos enviado un email para verificar tu cuenta",
                     "data": UserSerializer(user).data
                 }, status=status.HTTP_201_CREATED)
             
@@ -157,6 +186,75 @@ class RegisterView(APIView):
                 "status": "error",
                 "message": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+def register(request):
+    if request.method == 'POST':
+        # ... validaciones existentes ...
+        
+        try:
+            # Crear usuario pero no activarlo
+            user = CustomUser.objects.create_user(
+                username=username.lower(),
+                email=email.lower(),
+                password=password,
+                is_fortytwo_user=False,
+                is_active=False  # Usuario inactivo hasta verificar email
+            )
+            
+            # Generar token
+            token = str(uuid.uuid4())
+            user.email_verification_token = token
+            user.save()
+            
+            # Preparar email
+            subject = 'Verifica tu cuenta de PongOrama'
+            message = render_to_string('authentication/email_verification.html', {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': token,
+                'protocol': 'https'
+            })
+            
+            # Enviar email
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, "Te hemos enviado un email para verificar tu cuenta")
+            return redirect('login')
+        except Exception as e:
+            messages.error(request, str(e))
+            return redirect('register')
+
+def verify_email(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = CustomUser.objects.get(pk=uid)
+        
+        if user and user.email_verification_token == token:
+            user.email_verified = True
+            user.is_active = True
+            user.email_verification_token = None
+            user.save()
+            return Response({
+                "status": "success",
+                "message": "Tu cuenta ha sido verificada correctamente"
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "status": "error",
+                "message": "El enlace de verificación no es válido"
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        return Response({
+            "status": "error",
+            "message": "El enlace de verificación no es válido"
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(APIView):

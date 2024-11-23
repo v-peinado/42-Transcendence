@@ -21,6 +21,9 @@ class CustomUser(AbstractUser):
     )
     fortytwo_id = models.CharField(max_length=50, blank=True, null=True)
     is_fortytwo_user = models.BooleanField(default=False)
+    # Añadir campo para verificación de email
+    email_verified = models.BooleanField(default=False)
+    email_verification_token = models.CharField(max_length=100, blank=True, null=True)
 
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, 'url'):

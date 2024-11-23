@@ -20,6 +20,12 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.conf import settings
+import uuid
 
 # Vista principal
 def home(request):
@@ -86,13 +92,40 @@ def register(request):
             return redirect('register')
 
         try:
+            # Crear usuario pero no activarlo
             user = CustomUser.objects.create_user(
                 username=username.lower(),
                 email=email.lower(),
                 password=password,
-                is_fortytwo_user=False  # Asegurarse que se crea como usuario normal
+                is_fortytwo_user=False,
+                is_active=False  # Usuario inactivo hasta verificar email
             )
-            messages.success(request, "Usuario creado correctamente")
+            
+            # Generar token
+            token = str(uuid.uuid4())
+            user.email_verification_token = token
+            user.save()
+            
+            # Preparar email
+            subject = 'Verifica tu cuenta de PongOrama'
+            message = render_to_string('authentication/email_verification.html', {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': token,
+                'protocol': 'https'
+            })
+            
+            # Enviar email
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            
+            messages.success(request, "Te hemos enviado un email para verificar tu cuenta")
             return redirect('login')
         except Exception as e:
             messages.error(request, str(e))
@@ -316,3 +349,22 @@ class CustomPasswordResetView(PasswordResetView):
             is_fortytwo_user=False
         )
         return (u for u in active_users if u.has_usable_password())
+
+def verify_email(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = CustomUser.objects.get(pk=uid)
+        
+        if user and user.email_verification_token == token:
+            user.email_verified = True
+            user.is_active = True
+            user.email_verification_token = None
+            user.save()
+            messages.success(request, "Tu cuenta ha sido verificada correctamente")
+            return redirect('login')
+        else:
+            messages.error(request, "El enlace de verificación no es válido")
+            return redirect('login')
+    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        messages.error(request, "El enlace de verificación no es válido")
+        return redirect('login')

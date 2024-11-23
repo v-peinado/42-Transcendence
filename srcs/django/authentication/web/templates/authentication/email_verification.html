@@ -1,0 +1,12 @@
+{% autoescape off %}
+Hola {{ user.username }},
+
+Gracias por registrarte en PongOrama. Para verificar tu cuenta, por favor haz clic en el siguiente enlace:
+
+{{ domain }}{% url 'verify_email' uidb64=uid token=token %}
+
+Si no has creado esta cuenta, puedes ignorar este email.
+
+Saludos,
+El equipo de PongOrama
+{% endautoescape %}

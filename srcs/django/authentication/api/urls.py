@@ -1,4 +1,5 @@
 from django.urls import path, include
+from . import views
 from .views import (
     GenerateQRCodeView, 
     ValidateQRCodeView, 
@@ -22,6 +23,7 @@ auth_patterns = [
     path('42/', include('authentication.fortytwo_auth.urls')),
     path('reset_password/', PasswordResetView.as_view(), name='api_password_reset'),
     path('reset_password/confirm/', PasswordResetConfirmView.as_view(), name='api_password_reset_confirm'),
+    path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='api_verify_email'),
 ]
 
 # Patrón principal que incluye todas las rutas de autenticación
@@ -42,6 +44,7 @@ urlpatterns = [
 # - /api/authentication/42/ -->>> /api/authentication/42/api/42/login/ y /api/authentication/42/api/42/callback/
 # - /api/authentication/reset_password/
 # - /api/authentication/reset_password/confirm/
+# - /api/authentication/verify-email/<str:uidb64>/<str:token>/
 
 # Para acceder a la vista de generación de QR, se debe hacer una petición GET a /api/authentication/generate_qr/<str:username>/
 # Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate_qr/

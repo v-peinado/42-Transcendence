@@ -197,13 +197,19 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
+
+# Si el usuario no está verificado, no podrá iniciar sesión
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
+# URLs de verificación
+SITE_URL = 'https://localhost:8443'
 
 # Configuración adicional para SendGrid
 SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 EMAIL_USE_SSL = False
 
 # URL base para enlaces en emails
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 SITE_URL = 'https://localhost:8443'  # Actualizar con el puerto correcto
 
 # Configuración para las URLs de reset de contraseña
@@ -221,7 +227,9 @@ if DEBUG:
     CSRF_COOKIE_SECURE = False  
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    SITE_URL = 'http://localhost:8000'  # URL para desarrollo
 else:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SITE_URL = 'https://localhost:8443'  # URL para producción
