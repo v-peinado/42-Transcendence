@@ -23,6 +23,7 @@ from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
 import uuid
 from django.conf import settings
+from .utils import generate_jwt_token, decode_jwt_token
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
@@ -189,7 +190,12 @@ class RegisterView(APIView):
 
 def register(request):
     if request.method == 'POST':
-        # ... validaciones existentes ...
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password1')
+        confirm_password = request.POST.get('password2')
+
+        # Validaciones existentes...
         
         try:
             # Crear usuario pero no activarlo
@@ -201,10 +207,8 @@ def register(request):
                 is_active=False  # Usuario inactivo hasta verificar email
             )
             
-            # Generar token
-            token = str(uuid.uuid4())
-            user.email_verification_token = token
-            user.save()
+            # Generar token JWT
+            token = generate_jwt_token(user)
             
             # Preparar email
             subject = 'Verifica tu cuenta de PongOrama'
@@ -231,30 +235,28 @@ def register(request):
             messages.error(request, str(e))
             return redirect('register')
 
+    return render(request, 'authentication/register.html')
+
 def verify_email(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
         
-        if user and user.email_verification_token == token:
+        # Decodificar el token JWT
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        
+        if user and payload['user_id'] == user.id:
             user.email_verified = True
             user.is_active = True
-            user.email_verification_token = None
             user.save()
-            return Response({
-                "status": "success",
-                "message": "Tu cuenta ha sido verificada correctamente"
-            }, status=status.HTTP_200_OK)
+            messages.success(request, "Tu cuenta ha sido verificada correctamente")
+            return redirect('login')
         else:
-            return Response({
-                "status": "error",
-                "message": "El enlace de verificación no es válido"
-            }, status=status.HTTP_400_BAD_REQUEST)
-    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-        return Response({
-            "status": "error",
-            "message": "El enlace de verificación no es válido"
-        }, status=status.HTTP_400_BAD_REQUEST)
+            messages.error(request, "El enlace de verificación no es válido")
+            return redirect('login')
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        messages.error(request, "El enlace de verificación no es válido")
+        return redirect('login')
 
 @method_decorator(csrf_exempt, name='dispatch')
 class EditProfileView(APIView):
@@ -263,7 +265,7 @@ class EditProfileView(APIView):
         
         # Manejar la restauración de la imagen de 42
         if user.is_fortytwo_user and 'restore_42_image' in request.data:
-            user.profile_image = None
+            ander.profile_image = None
             user.save()
             return Response({
                 "status": "success",
@@ -360,39 +362,20 @@ class PasswordResetView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
+        users = CustomUser.objects.filter(email=email, is_active=True)
+        if not users.exists():
+            return Response({"status": "error", "message": "No existe una cuenta con este correo electrónico."}, status=status.HTTP_404_NOT_FOUND)
         
-        # Verificar si es email de 42
-        if re.match(r'.*@student\.42.*\.com$', email.lower()):
-            return Response({
-                "status": "error",
-                "message": "Los usuarios de 42 deben iniciar sesión a través de la API de 42."
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # Verificar si existe el usuario
-        users = CustomUser.objects.filter(
-            email__iexact=email,
-            is_active=True,
-            is_fortytwo_user=False
-        )
-
-        if not list(users):
-            return Response({
-                "status": "error",
-                "message": "No existe una cuenta con este correo electrónico."
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        user = users[0]
-        token = default_token_generator.make_token(user)
+        user = users.first()
+        token = generate_jwt_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-        # Enviar email
         reset_url = f"{settings.SITE_URL}/reset/{uid}/{token}/"
+        
         email_body = render_to_string('authentication/password_reset_email.html', {
             'user': user,
             'reset_url': reset_url,
             'domain': settings.SITE_URL,
         })
-
         send_mail(
             'Recuperación de contraseña',
             email_body,
@@ -400,55 +383,22 @@ class PasswordResetView(APIView):
             [email],
             fail_silently=False,
         )
-
-        return Response({
-            "status": "success",
-            "message": "Se ha enviado un correo con instrucciones para restablecer tu contraseña."
-        })
+        return Response({"status": "success", "message": "Se ha enviado un correo con instrucciones para restablecer tu contraseña."})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetConfirmView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        uid = request.data.get('uid')
-        token = request.data.get('token')
-        password = request.data.get('new_password1')
-        confirm_password = request.data.get('new_password2')
-
+    def post(self, request, uidb64, token):
         try:
-            uid = urlsafe_base64_decode(uid).decode()
+            uid = force_str(urlsafe_base64_decode(uidb64))
             user = CustomUser.objects.get(pk=uid)
+            payload = decode_jwt_token(token)
+            
+            if payload and payload['user_id'] == user.id:
+                password = request.data.get('password')
+                user.set_password(password)
+                user.save()
+                return Response({"status": "success", "message": "Contraseña actualizada correctamente"})
+            else:
+                return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)
         except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-            return Response({
-                "status": "error",
-                "message": "Token inválido"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        if not default_token_generator.check_token(user, token):
-            return Response({
-                "status": "error",
-                "message": "Token inválido o expirado"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        if password != confirm_password:
-            return Response({
-                "status": "error",
-                "message": "Las contraseñas no coinciden"
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            validate_password(password, user)
-        except ValidationError as e:
-            return Response({
-                "status": "error",
-                "message": str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        user.set_password(password)
-        user.save()
-
-        return Response({
-            "status": "success",
-            "message": "Contraseña actualizada correctamente"
-        })
+            return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)

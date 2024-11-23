@@ -233,3 +233,7 @@ else:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SITE_URL = 'https://localhost:8443'  # URL para producción
+
+# JWT Settings
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')  # En producción, usar una clave segura
+JWT_ALGORITHM = 'HS256'

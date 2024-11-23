@@ -26,6 +26,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.conf import settings
 import uuid
+from .utils import generate_jwt_token, decode_jwt_token
 
 # Vista principal
 def home(request):
