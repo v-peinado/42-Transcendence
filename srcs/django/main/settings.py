@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.management.utils import get_random_secret_key
 
 load_dotenv()
 
@@ -24,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-_%)cp0n8s(7#g6jc51^z@!b8zqbywgf3$_%7scyz&ne0d_slhb'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -191,7 +192,7 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 
 # Configuración de email
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # Para producción
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'
@@ -210,7 +211,7 @@ SENDGRID_SANDBOX_MODE_IN_DEBUG = False
 EMAIL_USE_SSL = False
 
 # URL base para enlaces en emails
-SITE_URL = 'https://localhost:8443'  # Actualizar con el puerto correcto
+SITE_URL = 'https://localhost:8443'  
 
 # Configuración para las URLs de reset de contraseña
 LOGIN_URL = 'login'
