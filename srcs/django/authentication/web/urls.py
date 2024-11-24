@@ -25,7 +25,7 @@ urlpatterns = [
         ), 
         name='password_reset_done'),
     path('reset/<uidb64>/<token>/', 
-        auth_views.PasswordResetConfirmView.as_view(
+        views.CustomPasswordResetConfirmView.as_view(
             template_name='authentication/password_reset_confirm.html',
             success_url=reverse_lazy('login')
         ), 

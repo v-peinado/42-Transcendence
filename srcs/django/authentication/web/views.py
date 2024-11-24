@@ -31,6 +31,10 @@ import pyotp
 from .utils import generate_2fa_code, send_2fa_code, verify_2fa_code
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from django.contrib.auth.views import PasswordResetConfirmView
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.conf import settings
 
 # Vista principal
 def home(request):
@@ -128,9 +132,20 @@ def register(request):
             user.email_verification_token = token
             user.save()
             
-            # Preparar y enviar email de verificación
+            # Enviar solo el email de verificación
             subject = 'Verifica tu cuenta de PongOrama'
-            message = render_to_string('authentication/email_verification.html', {
+            plain_message = f"""
+            Hola {user.username},
+            
+            Gracias por registrarte en PongOrama. Para verificar tu cuenta, haz clic en el siguiente enlace:
+            {settings.SITE_URL}/verify-email/{urlsafe_base64_encode(force_bytes(user.pk))}/{token}/
+            
+            Si no has sido tú quien ha creado esta cuenta, por favor contacta con nuestro soporte.
+            
+            Saludos,
+            El equipo de PongOrama
+            """
+            html_message = render_to_string('authentication/email_verification.html', {
                 'user': user,
                 'domain': settings.SITE_URL,
                 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
@@ -138,14 +153,13 @@ def register(request):
                 'protocol': 'https'
             })
             
-            # Enviar el email
             send_mail(
                 subject,
-                message,
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
-                html_message=message  # Permitir contenido HTML
+                html_message=html_message
             )
             
             messages.success(request, "Te hemos enviado un email para verificar tu cuenta")
@@ -287,8 +301,34 @@ def edit_profile(request):
                 if new_password1 != new_password2:
                     messages.error(request, 'Las nuevas contraseñas no coinciden')
                     return redirect('edit_profile')
+                
+                # Aplicar validación de contraseña fuerte
+                try:
+                    validate_password(new_password1, user)
+                except ValidationError as e:
+                    for error in e.messages:
+                        messages.error(request, error)
+                    return redirect('edit_profile')
+                    
+                # Si pasa la validación, cambiar contraseña
                 user.set_password(new_password1)
                 update_session_auth_hash(request, user)
+                
+                # Enviar email solo si el cambio es desde el perfil
+                if not request.session.get('password_reset_flow'):
+                    subject = 'Tu contraseña ha sido cambiada'
+                    message = render_to_string('authentication/password_changed_email.html', {
+                        'user': user,
+                        'reset': False
+                    })
+                    
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [user.email],
+                        fail_silently=False
+                    )
 
         try:
             user.save()
@@ -345,7 +385,7 @@ class CustomPasswordResetView(PasswordResetView):
     def form_valid(self, form):
         email = form.cleaned_data["email"]
         
-        # Primero verificar si es un email de 42
+        # Verificar si es un email de 42
         if re.match(r'.*@student\.42.*\.com$', email.lower()):
             messages.error(
                 self.request, 
@@ -353,7 +393,7 @@ class CustomPasswordResetView(PasswordResetView):
             )
             return self.form_invalid(form)
         
-        # Luego verificar si existe el usuario
+        # Verificar si existe el usuario
         users = CustomUser.objects.filter(
             email__iexact=email,
             is_active=True,
@@ -363,7 +403,12 @@ class CustomPasswordResetView(PasswordResetView):
         if not list(users):
             messages.error(self.request, "No existe una cuenta con este correo electrónico.")
             return self.form_invalid(form)
+            
+        if users.first().is_fortytwo_user:
+            messages.error(self.request, "Los usuarios de 42 no pueden usar esta función.")
+            return self.form_invalid(form)
 
+        # Solo enviar el email de recuperación, no el de notificación
         return super().form_valid(form)
 
     def get_users(self, email):
@@ -374,12 +419,54 @@ class CustomPasswordResetView(PasswordResetView):
         )
         return (u for u in active_users if u.has_usable_password())
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['protocol'] = 'https'
+        return context
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    def form_valid(self, form):
+        self.request.session['password_reset_flow'] = True
+        response = super().form_valid(form)
+        user = form.user
+        
+        # Enviar email
+        subject = 'Tu contraseña ha sido cambiada'
+        plain_message = f"""
+        Hola {user.username},
+        
+        Tu contraseña de PongOrama ha sido cambiada exitosamente mediante el proceso de recuperación de contraseña.
+        
+        Si no has sido tú quien ha realizado este cambio, por favor contacta inmediatamente con nuestro equipo de soporte.
+        
+        Saludos,
+        El equipo de PongOrama
+        """
+        html_message = render_to_string('authentication/password_changed_email.html', {
+            'user': user,
+            'reset': True
+        })
+        
+        send_mail(
+            subject,
+            plain_message,  # Mensaje en texto plano
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+            html_message=html_message  # Mensaje HTML
+        )
+        
+        # Limpiar la marca del flujo
+        if 'password_reset_flow' in self.request.session:
+            del self.request.session['password_reset_flow']
+            
+        messages.success(self.request, "Tu contraseña ha sido actualizada correctamente")
+        return response
+
 def verify_email(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
-        
-        # Decodificar el token JWT
         payload = decode_jwt_token(token)
         
         if user and payload and payload['user_id'] == user.id:
@@ -388,18 +475,27 @@ def verify_email(request, uidb64, token):
             user.email_verification_token = None
             user.save()
             
-            # Enviar email de bienvenida
+            # Enviar solo un email de bienvenida
             subject = '¡Bienvenido a PongOrama!'
-            message = render_to_string('authentication/welcome_email.html', {
-                'user': user,
+            plain_message = f"""
+            Hola {user.username},
+            
+            ¡Bienvenido a PongOrama! Tu cuenta ha sido verificada exitosamente.
+            
+            Saludos,
+            El equipo de PongOrama
+            """
+            html_message = render_to_string('authentication/welcome_email.html', {
+                'user': user
             })
             
             send_mail(
                 subject,
-                message,
+                plain_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=html_message
             )
             
             messages.success(request, "Tu cuenta ha sido verificada correctamente hora puedes iniciar sesión")

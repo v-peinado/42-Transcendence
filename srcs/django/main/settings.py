@@ -191,7 +191,7 @@ FORTYTWO_API_URL = os.environ.get('FORTYTWO_API_URL')
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
 # Configuración de email
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # Para pruebas
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' # Para producción
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT'))

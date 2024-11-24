@@ -419,7 +419,27 @@ class PasswordResetConfirmView(APIView):
                 password = request.data.get('password')
                 user.set_password(password)
                 user.save()
-                return Response({"status": "success", "message": "Contraseña actualizada correctamente"})
+                
+                # Enviar email de notificación
+                subject = 'Tu contraseña ha sido cambiada'
+                message = render_to_string('authentication/password_changed_email.html', {
+                    'user': user,
+                    'reset': True
+                })
+                
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                    html_message=message
+                )
+                
+                return Response({
+                    "status": "success", 
+                    "message": "Contraseña actualizada correctamente"
+                })
             else:
                 return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)
         except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
