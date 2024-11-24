@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from authentication.models import CustomUser
 import qrcode
 import io
@@ -17,7 +17,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.views import PasswordResetView
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
@@ -26,25 +26,47 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.conf import settings
 from .utils import generate_jwt_token, decode_jwt_token
+from django.core.cache import cache
+import pyotp
+from .utils import generate_2fa_code, send_2fa_code, verify_2fa_code
+from django.urls import reverse
+from django.http import HttpResponseRedirect
 
 # Vista principal
 def home(request):
     return render(request, 'authentication/home.html')
 
-# Vista de inicio de sesión
+# Función de login para usuarios manuales
 def login(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         user = authenticate(request, username=username, password=password)
-        if user is not None:
-            auth_login(request, user)
-            return redirect('user')
-        else:
-            messages.error(request, "Usuario o contraseña incorrectos")
-            return redirect('login')
-
+        if not user:
+            messages.error(request, 'Usuario o contraseña incorrectos')
+            return render(request, 'authentication/login.html')
+            
+        if not user.email_verified:
+            messages.warning(request, 'Por favor verifica tu email para activar tu cuenta')
+            return render(request, 'authentication/login.html')
+            
+        if user.two_factor_enabled:
+            # Guardar datos en sesión
+            request.session['pending_user_id'] = user.id
+            request.session['user_authenticated'] = True
+            request.session['manual_user'] = True  # Añadir flag para usuarios manuales
+            
+            # Generar y enviar código 2FA
+            code = generate_2fa_code(user)
+            send_2fa_code(user, code)
+            
+            # Importante: redireccionar en lugar de renderizar
+            return redirect('verify_2fa')
+            
+        auth_login(request, user)
+        return redirect('user')
+        
     return render(request, 'authentication/login.html')
 
 # Vista de registro
@@ -101,11 +123,12 @@ def register(request):
                 is_active=False  # Usuario inactivo hasta verificar email
             )
             
+            # Generar token JWT
             token = generate_jwt_token(user)
             user.email_verification_token = token
             user.save()
             
-            # Enviar SOLO el email de verificación
+            # Preparar y enviar email de verificación
             subject = 'Verifica tu cuenta de PongOrama'
             message = render_to_string('authentication/email_verification.html', {
                 'user': user,
@@ -115,20 +138,23 @@ def register(request):
                 'protocol': 'https'
             })
             
+            # Enviar el email
             send_mail(
                 subject,
                 message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=message  # Permitir contenido HTML
             )
             
             messages.success(request, "Te hemos enviado un email para verificar tu cuenta")
             return redirect('login')
+            
         except Exception as e:
             messages.error(request, str(e))
             return redirect('register')
-
+            
     return render(request, 'authentication/register.html')
 
 # Vista para mostrar todos los usuarios
@@ -384,3 +410,73 @@ def verify_email(request, uidb64, token):
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
         messages.error(request, "El enlace de verificación no es válido o ha expirado")
         return redirect('login')
+
+@login_required
+def enable_2fa(request):
+    if request.method == 'POST':
+        user = request.user
+        action = request.POST.get('action')
+        
+        if action == 'enable':
+            user.two_factor_enabled = True
+            if not user.two_factor_secret:
+                user.two_factor_secret = pyotp.random_base32()
+            message = '2FA activado correctamente'
+        else:
+            user.two_factor_enabled = False
+            user.two_factor_secret = None
+            message = '2FA desactivado correctamente'
+            
+        user.save()
+        messages.success(request, message)
+        return redirect('user')
+        
+    return render(request, 'authentication/enable_2fa.html')
+
+def verify_2fa(request):
+    # Verificar autenticación previa
+    user_id = request.session.get('pending_user_id')
+    user_authenticated = request.session.get('user_authenticated', False)
+    is_fortytwo = request.session.get('fortytwo_user', False)
+    is_manual = request.session.get('manual_user', False)
+    
+    if not user_id or not user_authenticated:
+        messages.error(request, 'Sesión inválida')
+        return redirect('login')
+        
+    try:
+        user = CustomUser.objects.get(id=user_id)
+    except CustomUser.DoesNotExist:
+        # Limpiar sesión
+        for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
+            if key in request.session:
+                del request.session[key]
+        return redirect('login')
+
+    if request.method == 'POST':
+        code = request.POST.get('code')
+        
+        if verify_2fa_code(user, code):
+            # Limpiar sesión y hacer login
+            for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
+                if key in request.session:
+                    del request.session[key]
+                    
+            auth_login(request, user)
+            messages.success(request, 'Inicio de sesión exitoso')
+            return redirect('user')
+        else:
+            messages.error(request, 'Código inválido o expirado')
+            
+    return render(request, 'authentication/verify_2fa.html')
+
+@login_required
+def disable_2fa(request):
+    if request.method == 'POST':
+        user = request.user
+        user.two_factor_enabled = False
+        user.two_factor_secret = None
+        user.save()
+        messages.success(request, '2FA desactivado correctamente')
+        return redirect('user')
+    return HttpResponseNotAllowed(['POST'])

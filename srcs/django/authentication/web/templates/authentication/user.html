@@ -69,6 +69,23 @@
                         </div>
                     </div>
                     {% endif %}
+                    
+                    <!-- Nueva sección 2FA -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5>Autenticación en dos pasos</h5>
+                            {% if user.two_factor_enabled %}
+                                <p>2FA está activado</p>
+                                <form method="post" action="{% url 'disable_2fa' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">Desactivar 2FA</button>
+                                </form>
+                            {% else %}
+                                <p>2FA está desactivado</p>
+                                <a href="{% url 'enable_2fa' %}" class="btn btn-primary">Activar 2FA</a>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">

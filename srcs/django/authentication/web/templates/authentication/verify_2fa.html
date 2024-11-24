@@ -1,0 +1,19 @@
+{# templates/authentication/verify_2fa.html #}
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h5>Verificación en dos pasos</h5>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Ingresa el código enviado a tu email</label>
+                    <input type="text" name="code" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Verificar</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

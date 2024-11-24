@@ -1,20 +1,20 @@
 # Usa la imagen oficial de Python como base
 FROM python:3.10-slim
 
-# Establece el directorio de trabajo dentro del contenedor
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copiar requirements primero para aprovechar la caché de Docker
+# Copiar requirements primero 
 COPY requirements.txt .
 
-# Instala las dependencias de Python
+# Instalar dependencias con --no-cache-dir para forzar reinstalación
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install gunicorn
+RUN pip install --no-cache-dir gunicorn pyotp==2.8.0
 
-# Copia los archivos del proyecto
+# Copiar el resto de archivos
 COPY . .
 
-# Copiar y configurar el script de entrada (usar .py en lugar de .sh)
+# Copiar y configurar el script de entrada
 COPY django-entrypoint.py /app/
 RUN chmod +x /app/django-entrypoint.py
 

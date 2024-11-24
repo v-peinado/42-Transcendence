@@ -16,7 +16,6 @@ urlpatterns = [
     path('validate_qr/', views.validate_qr, name='validate_qr'),
     path('edit-profile/', views.edit_profile, name='edit_profile'),
     path('delete-account/', views.delete_account, name='delete_account'),
-    path('edit-profile/', views.edit_profile, name='edit_profile'),
     path('reset_password/', 
         CustomPasswordResetView.as_view(), 
         name='password_reset'),
@@ -37,4 +36,7 @@ urlpatterns = [
         ), 
         name='password_reset_complete'),
     path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='verify_email'),
+    path('enable-2fa/', views.enable_2fa, name='enable_2fa'),
+    path('verify-2fa/', views.verify_2fa, name='verify_2fa'),
+    path('disable-2fa/', views.disable_2fa, name='disable_2fa'),
 ]
