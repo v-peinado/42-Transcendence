@@ -23,6 +23,7 @@ from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
 from django.conf import settings
 from .utils import generate_jwt_token, decode_jwt_token
+from ..web.utils import generate_2fa_code, send_2fa_code, verify_2fa_code
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeView(APIView):
@@ -423,3 +424,79 @@ class PasswordResetConfirmView(APIView):
                 return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)
         except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
             return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)
+
+class LoginAPIView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if not user:
+            return Response({
+                'status': 'error',
+                'message': 'Usuario o contraseña incorrectos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not user.email_verified:
+            return Response({
+                'status': 'error',
+                'message': 'Por favor verifica tu email para activar tu cuenta'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        if user.two_factor_enabled:
+            # Guardar datos en sesión
+            request.session['pending_user_id'] = user.id
+            request.session['user_authenticated'] = True
+            request.session['manual_user'] = True
+            
+            # Generar y enviar código 2FA
+            code = generate_2fa_code(user)
+            send_2fa_code(user, code)
+            
+            return Response({
+                'status': 'success',
+                'message': 'Código 2FA enviado',
+                'require_2fa': True
+            }, status=status.HTTP_200_OK)
+            
+        auth_login(request, user)
+        return Response({
+            'status': 'success',
+            'message': 'Login exitoso'
+        }, status=status.HTTP_200_OK)
+
+class Verify2FAAPIView(APIView):
+    def post(self, request):
+        code = request.data.get('code')
+        user_id = request.session.get('pending_user_id')
+        user_authenticated = request.session.get('user_authenticated', False)
+        
+        if not user_id or not user_authenticated:
+            return Response({
+                'status': 'error',
+                'message': 'Sesión inválida'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            if verify_2fa_code(user, code):
+                # Limpiar sesión y hacer login
+                for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
+                    if key in request.session:
+                        del request.session[key]
+                        
+                auth_login(request, user)
+                return Response({
+                    'status': 'success',
+                    'message': 'Verificación 2FA exitosa'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'status': 'error',
+                    'message': 'Código inválido o expirado'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'Usuario no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
