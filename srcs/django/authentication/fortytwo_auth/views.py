@@ -34,7 +34,7 @@ class FortyTwoAuth:
             if user_data.get('image'):
                 fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
                 
-            # Obtener o crear usuario (inactivo inicialmente)
+            # Obtener o crear usuario
             user, created = CustomUser.objects.get_or_create(
                 username=f"42.{user_data['login']}",
                 defaults={
@@ -42,8 +42,8 @@ class FortyTwoAuth:
                     'fortytwo_id': str(user_data['id']),
                     'is_fortytwo_user': True,
                     'fortytwo_image': fortytwo_image,
-                    'is_active': False,  # Usuario inactivo hasta verificar email
-                    'email_verified': False  # Email no verificado
+                    'is_active': False,
+                    'email_verified': False
                 }
             )
             
@@ -63,14 +63,17 @@ class FortyTwoAuth:
                     'protocol': 'https'
                 })
                 
-                return user, True  # Retornamos el usuario y un booleano indicando si es nuevo
-            
-            # Si el usuario ya existe y está verificado
-            if user.email_verified and user.is_active:
-                return user, False
-            else:
-                return user, False
+                # Enviar el email - Esta es la línea que faltaba
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
                 
+            return user, created
+
         except Exception as e:
             print(f"Error en process_callback: {str(e)}")
             raise
@@ -94,12 +97,20 @@ def fortytwo_callback(request):
     try:
         user, is_new_user = FortyTwoAuth.process_callback(code)
         if user:
+            # Verificar si el usuario ha validado su email
+            if not user.email_verified:
+                messages.warning(
+                    request,
+                    'Tu cuenta aún no está verificada. Por favor, revisa tu correo '
+                    'electrónico y sigue las instrucciones para activar tu cuenta.'
+                )
+                return redirect('login')
+                
             login(request, user)
             if is_new_user:
                 messages.success(
                     request, 
-                    '¡Bienvenido! Tu cuenta con 42 ha sido creada exitosamente. ' 
-                    'Por favor, revisa tu correo electrónico para completar la verificación.'
+                    '¡Bienvenido! Tu cuenta con 42 ha sido creada exitosamente.'
                 )
             else:
                 messages.success(request, 'Login exitoso con 42')
@@ -122,20 +133,24 @@ class FortyTwoCallbackAPIView(APIView):
 
         try:
             user, is_new = FortyTwoAuth.process_callback(code, is_api=True)
+            
+            # Verificar si el usuario ha validado su email
+            if not user.email_verified:
+                return Response({
+                    'error': 'Tu cuenta aún no está verificada. Por favor, revisa tu correo '
+                            'electrónico y sigue las instrucciones para activar tu cuenta.'
+                }, status=403)
+            
             login(request, user)
-            
-            # Crear una respuesta de redirección
-            response = HttpResponseRedirect('/user.html')
-            
-            # Añadir los datos del usuario como headers
-            response['X-User-Data'] = json.dumps({
-                'username': user.username,
-                'email': user.email,
-                'profile_image': user.profile_image
+            return Response({
+                'status': 'success',
+                'message': 'Login successful',
+                'user': {
+                    'username': user.username,
+                    'email': user.email
+                }
             })
-            
-            return response
 
         except Exception as e:
             print(f"Error en callback: {str(e)}")
-            return HttpResponseRedirect('/login.html')
+            return Response({'error': str(e)}, status=400)

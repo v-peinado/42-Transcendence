@@ -376,7 +376,7 @@ def verify_email(request, uidb64, token):
                 fail_silently=False,
             )
             
-            messages.success(request, "Tu cuenta ha sido verificada correctamente")
+            messages.success(request, "Tu cuenta ha sido verificada correctamente hora puedes iniciar sesión")
             return redirect('login')
         else:
             messages.error(request, "El enlace de verificación no es válido")
