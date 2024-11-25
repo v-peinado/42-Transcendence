@@ -35,6 +35,7 @@ from django.contrib.auth.views import PasswordResetConfirmView
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.conf import settings
+from django.utils import timezone
 
 # Vista principal
 def home(request):
@@ -302,6 +303,53 @@ def edit_profile(request):
     if request.method == 'POST':
         user = request.user
         
+        # Handle email change
+        email = request.POST.get('email')
+        if email and email != user.email:
+            if re.match(r'.*@student\.42.*\.com$', email.lower()):
+                messages.error(request, 'Los correos con dominio @student.42*.com están reservados para usuarios de 42')
+                return redirect('edit_profile')
+                
+            if CustomUser.objects.exclude(id=user.id).filter(email=email).exists():
+                messages.error(request, 'Este email ya está en uso')
+                return redirect('edit_profile')
+
+            # Generate tokens
+            old_email_token = generate_jwt_token(user, expiration_minutes=60)
+            new_email_token = generate_jwt_token(user, expiration_minutes=60)
+            
+            # Save pending change
+            user.pending_email = email
+            user.old_email_token = old_email_token
+            user.new_email_token = new_email_token
+            user.email_change_timestamp = timezone.now()
+            user.save()
+
+            # Send verification email to old address
+            subject_old = 'Confirma el cambio de tu dirección de email'
+            message_old = render_to_string('authentication/email_change_old.html', {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': old_email_token,
+            })
+            
+            # Send verification email to new address
+            subject_new = 'Verifica tu nueva dirección de email'
+            message_new = render_to_string('authentication/email_change_new.html', {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': new_email_token,
+            })
+
+            # Send both emails
+            send_mail(subject_old, message_old, settings.DEFAULT_FROM_EMAIL, [user.email])
+            send_mail(subject_new, message_new, settings.DEFAULT_FROM_EMAIL, [email])
+
+            messages.info(request, 'Se han enviado emails de verificación. Por favor revisa tu bandeja de entrada en ambas direcciones de correo.')
+            return redirect('edit_profile')
+
         # Manejar la restauración de la imagen de 42
         if user.is_fortytwo_user and 'restore_42_image' in request.POST:
             user.profile_image = None
@@ -623,3 +671,98 @@ def disable_2fa(request):
         messages.success(request, '2FA desactivado correctamente')
         return redirect('user')
     return HttpResponseNotAllowed(['POST'])
+
+def verify_old_email(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = CustomUser.objects.get(pk=uid)
+        payload = decode_jwt_token(token)
+        
+        if not (user and payload and payload['user_id'] == user.id):
+            messages.error(request, 'El enlace de verificación no es válido.')
+            return redirect('edit_profile')
+
+        if not user.pending_email:
+            messages.error(request, 'No hay ningún cambio de email pendiente.')
+            return redirect('edit_profile')
+
+        if token != user.old_email_token:
+            messages.error(request, 'El enlace de verificación ha expirado o ya ha sido usado.')
+            return redirect('edit_profile')
+
+        user.old_email_token = None
+        user.save()
+        
+        return redirect('email_change_status')
+            
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error durante la verificación.')
+        return redirect('edit_profile')
+
+def verify_new_email(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = CustomUser.objects.get(pk=uid)
+        payload = decode_jwt_token(token)
+        
+        # Validaciones básicas
+        if not (user and payload and payload['user_id'] == user.id):
+            messages.error(request, 'El enlace de verificación no es válido.')
+            return redirect('email_change_status')
+
+        if not user.pending_email:
+            messages.error(request, 'No hay ningún cambio de email pendiente.')
+            return redirect('email_change_status')
+
+        if token != user.new_email_token:
+            messages.error(request, 'El enlace de verificación ha expirado o ya ha sido usado.')
+            return redirect('email_change_status')
+
+        # Marcar nuevo email como verificado
+        user.new_email_token = None
+        user.save()
+
+        # Si ambos emails están verificados, completar el cambio
+        if user.old_email_token is None:
+            try:
+                old_email = user.email
+                user.email = user.pending_email
+                user.pending_email = None
+                user.email_change_timestamp = None
+                user.save()
+                
+                # Enviar confirmación final
+                subject = 'Cambio de email completado'
+                message = render_to_string('authentication/email_change_complete.html', {
+                    'user': user,
+                    'old_email': old_email
+                })
+                
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [old_email, user.email])
+                messages.success(request, 'Tu dirección de email ha sido actualizada correctamente.')
+                return redirect('user')
+            except Exception as e:
+                messages.error(request, 'Error al completar el cambio de email.')
+                return redirect('email_change_status')
+        
+        # Si falta verificar el email antiguo
+        messages.info(request, 'Nuevo email verificado. Pendiente verificar el email actual.')
+        return redirect('email_change_status')
+            
+    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        messages.error(request, 'El enlace de verificación no es válido.')
+        return redirect('email_change_status')
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error inesperado.')
+        return redirect('email_change_status')
+
+def email_change_status(request):
+    user = request.user
+    old_verified = user.old_email_token is None
+    new_verified = user.new_email_token is None
+    
+    return render(request, 'authentication/email_change_status.html', {
+        'old_verified': old_verified,
+        'new_verified': new_verified,
+        'pending_email': user.pending_email
+    })

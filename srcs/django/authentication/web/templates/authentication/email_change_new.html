@@ -1,0 +1,14 @@
+{% autoescape off %}
+Hola {{ user.username }},
+
+Has solicitado cambiar tu dirección de email en PongOrama a esta dirección.
+
+Para verificar que tienes acceso a esta cuenta de email, por favor haz clic en el siguiente enlace:
+
+{{ domain }}{% url 'verify_new_email' uidb64=uid token=token %}
+
+Si no has solicitado este cambio, puedes ignorar este email.
+
+Saludos,
+El equipo de PongOrama
+{% endautoescape %}

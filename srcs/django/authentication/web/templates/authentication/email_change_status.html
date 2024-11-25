@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Estado del cambio de email{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-4 text-center">
+                    <h4 class="mb-4">Cambio de email en proceso</h4>
+                    {% if old_verified and not new_verified %}
+                        <p>Tu email actual ha sido verificado correctamente.</p>
+                        <p>Para completar el cambio, por favor verifica el nuevo email ({{ pending_email }}) haciendo clic en el enlace enviado.</p>
+                    {% elif new_verified and not old_verified %}
+                        <p>Tu nuevo email ha sido verificado correctamente.</p>
+                        <p>Para completar el cambio, por favor verifica tu email actual haciendo clic en el enlace enviado.</p>
+                    {% endif %}
+                    <a href="{% url 'user' %}" class="btn btn-primary mt-3">Volver al perfil</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
