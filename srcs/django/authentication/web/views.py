@@ -43,8 +43,9 @@ def home(request):
 # Función de login para usuarios manuales
 def login(request):
     if request.method == 'POST':
-        username = request.POST.get('username').strip().lower()  # Normalizar username
+        username = request.POST.get('username').strip().lower()
         password = request.POST.get('password')
+        remember = request.POST.get('remember', None)  # Obtener valor del checkbox
 
         user = authenticate(request, username=username, password=password)
         if not user:
@@ -68,7 +69,12 @@ def login(request):
             # Importante: redireccionar en lugar de renderizar
             return redirect('verify_2fa')
             
+        # Hacer login y establecer la duración de la sesión
         auth_login(request, user)
+        if not remember:
+            # Si no marca "recuérdame", la sesión expirará al cerrar el navegador
+            request.session.set_expiry(0)
+        
         return redirect('user')
         
     return render(request, 'authentication/login.html')

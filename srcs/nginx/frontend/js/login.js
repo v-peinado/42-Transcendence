@@ -10,12 +10,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
       const username = document.getElementById("username").value;
       const password = document.getElementById("password").value;
+      const remember = document.getElementById("remember").checked; // Obtener estado del checkbox
 
       try {
           const response = await fetch('/api/authentication/login/', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username, password })
+              body: JSON.stringify({ 
+                  username, 
+                  password,
+                  remember  // Incluir valor del checkbox
+              })
           });
 
           const data = await response.json();

@@ -446,9 +446,12 @@ class PasswordResetConfirmView(APIView):
             return Response({"status": "error", "message": "El enlace de verificación no es válido"}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
+        remember = request.data.get('remember', None)  # Obtener valor remember
         
         user = authenticate(request, username=username, password=password)
         if not user:
@@ -480,9 +483,14 @@ class LoginAPIView(APIView):
             }, status=status.HTTP_200_OK)
             
         auth_login(request, user)
+        if not remember:
+            # Si no marca "recuérdame", la sesión expirará al cerrar el navegador
+            request.session.set_expiry(0)
+            
         return Response({
             'status': 'success',
-            'message': 'Login exitoso'
+            'message': 'Login exitoso',
+            'user': UserSerializer(user).data
         }, status=status.HTTP_200_OK)
 
 class Verify2FAAPIView(APIView):
