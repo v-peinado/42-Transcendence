@@ -212,7 +212,7 @@ def validate_qr(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            username = data.get('username')  # Cambiar qr_data por username
+            username = data.get('username')
             
             if not username:
                 return JsonResponse({'success': False, 'error': 'Código QR inválido'})
@@ -220,18 +220,52 @@ def validate_qr(request):
             user = CustomUser.objects.filter(username=username).first()
             
             if user:
+                if not user.email_verified:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'Por favor verifica tu email para activar tu cuenta'
+                    })
+                
+                if user.two_factor_enabled:
+                    # Guardar datos en sesión
+                    request.session['pending_user_id'] = user.id
+                    request.session['user_authenticated'] = True
+                    request.session['manual_user'] = not user.is_fortytwo_user
+                    request.session['fortytwo_user'] = user.is_fortytwo_user
+                    
+                    # Generar y enviar código 2FA
+                    code = generate_2fa_code(user)
+                    send_2fa_code(user, code)
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'require_2fa': True,
+                        'redirect_url': '/verify-2fa/',
+                        'message': 'Código 2FA enviado a tu email'
+                    })
+                
+                # Si no tiene 2FA, login directo
                 auth_login(request, user)
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/user/'  # Añadir URL de redirección
+                    'redirect_url': '/user/'
                 })
             else:
-                return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Usuario no encontrado'
+                })
                 
         except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'error': 'Datos inválidos'})
+            return JsonResponse({
+                'success': False, 
+                'error': 'Datos inválidos'
+            })
             
-    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+    return JsonResponse({
+        'success': False, 
+        'error': 'Método no permitido'
+    })
 
 # Vistas de API
 class UserList(generics.ListCreateAPIView):

@@ -109,19 +109,25 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 function onScanSuccess(decodedText, decodedResult) {
-    fetch('/api/authentication/validate_qr/', {
+    fetch('/validate_qr/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            username: decodedText  // Cambiar qr_data por username
+            username: decodedText
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '/user/';
+            if (data.require_2fa) {
+                // Redirigir a la página de verificación 2FA
+                window.location.href = data.redirect_url;
+            } else {
+                // Login directo
+                window.location.href = data.redirect_url;
+            }
         } else {
             alert(data.error || 'Error al validar el código QR');
         }

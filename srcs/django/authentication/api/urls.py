@@ -29,6 +29,8 @@ auth_patterns = [
 # Patrón principal que incluye todas las rutas de autenticación
 urlpatterns = [
     path('authentication/', include((auth_patterns, 'authentication'), namespace='auth_api')),
+    path('validate-qr/', views.ValidateQRCodeAPIView.as_view(), name='api_validate_qr'),
+    path('verify-2fa/', views.Verify2FAAPIView.as_view(), name='api_verify_2fa'),
 ]
 
 # Notas:
@@ -45,6 +47,8 @@ urlpatterns = [
 # - /api/authentication/reset_password/
 # - /api/authentication/reset_password/confirm/
 # - /api/authentication/verify-email/<str:uidb64>/<str:token>/
+# - /api/authentication/validate-qr/
+# - /api/authentication/verify-2fa/
 
 # Para acceder a la vista de generación de QR, se debe hacer una petición GET a /api/authentication/generate_qr/<str:username>/
 # Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate_qr/
@@ -56,3 +60,5 @@ urlpatterns = [
 # Para acceder a la vista de autenticación con 42, se debe hacer una petición GET a /api/authentication/42/
 # Para acceder a la vista de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/
 # Para acceder a la vista de confirmación de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/confirm/
+# Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate-qr/
+# Para acceder a la vista de verificación de 2FA, se debe hacer una petición POST a /api/authentication/verify-2fa/

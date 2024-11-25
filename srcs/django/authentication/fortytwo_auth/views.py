@@ -125,11 +125,10 @@ def fortytwo_callback(request):
         return redirect('login')
 
 def verify_2fa(request):
-    # Verificar autenticación previa
     user_id = request.session.get('pending_user_id')
     user_authenticated = request.session.get('user_authenticated', False)
     is_fortytwo = request.session.get('fortytwo_user', False)
-    fortytwo_code = request.session.get('fortytwo_code')  # Añadir esto
+    is_manual = request.session.get('manual_user', False)
     
     if not user_id or not user_authenticated:
         messages.error(request, 'Sesión inválida')
@@ -138,8 +137,7 @@ def verify_2fa(request):
     try:
         user = CustomUser.objects.get(id=user_id)
     except CustomUser.DoesNotExist:
-        # Limpiar todas las variables de sesión
-        for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'fortytwo_code']:
+        for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
             if key in request.session:
                 del request.session[key]
         return redirect('login')
@@ -148,26 +146,16 @@ def verify_2fa(request):
         code = request.POST.get('code')
         
         if verify_2fa_code(user, code):
-            try:
-                # Si es usuario de 42, procesarlo de nuevo
-                if is_fortytwo and fortytwo_code:
-                    FortyTwoAuth.process_callback(fortytwo_code)
-                
-                # Limpiar variables de sesión
-                for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'fortytwo_code']:
-                    if key in request.session:
-                        del request.session[key]
-                
-                # Hacer login
-                auth_login(request, user)
-                messages.success(request, 'Inicio de sesión exitoso')
-                return redirect('user')
-            except Exception as e:
-                messages.error(request, f'Error en la autenticación: {str(e)}')
-                return redirect('login')
+            for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
+                if key in request.session:
+                    del request.session[key]
+                    
+            auth_login(request, user)
+            messages.success(request, 'Inicio de sesión exitoso')
+            return redirect('user')
         else:
             messages.error(request, 'Código inválido o expirado')
-    
+            
     return render(request, 'authentication/verify_2fa.html')
 
 # Vistas API

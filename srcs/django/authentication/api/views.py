@@ -486,6 +486,8 @@ class LoginAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 class Verify2FAAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         code = request.data.get('code')
         user_id = request.session.get('pending_user_id')
@@ -493,8 +495,8 @@ class Verify2FAAPIView(APIView):
         
         if not user_id or not user_authenticated:
             return Response({
-                'status': 'error',
-                'message': 'Sesión inválida'
+                'success': False,
+                'error': 'Sesión inválida'
             }, status=status.HTTP_400_BAD_REQUEST)
             
         try:
@@ -507,16 +509,67 @@ class Verify2FAAPIView(APIView):
                         
                 auth_login(request, user)
                 return Response({
-                    'status': 'success',
-                    'message': 'Verificación 2FA exitosa'
+                    'success': True,
+                    'message': 'Verificación 2FA exitosa',
+                    'redirect_url': '/user/'
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'status': 'error',
-                    'message': 'Código inválido o expirado'
+                    'success': False,
+                    'error': 'Código inválido o expirado'
                 }, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
             return Response({
-                'status': 'error',
-                'message': 'Usuario no encontrado'
+                'success': False,
+                'error': 'Usuario no encontrado'
             }, status=status.HTTP_404_NOT_FOUND)
+
+class ValidateQRCodeAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        
+        if not username:
+            return Response({
+                'success': False,
+                'error': 'Código QR inválido'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        user = CustomUser.objects.filter(username=username).first()
+        
+        if user:
+            if not user.email_verified:
+                return Response({
+                    'success': False,
+                    'error': 'Por favor verifica tu email para activar tu cuenta'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+            if user.two_factor_enabled:
+                # Guardar datos en sesión
+                request.session['pending_user_id'] = user.id
+                request.session['user_authenticated'] = True
+                request.session['manual_user'] = not user.is_fortytwo_user
+                request.session['fortytwo_user'] = user.is_fortytwo_user
+                
+                # Generar y enviar código 2FA
+                code = generate_2fa_code(user)
+                send_2fa_code(user, code)
+                
+                return Response({
+                    'success': True,
+                    'require_2fa': True,
+                    'message': 'Código 2FA enviado a tu email'
+                }, status=status.HTTP_200_OK)
+            
+            auth_login(request, user)
+            return Response({
+                'success': True,
+                'message': 'Login exitoso',
+                'redirect_url': '/user/'
+            }, status=status.HTTP_200_OK)
+            
+        return Response({
+            'success': False,
+            'error': 'Usuario no encontrado'
+        }, status=status.HTTP_404_NOT_FOUND)
