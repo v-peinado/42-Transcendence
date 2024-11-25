@@ -307,7 +307,14 @@ def edit_profile(request):
             user.profile_image = None
             user.save()
             messages.success(request, 'Imagen de perfil restaurada a la imagen de 42')
-            return redirect('user')
+            return redirect('edit_profile')
+
+        # Manejar la restauración de la imagen por defecto para usuarios manuales
+        if not user.is_fortytwo_user and 'restore_default_image' in request.POST:
+            user.profile_image = None
+            user.save()
+            messages.success(request, 'Imagen de perfil restaurada a la imagen por defecto')
+            return redirect('edit_profile')
             
         # Manejar cambio de imagen normal
         if 'profile_image' in request.FILES:

@@ -287,11 +287,20 @@ class EditProfileView(APIView):
         
         # Manejar la restauración de la imagen de 42
         if user.is_fortytwo_user and 'restore_42_image' in request.data:
-            ander.profile_image = None
+            user.profile_image = None
             user.save()
             return Response({
                 "status": "success",
                 "message": "Imagen de perfil restaurada a la imagen de 42"
+            }, status=status.HTTP_200_OK)
+            
+        # Manejar la restauración de la imagen por defecto para usuarios manuales
+        if not user.is_fortytwo_user and 'restore_default_image' in request.data:
+            user.profile_image = None
+            user.save()
+            return Response({
+                "status": "success",
+                "message": "Imagen de perfil restaurada a la imagen por defecto"
             }, status=status.HTTP_200_OK)
             
         # Manejar cambio de imagen normal

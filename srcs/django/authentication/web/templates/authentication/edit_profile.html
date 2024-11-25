@@ -56,6 +56,12 @@
                                     <i class="fas fa-undo me-2"></i>Restaurar imagen de 42
                                 </button>
                             </div>
+                            {% elif not user.is_fortytwo_user and user.profile_image %}
+                                <div class="mt-3">
+                                    <button type="submit" name="restore_default_image" value="true" class="btn btn-secondary">
+                                        <i class="fas fa-undo me-2"></i>Restaurar imagen por defecto
+                                    </button>
+                                </div>
                             {% endif %}
                         </div>
 
