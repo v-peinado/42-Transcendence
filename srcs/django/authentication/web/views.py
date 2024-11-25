@@ -43,7 +43,7 @@ def home(request):
 # Función de login para usuarios manuales
 def login(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = request.POST.get('username').strip().lower()  # Normalizar username
         password = request.POST.get('password')
 
         user = authenticate(request, username=username, password=password)
@@ -81,7 +81,7 @@ def register(request):
         password = request.POST.get('password1')
         confirm_password = request.POST.get('password2')
 
-        # Validar caracteres no permitidos en username
+        # Validar nombre de usuario
         if not validate_printable_chars(username):
             messages.error(request, "El nombre de usuario no puede contener espacios ni caracteres especiales")
             return redirect('register')

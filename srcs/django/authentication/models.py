@@ -62,6 +62,11 @@ class CustomUser(AbstractUser):
             raise ValidationError({
                 'email': "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
             })
+            
+        if self.username and not all(char.isprintable() and not char.isspace() for char in self.username):
+            raise ValidationError({
+                'username': "El nombre de usuario no puede contener espacios ni caracteres especiales"
+            })
 
     class Meta:
         verbose_name = 'Usuario'
