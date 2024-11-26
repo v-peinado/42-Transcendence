@@ -29,9 +29,7 @@ class CustomUser(AbstractUser):
     last_2fa_code = models.CharField(max_length=6, blank=True, null=True)
     last_2fa_time = models.DateTimeField(null=True)
     pending_email = models.EmailField(blank=True, null=True)
-    old_email_token = models.CharField(max_length=255, blank=True, null=True)
-    new_email_token = models.CharField(max_length=255, blank=True, null=True)
-    email_change_timestamp = models.DateTimeField(null=True, blank=True)
+    pending_email_token = models.CharField(max_length=255, blank=True, null=True)
 
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, 'url'):

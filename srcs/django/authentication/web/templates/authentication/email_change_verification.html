@@ -1,0 +1,14 @@
+{% autoescape off %}
+Hola {{ user.username }},
+
+Has solicitado cambiar tu email en PongOrama a: {{ new_email }}
+
+Para confirmar este cambio, por favor haz clic en el siguiente enlace:
+
+{{ verification_url }}
+
+Si no has sido tú quien ha solicitado este cambio, por favor ignora este email o contacta con nuestro equipo de soporte.
+
+Saludos,
+El equipo de PongOrama
+{% endautoescape %}

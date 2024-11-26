@@ -1,0 +1,13 @@
+{% autoescape off %}
+Hola {{ user.username }},
+
+Te informamos que tu dirección de email en PongOrama ha sido actualizada:
+
+Email anterior: {{ old_email }}
+Nuevo email: {{ user.email }}
+
+Si no has sido tú quien ha realizado este cambio, por favor contacta inmediatamente con nuestro equipo de soporte.
+
+Saludos,
+El equipo de PongOrama
+{% endautoescape %}

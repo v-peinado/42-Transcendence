@@ -36,10 +36,8 @@ urlpatterns = [
         ), 
         name='password_reset_complete'),
     path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='verify_email'),
-    path('verify-old-email/<str:uidb64>/<str:token>/', views.verify_old_email, name='verify_old_email'),
-    path('verify-new-email/<str:uidb64>/<str:token>/', views.verify_new_email, name='verify_new_email'),
+    path('verify-email-change/<str:uidb64>/<str:token>/', views.verify_email_change, name='verify_email_change'),
     path('enable-2fa/', views.enable_2fa, name='enable_2fa'),
     path('verify-2fa/', views.verify_2fa, name='verify_2fa'),
     path('disable-2fa/', views.disable_2fa, name='disable_2fa'),
-    path('email-change-status/', views.email_change_status, name='email_change_status'),
 ]
