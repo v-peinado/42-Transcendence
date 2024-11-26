@@ -7,7 +7,7 @@ import os
 def wait_for_db(host, port):
     print(f"Esperando a que la base de datos en {host}:{port} esté lista...")
     retries = 0
-    max_retries = 30  # 1 minuto máximo de espera
+    max_retries = 30 # 30 intentos * 2 segundos = 1 minuto
     
     while retries < max_retries:
         try:
