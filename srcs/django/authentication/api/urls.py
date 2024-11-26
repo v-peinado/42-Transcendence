@@ -35,11 +35,14 @@ urlpatterns = [
     path('validate-qr/', views.ValidateQRCodeAPIView.as_view(), name='api_validate_qr'),
     path('verify-2fa/', views.Verify2FAAPIView.as_view(), name='api_verify_2fa'),
     path('verify-2fa/', views.Verify2FAView.as_view(), name='api_verify_2fa'),
+    path('gdpr/export-data/', views.ExportPersonalDataAPIView.as_view(), name='api_export_data'),
+    path('gdpr/settings/', views.GDPRSettingsAPIView.as_view(), name='api_gdpr_settings'),
+    path('gdpr/privacy-policy/', views.PrivacyPolicyAPIView.as_view(), name='api_privacy_policy'),
 ]
 
 # Notas:
 # Las rutas serán accesibles a través de http://localhost:8000/api/authentication/
-# de esta forma, las rutas ahora son:
+# Rutas existentes:
 # - /api/authentication/generate_qr/<str:username>/
 # - /api/authentication/validate_qr/
 # - /api/authentication/login/
@@ -47,26 +50,30 @@ urlpatterns = [
 # - /api/authentication/register/
 # - /api/authentication/edit-profile/
 # - /api/authentication/delete-account/
-# - /api/authentication/42/ -->>> /api/authentication/42/api/42/login/ y /api/authentication/42/api/42/callback/
+# - /api/authentication/42/login/
+# - /api/authentication/42/callback/
 # - /api/authentication/reset_password/
 # - /api/authentication/reset_password/confirm/
+
+# Rutas GDPR:
+# - /api/gdpr/export-data/
+# - /api/gdpr/settings/
+# - /api/gdpr/privacy-policy/
+
+# Rutas de verificación:
 # - /api/authentication/verify-email/<str:uidb64>/<str:token>/
-# - /api/authentication/validate-qr/
+# - /api/authentication/verify-email-change/<str:uidb64>/<str:token>/
 # - /api/authentication/verify-2fa/
 # - /api/authentication/disable-2fa/
-# - /api/authentication/verify-email-change/<str:uidb64>/<str:token>/
 
-# Para acceder a la vista de generación de QR, se debe hacer una petición GET a /api/authentication/generate_qr/<str:username>/
-# Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate_qr/
-# Para acceder a la vista de login, se debe hacer una petición POST a /api/authentication/login/
-# Para acceder a la vista de logout, se debe hacer una petición POST a /api/authentication/logout/
-# Para acceder a la vista de registro, se debe hacer una petición POST a /api/authentication/register/
-# Para acceder a la vista de edición de perfil, se debe hacer una petición POST a /api/authentication/edit-profile/
-# Para acceder a la vista de eliminación de cuenta, se debe hacer una petición POST a /api/authentication/delete-account/
-# Para acceder a la vista de autenticación con 42, se debe hacer una petición GET a /api/authentication/42/
-# Para acceder a la vista de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/
-# Para acceder a la vista de confirmación de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/confirm/
-# Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate-qr/
-# Para acceder a la vista de verificación de 2FA, se debe hacer una petición POST a /api/authentication/verify-2fa/
-# Para acceder a la vista de desactivación de 2FA, se debe hacer una petición POST a /api/authentication/disable-2fa/
-# Para acceder a la vista de verificación de cambio de correo electrónico, se debe hacer una petición GET a /api/authentication/verify-email-change/<str:uidb64>/<str:token>/
+# Rutas de verificación QR:
+# - /api/validate-qr/
+# - /api/verify-2fa/
+
+# Todas las rutas tienen sus correspondientes nombres:
+# 'api_login', 'api_logout', 'api_register', 'api_edit_profile',
+# 'api_delete_account', 'api_fortytwo_login', 'api_fortytwo_callback',
+# 'api_password_reset', 'api_password_reset_confirm', 'api_verify_email',
+# 'api_verify_email_change', 'api_disable_2fa', 'api_validate_qr',
+# 'api_verify_2fa', 'api_export_data', 'api_gdpr_settings',
+# 'api_privacy_policy'

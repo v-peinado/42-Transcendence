@@ -32,6 +32,13 @@
                             <input type="password" class="form-control" id="password2" name="password2" required>
                         </div>
 
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="privacy_policy" name="privacy_policy" required>
+                            <label class="form-check-label" for="privacy_policy">
+                                He leído y acepto la <a href="{% url 'privacy_policy' %}" target="_blank">política de privacidad</a>
+                            </label>
+                        </div>
+
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Register</button>
                         </div>

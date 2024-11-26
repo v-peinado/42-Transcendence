@@ -360,21 +360,26 @@ class EditProfileView(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         user = request.user
         password = request.data.get('confirm_password')
 
         # Si es un usuario de 42, permitir la eliminación sin contraseña
         if user.is_fortytwo_user:
+            user.anonymize()  # Método que definimos en el modelo CustomUser
             user.delete()
             auth_logout(request)
             return Response({
                 "status": "success",
                 "message": "Tu cuenta ha sido eliminada correctamente"
             }, status=status.HTTP_200_OK)
+            
         # Para usuarios normales, verificar la contraseña
         else:
             if user.check_password(password):
+                user.anonymize()  # Método que definimos en el modelo CustomUser
                 user.delete()
                 auth_logout(request)
                 return Response({
@@ -691,3 +696,77 @@ class ValidateQRCodeAPIView(APIView):
             'success': False,
             'error': 'Usuario no encontrado'
         }, status=status.HTTP_404_NOT_FOUND)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ExportPersonalDataAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        data = {
+            'personal_info': {
+                'username': user.username,
+                'email': user.email,
+                'date_joined': user.date_joined,
+                'last_login': user.last_login,
+            },
+            'profile_data': {
+                'profile_image': user.profile_image.url if user.profile_image else None,
+                'is_fortytwo_user': user.is_fortytwo_user,
+                'two_factor_enabled': user.two_factor_enabled,
+            }
+        }
+        
+        return Response({
+            'success': True,
+            'data': data
+        }, status=status.HTTP_200_OK)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GDPRSettingsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        return Response({
+            'success': True,
+            'data': {
+                'username': user.username,
+                'email': user.email,
+                'data_collection_enabled': True,  # Puedes añadir más configuraciones GDPR aquí
+            }
+        }, status=status.HTTP_200_OK)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PrivacyPolicyAPIView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        policy_data = {
+            'data_collection': [
+                'Nombre de usuario',
+                'Dirección de email',
+                'Imagen de perfil (opcional)'
+            ],
+            'data_usage': [
+                'Gestionar tu cuenta y perfil',
+                'Proporcionar servicios de autenticación',
+                'Enviar notificaciones importantes'
+            ],
+            'user_rights': [
+                'Derecho de acceso a tus datos',
+                'Derecho a la portabilidad de datos',
+                'Derecho al olvido (eliminación de cuenta)',
+                'Derecho a la rectificación de datos'
+            ],
+            'security_measures': [
+                'Autenticación de dos factores (2FA)',
+                'Encriptación de contraseñas',
+                'Conexiones seguras HTTPS'
+            ]
+        }
+        
+        return Response({
+            'success': True,
+            'data': policy_data
+        }, status=status.HTTP_200_OK)

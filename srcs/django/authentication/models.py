@@ -70,6 +70,19 @@ class CustomUser(AbstractUser):
                 'username': "El nombre de usuario no puede contener espacios ni caracteres especiales"
             })
 
+    def anonymize(self):
+        """Anonimizar datos del usuario manteniendo integridad referencial"""
+        anon_username = f"deleted_user_{self.id}"
+        anon_email = f"deleted_{self.id}@anonymous.com"
+        
+        self.username = anon_username
+        self.email = anon_email
+        self.first_name = "Deleted"
+        self.last_name = "User"
+        self.profile_image = None
+        self.is_active = False
+        self.save()
+
     class Meta:
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'

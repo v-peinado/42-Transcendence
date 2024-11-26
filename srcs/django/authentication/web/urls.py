@@ -40,4 +40,7 @@ urlpatterns = [
     path('enable-2fa/', views.enable_2fa, name='enable_2fa'),
     path('verify-2fa/', views.verify_2fa, name='verify_2fa'),
     path('disable-2fa/', views.disable_2fa, name='disable_2fa'),
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('gdpr-settings/', views.gdpr_settings, name='gdpr_settings'),
+    path('export-data/', views.export_personal_data, name='export_data'),
 ]

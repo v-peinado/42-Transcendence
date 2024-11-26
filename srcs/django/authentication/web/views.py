@@ -713,3 +713,32 @@ def verify_email_change(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist, jwt.InvalidTokenError):
         messages.error(request, 'El enlace de verificación no es válido')
         return redirect('edit_profile')
+
+@login_required
+def export_personal_data(request):
+    user = request.user
+    data = {
+        'personal_info': {
+            'username': user.username,
+            'email': user.email,
+            'date_joined': user.date_joined,
+            'last_login': user.last_login,
+        },
+        'profile_data': {
+            'profile_image': user.profile_image.url if user.profile_image else None,
+            'is_fortytwo_user': user.is_fortytwo_user,
+            'two_factor_enabled': user.two_factor_enabled,
+        },
+        # Añadir más datos según necesites
+    }
+    
+    response = HttpResponse(json.dumps(data, default=str), content_type='application/json')
+    response['Content-Disposition'] = f'attachment; filename="{user.username}_data.json"'
+    return response
+
+@login_required
+def gdpr_settings(request):
+    return render(request, 'authentication/gdpr_settings.html')
+
+def privacy_policy(request):
+    return render(request, 'authentication/privacy_policy.html')
