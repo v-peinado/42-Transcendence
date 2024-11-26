@@ -24,6 +24,9 @@ auth_patterns = [
     path('reset_password/', PasswordResetView.as_view(), name='api_password_reset'),
     path('reset_password/confirm/', PasswordResetConfirmView.as_view(), name='api_password_reset_confirm'),
     path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='api_verify_email'),
+    path('disable-2fa/', views.Disable2FAView.as_view(), name='api_disable_2fa'),
+    path('verify-email-change/<str:uidb64>/<str:token>/', 
+         views.VerifyEmailChangeView.as_view(), name='api_verify_email_change'),
 ]
 
 # Patrón principal que incluye todas las rutas de autenticación
@@ -31,6 +34,7 @@ urlpatterns = [
     path('authentication/', include((auth_patterns, 'authentication'), namespace='auth_api')),
     path('validate-qr/', views.ValidateQRCodeAPIView.as_view(), name='api_validate_qr'),
     path('verify-2fa/', views.Verify2FAAPIView.as_view(), name='api_verify_2fa'),
+    path('verify-2fa/', views.Verify2FAView.as_view(), name='api_verify_2fa'),
 ]
 
 # Notas:
@@ -49,6 +53,8 @@ urlpatterns = [
 # - /api/authentication/verify-email/<str:uidb64>/<str:token>/
 # - /api/authentication/validate-qr/
 # - /api/authentication/verify-2fa/
+# - /api/authentication/disable-2fa/
+# - /api/authentication/verify-email-change/<str:uidb64>/<str:token>/
 
 # Para acceder a la vista de generación de QR, se debe hacer una petición GET a /api/authentication/generate_qr/<str:username>/
 # Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate_qr/
@@ -62,3 +68,5 @@ urlpatterns = [
 # Para acceder a la vista de confirmación de reseteo de contraseña, se debe hacer una petición POST a /api/authentication/reset_password/confirm/
 # Para acceder a la vista de validación de QR, se debe hacer una petición POST a /api/authentication/validate-qr/
 # Para acceder a la vista de verificación de 2FA, se debe hacer una petición POST a /api/authentication/verify-2fa/
+# Para acceder a la vista de desactivación de 2FA, se debe hacer una petición POST a /api/authentication/disable-2fa/
+# Para acceder a la vista de verificación de cambio de correo electrónico, se debe hacer una petición GET a /api/authentication/verify-email-change/<str:uidb64>/<str:token>/

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from authentication.models import CustomUser
+from authentication.models import CustomUser, PreviousPassword  # Asegúrate de importar PreviousPassword
 import qrcode
 import io
 import json
@@ -18,7 +18,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.views import PasswordResetView
 from django.db.models import Q
 from django.urls import reverse_lazy, reverse
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.password_validation import validate_password, password_validators_help_texts
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -36,6 +36,7 @@ from django.utils.html import strip_tags
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.hashers import check_password
 
 # Vista principal
 def home(request):
@@ -113,9 +114,15 @@ def register(request):
             messages.error(request, "Los correos con dominio @student.42*.com están reservados para usuarios de 42")
             return redirect('register')
 
-        # Validar contraseña segura
+        # Crear un usuario temporal para la validación de contraseña
+        temp_user = CustomUser(
+            username=username.lower(),
+            email=email.lower()
+        )
+
+        # Validar contraseña segura, incluyendo similitud con datos del usuario
         try:
-            validate_password(password)
+            validate_password(password, user=temp_user)  # Añadir el usuario como parámetro
         except ValidationError as e:
             messages.error(request, e.messages[0])
             return redirect('register')
@@ -125,14 +132,16 @@ def register(request):
             return redirect('register')
 
         try:
-            # Crear usuario pero no activarlo
             user = CustomUser.objects.create_user(
                 username=username.lower(),
                 email=email.lower(),
                 password=password,
                 is_fortytwo_user=False,
-                is_active=False  # Usuario inactivo hasta verificar email
+                is_active=False
             )
+            
+            # Guardar la contraseña inicial en PreviousPassword
+            PreviousPassword.objects.create(user=user, password=user.password)
             
             # Generar token JWT
             token = generate_jwt_token(user)
@@ -310,7 +319,7 @@ def edit_profile(request):
                 messages.error(request, 'Los correos con dominio @student.42*.com están reservados para usuarios de 42')
                 return redirect('edit_profile')
                 
-            if CustomUser.objects.exclude(id=user.id).filter(email=new_email).exists():
+            if CustomUser.objects.exclude(id=user.id).filter(email(new_email)).exists():
                 messages.error(request, 'Este email ya está en uso')
                 return redirect('edit_profile')
 
@@ -390,14 +399,23 @@ def edit_profile(request):
                 
                 # Aplicar validación de contraseña fuerte
                 try:
-                    validate_password(new_password1, user)
+                    validate_password(new_password1, user=user)  # Añadir el parámetro user
                 except ValidationError as e:
                     for error in e.messages:
                         messages.error(request, error)
                     return redirect('edit_profile')
                     
+                # Validar que la nueva contraseña no sea igual a las últimas tres contraseñas
+                previous_passwords = PreviousPassword.objects.filter(user=user).order_by('-created_at')[:3]
+                for prev_password in previous_passwords:
+                    if check_password(new_password1, prev_password.password):
+                        messages.error(request, 'No puedes reutilizar ninguna de las últimas tres contraseñas')
+                        return redirect('edit_profile')
+
                 # Si pasa la validación, cambiar contraseña
                 user.set_password(new_password1)
+                user.save()
+                PreviousPassword.objects.create(user=user, password=user.password)
                 update_session_auth_hash(request, user)
                 
                 # Enviar email solo si el cambio es desde el perfil

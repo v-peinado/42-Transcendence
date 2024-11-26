@@ -76,3 +76,11 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
+class PreviousPassword(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    password = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']

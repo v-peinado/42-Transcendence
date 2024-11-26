@@ -12,16 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = [
-            'id', 
-            'username', 
-            'email', 
-            'password1', 
-            'password2',
-            'profile_image',
-            'is_fortytwo_user',
-            'fortytwo_id'
-        ]
+        fields = '__all__'
         read_only_fields = ['profile_image', 'is_fortytwo_user', 'fortytwo_id']
         extra_kwargs = {
             'username': {'required': True},
@@ -29,6 +20,13 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate_username(self, value):
+        # Validación de longitud máxima
+        max_length = 10  # Define el número máximo de caracteres permitidos
+        if len(value) > max_length:
+            raise serializers.ValidationError(
+                f"El nombre de usuario no puede tener más de {max_length} caracteres"
+            )
+        
         # Validaciones existentes
         if value.startswith('42.'):
             raise serializers.ValidationError(

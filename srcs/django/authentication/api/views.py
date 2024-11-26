@@ -7,7 +7,7 @@ from ..serializers.user_serializers import UserSerializer
 import qrcode
 import io
 from django.http import HttpResponse
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authtoken.models import Token
@@ -540,6 +540,107 @@ class Verify2FAAPIView(APIView):
                 'success': False,
                 'error': 'Usuario no encontrado'
             }, status=status.HTTP_404_NOT_FOUND)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class Verify2FAView(APIView):
+    def post(self, request):
+        # Verificar autenticación previa
+        user_id = request.session.get('pending_user_id')
+        user_authenticated = request.session.get('user_authenticated', False)
+        
+        if not user_id or not user_authenticated:
+            return Response({
+                'success': False,
+                'error': 'Sesión inválida'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            code = request.data.get('code')
+            
+            if verify_2fa_code(user, code):
+                # Limpiar sesión y hacer login
+                for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
+                    if key in request.session:
+                        del request.session[key]
+                        
+                auth_login(request, user)
+                return Response({
+                    'success': True,
+                    'message': 'Verificación 2FA exitosa',
+                    'redirect_url': '/user/'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Código inválido o expirado'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except CustomUser.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Usuario no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class Disable2FAView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        user.two_factor_enabled = False
+        user.two_factor_secret = None
+        user.save()
+        return Response({
+            'success': True,
+            'message': '2FA desactivado correctamente'
+        }, status=status.HTTP_200_OK)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class VerifyEmailChangeView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = CustomUser.objects.get(pk=uid)
+            payload = decode_jwt_token(token)
+            
+            if user and payload and payload['user_id'] == user.id and token == user.pending_email_token:
+                old_email = user.email
+                user.email = user.pending_email
+                user.pending_email = None
+                user.pending_email_token = None
+                user.save()
+
+                # Send confirmation emails
+                subject = 'Tu email ha sido actualizado'
+                message = render_to_string('authentication/email_change_confirmation.html', {
+                    'user': user,
+                    'old_email': old_email
+                })
+                
+                send_mail(
+                    subject,
+                    strip_tags(message),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [old_email, user.email],
+                    html_message=message
+                )
+
+                return Response({
+                    'success': True,
+                    'message': 'Email actualizado correctamente'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Token inválido o expirado'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            return Response({
+                'success': False,
+                'error': 'Token inválido'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class ValidateQRCodeAPIView(APIView):
     permission_classes = [AllowAny]
