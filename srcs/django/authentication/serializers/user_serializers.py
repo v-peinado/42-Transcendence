@@ -115,3 +115,36 @@ class UserSerializer(serializers.ModelSerializer):
             is_fortytwo_user=False
         )
         return user
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(style={'input_type': 'password'})
+
+class EmailChangeSerializer(serializers.Serializer):
+    new_email = serializers.EmailField()
+    password = serializers.CharField(style={'input_type': 'password'})
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(style={'input_type': 'password'})
+    new_password1 = serializers.CharField(style={'input_type': 'password'})
+    new_password2 = serializers.CharField(style={'input_type': 'password'})
+
+    def validate(self, data):
+        if data['new_password1'] != data['new_password2']:
+            raise serializers.ValidationError("Las contraseñas no coinciden")
+        return data
+
+class TwoFactorVerificationSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=6)
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    new_password1 = serializers.CharField(style={'input_type': 'password'})
+    new_password2 = serializers.CharField(style={'input_type': 'password'})
+
+    def validate(self, data):
+        if data['new_password1'] != data['new_password2']:
+            raise serializers.ValidationError("Las contraseñas no coinciden")
+        return data

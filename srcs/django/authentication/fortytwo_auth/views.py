@@ -4,6 +4,7 @@ from django.contrib import messages
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .services.fortytwo_service import FortyTwoAuthService
+from ..services.two_factor_service import TwoFactorService  # Añadir esta línea
 from django.conf import settings
 from ..models import CustomUser
 from django.http import HttpResponseRedirect
@@ -19,6 +20,7 @@ from ..web.utils import (
 )
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from ..services.email_service import EmailService
 
 class FortyTwoAuth:
     @staticmethod
@@ -33,11 +35,6 @@ class FortyTwoAuth:
             token_data = service.get_access_token(code)
             user_data = service.get_user_info(token_data['access_token'])
             
-            # Obtener la URL de la imagen de 42
-            fortytwo_image = None
-            if user_data.get('image'):
-                fortytwo_image = user_data['image']['versions'].get('large') or user_data['image']['link']
-                
             # Obtener o crear usuario
             user, created = CustomUser.objects.get_or_create(
                 username=f"42.{user_data['login']}",
@@ -45,42 +42,32 @@ class FortyTwoAuth:
                     'email': user_data['email'],
                     'fortytwo_id': str(user_data['id']),
                     'is_fortytwo_user': True,
-                    'fortytwo_image': fortytwo_image,
-                    'is_active': False,  # Usuario inactivo hasta verificar email
-                    'email_verified': False  # Email no verificado inicialmente
+                    'is_active': False,
+                    'email_verified': False,
+                    'fortytwo_image': user_data.get('image', {}).get('link')
                 }
             )
 
-            # Si es un usuario nuevo, enviar email de verificación
+            # Usuario nuevo: enviar email verificación
             if created:
-                # Generar token JWT
                 token = generate_jwt_token(user)
                 user.email_verification_token = token
                 user.save()
                 
-                # Preparar y enviar email de verificación
-                subject = 'Verifica tu cuenta de PongOrama'
-                message = render_to_string('authentication/email_verification.html', {
-                    'user': user,
-                    'domain': settings.SITE_URL,
+                EmailService.send_verification_email(user, {
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                    'token': token,
-                    'protocol': 'https'
+                    'token': token
                 })
-                
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    fail_silently=False,
-                    html_message=message
-                )
-                
-            return user, created
+
+            # Si tiene 2FA, generar código
+            if user.two_factor_enabled:
+                code = TwoFactorService.generate_2fa_code(user)
+                TwoFactorService.send_2fa_code(user, code)
+
+            return user, created  # Solo retornar dos valores
 
         except Exception as e:
-            print(f"Error detallado en process_callback: {str(e)}")
+            print(f"Error en process_callback: {str(e)}")
             raise
 
 # Vista Web para login con 42
@@ -96,30 +83,25 @@ def fortytwo_login(request):
 def fortytwo_callback(request):
     code = request.GET.get('code')
     if not code:
+        messages.error(request, 'No se proporcionó código de autorización')
         return redirect('login')
     
     try:
-        user, is_new_user = FortyTwoAuth.process_callback(code)
-        if user:
-            if not user.email_verified:
-                messages.warning(request, 'Verifica tu email para acceder a tu cuenta')
-                return redirect('login')
-                
-            if user.two_factor_enabled:
-                # Guardar datos en sesión
-                request.session['pending_user_id'] = user.id
-                request.session['user_authenticated'] = True
-                request.session['fortytwo_user'] = True
-                
-                # Generar y enviar código 2FA
-                code = generate_2fa_code(user)
-                send_2fa_code(user, code)
-                
-                # Redirigir a verificación 2FA
-                return redirect('verify_2fa')
-                
-            auth_login(request, user)
-            return redirect('user')
+        user, created = FortyTwoAuth.process_callback(code)  # Solo dos valores
+        
+        if not user.email_verified:
+            messages.warning(request, 'Verifica tu email para acceder a tu cuenta')
+            return redirect('login')
+            
+        if user.two_factor_enabled:
+            request.session['pending_user_id'] = user.id
+            request.session['user_authenticated'] = True
+            request.session['fortytwo_user'] = True
+            return HttpResponseRedirect(reverse('verify_2fa'))
+            
+        auth_login(request, user)
+        return redirect('user')
+        
     except Exception as e:
         messages.error(request, f'Error en la autenticación: {str(e)}')
         return redirect('login')
@@ -171,9 +153,9 @@ class FortyTwoCallbackAPIView(APIView):
             return Response({'error': 'No code provided'}, status=400)
 
         try:
-            user, is_new = FortyTwoAuth.process_callback(code, is_api=True)
+            user, is_new, requires_2fa = FortyTwoAuth.process_callback(code, is_api=True)
             
-            if user.two_factor_enabled:
+            if requires_2fa:
                 # Generar y enviar código 2FA
                 code = generate_2fa_code(user)
                 send_2fa_code(user, code)

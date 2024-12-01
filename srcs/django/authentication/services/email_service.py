@@ -1,0 +1,227 @@
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.utils.html import strip_tags
+from django.utils import timezone
+
+class EmailService:
+    @staticmethod
+    def send_verification_email(user, token):
+        """Enviar email de verificación"""
+        try:
+            subject = 'Verifica tu cuenta de PongOrama'
+            context = {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': token['uid'],
+                'token': token['token']
+            }
+            html_message = render_to_string('authentication/email_verification.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar email de verificación: {str(e)}")
+
+    @staticmethod
+    def send_welcome_email(user):
+        subject = '¡Bienvenido a PongOrama!'
+        context = {
+            'user': user
+        }
+        html_message = render_to_string('authentication/welcome_email.html', context)
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=html_message,
+            fail_silently=False
+        )
+
+    @staticmethod
+    def send_password_reset_email(user, token):
+        """Enviar email de reseteo de contraseña"""
+        try:
+            subject = 'Restablece tu contraseña'
+            context = {
+                'user': user,
+                'domain': settings.SITE_URL,
+                'uid': token['uid'],
+                'token': token['token']
+            }
+            html_message = render_to_string('authentication/password_reset_email.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar email de reseteo: {str(e)}")
+
+    @staticmethod
+    def send_password_changed_notification(user, is_reset=False):
+        """Notificar cambio de contraseña"""
+        try:
+            subject = 'Tu contraseña ha sido cambiada'
+            context = {
+                'user': user,
+                'reset': is_reset
+            }
+            html_message = render_to_string('authentication/password_changed_email.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar notificación: {str(e)}")
+
+    @staticmethod
+    def send_email_change_notification(user, old_email):
+        """Enviar notificación de cambio de email"""
+        try:
+            subject = 'Tu email ha sido actualizado'
+            context = {
+                'user': user,
+                'old_email': old_email
+            }
+            html_message = render_to_string('authentication/email_change_confirmation.html', context)
+            plain_message = strip_tags(html_message)
+            
+            # Enviar a ambas direcciones de email
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [old_email, user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar notificación de cambio de email: {str(e)}")
+
+    @staticmethod
+    def send_account_deletion_notification(user):
+        """Enviar notificación de eliminación de cuenta"""
+        try:
+            subject = 'Tu cuenta ha sido eliminada'
+            context = {
+                'user': user,
+                'deletion_date': timezone.now()
+            }
+            html_message = render_to_string('authentication/account_deletion_email.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar notificación de eliminación: {str(e)}")
+
+    @staticmethod
+    def send_2fa_code(user, code):
+        """Enviar código 2FA por email"""
+        try:
+            subject = 'Tu código de verificación PongOrama'
+            context = {
+                'user': user,
+                'code': code
+            }
+            html_message = render_to_string('authentication/2fa_email.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar código 2FA: {str(e)}")
+
+    @staticmethod
+    def send_email_change_verification(user, verification_data):
+        """Enviar email de verificación para cambio de email"""
+        try:
+            subject = 'Confirma tu nuevo email'
+            
+            verification_url = f"{settings.SITE_URL}/verify-email-change/{verification_data['uid']}/{verification_data['token']}/"
+            
+            context = {
+                'user': user,
+                'new_email': verification_data['new_email'],
+                'verification_url': verification_url
+            }
+            
+            html_message = render_to_string('authentication/email_change_verification.html', context)
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [verification_data['new_email']],
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar email de verificación de cambio: {str(e)}")
+
+    @staticmethod
+    def send_email_change_confirmation(user, old_email):
+        """Enviar confirmación de cambio de email"""
+        try:
+            subject = 'Tu email ha sido actualizado'
+            context = {
+                'user': user,
+                'old_email': old_email
+            }
+            html_message = render_to_string('authentication/email_change_confirmation.html', context)
+            plain_message = strip_tags(html_message)
+            
+            # Enviar email tanto al antiguo como al nuevo correo
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [old_email, user.email],  # Enviar a ambas direcciones
+                html_message=html_message,
+                fail_silently=False
+            )
+            return True
+        except Exception as e:
+            raise Exception(f"Error al enviar confirmación de cambio de email: {str(e)}")
