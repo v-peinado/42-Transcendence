@@ -37,27 +37,18 @@ create-media-dirs:
 configure-rootless:
 ifeq ($(UNAME_S),Linux)
 	@echo "$(COLOR_GREEN)Configurando Docker rootless...$(COLOR_RESET)"
-	@if systemctl is-active docker > /dev/null; then \
-		echo "$(COLOR_GREEN)Deteniendo Docker en modo root...$(COLOR_RESET)"; \
-		sudo systemctl stop docker; \
-		sudo systemctl disable docker; \
-	fi
 	@mkdir -p $(DOCKER_HOME)/.docker
 	@mkdir -p /goinfre/$(USER)/docker-volumes
 	@chmod 700 $(DOCKER_HOME)/.docker
 	@chmod 700 /goinfre/$(USER)/docker-volumes
 	@if ! command -v dockerd-rootless-setuptool.sh >/dev/null 2>&1; then \
-		echo "$(COLOR_GREEN)Instalando Docker rootless prerequisites...$(COLOR_RESET)"; \
-		sudo apt-get update && sudo apt-get install -y uidmap dbus-user-session; \
+		echo "$(COLOR_GREEN)Instalando Docker rootless...$(COLOR_RESET)"; \
+		curl -fsSL https://get.docker.com/rootless | sh; \
 	fi
-	@echo "$(COLOR_GREEN)Iniciando Docker daemon en modo rootless...$(COLOR_RESET)"
 	@dockerd-rootless-setuptool.sh install --force || true
 	@systemctl --user enable docker || true
 	@systemctl --user start docker || true
 	@loginctl enable-linger $(USER)
-	@echo "export DOCKER_HOST=unix://$(DOCKER_SOCKET)" >> ~/.bashrc
-	@echo "export XDG_RUNTIME_DIR=/run/user/$$(id -u)" >> ~/.bashrc
-	@echo "export PATH=/usr/bin:$$PATH" >> ~/.bashrc
 endif
 
 # Levanta los servicios definidos en el archivo de composición
