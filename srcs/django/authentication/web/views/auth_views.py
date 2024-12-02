@@ -24,6 +24,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 
 def home(request):
     """Vista principal"""
@@ -68,8 +70,15 @@ def login(request):
 def register(request):
     if request.method == 'POST':
         try:
-            username = request.POST.get('username')
-            email = request.POST.get('email')
+            # Sanitizar entradas
+            username = escape(request.POST.get('username', '').strip())
+            email = escape(request.POST.get('email', '').strip())
+            
+            # Validar que no contengan scripts
+            if '<script>' in username.lower() or '<script>' in email.lower():
+                messages.error(request, "Caracteres no permitidos")
+                return redirect('register')
+                
             password = request.POST.get('password1')
             confirm_password = request.POST.get('password2')
             

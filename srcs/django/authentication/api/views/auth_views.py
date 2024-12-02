@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.core.exceptions import ValidationError
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.html import escape
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -65,8 +66,9 @@ class RegisterAPIView(APIView):
 
     def post(self, request):
         try:
-            username = request.data.get('username')
-            email = request.data.get('email')
+            # Sanitizar datos antes de procesarlos (XSS)
+            username = escape(request.data.get('username', ''))
+            email = escape(request.data.get('email', ''))
             password = request.data.get('password1')
             
             # Añadir validaciones de caracteres

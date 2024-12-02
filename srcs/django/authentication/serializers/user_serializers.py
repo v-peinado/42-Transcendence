@@ -3,6 +3,7 @@ from authentication.models import CustomUser
 import re
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.utils.html import escape
 
 class UserSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True, style={'input_type': 'password'})
@@ -70,6 +71,14 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
+        # Sanitizar campos
+        username = escape(data.get('username', ''))
+        email = escape(data.get('email', ''))
+        
+        # Validación adicional XSS
+        if '<script>' in username.lower() or '<script>' in email.lower():
+            raise serializers.ValidationError("Caracteres no permitidos")
+
         # Validación de contraseñas
         if data.get('password1') != data.get('password2'):
             raise serializers.ValidationError({

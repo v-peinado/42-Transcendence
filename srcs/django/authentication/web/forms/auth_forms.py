@@ -3,10 +3,19 @@ from django.contrib.auth.forms import UserCreationForm
 from ...models import CustomUser
 from django.core.exceptions import ValidationError
 import re
+from django.core.validators import RegexValidator
 
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     privacy_policy = forms.BooleanField(required=True)
+    username = forms.CharField(
+        validators=[
+            RegexValidator(
+                regex='^[\w.@+-]+$',
+                message='Nombre de usuario contiene caracteres no permitidos'
+            )
+        ]
+    )
 
     class Meta:
         model = CustomUser
