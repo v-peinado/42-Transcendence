@@ -70,16 +70,26 @@ def register(request):
         try:
             username = request.POST.get('username')
             email = request.POST.get('email')
-            password1 = request.POST.get('password1')
-            password2 = request.POST.get('password2')
-
+            password = request.POST.get('password1')
+            confirm_password = request.POST.get('password2')
+            
+            # Verificar si ya existe el usuario
+            if CustomUser.objects.filter(username=username.lower()).exists():
+                messages.error(request, "Este nombre de usuario ya está en uso")
+                return redirect('register')
+                
+            # Verificar si ya existe el email
+            if CustomUser.objects.filter(email=email.lower()).exists():
+                messages.error(request, "Este email ya está registrado")
+                return redirect('register')
+                
             # Validar datos usando PasswordService
             try:
                 PasswordService.validate_registration_password(
                     username, 
                     email, 
-                    password1, 
-                    password2
+                    password, 
+                    confirm_password
                 )
             except ValidationError as e:
                 messages.error(request, str(e))
