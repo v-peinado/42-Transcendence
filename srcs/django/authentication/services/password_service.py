@@ -65,6 +65,10 @@ class PasswordService:
         """Validar datos de registro"""
         errors = []
         
+        # Validar caracteres permitidos en el username
+        if not all(char.isalnum() or char == '_' for char in username):
+            raise ValidationError("El nombre de usuario solo puede contener letras, números y guiones bajos")
+        
         # Validar longitud del username
         max_length_username = 10
         if len(username) > max_length_username:

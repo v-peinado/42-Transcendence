@@ -21,25 +21,25 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate_username(self, value):
-        # Validación de longitud máxima
-        max_length = 10  # Define el número máximo de caracteres permitidos
+        # Primero validar caracteres especiales
+        if not all(char.isalnum() or char == '_' for char in value):
+            raise serializers.ValidationError(
+                "El nombre de usuario solo puede contener letras, números y guiones bajos"
+            )
+
+        # Validar longitud máxima
+        max_length = 10
         if len(value) > max_length:
             raise serializers.ValidationError(
                 f"El nombre de usuario no puede tener más de {max_length} caracteres"
             )
-        
-        # Validaciones existentes
-        if value.startswith('42.'):
+
+        # Validar no empiece con 42.
+        if value.lower().startswith('42.'):
             raise serializers.ValidationError(
                 "El prefijo '42.' está reservado para usuarios de 42"
             )
-        
-        # Nueva validación de caracteres
-        if not all(char.isprintable() and not char.isspace() for char in value):
-            raise serializers.ValidationError(
-                "El nombre de usuario no puede contener espacios ni caracteres especiales"
-            )
-        
+
         return value.lower()
 
     def validate_email(self, value):
