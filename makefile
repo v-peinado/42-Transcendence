@@ -27,12 +27,6 @@ endif
 
 all: up help
 
-# Añadir una nueva regla para crear los directorios necesarios
-create-media-dirs:
-	@echo "$(COLOR_GREEN)Creando directorios para media...$(COLOR_RESET)"
-	@mkdir -p srcs/django/media/profile_images
-	@chmod 777 srcs/django/media/profile_images
-
 # Configurar Docker rootless en Linux
 configure-rootless:
 ifeq ($(UNAME_S),Linux)
@@ -52,7 +46,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 # Levanta los servicios definidos en el archivo de composición
-up: create-media-dirs configure-rootless
+up: configure-rootless
 	@echo "$(COLOR_GREEN)Levantando servicios...$(COLOR_RESET)"
 	@if [ "$(UNAME_S)" = "Linux" ]; then \
 		export DOCKER_HOST=unix://$(DOCKER_SOCKET); \
@@ -80,7 +74,6 @@ clean-postgres-data:
 clean-volumes:
 	@echo "$(COLOR_RED)Eliminando volúmenes y archivos media...$(COLOR_RESET)"
 	@docker volume rm -f django_media 2>/dev/null || true
-	@rm -rf srcs/django/media/profile_images/* 2>/dev/null || true  # Solo elimina el contenido, no el directorio
 
 # Reinicia los servicios (down y luego up)
 reset: down up

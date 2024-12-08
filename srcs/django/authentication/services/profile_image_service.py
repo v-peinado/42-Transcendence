@@ -34,31 +34,6 @@ class ProfileImageService:
             raise ValidationError(f"Error al validar imagen: {str(e)}")
 
     @staticmethod
-    def save_profile_image(user, image_file):
-        """Guardar imagen de perfil"""
-        try:
-            # Validar imagen
-            ProfileImageService.validate_image(image_file)
-            
-            # Eliminar imagen anterior si existe
-            if user.profile_image:
-                default_storage.delete(user.profile_image.path)
-            
-            # Generar nombre único
-            filename = f"profile_{user.id}.{image_file.name.split('.')[-1].lower()}"
-            filepath = os.path.join('profile_images', filename)
-            
-            # Guardar imagen
-            user.profile_image = filepath
-            path = default_storage.save(filepath, image_file)
-            user.save()
-            
-            return path
-            
-        except Exception as e:
-            raise ValidationError(f"Error al guardar imagen: {str(e)}")
-
-    @staticmethod
     def delete_profile_image(user):
         """Eliminar imagen de perfil"""
         try:
