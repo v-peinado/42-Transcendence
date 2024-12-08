@@ -3,8 +3,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.core.exceptions import ImproperlyConfigured
 import os
 import warnings
+
+# Verificar configuración básica
+if 'authentication' not in settings.INSTALLED_APPS:
+    raise ImproperlyConfigured("La aplicación 'authentication' debe estar en INSTALLED_APPS")
 
 def check_nginx_config():
     """Verifica la configuración de Nginx para servir archivos media"""
@@ -21,37 +26,24 @@ def check_nginx_config():
             "\n3. Configurar la ruta correcta en nginx.conf"
         )
 
-""" Configuración de las URLs de la aplicación web principal """
+# URL patterns principales
 urlpatterns = [
-    # Web interface URLs
+    # Interfaz web (desarrollo)
     path('', include('authentication.web.urls')),
     
-    # Admin interface
+    # Panel de administración
     path('admin/', admin.site.urls),
     
-    # API endpoints
+    # API endpoints (producción)
     path('api/', include('authentication.api.urls')),
 ]
 
-""" Configuración de la entrega de archivos multimedia en entornos de desarrollo """
+# Configuración de archivos media y estáticos
 if settings.DEBUG:
+    # Servir archivos media en desarrollo
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Servir archivos estáticos en desarrollo
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 else:
     check_nginx_config()
-
-"""
-Este archivo define las URL de la aplicación web principal.
-
-Hay dos funciones importantes en este archivo: path() y include().
-path() se utiliza para definir una URL y la vista asociada.
-include() se utiliza para incluir otras URLconf.
-
-Estamos incluyendo las URL de la aplicación web de autenticación (desarrollo) y las URL de la API (producción).
-También estamos incluyendo las URL de la interfaz de administración de Django.
-
-Además, estamos configurando la entrega de archivos multimedia en entornos de desarrollo (DEBUG=True)
-a través de Django.
-
-Hay una advertencia que se mostrará si la configuración de Nginx no está configurada correctamente 
-para servir archivos multimedia y si ya estamos en producción (DEBUG=False).
-"""
+    
