@@ -1,11 +1,11 @@
-Django>=4.2.4
-djangorestframework>=3.14.0
-psycopg2-binary>=2.9.6
-gunicorn>=20.1.0
-qrcode>=7.3.1
-pillow>=10.0.0
-requests==2.31.0
-python-dotenv==1.0.1
-django-cors-headers>=4.0.0
-PyJWT>=2.6.0
-pyotp==2.8.0
+Django>=4.2.4					# El framework web de Python
+djangorestframework>=3.14.0		# Para crear una API REST
+psycopg2-binary>=2.9.6			# Para conectarse a la base de datos PostgreSQL
+gunicorn>=20.1.0				# Para servir la aplicación en producción
+qrcode>=7.3.1					# Para generar códigos QR
+pillow>=10.0.0					# Para generar códigos QR
+requests==2.31.0				# Para hacer peticiones HTTP (API REST)
+python-dotenv==1.0.1			# Para cargar variables de entorno desde un archivo .env
+django-cors-headers>=4.0.0		# Para permitir peticiones CORS
+PyJWT>=2.6.0					# Para generar tokens JWT
+pyotp==2.8.0					# Para generar códigos OTP (One Time Password)

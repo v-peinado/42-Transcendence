@@ -9,7 +9,7 @@ services:
       context: ./django
     container_name: django
     ports:
-      - "8000:8000"  # Acceso directo a Django
+      - "8000:8000"
     volumes:
       - django_code:/app
       - django_media:/app/media
@@ -42,7 +42,7 @@ services:
       context: ./nginx
     container_name: nginx
     ports:
-      - "8443:443"  # Cambiar 443 por 8443 en el host
+      - "8443:443"
       - "8080:80"   
     networks:
       - trancendence-backend

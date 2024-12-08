@@ -1,22 +1,19 @@
-# Usa la imagen oficial de Python como base
 FROM python:3.10-slim
 
-# Establece el directorio de trabajo
+# Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copiar requirements primero 
+# Copiar e instalar dependencias
 COPY requirements.txt .
-
-# Instalar dependencias con --no-cache-dir para forzar reinstalación
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir gunicorn pyotp==2.8.0
 
-# Copiar el resto de archivos
+# Copiar el código de la aplicación (el propio proyecto que se ha creado)
 COPY . .
 
-# Copiar y configurar el script de entrada
+# Copiar y dar permisos al script de entrada
 COPY django-entrypoint.py /app/
 RUN chmod +x /app/django-entrypoint.py
 
-# Comando para ejecutar el script
+# Iniciar la aplicación
 CMD ["python", "django-entrypoint.py"]

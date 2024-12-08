@@ -20,3 +20,12 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Este archivo es generado automáticamente por Django al crear un proyecto.
+# Importa el módulo de Django y ejecuta la función execute_from_command_line() con sys.argv como argumento.
+# sys.argv es una lista de argumentos pasados al script de Python desde la línea de comandos (esta lista se genera automáticamente al ejecutar un script).
+# El primer argumento es el nombre del script, y el segundo es el comando a ejecutar.
+# Por ejemplo, si se ejecuta 'python manage.py runserver', sys.argv será ['manage.py', 'runserver'].
+# Por lo tanto, execute_from_command_line(['manage.py', 'runserver']) ejecutará el comando 'runserver' de Django.
+# Basicamente, este archivo es el punto de entrada para ejecutar comandos de Django desde la línea de comandos de forma programática.
+
