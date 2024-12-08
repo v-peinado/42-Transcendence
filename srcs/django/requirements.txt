@@ -9,3 +9,4 @@ python-dotenv==1.0.1			# Para cargar variables de entorno desde un archivo .env
 django-cors-headers>=4.0.0		# Para permitir peticiones CORS
 PyJWT>=2.6.0					# Para generar tokens JWT
 pyotp==2.8.0					# Para generar códigos OTP (One Time Password)
+django-jazzmin==2.6.0           # Para tener un panel de administración de Django más elegante

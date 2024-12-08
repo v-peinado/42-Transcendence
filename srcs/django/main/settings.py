@@ -29,6 +29,7 @@ ALLOWED_HOSTS = []
 
 # Definir aplicaciones instaladas en el proyecto
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +42,16 @@ INSTALLED_APPS = [
     'authentication.fortytwo_auth',
     'corsheaders',
 ]
+
+# Configuración de Jazzmin (panel de administración personalizado basado en Django Admin)
+JAZZMIN_SETTINGS = {
+    "site_title": "Pong Admin",
+    "site_header": "Pong Administration",
+    "welcome_sign": "Bienvenido al Panel de Administración",
+    "show_ui_builder": True,
+    "changeform_format": "horizontal_tabs",
+}
+
 # Configuración de middleware (intermediarios por los que pasan las peticiones entre el cliente y la aplicación)
 # Los middleware se ejecutan en orden de arriba hacía abajo y están definidos por defecto en Django
 MIDDLEWARE = [
