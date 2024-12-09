@@ -4,18 +4,20 @@ from django.conf import settings
 from django.utils.html import strip_tags
 from django.utils import timezone
 from ..models import CustomUser
-import pyotp
-import time
+import jwt
+from datetime import datetime, timedelta
+import secrets
+import random
 
 class TwoFactorService:
     @staticmethod
     def generate_2fa_secret():
-        """Genera un nuevo secreto para 2FA"""
-        return pyotp.random_base32()
+        """Genera un nuevo secreto para 2FA usando secrets"""
+        return secrets.token_hex(16)
 
     @staticmethod
     def generate_2fa_code(user):
-        """Genera un código 2FA temporal"""
+        """Genera un código 2FA temporal usando JWT"""
         try:
             # Verificar si el usuario es válido
             if not user:
@@ -28,12 +30,24 @@ class TwoFactorService:
                 except CustomUser.DoesNotExist:
                     raise ValueError("Usuario no encontrado")
 
-            # Generar código 2FA
-            if not user.two_factor_secret:
-                user.two_factor_secret = TwoFactorService.generate_2fa_secret()
-                
-            totp = pyotp.TOTP(user.two_factor_secret)
-            code = totp.now()
+            # Generar código 2FA de 6 dígitos
+            code = str(random.randint(100000, 999999))
+            
+            # Crear payload JWT
+            payload = {
+                'user_id': user.id,
+                'code': code,
+                'exp': datetime.utcnow() + timedelta(minutes=5),  # 5 minutos de validez
+                'iat': datetime.utcnow(),
+                'type': '2fa'
+            }
+            
+            # Generar token JWT
+            token = jwt.encode(
+                payload,
+                settings.JWT_SECRET_KEY,
+                algorithm=settings.JWT_ALGORITHM
+            )
             
             # Guardar código y timestamp
             user.last_2fa_code = code
@@ -47,22 +61,22 @@ class TwoFactorService:
 
     @staticmethod
     def verify_2fa_code(user, code):
-        """Verifica si el código 2FA es válido"""
+        """Verifica si el código 2FA es válido usando JWT"""
         # Verificar que user sea un objeto CustomUser
         if not isinstance(user, CustomUser):
             try:
                 user = CustomUser.objects.get(id=user)
             except (ValueError, CustomUser.DoesNotExist):
                 return False
-
         try:
             if not user.two_factor_secret or not code:
                 return False
-                
+            
+            # Verificar tiempo de expiración
             time_diff = timezone.now() - user.last_2fa_time
             if time_diff.total_seconds() > 300:  # 5 minutos
                 return False
-                
+            
             return user.last_2fa_code == code
             
         except Exception:
@@ -91,14 +105,15 @@ class TwoFactorService:
     def enable_2fa(user):
         """Habilita 2FA para un usuario"""
         try:
-            # Generar código
+            # Generar secreto y código
+            user.two_factor_secret = TwoFactorService.generate_2fa_secret()
             code = TwoFactorService.generate_2fa_code(user)
             
-            # Activar 2FA para el usuario
+            # Activar 2FA
             user.two_factor_enabled = True
             user.save()
             
-            # Enviar código por email
+            # Enviar código
             TwoFactorService.send_2fa_code(user, code)
             
             return code

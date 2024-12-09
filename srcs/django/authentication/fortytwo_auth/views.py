@@ -4,7 +4,7 @@ from django.contrib import messages
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .services.fortytwo_service import FortyTwoAuthService
-from ..services.two_factor_service import TwoFactorService  # Añadir esta línea
+from ..services.two_factor_service import TwoFactorService
 from django.conf import settings
 from ..models import CustomUser
 from django.http import HttpResponseRedirect
@@ -12,11 +12,6 @@ from django.template.loader import render_to_string
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
-from ..web.utils import (
-    generate_2fa_code, 
-    send_2fa_code, 
-    verify_2fa_code,
-)
 from ..services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -127,7 +122,7 @@ def verify_2fa(request):
     if request.method == 'POST':
         code = request.POST.get('code')
         
-        if verify_2fa_code(user, code):
+        if TwoFactorService.verify_2fa_code(user, code):
             for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
                 if key in request.session:
                     del request.session[key]
@@ -157,8 +152,8 @@ class FortyTwoCallbackAPIView(APIView):
             
             if requires_2fa:
                 # Generar y enviar código 2FA
-                code = generate_2fa_code(user)
-                send_2fa_code(user, code)
+                code = TwoFactorService.generate_2fa_code(user)
+                TwoFactorService.send_2fa_code(user, code)
                 
                 # Guardar ID de usuario en sesión
                 request.session['pending_user_id'] = user.id
