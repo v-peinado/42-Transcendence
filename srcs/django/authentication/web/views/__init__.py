@@ -20,7 +20,7 @@ urlpatterns = [
 ]
 
 __all__ = [
-    'home',  # Añadir home aquí
+    'home',
     'login', 'register', 'logout',
     'edit_profile', 'delete_account', 'user',
     'CustomPasswordResetView', 'CustomPasswordResetConfirmView',

@@ -1,59 +1,38 @@
 from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 from .views import (
-    login, register, logout, home,
+    # Vistas básicas
+    home, login, logout, register,
+    # Vistas de perfil
     edit_profile, delete_account, user,
+    # Vistas de contraseña
     CustomPasswordResetView, CustomPasswordResetConfirmView,
-    gdpr_settings, privacy_policy, export_personal_data,
+    # Vistas de verificación
     verify_email, verify_email_change,
-    enable_2fa, verify_2fa, disable_2fa,
-    generate_qr, validate_qr
+    # Vistas 2FA
+    enable_2fa, verify_2fa, disable_2fa, generate_qr, validate_qr,
+    # Vistas GDPR
+    gdpr_settings, privacy_policy, export_personal_data,
 )
-from django.contrib.auth import views as auth_views
 
-# authentication/urls/auth_urls.py
-from django.urls import path
-from django.contrib.auth import views as auth_views
-from ..web.views import auth_views, verification_views, profile_views
-
-# Autenticación básica:
-# - register: Registro de usuario
-# - login: Inicio de sesión
-# - logout: Cierre de sesión
-# - auth/42: Autenticación con 42
+# URLs de autenticación básica
 auth_patterns = [
-    path('register/', auth_views.register, name='register'),
-    path('login/', auth_views.login, name='login'),
-    path('logout/', auth_views.logout, name='logout'),
+    path('login/', login, name='login'),
+    path('logout/', logout, name='logout'),
+    path('register/', register, name='register'),
     path('auth/42/', include('authentication.fortytwo_auth.urls', namespace='web_fortytwo_auth')),
 ]
 
-# Verificación:
-# - verify_email: Verifica la dirección de correo electrónico del usuario
-# - generate_qr: Genera un código QR para la autenticación:
-# - validate_qr: Valida el código QR generado
-verification_patterns = [
-    path('verify-email/<str:uidb64>/<str:token>/', verification_views.verify_email, name='verify_email'),
-    path('generate_qr/<str:username>/', verification_views.generate_qr, name='generate_qr'),
-    path('validate_qr/', verification_views.validate_qr, name='validate_qr'),
-]
-
-# Gestión de perfil:
-# - user: Muestra la información del usuario
-# - edit_profile: Permite al usuario editar su perfil
-# - delete_account: Permite al usuario eliminar su cuenta
+# URLs de perfil de usuario
 profile_patterns = [
-    path('user/', profile_views.user, name='user'),
-    path('edit-profile/', profile_views.edit_profile, name='edit_profile'),
-    path('delete-account/', profile_views.delete_account, name='delete_account'),
+    path('user/', user, name='user'),
+    path('edit-profile/', edit_profile, name='edit_profile'),
+    path('delete-account/', delete_account, name='delete_account'),
 ]
 
-# Gestión de contraseña:
-# - reset_password: Inicia el proceso de restablecimiento de contraseña
-# - reset_password/done: Muestra un mensaje de éxito después de enviar el correo electrónico
-# - reset/<uidb64>/<token>: Verifica el token y permite al usuario cambiar la contraseña
-# - reset/complete: Muestra un mensaje de éxito después de cambiar la contraseña
+# URLs de gestión de contraseñas
 password_patterns = [
     path('reset_password/', 
         CustomPasswordResetView.as_view(), 
@@ -76,14 +55,46 @@ password_patterns = [
         name='password_reset_complete'),
 ]
 
-# Patrones de URL se dividen en cuatro categorías:
-# - Autenticación: Registro, inicio de sesión, cierre de sesión, autenticación con 42
-# - Verificación: Verificación de correo electrónico, generación y validación de códigos QR
-# - Perfil: Información del usuario, edición de perfil, eliminación de cuenta
-# - Contraseña: Restablecimiento de contraseña, verificación de token, cambio de contraseña
-urlpatterns = [
-    path('', include((auth_patterns, 'auth'))),
-    path('verification/', include((verification_patterns, 'verification'))),
-    path('profile/', include((profile_patterns, 'profile'))),
-    path('password/', include((password_patterns, 'password'))),
+# URLs de verificación de email
+verification_patterns = [
+    path('verify-email/<str:uidb64>/<str:token>/', verify_email, name='verify_email'),
+    path('verify-email-change/<str:uidb64>/<token>/', verify_email_change, name='verify_email_change'),
 ]
+
+# URLs de autenticación de dos factores
+two_factor_patterns = [
+    path('enable-2fa/', enable_2fa, name='enable_2fa'),
+    path('verify-2fa/', verify_2fa, name='verify_2fa'),
+    path('disable-2fa/', disable_2fa, name='disable_2fa'),
+    path('generate_qr/<str:username>/', generate_qr, name='generate_qr'),
+    path('validate_qr/', validate_qr, name='validate_qr'),
+]
+
+# URLs de GDPR y privacidad
+gdpr_patterns = [
+    path('privacy-policy/', privacy_policy, name='privacy_policy'),
+    path('gdpr-settings/', gdpr_settings, name='gdpr_settings'),
+    path('export-data/', export_personal_data, name='export_data'),
+]
+
+# Unir todos los patrones
+urlpatterns = [
+    # Página principal
+    path('', home, name='home'),
+    
+    # Incluir todos los grupos de URLs
+    *auth_patterns,
+    *profile_patterns,
+    *password_patterns,
+    *verification_patterns,
+    *two_factor_patterns,
+    *gdpr_patterns,
+    
+    # API endpoints
+    path('api/', include('authentication.api.urls', namespace='api')),
+]
+
+# Servir archivos estáticos en desarrollo
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
