@@ -12,17 +12,49 @@ from .views import (
 )
 from django.contrib.auth import views as auth_views
 
-urlpatterns = [
-    path('', home, name='home'),
-    path('login/', login, name='login'),
-    path('register/', register, name='register'),
-    path('user/', user, name='user'),
-    path('logout/', logout, name='logout'),
+# authentication/urls/auth_urls.py
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from ..web.views import auth_views, verification_views, profile_views
+
+# Autenticación básica:
+# - register: Registro de usuario
+# - login: Inicio de sesión
+# - logout: Cierre de sesión
+# - auth/42: Autenticación con 42
+auth_patterns = [
+    path('register/', auth_views.register, name='register'),
+    path('login/', auth_views.login, name='login'),
+    path('logout/', auth_views.logout, name='logout'),
     path('auth/42/', include('authentication.fortytwo_auth.urls', namespace='web_fortytwo_auth')),
-    path('generate_qr/<str:username>/', generate_qr, name='generate_qr'),
-    path('validate_qr/', validate_qr, name='validate_qr'),
-    path('edit-profile/', edit_profile, name='edit_profile'),
-    path('delete-account/', delete_account, name='delete_account'),
+]
+
+# Verificación:
+# - verify_email: Verifica la dirección de correo electrónico del usuario
+# - generate_qr: Genera un código QR para la autenticación:
+# - validate_qr: Valida el código QR generado
+verification_patterns = [
+    path('verify-email/<str:uidb64>/<str:token>/', verification_views.verify_email, name='verify_email'),
+    path('generate_qr/<str:username>/', verification_views.generate_qr, name='generate_qr'),
+    path('validate_qr/', verification_views.validate_qr, name='validate_qr'),
+]
+
+# Gestión de perfil:
+# - user: Muestra la información del usuario
+# - edit_profile: Permite al usuario editar su perfil
+# - delete_account: Permite al usuario eliminar su cuenta
+profile_patterns = [
+    path('user/', profile_views.user, name='user'),
+    path('edit-profile/', profile_views.edit_profile, name='edit_profile'),
+    path('delete-account/', profile_views.delete_account, name='delete_account'),
+]
+
+# Gestión de contraseña:
+# - reset_password: Inicia el proceso de restablecimiento de contraseña
+# - reset_password/done: Muestra un mensaje de éxito después de enviar el correo electrónico
+# - reset/<uidb64>/<token>: Verifica el token y permite al usuario cambiar la contraseña
+# - reset/complete: Muestra un mensaje de éxito después de cambiar la contraseña
+password_patterns = [
     path('reset_password/', 
         CustomPasswordResetView.as_view(), 
         name='password_reset'),
@@ -42,13 +74,16 @@ urlpatterns = [
             template_name='authentication/password_reset_complete.html'
         ), 
         name='password_reset_complete'),
-    path('verify-email/<str:uidb64>/<str:token>/', verify_email, name='verify_email'),
-    path('verify-email-change/<str:uidb64>/<str:token>/', verify_email_change, name='verify_email_change'),
-    path('enable-2fa/', enable_2fa, name='enable_2fa'),
-    path('verify-2fa/', verify_2fa, name='verify_2fa'),
-    path('disable-2fa/', disable_2fa, name='disable_2fa'),
-    path('privacy-policy/', privacy_policy, name='privacy_policy'),
-    path('gdpr-settings/', gdpr_settings, name='gdpr_settings'),
-    path('export-data/', export_personal_data, name='export_data'),
-    path('api/', include('authentication.api.urls', namespace='api')),
+]
+
+# Patrones de URL se dividen en cuatro categorías:
+# - Autenticación: Registro, inicio de sesión, cierre de sesión, autenticación con 42
+# - Verificación: Verificación de correo electrónico, generación y validación de códigos QR
+# - Perfil: Información del usuario, edición de perfil, eliminación de cuenta
+# - Contraseña: Restablecimiento de contraseña, verificación de token, cambio de contraseña
+urlpatterns = [
+    path('', include((auth_patterns, 'auth'))),
+    path('verification/', include((verification_patterns, 'verification'))),
+    path('profile/', include((profile_patterns, 'profile'))),
+    path('password/', include((password_patterns, 'password'))),
 ]
