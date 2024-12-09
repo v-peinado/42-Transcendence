@@ -7,21 +7,6 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 import random
 
-def generate_jwt_token(user, expiration_minutes=15):
-    """Genera un token JWT para el usuario"""
-    
-    payload = {													#payload es un diccionario con la información que se quiere codificar en el token
-        'user_id': user.id,										#user_id es el id del usuario
-        'exp': datetime.utcnow() + timedelta(minutes=expiration_minutes),	#exp es la fecha de expiración del token (15 minutos por defecto)
-        'iat': datetime.utcnow()								#iat es la fecha de emisión del token
-    }
-    token = jwt.encode(
-        payload, 
-        settings.JWT_SECRET_KEY,								#firmar el token con la clave secreta de la aplicación
-        algorithm=settings.JWT_ALGORITHM						#usar el algoritmo de codificación especificado en la configuración
-    )
-    return token
-
 def generate_2fa_code(user):									#para los logins de dos factores
     """Genera un código 2FA usando JWT"""
     
@@ -71,15 +56,3 @@ def verify_2fa_code(user, provided_code):
         return False											#si el código ha expirado (más de 60 segundos)
     
     return user.last_2fa_code == provided_code					#comparar el código proporcionado con el código guardado en el usuario
-
-
-#Validar que el texto solo contenga caracteres imprimibles y no espacios
-def validate_printable_chars(text):
-    """Valida que el texto solo contenga caracteres imprimibles y no espacios"""
-    if not text:
-        return False
-    # Comprobar espacios y tabulaciones
-    if any(char.isspace() for char in text):
-        return False
-    # Validar que todos los caracteres sean imprimibles
-    return all(char.isprintable() and not char.isspace() for char in text)

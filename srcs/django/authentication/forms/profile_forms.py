@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from ...models import CustomUser
+from authentication.models import CustomUser
 import re
 
 class ProfileUpdateForm(forms.ModelForm):

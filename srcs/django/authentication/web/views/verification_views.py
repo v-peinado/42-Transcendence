@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags 
 from ...services.two_factor_service import TwoFactorService
 from ...services.auth_service import AuthenticationService
-from ...services.token_service import decode_jwt_token
+from ...services.token_service import TokenService
 from ...services.email_service import EmailService 
 from ...models import CustomUser
 import qrcode
@@ -23,7 +23,7 @@ def verify_email(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
-        payload = decode_jwt_token(token)
+        payload = TokenService.decode_jwt_token(token)
         
         if user and payload and payload['user_id'] == user.id:
             user.email_verified = True
@@ -48,7 +48,7 @@ def verify_email_change(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
-        payload = decode_jwt_token(token)
+        payload = TokenService.decode_jwt_token(token)
         
         if user and payload and payload['user_id'] == user.id and token == user.pending_email_token:
             old_email = user.email

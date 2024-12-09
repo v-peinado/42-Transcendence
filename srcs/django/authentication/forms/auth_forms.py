@@ -1,15 +1,16 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from ...models import CustomUser
+from authentication.models import CustomUser
 from django.core.exceptions import ValidationError
 import re
 from django.core.validators import RegexValidator
 
 class RegistrationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    privacy_policy = forms.BooleanField(required=True)
-    username = forms.CharField(
-        validators=[
+    """Formulario de registro de usuario"""
+    email = forms.EmailField(required=True)						# Campo de email requerido en el formulario de registro
+    privacy_policy = forms.BooleanField(required=True)			# Campo de política de privacidad requerido en el formulario de registro
+    username = forms.CharField(									# Campo de nombre de usuario en el formulario de registro
+        validators=[											# Validadores de nombre de usuario
             RegexValidator(
                 regex='^[\w.@+-]+$',
                 message='Nombre de usuario contiene caracteres no permitidos'

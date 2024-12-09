@@ -3,7 +3,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
 from ..models import CustomUser, PreviousPassword
 from .email_service import EmailService
-from .token_service import decode_jwt_token
+from .token_service import TokenService
 import jwt
 from django.contrib.auth import authenticate
 
@@ -56,10 +56,4 @@ class AuthenticationService:
             raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
             raise ValidationError(f"Error al verificar email: {str(e)}")
-
-    @staticmethod
-    def authenticate_user(username, password):
-        user = authenticate(username=username, password=password)
-        if not user:
-            raise ValidationError("Credenciales inválidas")
-        return user
+        

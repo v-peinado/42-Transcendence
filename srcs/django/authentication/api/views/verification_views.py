@@ -11,7 +11,7 @@ import qrcode
 import io
 from django.http import HttpResponse
 from ...models import CustomUser
-from ...services.token_service import decode_jwt_token
+from ...services.token_service import TokenService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class Enable2FAView(APIView):
@@ -88,7 +88,7 @@ def verify_email(request, uidb64, token):
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
-        payload = decode_jwt_token(token)
+        payload = TokenService.decode_jwt_token(token)
         
         if user and payload and payload['user_id'] == user.id:
             user.email_verified = True

@@ -16,8 +16,8 @@ from ..web.utils import (
     generate_2fa_code, 
     send_2fa_code, 
     verify_2fa_code,
-    generate_jwt_token 
 )
+from ..services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from ..services.email_service import EmailService

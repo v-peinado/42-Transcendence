@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
-from ...models import CustomUser
+from authentication.models import CustomUser
 
 class PasswordChangeForm(forms.Form):
     current_password = forms.CharField(widget=forms.PasswordInput)
