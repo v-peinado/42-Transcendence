@@ -39,7 +39,7 @@ def decode_jwt_token(token):
         return jwt.decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=['HS256']
+            algorithms=[settings.JWT_ALGORITHM]
         )
     except jwt.ExpiredSignatureError:
         return None

@@ -11,6 +11,7 @@ import qrcode
 import io
 from django.http import HttpResponse
 from ...models import CustomUser
+from ...services.token_service import decode_jwt_token
 
 @method_decorator(csrf_exempt, name='dispatch')
 class Enable2FAView(APIView):

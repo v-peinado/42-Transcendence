@@ -1,8 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import check_password
-import re
 from ..models import PreviousPassword, CustomUser
+from django.contrib import messages
+from django.shortcuts import redirect
+from authentication.models import CustomUser
+import re
+from django.utils.html import escape
 
 class PasswordService:
     @staticmethod
@@ -61,13 +65,50 @@ class PasswordService:
             raise ValidationError(f'Error al restablecer la contraseña: {str(e)}')
 
     @staticmethod
-    def validate_registration_password(username, email, password1, password2):
-        """Validar datos de registro"""
-        errors = []
+    def validate_manual_registration(username, email, password1, password2):
+        """Validar datos de registro con protección contra XSS y SQL injection"""
+        
+        # Escapar HTML en username y email para evitar XSS
+        username = escape(username)
+        email = escape(email)
+        
+        # Lista de patrones peligrosos (XSS y SQL injection)
+        dangerous_patterns = [
+            '<script>',
+            'javascript:',
+            'onerror=',
+            'onload=',
+            'onclick=',
+            'data:',
+            'alert(',
+            'eval(',
+        ]
+        
+		# Validar que no contengan scripts maliciosos
+        for pattern in dangerous_patterns:
+            if pattern in username.lower() or pattern in email.lower():
+                raise ValidationError(f"Caracteres no permitidos en '{username if pattern in username.lower() else email}'")
+        
+        # Validación de formato de email más estricta que la de Django
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            raise ValidationError(f"Formato de email '{email}' no válido")
+        
+        # Validar que no contengan scripts maliciosos
+        if '<script>' in username.lower() or '<script>' in email.lower():
+            raise ValidationError(f"Caracteres no permitidos en '{username if '<script>' in username.lower() else email}'")
         
         # Validar caracteres permitidos en el username
         if not all(char.isalnum() or char == '_' for char in username):
-            raise ValidationError("El nombre de usuario solo puede contener letras, números y guiones bajos")
+            raise ValidationError(f"El nombre de usuario '{username}' solo puede contener letras, números y guiones bajos")
+            
+        # Verificar si ya existe el usuario
+        if CustomUser.objects.filter(username=username.lower()).exists():
+            raise ValidationError(f"El nombre de usuario '{username}' ya está en uso")
+        
+        # Verificar si ya existe el email
+        if CustomUser.objects.filter(email=email.lower()).exists():
+            raise ValidationError(f"El email '{email}' ya está registrado")
         
         # Validar longitud del username
         max_length_username = 10

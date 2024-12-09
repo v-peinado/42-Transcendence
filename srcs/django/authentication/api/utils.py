@@ -17,19 +17,3 @@ def generate_jwt_token(user, expiration_minutes=15):
         algorithm=settings.JWT_ALGORITHM
     )
     return token
-
-def decode_jwt_token(token):
-    """
-    Decodifica un token JWT
-    """
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET_KEY, 
-            algorithms=[settings.JWT_ALGORITHM]
-        )
-        return payload
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None

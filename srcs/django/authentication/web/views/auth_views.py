@@ -11,9 +11,7 @@ from ..forms.auth_forms import RegistrationForm
 from ...services.two_factor_service import TwoFactorService
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from django.contrib.auth.hashers import check_password  # Añadir esta línea
-
-# Importaciones adicionales necesarias
+from django.contrib.auth.hashers import check_password
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from ...models import CustomUser, PreviousPassword
@@ -32,69 +30,55 @@ def home(request):
     return render(request, 'authentication/home.html')
 
 def login(request):
+    """Vista de inicio de sesión para usuarios registrados de forma manual"""												
     if request.method == 'POST':
         username = request.POST.get('username').strip().lower()
         password = request.POST.get('password')
         remember = request.POST.get('remember', None)
 
-        user = authenticate(request, username=username, password=password)
-        if not user:
+        user = authenticate(request, username=username, password=password)	# Autenticar usuario
+        if not user:														# Si no se encuentra el usuario
             messages.error(request, 'Usuario o contraseña incorrectos')
-            return render(request, 'authentication/login.html')
+            return render(request, 'authentication/login.html')				# Redirigir a la vista de inicio de sesión
             
-        if not user.email_verified:
+        if not user.email_verified:											# Si el email no está verificado
             messages.warning(request, 'Por favor verifica tu email para activar tu cuenta')
             return render(request, 'authentication/login.html')
             
-        if user.two_factor_enabled:
+        if user.two_factor_enabled:											# Si el usuario tiene 2FA habilitado
             # Guardar datos en sesión
-            request.session['pending_user_id'] = user.id
-            request.session['user_authenticated'] = True
-            request.session['manual_user'] = True
+            request.session['pending_user_id'] = user.id					# Guardar el ID del usuario en sesión				
+            request.session['user_authenticated'] = True					# Marcar al usuario como autenticado
+            request.session['manual_user'] = True	
             
             # Generar y enviar código 2FA
-            code = TwoFactorService.generate_2fa_code(user)
-            TwoFactorService.send_2fa_code(user, code)
+            code = TwoFactorService.generate_2fa_code(user)					# Generar código 2FA
+            TwoFactorService.send_2fa_code(user, code)						# Enviar código 2FA por email
             
             # Usar HttpResponseRedirect con reverse
-            return HttpResponseRedirect(reverse('verify_2fa'))
+            return HttpResponseRedirect(reverse('verify_2fa'))				# Redirigir a la vista de verificación 2FA
             
         auth_login(request, user)
-        if not remember:
-            request.session.set_expiry(0)
+        if not remember:													# Si no se selecciona recordar sesión...
+            request.session.set_expiry(0)									# Cerrar sesión al cerrar el navegador
         
-        return redirect('user')
+        return redirect('user')												# Redirigir a la vista de perfil de usuario si la autenticación es exitosa
         
-    return render(request, 'authentication/login.html')
+    return render(request, 'authentication/login.html')	
 
 def register(request):
-    if request.method == 'POST':
+    """Vista de registro para nuevos usuarios que se registran manualmente"""
+    if request.method == 'POST':											# Si se envía un formulario
         try:
             # Sanitizar entradas
-            username = escape(request.POST.get('username', '').strip())
-            email = escape(request.POST.get('email', '').strip())
-            
-            # Validar que no contengan scripts
-            if '<script>' in username.lower() or '<script>' in email.lower():
-                messages.error(request, "Caracteres no permitidos")
-                return redirect('register')
-                
-            password = request.POST.get('password1')
-            confirm_password = request.POST.get('password2')
-            
-            # Verificar si ya existe el usuario
-            if CustomUser.objects.filter(username=username.lower()).exists():
-                messages.error(request, "Este nombre de usuario ya está en uso")
-                return redirect('register')
-                
-            # Verificar si ya existe el email
-            if CustomUser.objects.filter(email=email.lower()).exists():
-                messages.error(request, "Este email ya está registrado")
-                return redirect('register')
-                
-            # Validar datos usando PasswordService
+            username = escape(request.POST.get('username', '').strip())		# Obtener nombre de usuario
+            email = escape(request.POST.get('email', '').strip())			# Obtener email
+            password = request.POST.get('password1')						# Obtener contraseña
+            confirm_password = request.POST.get('password2')				# Obtener confirmación de contraseña
+  
+            # Validar datos (parseo de datos)
             try:
-                PasswordService.validate_registration_password(
+                PasswordService.validate_manual_registration(
                     username, 
                     email, 
                     password, 
@@ -104,6 +88,7 @@ def register(request):
                 messages.error(request, str(e))
                 return redirect('register')
 
+			# Crear formulario de registro una vez validados los datos
             form = RegistrationForm(request.POST)
             if form.is_valid():
                 user = AuthenticationService.register_user(
@@ -111,11 +96,11 @@ def register(request):
                     form.cleaned_data['email'],
                     form.cleaned_data['password1']
                 )
-                token = TokenService.generate_verification_token(user)
-                EmailService.send_verification_email(user, token)
+                token = TokenService.generate_verification_token(user)		# Generar token de verificación
+                EmailService.send_verification_email(user, token)			# Enviar email de verificación
                 messages.success(request, 'Revisa tu email para verificar tu cuenta')
                 return redirect('login')
-        except Exception as e:
+        except Exception as e:												# Capturar cualquier excepción
             messages.error(request, str(e))
             return redirect('register')
             

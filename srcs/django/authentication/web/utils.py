@@ -22,20 +22,6 @@ def generate_jwt_token(user, expiration_minutes=15):
     )
     return token
 
-def decode_jwt_token(token):
-    """Decodifica un token JWT"""
-    try:
-        payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET_KEY,							#verificar la firma del token con la clave secreta de la aplicación
-            algorithms=[settings.JWT_ALGORITHM]	
-        )
-        return payload
-    except jwt.ExpiredSignatureError:							#si el token ha expirado
-        return None
-    except jwt.InvalidTokenError:								#si el token es inválido
-        return None
-
 def generate_2fa_code(user):									#para los logins de dos factores
     """Genera un código 2FA usando JWT"""
     
