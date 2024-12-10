@@ -45,12 +45,7 @@ class RegistrationForm(UserCreationForm):
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
-        user.is_active = False  # Usuario inactivo hasta verificar email
+        user.is_active = False 
         if commit:
             user.save()
         return user
-
-class LoginForm(forms.Form):
-    username = forms.CharField()
-    password = forms.CharField(widget=forms.PasswordInput)
-    remember = forms.BooleanField(required=False)
