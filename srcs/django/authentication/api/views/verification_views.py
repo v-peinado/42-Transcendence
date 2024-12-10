@@ -83,32 +83,6 @@ class VerifyEmailView(APIView):
                 'message': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-def verify_email(request, uidb64, token):
-    """Vista para verificar email"""
-    try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = CustomUser.objects.get(pk=uid)
-        payload = TokenService.decode_jwt_token(token)
-        
-        if user and payload and payload['user_id'] == user.id:
-            user.email_verified = True
-            user.is_active = True
-            user.email_verification_token = None
-            user.save()
-            
-            # Enviar email de bienvenida usando EmailService
-            EmailService.send_welcome_email(user)
-            
-            messages.success(request, "Tu cuenta ha sido verificada correctamente")
-            return redirect('login')
-        else:
-            messages.error(request, "El enlace de verificación no es válido")
-            return redirect('login')
-            
-    except Exception as e:
-        messages.error(request, str(e))
-        return redirect('login')
-
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeAPIView(APIView):
     permission_classes = [IsAuthenticated]

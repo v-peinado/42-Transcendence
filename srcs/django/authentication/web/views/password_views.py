@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
-from ...models import CustomUser  # Cambiar la importación
+from ...models import CustomUser
 
 class CustomPasswordResetView(PasswordResetView):
     success_url = reverse_lazy('password_reset_done')

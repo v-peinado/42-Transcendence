@@ -1,11 +1,13 @@
 from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
+from authentication.models import CustomUser
 from .email_service import EmailService
 import jwt
 
 class AuthenticationService:
     @staticmethod
     def register_user(username, email, password):
+        """Verificar que el usuario no exista y crearlo"""
         # Validar que el usuario no exista
         if CustomUser.objects.filter(username=username).exists():
             raise ValidationError("Este nombre de usuario ya está en uso")
@@ -44,4 +46,3 @@ class AuthenticationService:
             raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
             raise ValidationError(f"Error al verificar email: {str(e)}")
-        
