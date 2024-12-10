@@ -5,12 +5,7 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_bytes 
-from django.conf import settings
-from django.template.loader import render_to_string  
-from django.utils.html import strip_tags 
 from ...services.two_factor_service import TwoFactorService
-from ...services.auth_service import AuthenticationService
 from ...services.token_service import TokenService
 from ...services.email_service import EmailService 
 from ...models import CustomUser

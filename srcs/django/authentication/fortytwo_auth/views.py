@@ -5,13 +5,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .services.fortytwo_service import FortyTwoAuthService
 from ..services.two_factor_service import TwoFactorService
-from django.conf import settings
 from ..models import CustomUser
 from django.http import HttpResponseRedirect
-from django.template.loader import render_to_string
-from django.core.mail import send_mail
 from django.urls import reverse
-from django.utils import timezone
 from ..services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes

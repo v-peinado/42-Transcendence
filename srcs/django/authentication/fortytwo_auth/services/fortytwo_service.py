@@ -1,7 +1,6 @@
 # authentication/fortytwo_auth/services/fortytwo_service.py
 import requests
 from django.conf import settings
-from authentication.models import CustomUser
 
 class FortyTwoAuthService:
     AUTH_URL = 'https://api.intra.42.fr/oauth/authorize'

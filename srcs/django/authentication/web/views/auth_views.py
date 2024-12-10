@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from authentication.services.auth_service import AuthenticationService
@@ -10,19 +10,7 @@ from authentication.forms.auth_forms import RegistrationForm
 from authentication.services.two_factor_service import TwoFactorService
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from django.contrib.auth.hashers import check_password
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from authentication.models import CustomUser, PreviousPassword
-from django.conf import settings
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
 from django.utils.html import escape
-from django.utils.safestring import mark_safe
 
 def home(request):
     """Vista principal"""

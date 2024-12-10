@@ -1,11 +1,7 @@
-from django.contrib.auth.hashers import make_password
 from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
-from ..models import CustomUser, PreviousPassword
 from .email_service import EmailService
-from .token_service import TokenService
 import jwt
-from django.contrib.auth import authenticate
 
 class AuthenticationService:
     @staticmethod
@@ -23,14 +19,6 @@ class AuthenticationService:
             is_active=False
         )
         return user
-
-    @staticmethod
-    def validate_user_data(username, email):
-        # Validaciones de usuario existentes
-        if CustomUser.objects.filter(username=username).exists():
-            raise ValidationError("Este nombre de usuario ya está en uso")
-        if CustomUser.objects.filter(email=email).exists():
-            raise ValidationError("Este email ya está en uso")
 
     @staticmethod
     def verify_email(uidb64, token):
