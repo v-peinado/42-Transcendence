@@ -18,7 +18,7 @@ def home(request):
 
 def login(request):
     """Vista de inicio de sesión para usuarios registrados de forma manual"""												
-    if request.method == 'POST':
+    if request.method == 'POST':											# Si se envía un formulario
         username = request.POST.get('username').strip().lower()
         password = request.POST.get('password')
         remember = request.POST.get('remember', None)
