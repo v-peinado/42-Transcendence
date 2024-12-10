@@ -51,7 +51,7 @@ def edit_profile(request):
                         raise ValidationError('Este email ya está en uso')
 
                     # Generar token de verificación
-                    token_data = TokenService.generate_verification_token(user)
+                    token_data = TokenService.generate_email_verification_token(user)
                     user.pending_email = new_email
                     user.pending_email_token = token_data['token']  # Guardar solo el token
                     user.save()
@@ -156,7 +156,7 @@ def change_email(request):
             new_email = request.POST.get('email')
             if new_email != request.user.email:
                 # Generar token y enviar email de verificación
-                token_data = TokenService.generate_verification_token(request.user)
+                token_data = TokenService.generate_email_verification_token(request.user)
                 request.user.pending_email = new_email
                 request.user.pending_email_token = token_data['token']  # Guardar solo el token
                 request.user.save()

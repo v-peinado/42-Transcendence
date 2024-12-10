@@ -1,6 +1,4 @@
 from django.core.exceptions import ValidationError
-from django.utils.html import strip_tags
-from ..models import CustomUser
 
 class GDPRService:
     @staticmethod

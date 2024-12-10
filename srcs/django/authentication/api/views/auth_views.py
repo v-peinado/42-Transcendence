@@ -84,7 +84,7 @@ class RegisterAPIView(APIView):
                 password=password
             )
             
-            token = TokenService.generate_verification_token(user)
+            token = TokenService.generate_email_verification_token(user)
             EmailService.send_verification_email(user, token)
             
             return Response({

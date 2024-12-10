@@ -6,7 +6,7 @@ import jwt
 
 class TokenService:
     @staticmethod
-    def generate_verification_token(user):
+    def generate_email_verification_token(user):
         """Genera un token JWT para verificación de email"""
         jwt_token = jwt.encode({
             'user_id': user.id,
@@ -20,8 +20,8 @@ class TokenService:
         }
 
     @staticmethod
-    def generate_jwt_token(user, expiration_minutes=15):
-        """Genera un token JWT para el usuario"""
+    def generate_auth_token(user, expiration_minutes=15):
+        """Genera un token JWT para autenticación"""
         payload = {  															# payload es un diccionario con la información que se quiere codificar en el token
             'user_id': user.id,  												# user_id es el id del usuario
             'exp': datetime.utcnow() + timedelta(minutes=expiration_minutes),  	# exp es la fecha de expiración del token (15 minutos por defecto)
@@ -33,20 +33,6 @@ class TokenService:
             algorithm=settings.JWT_ALGORITHM  									# usar el algoritmo de codificación especificado en la configuración
         )
         return token
-
-    @staticmethod
-    def generate_password_reset_token(user):
-        """Genera un token JWT para reseteo de contraseña"""
-        return jwt.encode({
-            'user_id': user.id,
-            'type': 'password_reset',
-            'exp': datetime.utcnow() + timedelta(hours=1)
-        }, settings.JWT_SECRET_KEY, algorithm='HS256')
-
-    @staticmethod
-    def get_uid_for_user(user):
-        """Genera un UID seguro para el usuario"""
-        return urlsafe_base64_encode(force_bytes(user.pk))
 
     @staticmethod
     def decode_jwt_token(token):

@@ -41,7 +41,7 @@ class FortyTwoAuth:
 
             # Usuario nuevo: enviar email verificación
             if created:
-                token = TokenService.generate_jwt_token(user)
+                token = TokenService.generate_auth_token(user)
                 user.email_verification_token = token
                 user.save()
                 

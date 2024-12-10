@@ -2,6 +2,7 @@ from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
 from authentication.models import CustomUser
 from .email_service import EmailService
+from .token_service import TokenService
 import jwt
 
 class AuthenticationService:
@@ -28,7 +29,7 @@ class AuthenticationService:
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
             user = CustomUser.objects.get(pk=uid)
-            payload = decode_jwt_token(token)
+            payload = TokenService.decode_jwt_token(token)
             
             if user and payload and payload['user_id'] == user.id:
                 user.email_verified = True
