@@ -1,6 +1,6 @@
 from .auth_views import home, login, register, logout
 from .gdpr_views import gdpr_settings, export_personal_data, privacy_policy
-from .password_views import CustomPasswordResetView, CustomPasswordResetConfirmView
+from .pass_reset_views import CustomPasswordResetView, CustomPasswordResetConfirmView
 from .profile_views import edit_profile, user, delete_account
 from .verification_views import (
     verify_email, verify_email_change,

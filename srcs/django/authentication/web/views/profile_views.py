@@ -22,7 +22,7 @@ from django.http import HttpResponse
 
 @login_required
 def edit_profile(request):
-    """Vista para editar perfil de usuario"""
+    """Editar perfil de usuario"""
     if request.method == 'POST':
         try:
             user = request.user
@@ -116,8 +116,8 @@ def edit_profile(request):
 
 @login_required
 def user(request):
-    """Vista del perfil de usuario"""
-    show_qr = not request.user.is_fortytwo_user and request.user.email_verified
+    """Perfil de usuario"""
+    show_qr = request.user.email_verified
     context = {
         'user': request.user,
         'show_qr': show_qr
@@ -126,7 +126,7 @@ def user(request):
 
 @login_required
 def delete_account(request):
-    """Vista para eliminar cuenta"""
+    """Eliminar cuenta de usuario"""
     try:
         if request.method == 'POST':
             user = request.user

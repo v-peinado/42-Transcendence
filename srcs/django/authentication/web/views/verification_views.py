@@ -14,20 +14,20 @@ import io
 import json
 
 def verify_email(request, uidb64, token):
-    """Vista para verificar email"""
+    """Enviar email de verificación(bienvenida)"""
     try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = CustomUser.objects.get(pk=uid)
-        payload = TokenService.decode_jwt_token(token)
+        uid = urlsafe_base64_decode(uidb64).decode()				# Decodificar ID de usuario (base64)
+        user = CustomUser.objects.get(pk=uid)						# Obtener usuario por ID
+        payload = TokenService.decode_jwt_token(token)				# Decodificar token JWT
         
-        if user and payload and payload['user_id'] == user.id:
-            user.email_verified = True
-            user.is_active = True
-            user.email_verification_token = None
+        if user and payload and payload['user_id'] == user.id:		# Si el usuario y el token son válidos...
+            user.email_verified = True								# Marcar email como verificado
+            user.is_active = True									# Marcar usuario como activo
+            user.email_verification_token = None					# Limpiar token de verificación
             user.save()
             
             # Enviar email de bienvenida usando EmailService
-            EmailService.send_welcome_email(user)
+            EmailService.send_welcome_email(user)	
             
             messages.success(request, "Tu cuenta ha sido verificada correctamente. Ahora puedes iniciar sesión")
             return redirect('login')
@@ -35,24 +35,25 @@ def verify_email(request, uidb64, token):
             messages.error(request, "El enlace de verificación no es válido")
             return redirect('login')
             
-    except Exception as e:
+    except Exception as e:											# Capturar cualquier excepción (de TokenService o CustomUser)
         messages.error(request, str(e))
         return redirect('login')
 
 def verify_email_change(request, uidb64, token):
+    """Enviar email de verificación para cambio de email"""			
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
         payload = TokenService.decode_jwt_token(token)
         
-        if user and payload and payload['user_id'] == user.id and token == user.pending_email_token:
-            old_email = user.email
-            user.email = user.pending_email
-            user.pending_email = None
-            user.pending_email_token = None
-            user.save()
+        if user and payload and payload['user_id'] == user.id and token == user.pending_email_token:	# ...como ariba, pero se comprueba el token de email pendiente
+            old_email = user.email									# Guardar email actual (para el email de confirmación)
+            user.email = user.pending_email							# Actualizar email
+            user.pending_email = None								# Limpiar email pendiente
+            user.pending_email_token = None							# Limpiar token de email pendiente
+            user.save()												# Guardar cambios
 
-            # Enviar email de confirmación usando EmailService
+            # Enviar email con enlace de confirmación a la dirección antigua antes de cambiarla
             EmailService.send_email_change_confirmation(user, old_email)
             
             messages.success(request, 'Tu email ha sido actualizado correctamente')
@@ -67,47 +68,46 @@ def verify_email_change(request, uidb64, token):
 
 @login_required
 def enable_2fa(request):
-    """Vista para activar 2FA"""
-    if request.method == 'POST':
+    """Activar 2FA a traves de editar perfil"""
+    if request.method == 'POST':									# Si se envía un formulario
         try:
-            user = request.user
-            user.two_factor_enabled = True
-            if not user.two_factor_secret:
+            user = request.user										# Obtener usuario autenticado
+            user.two_factor_enabled = True							# Habilitar 2FA
+            if not user.two_factor_secret:							# Si no tiene un secreto 2FA...
                 user.two_factor_secret = TwoFactorService.generate_2fa_secret()
-            user.save()
+            user.save()			
             
-            messages.success(request, '2FA activado correctamente')
+            messages.success(request, '2FA activado correctamente')	# Mostrar mensaje de éxito
             return redirect('user')
             
-        except Exception as e:
+        except Exception as e:										# Capturar cualquier excepción de TwoFactorService
             messages.error(request, str(e))
             return redirect('user')
             
     return render(request, 'authentication/enable_2fa.html')
 
 def verify_2fa(request):
-    """Vista para verificar código 2FA"""
-    # Verificar autenticación previa
-    user_id = request.session.get('pending_user_id')
-    user_authenticated = request.session.get('user_authenticated', False)
+    """Verificar 2FA cuando queremos iniciar sesión"""
+    user_id = request.session.get('pending_user_id')				# Obtener ID de usuario de la sesión
+    user_authenticated = request.session.get('user_authenticated', False)	# Verificar si el usuario está autenticado
     
-    if not user_id or not user_authenticated:
-        messages.error(request, 'Sesión inválida')
+    if not user_id or not user_authenticated:						# Si no hay ID de usuario o no está autenticado...
+        messages.error(request, 'Sesión inválida')					# Mostrar mensaje de error
         return redirect('login')
     
     try:
-        user = CustomUser.objects.get(id=user_id)
-    except CustomUser.DoesNotExist:
-        # Limpiar sesión
-        for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
-            if key in request.session:
-                del request.session[key]
+        user = CustomUser.objects.get(id=user_id)					# Obtener usuario por ID
+    except CustomUser.DoesNotExist:									# Si el usuario no existe...
+        messages.error(request, 'Usuario no encontrado')			# Mostrar mensaje de error
+        for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:	# Limpiar todas las claves de la sesión
+            if key in request.session:								# Si la clave está en la sesión...
+                del request.session[key]							# Eliminar la clave de la sesión
         return redirect('login')
 
-    if request.method == 'POST':
-        code = request.POST.get('code')
+    if request.method == 'POST':									# Si se envía un formulario
+        code = request.POST.get('code')								# Obtener código 2FA del formulario
         
-        if TwoFactorService.verify_2fa_code(user, code):
+        if TwoFactorService.verify_2fa_code(user, code):			# Si el código es válido...
             # Limpiar sesión y hacer login
             for key in ['pending_user_id', 'user_authenticated', 'fortytwo_user', 'manual_user']:
                 if key in request.session:
@@ -123,7 +123,7 @@ def verify_2fa(request):
 
 @login_required
 def disable_2fa(request):
-    """Vista para desactivar 2FA"""
+    """Desactivar 2FA a través de editar perfil"""
     if request.method == 'POST':
         try:
             TwoFactorService.disable_2fa(request.user)
@@ -137,27 +137,27 @@ def disable_2fa(request):
 @login_required
 def generate_qr(request, username):
     """Vista para generar código QR"""
-    if not request.user.is_authenticated:
+    if not request.user.is_authenticated:							# Si el usuario no está autenticado...
         return redirect('login')
     
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(username)
-    qr.make(fit=True)
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)			# Crear objeto QR (versión, tamaño de caja, borde)
+    qr.add_data(username)											# Agregar datos al QR
+    qr.make(fit=True)												# Ajustar QR al tamaño
     
-    img = qr.make_image(fill='black', back_color='white')
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
+    img = qr.make_image(fill='black', back_color='white')			# Crear imagen del QR (color de relleno, color de fondo)
+    buffer = io.BytesIO()											# Buffer para almacenar imagen
+    img.save(buffer, format="PNG")									# Guardar imagen en el buffer
+    buffer.seek(0)													# Mover el cursor al inicio del buffer (para leerlo)
     
     return HttpResponse(buffer.getvalue(), content_type="image/png")
 
-@csrf_exempt
+@csrf_exempt														# Deshabilitar CSRF (Es un token de seguridad para evitar ataques CSRF, consiste en enviar una solicitud desde un sitio web malicioso)
 def validate_qr(request):
-    """Vista para validar código QR"""
-    if request.method == 'POST':
+    """Validar código QR"""
+    if request.method == 'POST':									# Si se envía un formulario
         try:
-            data = json.loads(request.body)
-            username = data.get('username')
+            data = json.loads(request.body)							# Cargar datos del cuerpo de la solicitud
+            username = data.get('username')							# Obtener nombre de usuario del formulario
             
             if not username:
                 return JsonResponse({'success': False, 'error': 'Código QR inválido'})

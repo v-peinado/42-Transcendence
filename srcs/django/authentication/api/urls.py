@@ -4,7 +4,7 @@ from .views import (
     LoginAPIView, LogoutAPIView, RegisterAPIView,
     # gdpr_views
     GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView, DeleteAccountAPIView,
-    # password_views
+    # pass_reset_views
     PasswordResetAPIView, PasswordResetConfirmAPIView, PasswordChangeAPIView,
     # profile_views
     ProfileAPIView, ProfileImageAPIView, DeleteAccountView,
@@ -42,7 +42,7 @@ profile_patterns = [
     path('profile/delete/', DeleteAccountView.as_view(), name='api_delete_account'),
 ]
 
-# password_views
+# pass_reset_views
 password_patterns = [
     path('password/reset/', PasswordResetAPIView.as_view(), name='api_password_reset'),
     path('password/reset/confirm/', PasswordResetConfirmAPIView.as_view(), name='api_password_reset_confirm'),

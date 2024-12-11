@@ -83,7 +83,7 @@ def register(request):
                     form.cleaned_data['email'],
                     form.cleaned_data['password1']
                 )
-                token = TokenService.generate_email_verification_token(user)		# Generar token de verificación
+                token = TokenService.generate_email_verification_token(user)# Generar token de verificación
                 EmailService.send_verification_email(user, token)			# Enviar email de verificación
                 messages.success(request, 'Revisa tu email para verificar tu cuenta')
                 return redirect('login')
