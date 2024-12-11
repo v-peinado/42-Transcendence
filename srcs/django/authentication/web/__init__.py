@@ -1,9 +1,11 @@
-from .views.auth_views import login, register, logout
-from .views.profile_views import edit_profile, delete_account
-from .views.password_views import CustomPasswordResetView
+from django.urls import path, include
 
-__all__ = [
-    'login', 'register', 'logout',
-    'edit_profile', 'delete_account',
-    'CustomPasswordResetView'
+app_name = 'web'
+
+urlpatterns = [
+	path('', include('authentication.web.urls'))
+    # path('auth/', include(('authentication.api.urls.auth_urls', 'auth_api'), namespace='auth_api')),
+    # path('profile/', include('authentication.api.urls.profile_urls')),
+    # path('password/', include('authentication.api.urls.password_urls')),
+    # path('verify/', include('authentication.api.urls.verification_urls')),
 ]

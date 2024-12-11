@@ -147,31 +147,3 @@ def delete_account(request):
         messages.error(request, str(e))
     
     return redirect('edit_profile')
-
-@login_required
-def change_email(request):
-    """Vista para cambiar email"""
-    if request.method == 'POST':
-        try:
-            new_email = request.POST.get('email')
-            if new_email != request.user.email:
-                # Generar token y enviar email de verificación
-                token_data = TokenService.generate_email_verification_token(request.user)
-                request.user.pending_email = new_email
-                request.user.pending_email_token = token_data['token']  # Guardar solo el token
-                request.user.save()
-
-                verification_data = {
-                    'uid': token_data['uid'],
-                    'token': token_data['token'],
-                    'new_email': new_email,
-                    'verification_url': f"{settings.SITE_URL}/verify-email-change/{token_data['uid']}/{token_data['token']}/"
-                }
-
-                EmailService.send_email_change_verification(request.user, verification_data)
-                messages.success(request, 'Te hemos enviado un email de verificación')
-            return redirect('edit_profile')
-        except Exception as e:
-            messages.error(request, str(e))
-    
-    return redirect('edit_profile')
