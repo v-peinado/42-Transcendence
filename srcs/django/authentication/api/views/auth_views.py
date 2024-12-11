@@ -11,9 +11,8 @@ from ...services.auth_service import AuthenticationService
 from ...services.email_service import EmailService
 from ...services.token_service import TokenService
 from ...serializers.user_serializers import UserSerializer
-from ...utils import validate_printable_chars  
+from ...services.password_service import PasswordService 
 from ...services.two_factor_service import TwoFactorService
-from ...models import CustomUser
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginAPIView(APIView):
@@ -72,7 +71,7 @@ class RegisterAPIView(APIView):
             password = request.data.get('password1')
             
             # Añadir validaciones de caracteres
-            if not validate_printable_chars(username):
+            if not PasswordService.validate_printable_chars(username):
                 return Response({
                     'status': 'error',
                     'message': 'El nombre de usuario no puede contener espacios ni caracteres especiales'
