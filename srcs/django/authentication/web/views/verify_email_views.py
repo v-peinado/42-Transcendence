@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ...services.verify_email_service import EmailVerificationService
+from ...services.mail_service import EmailVerificationService
 from ...services.two_factor_service import TwoFactorService
 from ...models import CustomUser
 import qrcode

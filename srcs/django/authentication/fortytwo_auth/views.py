@@ -11,7 +11,7 @@ from django.urls import reverse
 from ..services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from ..services.verify_email_service import EmailService
+from ..services.mail_service import MailSendingService
 
 class FortyTwoAuth:
     @staticmethod
@@ -45,7 +45,7 @@ class FortyTwoAuth:
                 user.email_verification_token = token
                 user.save()
                 
-                EmailService.send_verification_email(user, {
+                MailSendingService.send_verification_email(user, {
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': token
                 })

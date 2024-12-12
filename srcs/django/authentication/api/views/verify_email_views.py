@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ...services.two_factor_service import TwoFactorService
-from ...services.verify_email_service import EmailVerificationService
+from ...services.mail_service import EmailVerificationService
 import qrcode
 import io
 from django.http import HttpResponse

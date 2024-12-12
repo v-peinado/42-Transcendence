@@ -5,8 +5,8 @@ from ..models import PreviousPassword, CustomUser
 from django.contrib import messages
 from django.shortcuts import redirect
 from authentication.models import CustomUser
-import re
 from django.utils.html import escape
+import re
 
 class PasswordService:
     @staticmethod

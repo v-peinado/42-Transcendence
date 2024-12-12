@@ -1,35 +1,37 @@
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.html import strip_tags
-from django.utils import timezone
-############################################################################################################
 from authentication.models import CustomUser
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
+import jwt
 
 class EmailVerificationService:
     @staticmethod
     def verify_email(uidb64, token):
-        """Verifica el email del usuario"""
+        """Verificar email del usuario para activar cuenta"""
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
             user = CustomUser.objects.get(pk=uid)
             payload = TokenService.decode_jwt_token(token)
             
-            if not (user and payload and payload['user_id'] == user.id):
-                raise ValueError('Token inválido')
+            if user and payload and payload['user_id'] == user.id:
+                user.email_verified = True
+                user.is_active = True
+                user.email_verification_token = None
+                user.save()
                 
-            user.email_verified = True
-            user.is_active = True
-            user.email_verification_token = None
-            user.save()
-            
-            EmailService.send_welcome_email(user)
-            return user
-            
+                MailSendingService.send_welcome_email(user)
+                return user
+            else:
+                raise ValidationError("Token de verificación inválido")
+                
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist, jwt.InvalidTokenError):
+            raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
-            raise ValueError(f'Error de verificación: {str(e)}')
+            raise ValidationError(f"Error al verificar email: {str(e)}")
 
     @staticmethod
     def verify_email_change(uidb64, token):
@@ -50,14 +52,14 @@ class EmailVerificationService:
             user.pending_email_token = None
             user.save()
             
-            EmailService.send_email_change_confirmation(user, old_email)
+            MailSendingService.send_email_change_confirmation(user, old_email)
             return user
             
         except Exception as e:
             raise ValueError(f'Error de verificación: {str(e)}')
-############################################################################################################
+        
 
-class EmailService:
+class MailSendingService:
     @staticmethod
     def send_verification_email(user, token):
         """Enviar email de verificación"""
@@ -103,32 +105,6 @@ class EmailService:
         )
 
     @staticmethod
-    def send_password_reset_email(user, token):
-        """Enviar email de reseteo de contraseña"""
-        try:
-            subject = 'Restablece tu contraseña'
-            context = {
-                'user': user,
-                'domain': settings.SITE_URL,
-                'uid': token['uid'],
-                'token': token['token']
-            }
-            html_message = render_to_string('authentication/password_reset_email.html', context)
-            plain_message = strip_tags(html_message)
-            
-            send_mail(
-                subject,
-                plain_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                html_message=html_message,
-                fail_silently=False
-            )
-            return True
-        except Exception as e:
-            raise Exception(f"Error al enviar email de reseteo: {str(e)}")
-
-    @staticmethod
     def send_password_changed_notification(user, is_reset=False):
         """Notificar cambio de contraseña"""
         try:
@@ -151,79 +127,6 @@ class EmailService:
             return True
         except Exception as e:
             raise Exception(f"Error al enviar notificación: {str(e)}")
-
-    @staticmethod
-    def send_email_change_notification(user, old_email):
-        """Enviar notificación de cambio de email"""
-        try:
-            subject = 'Tu email ha sido actualizado'
-            context = {
-                'user': user,
-                'old_email': old_email
-            }
-            html_message = render_to_string('authentication/email_change_confirmation.html', context)
-            plain_message = strip_tags(html_message)
-            
-            # Enviar a ambas direcciones de email
-            send_mail(
-                subject,
-                plain_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [old_email, user.email],
-                html_message=html_message,
-                fail_silently=False
-            )
-            return True
-        except Exception as e:
-            raise Exception(f"Error al enviar notificación de cambio de email: {str(e)}")
-
-    @staticmethod
-    def send_account_deletion_notification(user):
-        """Enviar notificación de eliminación de cuenta"""
-        try:
-            subject = 'Tu cuenta ha sido eliminada'
-            context = {
-                'user': user,
-                'deletion_date': timezone.now()
-            }
-            html_message = render_to_string('authentication/account_deletion_email.html', context)
-            plain_message = strip_tags(html_message)
-            
-            send_mail(
-                subject,
-                plain_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                html_message=html_message,
-                fail_silently=False
-            )
-            return True
-        except Exception as e:
-            raise Exception(f"Error al enviar notificación de eliminación: {str(e)}")
-
-    @staticmethod
-    def send_2fa_code(user, code):
-        """Enviar código 2FA por email"""
-        try:
-            subject = 'Tu código de verificación PongOrama'
-            context = {
-                'user': user,
-                'code': code
-            }
-            html_message = render_to_string('authentication/2fa_email.html', context)
-            plain_message = strip_tags(html_message)
-            
-            send_mail(
-                subject,
-                plain_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                html_message=html_message,
-                fail_silently=False
-            )
-            return True
-        except Exception as e:
-            raise Exception(f"Error al enviar código 2FA: {str(e)}")
 
     @staticmethod
     def send_email_change_verification(user, verification_data):

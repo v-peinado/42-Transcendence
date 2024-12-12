@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import check_password
 from ...services.profile_service import ProfileService
 from ...services.gdpr_service import GDPRService
 from ...services.token_service import TokenService
-from ...services.verify_email_service import EmailService
+from ...services.mail_service import MailSendingService
 from ...services.password_service import PasswordService
 from ...models import CustomUser, PreviousPassword
 from django.urls import reverse
@@ -64,8 +64,8 @@ def edit_profile(request):
                         'verification_url': f"{settings.SITE_URL}/verify-email-change/{token_data['uid']}/{token_data['token']}/"
                     }
 
-                    # Enviar email de verificación usando EmailService
-                    EmailService.send_email_change_verification(user, verification_data)
+                    # Enviar email de verificación usando MailSendingService
+                    MailSendingService.send_email_change_verification(user, verification_data)
 
                     messages.success(request, f'Te hemos enviado un email a {new_email} para confirmar el cambio')
                     return redirect('edit_profile')

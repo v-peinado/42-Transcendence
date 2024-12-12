@@ -11,11 +11,6 @@ import random
 
 class TwoFactorService:
     @staticmethod
-    def generate_2fa_secret():
-        """Genera un nuevo secreto para 2FA usando secrets"""
-        return secrets.token_hex(16)
-
-    @staticmethod
     def generate_2fa_code(user):
         """Genera un código 2FA temporal usando JWT"""
         try:
@@ -105,7 +100,7 @@ class TwoFactorService:
     def enable_2fa(user):
         """Habilita 2FA para un usuario"""
         try:
-            user.two_factor_secret = TwoFactorService.generate_2fa_secret()
+            user.two_factor_secret = secrets.token_hex(16)
             
             user.two_factor_enabled = True
             user.save()

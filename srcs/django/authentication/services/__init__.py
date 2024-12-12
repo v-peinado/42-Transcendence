@@ -1,5 +1,5 @@
 from .auth_service import AuthenticationService
-from .verify_email_service import EmailService
+from .mail_service import MailSendingService
 from .token_service import TokenService
 from .profile_service import ProfileService
 from .gdpr_service import GDPRService
@@ -8,7 +8,7 @@ from .two_factor_service import TwoFactorService
 
 __all__ = [
     'AuthenticationService', 
-    'EmailService', 
+    'MailSendingService', 
     'TokenService', 
     'ProfileService',
     'GDPRService',

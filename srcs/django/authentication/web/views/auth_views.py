@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from authentication.services.auth_service import AuthenticationService
-from authentication.services.verify_email_service import EmailService
+from authentication.services.mail_service import MailSendingService
 from authentication.services.token_service import TokenService
 from authentication.services.password_service import PasswordService
 from authentication.forms.auth_forms import RegistrationForm
@@ -84,7 +84,7 @@ def register(request):
                     form.cleaned_data['password1']
                 )
                 token = TokenService.generate_email_verification_token(user)# Generar token de verificación
-                EmailService.send_verification_email(user, token)			# Enviar email de verificación
+                MailSendingService.send_verification_email(user, token)			# Enviar email de verificación
                 messages.success(request, 'Revisa tu email para verificar tu cuenta')
                 return redirect('login')
         except Exception as e:												# Capturar cualquier excepción

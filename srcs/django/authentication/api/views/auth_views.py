@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ...services.auth_service import AuthenticationService
-from ...services.verify_email_service import EmailService
+from ...services.mail_service import EmailVerificationService, MailSendingService
 from ...services.token_service import TokenService
 from ...serializers.user_serializers import UserSerializer
 from ...services.password_service import PasswordService 
@@ -84,7 +84,7 @@ class RegisterAPIView(APIView):
             )
             
             token = TokenService.generate_email_verification_token(user)
-            EmailService.send_verification_email(user, token)
+            MailSendingService.send_verification_email(user, token)
             
             return Response({
                 'status': 'success',
@@ -120,7 +120,7 @@ class VerifyEmailAPIView(APIView):
 
     def get(self, request, uidb64, token):
         try:
-            result = AuthenticationService.verify_email(uidb64, token)
+            result = EmailVerificationService.verify_email(uidb64, token)
             return Response({
                 'status': 'success',
                 'message': 'Email verificado correctamente'
