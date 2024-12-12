@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib import messages
 from ...services.token_service import TokenService
-from ...services.email_service import EmailService
+from ...services.verify_email_service import EmailService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ProfileAPIView(APIView):

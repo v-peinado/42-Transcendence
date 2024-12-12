@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import check_password
 from ...services.profile_service import ProfileService
 from ...services.gdpr_service import GDPRService
 from ...services.token_service import TokenService
-from ...services.email_service import EmailService
+from ...services.verify_email_service import EmailService
 from ...services.password_service import PasswordService
 from ...models import CustomUser, PreviousPassword
 from django.urls import reverse

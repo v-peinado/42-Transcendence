@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from authentication.services.auth_service import AuthenticationService
-from authentication.services.email_service import EmailService
+from authentication.services.verify_email_service import EmailService
 from authentication.services.token_service import TokenService
 from authentication.services.password_service import PasswordService
 from authentication.forms.auth_forms import RegistrationForm

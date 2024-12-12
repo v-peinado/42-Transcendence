@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ...services.auth_service import AuthenticationService
-from ...services.email_service import EmailService
+from ...services.verify_email_service import EmailService
 from ...services.token_service import TokenService
 from ...serializers.user_serializers import UserSerializer
 from ...services.password_service import PasswordService 

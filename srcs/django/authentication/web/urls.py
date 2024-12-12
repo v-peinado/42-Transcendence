@@ -9,7 +9,7 @@ from .views import (
     CustomPasswordResetView, CustomPasswordResetConfirmView,
     # profile_views
     edit_profile, user, delete_account,
-    # verification_views
+    # verify_email_views
     verify_email, verify_email_change,
     enable_2fa, verify_2fa, disable_2fa, 
     generate_qr, validate_qr,
@@ -45,7 +45,7 @@ profile_patterns = [
     path('delete-account/', delete_account, name='delete_account'),
 ]
 
-# verification_views
+# verify_email_views
 verification_patterns = [
     path('verify-email/<str:uidb64>/<str:token>/', verify_email, name='verify_email'),
     path('verify-email-change/<str:uidb64>/<token>/', verify_email_change, name='verify_email_change'),

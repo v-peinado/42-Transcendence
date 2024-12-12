@@ -1,5 +1,5 @@
 from .auth_service import AuthenticationService
-from .email_service import EmailService
+from .verify_email_service import EmailService
 from .token_service import TokenService
 from .profile_service import ProfileService
 from .gdpr_service import GDPRService

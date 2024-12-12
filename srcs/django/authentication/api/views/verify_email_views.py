@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ...services.two_factor_service import TwoFactorService
-from ...services.email_service import EmailVerificationService
+from ...services.verify_email_service import EmailVerificationService
 from django.contrib.auth import login as auth_login
 import qrcode
 import io
@@ -16,7 +16,7 @@ from ...models import CustomUser
 ###Métodos ya depurados (buenos)###
 
 
-# authentication/api/views/verification_views.py
+# authentication/api/views/verify_email_views.py
 class VerifyEmailAPIView(APIView):
     def get(self, request, uidb64, token):
         try:

@@ -11,7 +11,7 @@ from django.urls import reverse
 from ..services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from ..services.email_service import EmailService
+from ..services.verify_email_service import EmailService
 
 class FortyTwoAuth:
     @staticmethod

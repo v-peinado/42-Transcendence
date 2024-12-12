@@ -8,7 +8,7 @@ from .views import (
     PasswordResetAPIView, PasswordResetConfirmAPIView, PasswordChangeAPIView,
     # profile_views
     ProfileAPIView, ProfileImageAPIView, DeleteAccountView,
-    # verification_views
+    # verify_email_views
     VerifyEmailAPIView, VerifyEmailChangeAPIView,
     Enable2FAView, Verify2FAAPIView, Disable2FAView,
     GenerateQRCodeAPIView, ValidateQRCodeAPIView
@@ -49,7 +49,7 @@ password_patterns = [
     path('password/change/', PasswordChangeAPIView.as_view(), name='api_password_change'),
 ]
 
-# verification_views
+# verify_email_views
 verification_patterns = [
     path('verify-email/<str:uidb64>/<str:token>/', VerifyEmailAPIView.as_view(), name='api_verify_email'),
 	path('verify-email-change/<str:uidb64>/<str:token>/', VerifyEmailChangeAPIView.as_view(), name='api_verify_email_change'),

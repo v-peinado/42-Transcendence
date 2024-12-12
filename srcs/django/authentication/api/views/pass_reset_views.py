@@ -7,7 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.core.exceptions import ValidationError
 from ...services.password_service import PasswordService
 from django.contrib.auth import update_session_auth_hash
-from ...services.email_service import EmailService
+from ...services.verify_email_service import EmailService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PasswordChangeAPIView(APIView):

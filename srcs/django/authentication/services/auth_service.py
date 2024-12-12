@@ -1,7 +1,7 @@
 from django.utils.http import urlsafe_base64_decode
 from django.core.exceptions import ValidationError
 from authentication.models import CustomUser
-from .email_service import EmailService
+from .verify_email_service import EmailService
 from .token_service import TokenService
 import jwt
 

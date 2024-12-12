@@ -2,7 +2,7 @@ from .auth_views import LoginAPIView, LogoutAPIView, RegisterAPIView
 from .gdpr_views import GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView, DeleteAccountAPIView
 from .profile_views import ProfileAPIView, ProfileImageAPIView, DeleteAccountView
 from .pass_reset_views import PasswordChangeAPIView, PasswordResetAPIView, PasswordResetConfirmAPIView
-from .verification_views import (
+from .verify_email_views import (
     Enable2FAView,
     Verify2FAAPIView,
     Disable2FAView,
