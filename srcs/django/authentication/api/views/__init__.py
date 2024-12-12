@@ -4,9 +4,7 @@ from .profile_views import ProfileAPIView, ProfileImageAPIView, DeleteAccountVie
 from .pass_reset_views import PasswordChangeAPIView, PasswordResetAPIView, PasswordResetConfirmAPIView
 from .verify_email_views import VerifyEmailAPIView, VerifyEmailChangeAPIView
 from .two_factor_views import Enable2FAView, Verify2FAAPIView, Disable2FAView
-
-##cambiar
-from .verify_email_views import GenerateQRCodeAPIView, ValidateQRCodeAPIView
+from .qr_views import GenerateQRAPIView, ValidateQRAPIView
 
 __all__ = [
     # Verification email views
@@ -19,8 +17,8 @@ __all__ = [
     'Disable2FAView',
 
 	# QR code views
-    'GenerateQRCodeAPIView',
-    'ValidateQRCodeAPIView',
+    'GenerateQRAPIView',
+    'ValidateQRAPIView',
 	
     # Auth views
     'LoginAPIView',

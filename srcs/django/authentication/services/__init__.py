@@ -5,6 +5,7 @@ from .profile_service import ProfileService
 from .gdpr_service import GDPRService
 from .password_service import PasswordService
 from .two_factor_service import TwoFactorService
+from .qr_service import QRService
 
 __all__ = [
     'AuthenticationService', 
@@ -13,5 +14,6 @@ __all__ = [
     'ProfileService',
     'GDPRService',
     'PasswordService',
-    'TwoFactorService'
+    'TwoFactorService',
+	'QRService'
 ]
