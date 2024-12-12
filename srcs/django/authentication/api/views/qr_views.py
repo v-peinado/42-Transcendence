@@ -1,22 +1,23 @@
-from rest_framework.decorators import api_view, permission_classes 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import login as auth_login
+from django.views.decorators.csrf import csrf_exempt
 from ...services.qr_service import QRService
-from ...services.two_factor_service import TwoFactorService
 from django.http import HttpResponse
-from ...models import CustomUser
+
 
 qr_service = QRService()
 
+@csrf_exempt
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def GenerateQRAPIView(request, username):
     """Vista API para generar QR"""
     if not request.user.is_authenticated:
         return Response({
-            'error': 'No autenticado'
+            'status': 'error',
+            'message': 'No autorizado'
         }, status=status.HTTP_401_UNAUTHORIZED)
     
     try:
@@ -28,10 +29,13 @@ def GenerateQRAPIView(request, username):
         )
     except Exception as e:
         return Response({
-            'error': str(e)
+            'status': 'error',
+            'message': str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
 
+@csrf_exempt
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def ValidateQRAPIView(request):
     """Vista API para validar QR"""
     try:
@@ -43,45 +47,27 @@ def ValidateQRAPIView(request):
                 'error': 'Código QR inválido'
             }, status=status.HTTP_400_BAD_REQUEST)
             
-        user = CustomUser.objects.filter(username=username).first()
+        success, message, redirect_url = qr_service.validate_qr_data(username)
         
-        if user:
-            if not user.email_verified:
-                return Response({
-                    'success': False,
-                    'error': 'Por favor verifica tu email para activar tu cuenta'
-                }, status=status.HTTP_400_BAD_REQUEST)
-                
-            if user.two_factor_enabled:
-                # Guardar datos en sesión
-                request.session['pending_user_id'] = user.id
-                request.session['user_authenticated'] = True
-                request.session['manual_user'] = not user.is_fortytwo_user
-                request.session['fortytwo_user'] = user.is_fortytwo_user
-                
-                # Generar y enviar código 2FA
-                code = TwoFactorService.generate_2fa_code(user)
-                TwoFactorService.send_2fa_code(user, code)
-                
+        if success:
+            if redirect_url == '/verify-2fa/':
                 return Response({
                     'success': True,
                     'require_2fa': True,
-                    'redirect_url': '/verify-2fa/',
-                    'message': 'Código 2FA enviado a tu email'
-                })
+                    'message': message,
+                    'redirect_url': redirect_url
+                }, status=status.HTTP_200_OK)
             
-            # Si no tiene 2FA, login directo
-            auth_login(request, user)
             return Response({
                 'success': True,
-                'redirect_url': '/user/'
-            })
+                'redirect_url': redirect_url
+            }, status=status.HTTP_200_OK)
             
         return Response({
             'success': False,
-            'error': 'Usuario no encontrado'
-        }, status=status.HTTP_404_NOT_FOUND)
-        
+            'error': message
+        }, status=status.HTTP_400_BAD_REQUEST)
+            
     except Exception as e:
         return Response({
             'success': False,

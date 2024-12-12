@@ -23,8 +23,8 @@ auth_patterns = [
     path('register/', RegisterAPIView.as_view(), name='api_register'),
 ]
 
-# verification_patterns
-verification_patterns = [
+# qr_patterns
+qr_patterns = [
     path('generate-qr/<str:username>/', GenerateQRAPIView, name='api_generate_qr'),
     path('validate-qr/', ValidateQRAPIView, name='api_validate_qr'),
 ]
@@ -66,6 +66,7 @@ two_factor_patterns = [
 
 urlpatterns = [
     *auth_patterns,
+	*qr_patterns,
     *gdpr_patterns, 
     *profile_patterns,
     *password_patterns,
