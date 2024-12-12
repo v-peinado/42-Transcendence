@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ...services.two_factor_service import TwoFactorService
 from ...services.verify_email_service import EmailVerificationService
-from django.contrib.auth import login as auth_login
 import qrcode
 import io
 from django.http import HttpResponse
@@ -15,8 +14,7 @@ from ...models import CustomUser
 
 ###Métodos ya depurados (buenos)###
 
-
-# authentication/api/views/verify_email_views.py
+@method_decorator(csrf_exempt, name='dispatch')
 class VerifyEmailAPIView(APIView):
     def get(self, request, uidb64, token):
         try:
@@ -31,6 +29,7 @@ class VerifyEmailAPIView(APIView):
                 'message': str(e)
             }, status=400)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class VerifyEmailChangeAPIView(APIView):
     def get(self, request, uidb64, token):
         try:
@@ -45,78 +44,9 @@ class VerifyEmailChangeAPIView(APIView):
                 'message': str(e)
             }, status=400)
 
-
 ############################################################################################################
 
-@method_decorator(csrf_exempt, name='dispatch')
-class Enable2FAView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        """Activar 2FA para un usuario"""
-        try:
-            code = TwoFactorService.enable_2fa(request.user)
-            return Response({
-                'status': 'success',
-                'message': 'Código 2FA enviado a tu email',
-                'data': {'code': code}
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class Verify2FAAPIView(APIView):
-    def post(self, request):
-        code = request.data.get('code')
-        user_id = request.session.get('pending_user_id')
-        
-        if not user_id:
-            return Response({'error': 'No hay verificación pendiente'}, status=400)
-            
-        user = CustomUser.objects.get(id=user_id)
-        if TwoFactorService.verify_2fa_code(user, code):
-            auth_login(request, user)
-            return Response({'status': 'success'})
-        return Response({'error': 'Código inválido'}, status=400)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class Disable2FAView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        """Desactivar 2FA para un usuario"""
-        try:
-            TwoFactorService.disable_2fa(request.user)
-            return Response({
-                'status': 'success',
-                'message': '2FA desactivado correctamente'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class VerifyEmailView(APIView):
-#     permission_classes = [AllowAny]
-    
-#     def get(self, request, uidb64, token):
-#         """Verificar email de usuario"""
-#         try:
-#             result = AuthenticationService.verify_email(uidb64, token)
-#             return Response({
-#                 'status': 'success',
-#                 'message': 'Email verificado correctamente'
-#             }, status=status.HTTP_200_OK)
-#         except Exception as e:
-#             return Response({
-#                 'status': 'error',
-#                 'message': str(e)
-#             }, status=status.HTTP_400_BAD_REQUEST)
+### Métodos para organizar ###
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeAPIView(APIView):
@@ -179,7 +109,3 @@ class ValidateQRCodeAPIView(APIView):
                 'success': False,
                 'error': 'Usuario no encontrado'
             }, status=status.HTTP_404_NOT_FOUND)
-
-############################################################################################################
-
-### Métodos malos (borrar) ###

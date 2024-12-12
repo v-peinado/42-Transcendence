@@ -8,10 +8,11 @@ from .views import (
     PasswordResetAPIView, PasswordResetConfirmAPIView, PasswordChangeAPIView,
     # profile_views
     ProfileAPIView, ProfileImageAPIView, DeleteAccountView,
-    # verify_email_views
+    # verify_email_views y QR code views
     VerifyEmailAPIView, VerifyEmailChangeAPIView,
-    Enable2FAView, Verify2FAAPIView, Disable2FAView,
-    GenerateQRCodeAPIView, ValidateQRCodeAPIView
+    GenerateQRCodeAPIView, ValidateQRCodeAPIView,
+    # two_factor_views
+    Enable2FAView, Verify2FAAPIView, Disable2FAView
 )
 
 # auth_views
@@ -53,11 +54,15 @@ password_patterns = [
 verification_patterns = [
     path('verify-email/<str:uidb64>/<str:token>/', VerifyEmailAPIView.as_view(), name='api_verify_email'),
 	path('verify-email-change/<str:uidb64>/<str:token>/', VerifyEmailChangeAPIView.as_view(), name='api_verify_email_change'),
-    path('enable-2fa/', Enable2FAView.as_view(), name='api_enable_2fa'),
-    path('verify-2fa/', Verify2FAAPIView.as_view(), name='api_verify_2fa'),
-    path('disable-2fa/', Disable2FAView.as_view(), name='api_disable_2fa'),
     path('generate-qr/<str:username>/', GenerateQRCodeAPIView.as_view(), name='api_generate_qr'),
     path('validate-qr/', ValidateQRCodeAPIView.as_view(), name='api_validate_qr'),
+]
+
+# two_factor_views
+two_factor_patterns = [
+	path('enable-2fa/', Enable2FAView, name='api_enable_2fa'),
+	path('verify-2fa/', Verify2FAAPIView, name='api_verify_2fa'),
+	path('disable-2fa/', Disable2FAView, name='api_disable_2fa'),
 ]
 
 urlpatterns = [
@@ -66,4 +71,5 @@ urlpatterns = [
     *profile_patterns,
     *password_patterns,
     *verification_patterns,
+	*two_factor_patterns
 ]

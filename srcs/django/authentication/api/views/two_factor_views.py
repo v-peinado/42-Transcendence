@@ -6,7 +6,7 @@ from ...services.two_factor_service import TwoFactorService
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def enable_2fa_api(request):
+def Enable2FAView(request):
     try:
         TwoFactorService.enable_2fa(request.user)
         return Response({
@@ -18,7 +18,7 @@ def enable_2fa_api(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-def verify_2fa_api(request):
+def Verify2FAAPIView(request):
     is_valid, user = TwoFactorService.verify_session(
         request.session.get('pending_user_id'),
         request.session.get('user_authenticated', False)
@@ -42,7 +42,7 @@ def verify_2fa_api(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def disable_2fa_api(request):
+def Disable2FAView(request):
     try:
         TwoFactorService.disable_2fa(request.user)
         return Response({

@@ -2,23 +2,23 @@ from .auth_views import LoginAPIView, LogoutAPIView, RegisterAPIView
 from .gdpr_views import GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView, DeleteAccountAPIView
 from .profile_views import ProfileAPIView, ProfileImageAPIView, DeleteAccountView
 from .pass_reset_views import PasswordChangeAPIView, PasswordResetAPIView, PasswordResetConfirmAPIView
-from .verify_email_views import (
-    Enable2FAView,
-    Verify2FAAPIView,
-    Disable2FAView,
-    VerifyEmailAPIView,
-	VerifyEmailChangeAPIView,
-    GenerateQRCodeAPIView,
-    ValidateQRCodeAPIView
-)
+from .verify_email_views import VerifyEmailAPIView, VerifyEmailChangeAPIView
+from .two_factor_views import Enable2FAView, Verify2FAAPIView, Disable2FAView
+
+##cambiar
+from .verify_email_views import GenerateQRCodeAPIView, ValidateQRCodeAPIView
 
 __all__ = [
-    # Verification views
+    # Verification email views
+    'VerifyEmailAPIView',
+	'VerifyEmailChangeAPIView',
+
+	# Two factor views
     'Enable2FAView',
     'Verify2FAAPIView',
     'Disable2FAView',
-    'VerifyEmailAPIView',
-	'VerifyEmailChangeAPIView',
+
+	# QR code views
     'GenerateQRCodeAPIView',
     'ValidateQRCodeAPIView',
 	
