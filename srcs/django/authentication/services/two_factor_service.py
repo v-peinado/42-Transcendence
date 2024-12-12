@@ -105,18 +105,12 @@ class TwoFactorService:
     def enable_2fa(user):
         """Habilita 2FA para un usuario"""
         try:
-            # Generar secreto y código
             user.two_factor_secret = TwoFactorService.generate_2fa_secret()
-            code = TwoFactorService.generate_2fa_code(user)
             
-            # Activar 2FA
             user.two_factor_enabled = True
             user.save()
             
-            # Enviar código
-            TwoFactorService.send_2fa_code(user, code)
-            
-            return code
+            return True
             
         except Exception as e:
             raise ValueError(f"Error al activar 2FA: {str(e)}")
@@ -128,3 +122,35 @@ class TwoFactorService:
         user.two_factor_secret = None
         user.save()
         return True
+
+    @staticmethod
+    def verify_session(user_id, user_authenticated):
+        """Verifica la validez de la sesión para 2FA"""
+        try:
+            if not user_id or not user_authenticated:
+                return False, None
+            
+            user = CustomUser.objects.get(id=user_id)
+            if not user.two_factor_enabled:
+                return False, None
+                
+            return True, user
+            
+        except CustomUser.DoesNotExist:
+            return False, None
+        except Exception:
+            return False, None
+
+    @staticmethod
+    def clean_session_keys(session):
+        """Limpia las claves de sesión relacionadas con 2FA"""
+        keys_to_remove = [
+            'pending_user_id',
+            'user_authenticated',
+            'fortytwo_user',
+            'manual_user'
+        ]
+        
+        for key in keys_to_remove:
+            if key in session:
+                del session[key]
