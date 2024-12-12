@@ -5,32 +5,24 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
+from django.contrib.auth import update_session_auth_hash
 from ...services.profile_service import ProfileService
-from ...services.gdpr_service import GDPRService
-from ...serializers.user_serializers import UserSerializer
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
-from django.contrib import messages
-from ...services.token_service import TokenService
-from ...services.mail_service import MailSendingService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
-        """Obtener perfil del usuario"""
+        """Obtener datos del perfil"""
         try:
-            serializer = UserSerializer(request.user)
-            return Response({
-                'status': 'success',
-                'data': serializer.data
-            }, status=status.HTTP_200_OK)
+            user = request.user
+            profile_data = ProfileService.get_profile_data(user)
+            return Response(profile_data)
         except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def post(self, request):
         """Actualizar perfil del usuario"""
@@ -57,81 +49,77 @@ class ProfileAPIView(APIView):
         except ValidationError as e:
             return Response({'error': str(e)}, status=400)
 
-@method_decorator(csrf_exempt, name='dispatch')
-class ProfileImageAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        """Actualizar imagen de perfil"""
-        try:
-            if 'profile_image' not in request.FILES:
-                return Response({
-                    'status': 'error',
-                    'message': 'No se proporcionó imagen'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            ProfileService.update_profile(
-                user=request.user,
-                data={},
-                files=request.FILES
-            )
-            return Response({
-                'status': 'success',
-                'message': 'Imagen actualizada correctamente'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request):
-        """Restaurar imagen por defecto"""
-        try:
-            ProfileService.restore_default_image(request.user)
-            return Response({
-                'status': 'success',
-                'message': 'Imagen restaurada correctamente'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class DeleteAccountView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        """Eliminar cuenta del usuario"""
+    def put(self, request):
         try:
             user = request.user
-            if not user.is_fortytwo_user:
-                password = request.data.get('confirm_password')
-                if not user.check_password(password):
-                    return Response({
-                        'status': 'error',
-                        'message': 'Contraseña incorrecta'
-                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Restaurar imagen
+            if request.data.get('restore_image'):
+                message = ProfileService.handle_image_restoration(user)
+                return Response({'message': message})
 
-            GDPRService.delete_user_data(user)
-            return Response({
-                'status': 'success',
-                'message': 'Cuenta eliminada correctamente'
-            }, status=status.HTTP_200_OK)
+            # Cambio de email
+            if not user.is_fortytwo_user and request.data.get('email'):
+                message = ProfileService.handle_email_change(user, request.data['email'])
+                return Response({'message': message})
+
+            # Cambio de contraseña
+            if all(request.data.get(f) for f in ['current_password', 'new_password1', 'new_password2']):
+                if ProfileService.handle_password_change(
+                    user,
+                    request.data['current_password'],
+                    request.data['new_password1'],
+                    request.data['new_password2']
+                ):
+                    update_session_auth_hash(request, user)
+                    return Response({'message': 'Contraseña actualizada correctamente'})
+
+            # Actualizar perfil
+            ProfileService.update_profile(user, request.data, request.FILES)
+            return Response({'message': 'Perfil actualizado correctamente'})
+
+        except ValidationError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Obtener perfil de usuario"""
+        try:
+            profile_data = ProfileService.get_user_profile_data(request.user)
+            return Response(profile_data)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DeleteAccountAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Eliminar cuenta de usuario"""
+        try:
+            user = request.user
+            password = request.data.get('confirm_password')
+            
+            if ProfileService.delete_user_account(user, password):
+                return Response({
+                    'status': 'success',
+                    'message': 'Cuenta eliminada correctamente'
+                }, status=status.HTTP_200_OK)
+                
+        except ValidationError as e:
             return Response({
                 'status': 'error',
                 'message': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
-
-@login_required
-def edit_profile(request):
-    if request.method == 'POST':
-        # Manejar la restauración de imágenes
-        if user.is_fortytwo_user and 'restore_42_image' in request.POST:
-            user.profile_image = None
-            user.save()
-            messages.success(request, 'Imagen de perfil restaurada a la imagen de 42')
-            return redirect('edit_profile')
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

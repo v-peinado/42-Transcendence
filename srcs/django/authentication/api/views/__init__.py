@@ -1,6 +1,6 @@
 from .auth_views import LoginAPIView, LogoutAPIView, RegisterAPIView
-from .gdpr_views import GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView, DeleteAccountAPIView
-from .profile_views import ProfileAPIView, ProfileImageAPIView, DeleteAccountView
+from .gdpr_views import GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView
+from .profile_views import ProfileAPIView, UserProfileAPIView, DeleteAccountAPIView
 from .pass_reset_views import PasswordChangeAPIView, PasswordResetAPIView, PasswordResetConfirmAPIView
 from .verify_email_views import VerifyEmailAPIView, VerifyEmailChangeAPIView
 from .two_factor_views import Enable2FAView, Verify2FAAPIView, Disable2FAView
@@ -29,12 +29,11 @@ __all__ = [
     'GDPRSettingsAPIView',
     'ExportPersonalDataAPIView',
     'PrivacyPolicyAPIView',
-    'DeleteAccountAPIView',
 
     # Profile views
     'ProfileAPIView',
-    'ProfileImageAPIView',
-    'DeleteAccountView',
+	'UserProfileAPIView',
+	'DeleteAccountAPIView',
     
     # Pass_reset views
     'PasswordChangeAPIView',

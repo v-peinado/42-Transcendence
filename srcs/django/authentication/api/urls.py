@@ -3,11 +3,11 @@ from .views import (
     # auth_views
     LoginAPIView, LogoutAPIView, RegisterAPIView,
     # gdpr_views
-    GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView, DeleteAccountAPIView,
+    GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView,
     # pass_reset_views
     PasswordResetAPIView, PasswordResetConfirmAPIView, PasswordChangeAPIView,
     # profile_views
-    ProfileAPIView, ProfileImageAPIView, DeleteAccountView,
+    ProfileAPIView, UserProfileAPIView, DeleteAccountAPIView,
     # verify_email_views
     VerifyEmailAPIView, VerifyEmailChangeAPIView,
 	# qr_views
@@ -34,14 +34,13 @@ gdpr_patterns = [
     path('gdpr/settings/', GDPRSettingsAPIView.as_view(), name='api_gdpr_settings'),
     path('gdpr/export-data/', ExportPersonalDataAPIView.as_view(), name='api_export_data'),
     path('gdpr/privacy-policy/', PrivacyPolicyAPIView.as_view(), name='api_privacy_policy'),
-    path('gdpr/delete-account/', DeleteAccountAPIView.as_view(), name='api_delete_account'),
 ]
 
 # profile_views
 profile_patterns = [
     path('profile/', ProfileAPIView.as_view(), name='api_profile'),
-    path('profile/image/', ProfileImageAPIView.as_view(), name='api_profile_image'),
-    path('profile/delete/', DeleteAccountView.as_view(), name='api_delete_account'),
+	path('profile/user/', UserProfileAPIView.as_view(), name='api_user_profile'),
+	path('profile/delete-account/', DeleteAccountAPIView.as_view(), name='api_delete_account'),
 ]
 
 # pass_reset_views

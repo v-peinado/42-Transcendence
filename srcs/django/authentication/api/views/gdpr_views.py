@@ -44,34 +44,6 @@ class ExportPersonalDataAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 @method_decorator(csrf_exempt, name='dispatch')
-class DeleteAccountAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
-        """Eliminar cuenta de usuario"""
-        try:
-            user = request.user
-            # Si es usuario manual, verificar contraseña
-            if not user.is_fortytwo_user:
-                password = request.data.get('confirm_password')
-                if not user.check_password(password):
-                    return Response({
-                        'status': 'error',
-                        'message': 'Contraseña incorrecta'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            
-            GDPRService.delete_user_data(user)
-            return Response({
-                'status': 'success',
-                'message': 'Cuenta eliminada correctamente'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-@method_decorator(csrf_exempt, name='dispatch')
 class PrivacyPolicyAPIView(APIView):
     def get(self, request):
         """Obtener la política de privacidad"""
