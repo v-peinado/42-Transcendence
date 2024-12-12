@@ -4,67 +4,32 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.http import urlsafe_base64_decode
+from ...services.email_service import EmailVerificationService
 from ...services.two_factor_service import TwoFactorService
-from ...services.token_service import TokenService
-from ...services.email_service import EmailService 
 from ...models import CustomUser
 import qrcode
 import io
 import json
 
 def verify_email(request, uidb64, token):
-    """Enviar email de verificación(bienvenida)"""
+    """Vista para verificación de email"""
     try:
-        uid = urlsafe_base64_decode(uidb64).decode()				# Decodificar ID de usuario (base64)
-        user = CustomUser.objects.get(pk=uid)						# Obtener usuario por ID
-        payload = TokenService.decode_jwt_token(token)				# Decodificar token JWT
-        
-        if user and payload and payload['user_id'] == user.id:		# Si el usuario y el token son válidos...
-            user.email_verified = True								# Marcar email como verificado
-            user.is_active = True									# Marcar usuario como activo
-            user.email_verification_token = None					# Limpiar token de verificación
-            user.save()
-            
-            # Enviar email de bienvenida usando EmailService
-            EmailService.send_welcome_email(user)	
-            
-            messages.success(request, "Tu cuenta ha sido verificada correctamente. Ahora puedes iniciar sesión")
-            return redirect('login')
-        else:
-            messages.error(request, "El enlace de verificación no es válido")
-            return redirect('login')
-            
-    except Exception as e:											# Capturar cualquier excepción (de TokenService o CustomUser)
+        EmailVerificationService.verify_email(uidb64, token)
+        messages.success(request, "Tu cuenta ha sido verificada correctamente.")
+    except ValueError as e:
         messages.error(request, str(e))
-        return redirect('login')
+    return redirect('login')
 
 def verify_email_change(request, uidb64, token):
-    """Enviar email de verificación para cambio de email"""			
+    """Vista para verificación de cambio de email"""
     try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = CustomUser.objects.get(pk=uid)
-        payload = TokenService.decode_jwt_token(token)
-        
-        if user and payload and payload['user_id'] == user.id and token == user.pending_email_token:	# ...como ariba, pero se comprueba el token de email pendiente
-            old_email = user.email									# Guardar email actual (para el email de confirmación)
-            user.email = user.pending_email							# Actualizar email
-            user.pending_email = None								# Limpiar email pendiente
-            user.pending_email_token = None							# Limpiar token de email pendiente
-            user.save()												# Guardar cambios
-
-            # Enviar email con enlace de confirmación a la dirección antigua antes de cambiarla
-            EmailService.send_email_change_confirmation(user, old_email)
-            
-            messages.success(request, 'Tu email ha sido actualizado correctamente')
-            return redirect('edit_profile')
-            
-        messages.error(request, 'El enlace de verificación no es válido')
-        return redirect('edit_profile')
-        
-    except Exception as e:
+        EmailVerificationService.verify_email_change(uidb64, token)
+        messages.success(request, 'Tu email ha sido actualizado correctamente')
+    except ValueError as e:
         messages.error(request, str(e))
-        return redirect('edit_profile')
+    return redirect('edit_profile')
+
+# Vistas para activar y desactivar 2FA
 
 @login_required
 def enable_2fa(request):
@@ -133,6 +98,9 @@ def disable_2fa(request):
             messages.error(request, str(e))
             return redirect('user')
     return HttpResponseNotAllowed(['POST'])
+
+
+# Vistas para generar y validar códigos QR
 
 @login_required
 def generate_qr(request, username):

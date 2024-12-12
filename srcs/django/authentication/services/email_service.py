@@ -3,6 +3,59 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.utils.html import strip_tags
 from django.utils import timezone
+############################################################################################################
+from authentication.models import CustomUser
+from authentication.services.token_service import TokenService
+from django.utils.http import urlsafe_base64_decode
+
+class EmailVerificationService:
+    @staticmethod
+    def verify_email(uidb64, token):
+        """Verifica el email del usuario"""
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = CustomUser.objects.get(pk=uid)
+            payload = TokenService.decode_jwt_token(token)
+            
+            if not (user and payload and payload['user_id'] == user.id):
+                raise ValueError('Token inválido')
+                
+            user.email_verified = True
+            user.is_active = True
+            user.email_verification_token = None
+            user.save()
+            
+            EmailService.send_welcome_email(user)
+            return user
+            
+        except Exception as e:
+            raise ValueError(f'Error de verificación: {str(e)}')
+
+    @staticmethod
+    def verify_email_change(uidb64, token):
+        """Verifica el cambio de email"""
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = CustomUser.objects.get(pk=uid)
+            payload = TokenService.decode_jwt_token(token)
+            
+            if not (user and payload and 
+                   payload['user_id'] == user.id and 
+                   token == user.pending_email_token):
+                raise ValueError('Token inválido')
+            
+            old_email = user.email
+            user.email = user.pending_email
+            user.pending_email = None
+            user.pending_email_token = None
+            user.save()
+            
+            EmailService.send_email_change_confirmation(user, old_email)
+            return user
+            
+        except Exception as e:
+            raise ValueError(f'Error de verificación: {str(e)}')
+############################################################################################################
 
 class EmailService:
     @staticmethod

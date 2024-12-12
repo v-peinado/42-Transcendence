@@ -6,7 +6,8 @@ from .verification_views import (
     Enable2FAView,
     Verify2FAAPIView,
     Disable2FAView,
-    VerifyEmailView,
+    VerifyEmailAPIView,
+	VerifyEmailChangeAPIView,
     GenerateQRCodeAPIView,
     ValidateQRCodeAPIView
 )
@@ -16,7 +17,8 @@ __all__ = [
     'Enable2FAView',
     'Verify2FAAPIView',
     'Disable2FAView',
-    'VerifyEmailView',
+    'VerifyEmailAPIView',
+	'VerifyEmailChangeAPIView',
     'GenerateQRCodeAPIView',
     'ValidateQRCodeAPIView',
 	

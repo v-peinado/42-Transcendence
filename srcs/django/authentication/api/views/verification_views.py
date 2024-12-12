@@ -5,13 +5,48 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from ...services.two_factor_service import TwoFactorService
-from ...services.auth_service import AuthenticationService
+from ...services.email_service import EmailVerificationService
 from django.contrib.auth import login as auth_login
 import qrcode
 import io
 from django.http import HttpResponse
 from ...models import CustomUser
-from ...services.token_service import TokenService
+############################################################################################################
+
+###Métodos ya depurados (buenos)###
+
+
+# authentication/api/views/verification_views.py
+class VerifyEmailAPIView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            EmailVerificationService.verify_email(uidb64, token)
+            return Response({
+                'status': 'success',
+                'message': 'Email verificado correctamente'
+            })
+        except ValueError as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+class VerifyEmailChangeAPIView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            EmailVerificationService.verify_email_change(uidb64, token)
+            return Response({
+                'status': 'success',
+                'message': 'Email actualizado correctamente'
+            })
+        except ValueError as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
+
+
+############################################################################################################
 
 @method_decorator(csrf_exempt, name='dispatch')
 class Enable2FAView(APIView):
@@ -65,23 +100,23 @@ class Disable2FAView(APIView):
                 'message': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-@method_decorator(csrf_exempt, name='dispatch')
-class VerifyEmailView(APIView):
-    permission_classes = [AllowAny]
+# @method_decorator(csrf_exempt, name='dispatch')
+# class VerifyEmailView(APIView):
+#     permission_classes = [AllowAny]
     
-    def get(self, request, uidb64, token):
-        """Verificar email de usuario"""
-        try:
-            result = AuthenticationService.verify_email(uidb64, token)
-            return Response({
-                'status': 'success',
-                'message': 'Email verificado correctamente'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                'status': 'error',
-                'message': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+#     def get(self, request, uidb64, token):
+#         """Verificar email de usuario"""
+#         try:
+#             result = AuthenticationService.verify_email(uidb64, token)
+#             return Response({
+#                 'status': 'success',
+#                 'message': 'Email verificado correctamente'
+#             }, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response({
+#                 'status': 'error',
+#                 'message': str(e)
+#             }, status=status.HTTP_400_BAD_REQUEST)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRCodeAPIView(APIView):
@@ -144,3 +179,7 @@ class ValidateQRCodeAPIView(APIView):
                 'success': False,
                 'error': 'Usuario no encontrado'
             }, status=status.HTTP_404_NOT_FOUND)
+
+############################################################################################################
+
+### Métodos malos (borrar) ###

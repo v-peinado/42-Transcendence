@@ -9,7 +9,7 @@ from .views import (
     # profile_views
     ProfileAPIView, ProfileImageAPIView, DeleteAccountView,
     # verification_views
-    VerifyEmailView, 
+    VerifyEmailAPIView, VerifyEmailChangeAPIView,
     Enable2FAView, Verify2FAAPIView, Disable2FAView,
     GenerateQRCodeAPIView, ValidateQRCodeAPIView
 )
@@ -51,7 +51,8 @@ password_patterns = [
 
 # verification_views
 verification_patterns = [
-    path('verify-email/<str:uidb64>/<str:token>/', VerifyEmailView.as_view(), name='api_verify_email'),
+    path('verify-email/<str:uidb64>/<str:token>/', VerifyEmailAPIView.as_view(), name='api_verify_email'),
+	path('verify-email-change/<str:uidb64>/<str:token>/', VerifyEmailChangeAPIView.as_view(), name='api_verify_email_change'),
     path('enable-2fa/', Enable2FAView.as_view(), name='api_enable_2fa'),
     path('verify-2fa/', Verify2FAAPIView.as_view(), name='api_verify_2fa'),
     path('disable-2fa/', Disable2FAView.as_view(), name='api_disable_2fa'),
