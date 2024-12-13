@@ -51,6 +51,9 @@ class PasswordService:
     def validate_manual_registration(username, email, password1, password2):
         """Validar datos de registro con protección contra XSS y SQL injection"""
         
+        if password1 != password2:
+            raise ValidationError("Las contraseñas no coinciden")
+        
         # Escapar HTML en username y email para evitar XSS
         username = escape(username)
         email = escape(email)
@@ -99,8 +102,15 @@ class PasswordService:
         if re.match(r'.*@student\.42.*\.com$', email.lower()):
             raise ValidationError("Los correos con dominio @student.42*.com están reservados para usuarios de 42")
             
-        # Validar contraseñas
-        PasswordService._validate_password_basic(CustomUser(username=username), password1, password2)
+        # Validar contraseñas sin crear instancia de usuario
+        if password1 != password2:
+            raise ValidationError("Las contraseñas no coinciden")
+        
+        if password1.lower() == username.lower():
+            raise ValidationError("La contraseña no puede ser igual al nombre de usuario")
+        
+        # Validación estándar de Django sin usuario
+        validate_password(password1)
 
     @staticmethod
     def initiate_password_reset(email):
