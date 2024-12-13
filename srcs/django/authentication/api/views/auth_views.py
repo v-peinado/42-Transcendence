@@ -1,18 +1,14 @@
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth import logout as auth_logout
 from django.core.exceptions import ValidationError
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.utils.html import escape
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ...services.auth_service import AuthenticationService
-from ...services.mail_service import EmailVerificationService, MailSendingService
-from ...services.token_service import TokenService
+from ...services.mail_service import EmailVerificationService
 from ...serializers.user_serializers import UserSerializer
-from ...services.password_service import PasswordService 
-from ...services.two_factor_service import TwoFactorService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginAPIView(APIView):
@@ -32,21 +28,30 @@ class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-        
-        if user and user.email_verified:
-            if user.two_factor_enabled:
-                code = TwoFactorService.generate_2fa_code(user)
-                TwoFactorService.send_2fa_code(user, code)
+        try:
+            redirect_to = AuthenticationService.login_user(
+                request,
+                request.data.get('username'),
+                request.data.get('password'),
+                request.data.get('remember', False)
+            )
+            
+            if redirect_to == 'verify_2fa':
                 return Response({
                     'status': 'pending_2fa',
                     'message': 'Código 2FA enviado'
                 })
-            auth_login(request, user)
-            return Response({'status': 'success'})
-        return Response({'status': 'error'}, status=400)
+                
+            return Response({
+                'status': 'success',
+                'redirect_url': f'/{redirect_to}/'
+            })
+            
+        except ValidationError as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LogoutAPIView(APIView):
@@ -65,66 +70,17 @@ class RegisterAPIView(APIView):
 
     def post(self, request):
         try:
-            # Sanitizar datos antes de procesarlos (XSS)
-            username = escape(request.data.get('username', ''))
-            email = escape(request.data.get('email', ''))
-            password = request.data.get('password1')
-            
-            # Añadir validaciones de caracteres
-            if not PasswordService.validate_printable_chars(username):
+            if AuthenticationService.handle_registration(request.data):
                 return Response({
-                    'status': 'error',
-                    'message': 'El nombre de usuario no puede contener espacios ni caracteres especiales'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            user = AuthenticationService.register_user(
-                username=username,
-                email=email,
-                password=password
-            )
-            
-            token = TokenService.generate_email_verification_token(user)
-            MailSendingService.send_verification_email(user, token)
-            
-            return Response({
-                'status': 'success',
-                'message': 'Te hemos enviado un email para verificar tu cuenta',
-                'data': UserSerializer(user).data
-            }, status=status.HTTP_201_CREATED)
-            
-        except ValidationError as e:
+                    'status': 'success',
+                    'message': 'Te hemos enviado un email para verificar tu cuenta',
+                    'data': UserSerializer(request.user).data
+                }, status=status.HTTP_201_CREATED)
+                
             return Response({
                 'status': 'error',
-                'message': str(e)
+                'message': 'Error en el registro'
             }, status=status.HTTP_400_BAD_REQUEST)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class GenerateQRAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, username):
-        # Código para generar QR
-        pass
-
-@method_decorator(csrf_exempt, name='dispatch')
-class ValidateQRAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        # Código para validar QR
-        pass
-
-@method_decorator(csrf_exempt, name='dispatch')
-class VerifyEmailAPIView(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request, uidb64, token):
-        try:
-            result = EmailVerificationService.verify_email(uidb64, token)
-            return Response({
-                'status': 'success',
-                'message': 'Email verificado correctamente'
-            }, status=status.HTTP_200_OK)
             
         except ValidationError as e:
             return Response({
