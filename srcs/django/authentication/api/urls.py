@@ -5,7 +5,7 @@ from .views import (
     # gdpr_views
     GDPRSettingsAPIView, ExportPersonalDataAPIView, PrivacyPolicyAPIView,
     # pass_reset_views
-    PasswordResetAPIView, PasswordResetConfirmAPIView, PasswordChangeAPIView,
+    PasswordResetAPIView, PasswordResetConfirmAPIView,
     # profile_views
     ProfileAPIView, UserProfileAPIView, DeleteAccountAPIView,
     # verify_email_views
@@ -47,7 +47,6 @@ profile_patterns = [
 password_patterns = [
     path('password/reset/', PasswordResetAPIView.as_view(), name='api_password_reset'),
     path('password/reset/confirm/', PasswordResetConfirmAPIView.as_view(), name='api_password_reset_confirm'),
-    path('password/change/', PasswordChangeAPIView.as_view(), name='api_password_change'),
 ]
 
 # verify_email_views

@@ -11,13 +11,7 @@ from django.utils.html import escape
 class AuthenticationService:
     @staticmethod
     def register_user(username, email, password):
-        """Verificar que el usuario no exista y crearlo"""
-        # Validar que el usuario no exista
-        if CustomUser.objects.filter(username=username).exists():
-            raise ValidationError("Este nombre de usuario ya está en uso")
-        if CustomUser.objects.filter(email=email).exists():
-            raise ValidationError("Este email ya está en uso")
-            
+        """Registro básico de usuario"""
         user = CustomUser.objects.create_user(
             username=username.lower(),
             email=email.lower(),
