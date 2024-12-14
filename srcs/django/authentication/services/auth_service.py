@@ -7,6 +7,7 @@ from .two_factor_service import TwoFactorService
 from authentication.forms.auth_forms import RegistrationForm
 from django.contrib.auth import authenticate, login as auth_login
 from django.utils.html import escape
+from authentication.models import PreviousPassword
 
 class AuthenticationService:
     @staticmethod
@@ -56,6 +57,7 @@ class AuthenticationService:
         password = form_data.get('password1')
         confirm_password = form_data.get('password2')
 
+        # Validar datos
         PasswordService.validate_manual_registration(
             username, 
             email, 
@@ -65,11 +67,17 @@ class AuthenticationService:
 
         form = RegistrationForm(form_data)
         if form.is_valid():
+            # Crear usuario
             user = AuthenticationService.register_user(
                 form.cleaned_data['username'],
                 form.cleaned_data['email'],
                 form.cleaned_data['password1']
             )
+            
+            # Guardar contraseña inicial en historial
+            PreviousPassword.objects.create(user=user, password=user.password)
+            
+            # Generar y enviar token de verificación
             token = TokenService.generate_email_verification_token(user)
             MailSendingService.send_verification_email(user, token)
             return True

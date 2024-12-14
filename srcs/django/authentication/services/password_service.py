@@ -5,54 +5,55 @@ from ..models import PreviousPassword, CustomUser
 from .token_service import TokenService
 from .mail_service import MailSendingService
 from authentication.models import CustomUser
+
 from django.utils.html import escape
 import re
 
 class PasswordService:
     @staticmethod
-    def _validate_password_basic(user, new_password1, new_password2):
-        """Validaciones básicas de contraseña"""
-        if new_password1 != new_password2:
+    def _validate_password_match(password1, password2):
+        if password1 != password2:
             raise ValidationError("Las contraseñas no coinciden")
-            
-        if new_password1.lower() == user.username.lower():
+
+    @staticmethod
+    def _validate_password_complexity(password, user):
+        if password.lower() == user.username.lower():
             raise ValidationError("La contraseña no puede ser igual al nombre de usuario")
             
-        if not all(char.isprintable() for char in new_password1):
+        if not all(char.isprintable() for char in password):
             raise ValidationError("La contraseña no puede contener caracteres no imprimibles")
 
-        # Longitudes
-        min_length = 8
-        max_length = 20
-        if len(new_password1) < min_length:
+        min_length, max_length = 8, 20
+        if len(password) < min_length:
             raise ValidationError(f"La contraseña debe tener al menos {min_length} caracteres")
-        if len(new_password1) > max_length:
+        if len(password) > max_length:
             raise ValidationError(f"La contraseña no puede tener más de {max_length} caracteres")
 
-        # Validaciones estándar de Django
-        validate_password(new_password1, user)
-        
-        # Histórico
-        previous_passwords = PreviousPassword.objects.filter(user=user).order_by('-created_at')[:3]
-        for prev_password in previous_passwords:
-            if check_password(new_password1, prev_password.password):
-                raise ValidationError('No puedes reutilizar ninguna de tus últimas tres contraseñas')
+        validate_password(password, user)
+
+    @staticmethod
+    def _validate_password_history(user, password):
+        if user.pk:
+            previous_passwords = PreviousPassword.objects.filter(user=user).order_by('-created_at')[:3]
+            for prev_password in previous_passwords:
+                if check_password(password, prev_password.password):
+                    raise ValidationError('No puedes reutilizar ninguna de tus últimas tres contraseñas')
+
+    @staticmethod
+    def _validate_password_basic(user, password1, password2):
+        PasswordService._validate_password_match(password1, password2)
+        PasswordService._validate_password_complexity(password1, user)
+        PasswordService._validate_password_history(user, password1)
 
     @staticmethod
     def validate_password_change(user, current_password, new_password1, new_password2):
-        """Validar cambio de contraseña"""
         if not user.check_password(current_password):
             raise ValidationError('La contraseña actual es incorrecta')
-            
         PasswordService._validate_password_basic(user, new_password1, new_password2)
-        return True
 
     @staticmethod
     def validate_manual_registration(username, email, password1, password2):
         """Validar datos de registro con protección contra XSS y SQL injection"""
-        
-        if password1 != password2:
-            raise ValidationError("Las contraseñas no coinciden")
         
         # Escapar HTML en username y email para evitar XSS
         username = escape(username)
@@ -65,6 +66,9 @@ class PasswordService:
     		'../', '..\\',                                     											# Path Traversal
     		'&', '|', ';', '`', '$', '(', ')', '{', '}',     											# Command Injection
    			 '\0', '\n', '\r', '\t', '\b'                      											# Control Characters
+        ]
+        allowed_chars = [
+            '-', '.', '_', '@', '+' 
         ]
         
 		# Validar que no contengan scripts maliciosos
@@ -101,16 +105,8 @@ class PasswordService:
         # Validar email de 42
         if re.match(r'.*@student\.42.*\.com$', email.lower()):
             raise ValidationError("Los correos con dominio @student.42*.com están reservados para usuarios de 42")
-            
-        # Validar contraseñas sin crear instancia de usuario
-        if password1 != password2:
-            raise ValidationError("Las contraseñas no coinciden")
         
-        if password1.lower() == username.lower():
-            raise ValidationError("La contraseña no puede ser igual al nombre de usuario")
-        
-        # Validación estándar de Django sin usuario
-        validate_password(password1)
+        PasswordService._validate_password_basic(CustomUser(username=username), password1, password2)
 
     @staticmethod
     def initiate_password_reset(email):

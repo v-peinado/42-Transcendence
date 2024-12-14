@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from ...services.auth_service import AuthenticationService
-from ...services.mail_service import EmailVerificationService
 from ...serializers.user_serializers import UserSerializer
 
 @method_decorator(csrf_exempt, name='dispatch')

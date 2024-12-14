@@ -87,11 +87,30 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
-
+        
 class PreviousPassword(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.CASCADE,
+        related_name='previous_passwords'
+    )
     password = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+        verbose_name = 'Contraseña anterior'
+        verbose_name_plural = 'Contraseñas anteriores'
+
+    def save(self, *args, **kwargs):
+        # Mantener solo las últimas 3 contraseñas
+        if self.__class__.objects.filter(user=self.user).count() >= 3:
+            oldest_password = self.__class__.objects.filter(
+                user=self.user
+            ).order_by('created_at').first()
+            if oldest_password:
+                oldest_password.delete()
+        super().save(*args, **kwargs)
