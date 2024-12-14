@@ -2,6 +2,7 @@ from rest_framework import serializers
 from authentication.models import CustomUser
 from authentication.services.password_service import PasswordService
 from django.utils.html import escape
+from django.core.exceptions import ValidationError
 
 class UserSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True, style={'input_type': 'password'})
