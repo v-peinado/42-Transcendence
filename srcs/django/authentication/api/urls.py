@@ -1,5 +1,5 @@
 from django.urls import path, include
-from ninja import NinjaAPI
+#from ninja import NinjaAPI
 
 from .views import (
     # auth_views
@@ -19,12 +19,12 @@ from .views import (
 )
 
 # Inicializa NinjaAPI
-api = NinjaAPI(title="Authentication API", description="Endpoints de la API de autenticación")
+#api = NinjaAPI(title="Authentication API", description="Endpoints de la API de autenticación")
 
 # Define tus endpoints para NinjaAPI
-@api.get("/example")
-def example_endpoint(request):
-    return {"message": "Este es un ejemplo de NinjaAPI"}
+# @api.get("/example")
+# def example_endpoint(request):
+#     return {"message": "Este es un ejemplo de NinjaAPI"}
 
 # auth_views
 auth_patterns = [
@@ -72,10 +72,10 @@ two_factor_patterns = [
     path('disable-2fa/', Disable2FAView, name='api_disable_2fa'),
 ]
 
-ninja_docs = [
-    path("ninja/", api.urls),
+# ninja_docs = [
+#     path("ninja/", api.urls),
 
-]
+# ]
 
 urlpatterns = [
     *auth_patterns,
@@ -85,5 +85,5 @@ urlpatterns = [
     *password_patterns,
     *verification_patterns,
     *two_factor_patterns
-    *ninja_docs
+    # *ninja_docs
 ]
