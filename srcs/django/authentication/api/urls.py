@@ -1,5 +1,6 @@
-from django.urls import path, include
-#from ninja import NinjaAPI
+from django.urls import path
+from ninja import NinjaAPI
+from authentication.api.controllers import router as auth_router
 
 from .views import (
     # auth_views
@@ -18,13 +19,17 @@ from .views import (
     Enable2FAView, Verify2FAAPIView, Disable2FAView
 )
 
-# Inicializa NinjaAPI
-#api = NinjaAPI(title="Authentication API", description="Endpoints de la API de autenticación")
+# Configuración Django Ninja
+api = NinjaAPI(
+    title='Authentication API',
+    version='2.0.0',
+    description='API para autenticación y gestión de usuarios',
+    urls_namespace='auth_api',
+    docs_url="/docs"
+)
 
-# Define tus endpoints para NinjaAPI
-# @api.get("/example")
-# def example_endpoint(request):
-#     return {"message": "Este es un ejemplo de NinjaAPI"}
+# Agregar router de autenticación
+api.add_router("/auth/", auth_router)
 
 # auth_views
 auth_patterns = [
@@ -72,11 +77,6 @@ two_factor_patterns = [
     path('disable-2fa/', Disable2FAView, name='api_disable_2fa'),
 ]
 
-# ninja_docs = [
-#     path("ninja/", api.urls),
-
-# ]
-
 urlpatterns = [
     *auth_patterns,
 	*qr_patterns,
@@ -84,6 +84,46 @@ urlpatterns = [
     *profile_patterns,
     *password_patterns,
     *verification_patterns,
-    *two_factor_patterns
-    # *ninja_docs
+    *two_factor_patterns,
+    
+    path('ninja/', api.urls),
 ]
+
+"""
+URLs ABSOLUTAS API (Base: http://localhost:8000):
+
+ AUTENTICACIÓN (URLs Django):
+   * http://localhost:8000/api/login/
+   * http://localhost:8000/api/logout/
+   * http://localhost:8000/api/register/
+
+ GDPR Y PRIVACIDAD (URLs Django):
+   * http://localhost:8000/api/gdpr/settings/
+   * http://localhost:8000/api/gdpr/export-data/
+   * http://localhost:8000/api/gdpr/privacy-policy/
+
+ PERFIL (URLs Django):
+   * http://localhost:8000/api/profile/
+   * http://localhost:8000/api/profile/user/
+   * http://localhost:8000/api/profile/delete-account/
+
+ CONTRASEÑA (URLs Django):
+   * http://localhost:8000/api/password/reset/
+   * http://localhost:8000/api/password/reset/confirm/
+
+ EMAIL (URLs Django):
+   * http://localhost:8000/api/verify-email/<str:uidb64>/<str:token>/
+   * http://localhost:8000/api/verify-email-change/<str:uidb64>/<str:token>/
+
+ QR Y 2FA (URLs Django):
+   * http://localhost:8000/api/generate-qr/<str:username>/
+   * http://localhost:8000/api/validate-qr/
+   * http://localhost:8000/api/enable-2fa/
+   * http://localhost:8000/api/verify-2fa/
+   * http://localhost:8000/api/disable-2fa/
+
+ DJANGO NINJA (Nueva API):
+   * http://localhost:8000/api/ninja/docs        -> Documentación Swagger/OpenAPI
+   * http://localhost:8000/api/ninja/openapi.json -> Especificación OpenAPI
+   * http://localhost:8000/api/ninja/auth/hello   -> Endpoint de ejemplo
+"""

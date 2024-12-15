@@ -1,7 +1,9 @@
-from django.urls import path, include
+# from django.urls import path, include
 
-app_name = 'api'
+# app_name = 'api'
 
-urlpatterns = [
-    path('', include('authentication.api.urls'))
-]
+# default_app_config = 'authentication.api.apps.ApiConfig'
+
+# urlpatterns = [
+#     path('', include('authentication.api.urls'))
+# ]
