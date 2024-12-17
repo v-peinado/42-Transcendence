@@ -19,7 +19,8 @@ RUN apt-get update && \
         /tmp/fastcgi_temp \
         /tmp/uwsgi_temp \
         /tmp/scgi_temp \
-        /etc/nginx/ssl && \
+        /etc/nginx/ssl \
+        /etc/modsecurity/rules && \
     chown -R nginx:nginx \
         /var/log/modsecurity \
         /tmp/ssl \
@@ -32,7 +33,8 @@ RUN apt-get update && \
         /var/cache/nginx \
         /var/log/nginx \
         /usr/share/nginx/html \
-        /usr/bin/openssl && \
+        /usr/bin/openssl \
+        /etc/modsecurity/rules && \
     chmod -R 755 /etc/nginx \
         /var/cache/nginx \
         /var/log/nginx \

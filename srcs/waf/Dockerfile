@@ -16,7 +16,7 @@ RUN apt-get update && \
 RUN useradd -r -s /sbin/nologin nginxuser || true && \
     mkdir -p /var/log/modsecurity /etc/vault.d/data /etc/modsecurity/rules && \
     chown -R nginxuser:nginxuser /var/log/modsecurity /etc/vault.d /etc/modsecurity/rules && \
-    chmod -R 777 /var/log/modsecurity /etc/vault.d /etc/modsecurity/rules
+    chmod -R 755 /var/log/modsecurity /etc/vault.d /etc/modsecurity/rules
 
 # Variables de entorno
 ENV MODSECURITY=On
@@ -28,6 +28,14 @@ ENV PATH="${PATH}:/usr/local/bin"
 
 # Crear punto de montaje
 VOLUME ["/etc/vault.d/data"]
+
+# Copiar reglas
+COPY rules/main.conf /etc/modsecurity/rules/main.conf
+COPY rules/auth.conf /etc/modsecurity/rules/auth.conf
+COPY rules/monitoring.conf /etc/modsecurity/rules/monitoring.conf
+
+# Verificar configuración
+RUN nginx -t
 
 USER nginxuser
 
