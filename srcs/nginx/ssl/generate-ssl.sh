@@ -16,9 +16,9 @@ log_error() {
     echo -e "\033[0;31m[ERROR]\033[0m $1"
 }
 
-# Función para verificar requisitos
+# Modifica la función check_requirements
 check_requirements() {
-    if ! command -v openssl &> /dev/null; then
+    if ! which openssl > /dev/null 2>&1; then
         log_error "OpenSSL no está instalado"
         exit 1
     fi
