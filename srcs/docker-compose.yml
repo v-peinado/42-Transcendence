@@ -41,9 +41,10 @@ services:
     build:
       context: ./nginx
     container_name: nginx
-    ports:
-      - "8443:443"
-      - "8080:80"   
+    # Quitar los ports o usar puertos internos diferentes
+    # ports:
+    #   - "8080:80"   
+    #   - "8443:443"
     networks:
       - trancendence-backend
     volumes:
@@ -63,8 +64,10 @@ services:
       context: ./waf
       dockerfile: Dockerfile
     ports:
-      - "443:443"  # Solo exponemos 443 para HTTPS
-      - "8200:8200" # Puerto de Vault
+      - "443:443"     # HTTPS principal
+      - "80:80"       # HTTP (redirige a HTTPS)
+      - "8200:8200"   # Vault API
+      - "8201:8201"   # Vault Cluster
     volumes:
       - ./waf/rules:/etc/modsecurity/rules:ro
       - ./waf/vault/config.hcl:/etc/vault.d/config.hcl:ro
@@ -74,12 +77,10 @@ services:
       - VAULT_DEV_ROOT_TOKEN_ID=myroot
       - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
       - VAULT_ADDR=http://127.0.0.1:8200
-    cap_add:
-      - IPC_LOCK
-    networks:
-      - trancendence-backend
     depends_on:
       - nginx
+    networks:
+      - trancendence-backend
     restart: always
 
 volumes:
