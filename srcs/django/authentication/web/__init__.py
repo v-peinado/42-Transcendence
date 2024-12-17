@@ -1,7 +1,7 @@
-from django.urls import path, include
+# from django.urls import path, include
 
-app_name = 'web'
+# app_name = 'web'
 
-urlpatterns = [
-	path('', include('authentication.web.urls'))
-]
+# urlpatterns = [
+# 	path('', include('authentication.web.urls'))
+# ]
