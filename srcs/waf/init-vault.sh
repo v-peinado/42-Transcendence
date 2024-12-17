@@ -3,16 +3,14 @@
 # Iniciar Vault en modo desarrollo
 vault server -dev -dev-root-token-id=myroot -dev-listen-address=0.0.0.0:8200 &
 
-# Esperar a que Vault esté listo
+# Esperar a que Vault esté completamente iniciado
 sleep 5
 
+# Configurar variables de entorno
 export VAULT_ADDR='http://127.0.0.1:8200'
 export VAULT_TOKEN=myroot
 
-# Habilitar secrets engine
-vault secrets enable -path=secret kv-v2
-
-# Crear política para Django
+# Configurar política y secretos
 vault policy write django - <<EOF
 path "secret/data/django/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
@@ -21,14 +19,17 @@ EOF
 
 # Almacenar secretos iniciales
 vault kv put secret/django/config \
-    SECRET_KEY="tu_django_secret_key" \
-    DB_PASSWORD="tu_db_password"
+    SECRET_KEY="django_secret_key_production" \
+    DB_PASSWORD="db_password_production"
 
 # Habilitar auditoría
 vault audit enable file file_path=/var/log/vault/audit.log
 
-# Mantener nginx en segundo plano
-nginx -g 'daemon off;'
+# Verificar que Vault está funcionando
+vault status
+
+# Iniciar nginx en primer plano
+exec nginx -g 'daemon off;'
 
 # #!/bin/sh
 
