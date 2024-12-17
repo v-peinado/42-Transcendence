@@ -187,6 +187,8 @@ help:
 	@echo "  http://localhost:8000      - Accede a la web desde Django (backend sin Nginx)"
 	@echo "  http://localhost:8080      - Accede a la web desde Nginx (frontend sin SSL)"
 	@echo "  https://localhost:8443     - Accede a la web desde Nginx (frontend con SSL)"
+	@echo "  https://localhost:8200     - Api Address de Waf"
+	@echo "  https://localhost:8201     - Clustering Address de Waf"
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
