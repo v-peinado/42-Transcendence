@@ -4,7 +4,7 @@ USER root
 
 WORKDIR /app
 
-# Instalar HashiCorp Vault y dependencias usando apt-get
+# Instalar HashiCorp Vault y dependencias
 RUN apt-get update && \
     apt-get install -y curl unzip && \
     curl -fsSL https://releases.hashicorp.com/vault/1.13.0/vault_1.13.0_linux_amd64.zip -o vault.zip && \
@@ -12,11 +12,27 @@ RUN apt-get update && \
     mv vault /usr/local/bin/ && \
     rm vault.zip
 
-# Crear usuario WAF y directorios necesarios
-RUN useradd -r -s /sbin/nologin nginxuser || true && \
-    mkdir -p /var/log/modsecurity /etc/vault.d/data /etc/modsecurity/rules && \
-    chown -R nginxuser:nginxuser /var/log/modsecurity /etc/vault.d /etc/modsecurity/rules && \
-    chmod -R 755 /var/log/modsecurity /etc/vault.d /etc/modsecurity/rules
+# Crear directorios y configurar permisos
+RUN mkdir -p /var/log/modsecurity \
+            /etc/vault.d/data \
+            /etc/modsecurity/rules \
+            /var/log/vault \
+            /var/run/nginx && \
+    useradd -r -s /sbin/nologin nginxuser || true && \
+    chown -R nginxuser:nginxuser \
+        /var/log/modsecurity \
+        /etc/vault.d \
+        /etc/modsecurity/rules \
+        /var/log/vault \
+        /var/run/nginx
+
+# Copiar archivos de configuración
+COPY ./rules/ /etc/modsecurity/rules/
+COPY ./vault/config.hcl /etc/vault.d/
+COPY ./init-vault.sh /usr/local/bin/
+
+# Establecer permisos de ejecución
+RUN chmod +x /usr/local/bin/init-vault.sh
 
 # Variables de entorno
 ENV MODSECURITY=On
@@ -27,16 +43,16 @@ ENV VAULT_ADDR=http://127.0.0.1:8200
 ENV PATH="${PATH}:/usr/local/bin"
 
 # Crear punto de montaje
-VOLUME ["/etc/vault.d/data"]
+VOLUME ["/etc/vault.d/data", "/var/log/modsecurity"]
 
-# Copiar reglas
-COPY rules/main.conf /etc/modsecurity/rules/main.conf
-COPY rules/auth.conf /etc/modsecurity/rules/auth.conf
-COPY rules/monitoring.conf /etc/modsecurity/rules/monitoring.conf
-
-# Verificar configuración
+# Verificar la configuración de nginx
 RUN nginx -t
 
-USER nginxuser
+# Mantener root como usuario para el inicio
+USER root
 
-CMD ["sh", "-c", "/usr/local/bin/init-vault.sh & nginx -g 'daemon off;'"]
+# Exponer puertos necesarios
+EXPOSE 443 8200
+
+# Comando de inicio modificado para ejecutar como root
+CMD ["/usr/local/bin/init-vault.sh"]
