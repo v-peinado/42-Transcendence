@@ -30,12 +30,18 @@ RUN mkdir -p /var/log/modsecurity \
         /tmp/ssl \
         /tmp/modsecurity
 
+RUN mkdir -p /tmp/ssl && \
+    chown -R nginxuser:nginxuser /tmp/ssl
+
 # Copiar archivos de configuración
 COPY ./rules/ /etc/modsecurity/rules/
 COPY ./vault/config.hcl /etc/vault.d/
 COPY ./init-vault.sh /usr/local/bin/
 COPY ./ssl/generate-ssl.sh /usr/local/bin/
 COPY ./custom-nginx.conf /etc/nginx/nginx.conf
+
+COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh
 
 RUN chown -R nginxuser:nginxuser /etc/modsecurity/rules
 

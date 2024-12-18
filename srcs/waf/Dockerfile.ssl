@@ -1,0 +1,10 @@
+FROM alpine:3.18
+
+RUN apk add --no-cache openssl
+
+WORKDIR /ssl
+
+COPY ssl/generate-ssl.sh /generate-ssl.sh
+RUN chmod +x /generate-ssl.sh
+
+CMD ["/generate-ssl.sh"]

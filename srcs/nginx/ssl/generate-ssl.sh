@@ -1,41 +1,39 @@
 #!/bin/sh
 
 # Variables de configuración
-SSL_DIR="/etc/nginx/ssl"
-TMP_SSL_DIR="/tmp/ssl"
-KEY_FILE="${TMP_SSL_DIR}/transcendence.key"
-CERT_FILE="${TMP_SSL_DIR}/transcendence.crt"
+SSL_DIR="/tmp/ssl"
+KEY_FILE="${SSL_DIR}/transcendence.key"
+CERT_FILE="${SSL_DIR}/transcendence.crt"
 CERT_SUBJECT="/C=ES/ST=Madrid/L=Madrid/O=42/OU=42Madrid/CN=localhost"
 
 # Función para mostrar mensajes
 log_info() {
-    echo -e "\033[0;32m[INFO]\033[0m $1"
+    echo -e "[INFO] $1"
 }
 
 log_error() {
-    echo -e "\033[0;31m[ERROR]\033[0m $1"
-}
-
-# Modifica la función check_requirements
-check_requirements() {
-    if ! which openssl > /dev/null 2>&1; then
-        log_error "OpenSSL no está instalado"
-        exit 1
-    fi
+    echo -e "[ERROR] $1"
 }
 
 # Función para crear directorios
 create_ssl_directory() {
     log_info "Creando directorios..."
-    mkdir -p "$TMP_SSL_DIR" || {
-        log_error "No se pudo crear el directorio SSL"
+    mkdir -p "$SSL_DIR" || {
+        log_error "No se pudo crear $SSL_DIR"
         exit 1
     }
+    # Asegurar permisos
+    chmod 755 "$SSL_DIR"
 }
 
-# Función para generar certificados
+# Generar certificados
 generate_certificates() {
-    log_info "Generando certificados SSL..."
+    log_info "Verificando certificados..."
+    
+    # Forzar regeneración de certificados
+    rm -f "$CERT_FILE" "$KEY_FILE"
+    
+    log_info "Generando nuevos certificados SSL..."
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
         -keyout "$KEY_FILE" \
         -out "$CERT_FILE" \
@@ -44,26 +42,31 @@ generate_certificates() {
             exit 1
         }
     
-    # Establecer permisos
-    chmod 600 "$KEY_FILE" || {
-        log_error "No se pudo establecer permisos para la key"
+    # Establecer permisos correctos
+    chmod 644 "$CERT_FILE" || {
+        log_error "Error estableciendo permisos del certificado"
         exit 1
     }
-    chmod 644 "$CERT_FILE" || {
-        log_error "No se pudo establecer permisos para el certificado"
+    chmod 600 "$KEY_FILE" || {
+        log_error "Error estableciendo permisos de la key"
         exit 1
     }
     
-    log_info "Certificados generados correctamente"
+    # Verificar que los archivos existen
+    if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
+        log_error "Los certificados no se generaron correctamente"
+        exit 1
+    fi
+    
+    log_info "Certificados generados en: $SSL_DIR"
 }
 
 # Función principal
 main() {
     log_info "Iniciando configuración SSL..."
-    check_requirements
     create_ssl_directory
     generate_certificates
-    log_info "Configuración SSL completada con éxito"
+    log_info "Configuración SSL completada"
 }
 
 # Ejecutar script

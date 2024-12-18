@@ -1,6 +1,7 @@
 networks:
   trancendence-backend:
-    name: trancendence-backend
+    driver: bridge
+  app-network:
     driver: bridge
 
 services:
@@ -10,19 +11,23 @@ services:
     container_name: django
     ports:
       - "8000:8000"
-    volumes:
-      - django_code:/app
-      - django_media:/app/media
     networks:
       - trancendence-backend
+    volumes:
+      - django_static:/app/static
+      - django_media:/app/media
+    environment:
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=postgres
+      - SQL_USER=postgres
+      - SQL_PASSWORD=postgres
+      - SQL_HOST=db
+      - SQL_PORT=5432
     depends_on:
       - db
     env_file:
       - .env
     restart: always
-    environment:
-      - SQL_HOST=db
-      - SQL_PORT=5432
 
   db:
     image: postgres:17
@@ -38,15 +43,14 @@ services:
     restart: always
 
   nginx:
-    build:
-      context: ./nginx
+    build: ./nginx
     container_name: nginx
-    # Quitar los ports o usar puertos internos diferentes
-    # ports:
-    #   - "8080:80"   
-    #   - "8443:443"
+    expose:
+      - "80"
+      - "8000"
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - type: volume
         source: nginx_static
@@ -60,29 +64,30 @@ services:
     restart: always
 
   waf:
-    build:
-      context: ./waf
-      dockerfile: Dockerfile
+    build: ./waf
     ports:
-      - "443:443"     # HTTPS principal
-      - "80:80"       # HTTP (redirige a HTTPS)
-      - "8200:8200"   # Vault API
-      - "8201:8201"   # Vault Cluster
-    volumes:
-      - ./waf/rules:/etc/modsecurity/rules:ro
-      - ./waf/vault/config.hcl:/etc/vault.d/config.hcl:ro
-      - waf_logs:/var/log/modsecurity
-      - vault_data:/etc/vault.d/data:rw
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # Añadir montaje de certificados SSL
-    environment:
-      - VAULT_DEV_ROOT_TOKEN_ID=myroot
-      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
-      - VAULT_ADDR=http://127.0.0.1:8200
-    depends_on:
-      - nginx
+      - "80:80"
+      - "443:443"
+      - "8200:8200"
     networks:
       - trancendence-backend
+      - app-network
+    volumes:
+      - ssl_certs:/tmp/ssl
+      - ./waf/rules:/etc/modsecurity/rules:ro
+      - waf_logs:/var/log/modsecurity
+    environment:
+      - NGINX_BACKEND=web:8000
+    depends_on:
+      - web
     restart: always
+
+  ssl-cert-generator:
+    build: 
+      context: ./waf
+      dockerfile: Dockerfile.ssl
+    volumes:
+      - waf-certs:/ssl
 
 volumes:
   postgres_data: 
@@ -91,5 +96,8 @@ volumes:
   nginx_static:
   waf_logs:
   vault_data:
+  ssl_certs:
+  waf-certs:
+  django_static:
 
 
