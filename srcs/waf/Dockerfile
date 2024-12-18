@@ -31,6 +31,9 @@ COPY ./rules/ /etc/modsecurity/rules/
 COPY ./vault/config.hcl /etc/vault.d/
 COPY ./init-vault.sh /usr/local/bin/
 
+# Copiar script de generación de SSL
+COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+
 # Establecer permisos de ejecución
 RUN chmod +x /usr/local/bin/init-vault.sh
 
