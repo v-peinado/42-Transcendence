@@ -44,9 +44,14 @@ services:
 
   nginx:
     build: ./nginx
-    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8443:8443"
     expose:
       - "80"
+      - "443"
+      - "8443"
     networks:
       - trancendence-backend
       - app-network
@@ -61,6 +66,8 @@ services:
     depends_on:
       - web
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
 
   waf:
     build: ./waf
@@ -76,8 +83,9 @@ services:
       - ./waf/rules:/etc/modsecurity/rules:ro
       - waf_logs:/var/log/nginx
     environment:
-      - NGINX_BACKEND=web:8000
+      - NGINX_BACKEND=nginx:80
     depends_on:
+      - nginx
       - web
     restart: always
 

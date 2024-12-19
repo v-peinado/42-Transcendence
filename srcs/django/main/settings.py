@@ -25,7 +25,10 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', get_random_secret_key())	# Clav
 DEBUG = True																# Modo de depuración (True para desarrollo, False para producción)
 
 # Definir hosts permitidos en producción (por defecto no permitimos ningún host)
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = []
+
+# Definir hosts permitidos en producción (por defecto no permitimos ningún host)
+#ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Definir aplicaciones instaladas en el proyecto
 INSTALLED_APPS = [
