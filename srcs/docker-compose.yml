@@ -47,7 +47,6 @@ services:
     container_name: nginx
     expose:
       - "80"
-      - "8000"
     networks:
       - trancendence-backend
       - app-network
@@ -58,7 +57,7 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # Montar certificados SSL
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - web
     restart: always
@@ -67,15 +66,15 @@ services:
     build: ./waf
     ports:
       - "8082:8081"   # http://localhost:8082 para acceder al WAF
-      - "8445:8444"  # https://localhost:8445 para acceder al WAF
-      - "8200:8200" # http://localhost:8200 para acceder a Vault
+      - "8445:8444"   # https://localhost:8445 para acceder al WAF
+      - "8200:8200"   # http://localhost:8200 para acceder a Vault
     networks:
       - trancendence-backend
       - app-network
     volumes:
       - ssl_certs:/tmp/ssl
       - ./waf/rules:/etc/modsecurity/rules:ro
-      - waf_logs:/var/log/nginx  # Añadir este volumen
+      - waf_logs:/var/log/nginx
     environment:
       - NGINX_BACKEND=web:8000
     depends_on:
