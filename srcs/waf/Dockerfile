@@ -67,7 +67,7 @@ VOLUME ["/etc/vault.d/data", "/var/log/modsecurity"]
 USER root
 
 # Exponer puertos necesarios
-EXPOSE 80 443 8200 8201
+EXPOSE 8081 8200 8444 
 
 # Comando de inicio
 CMD ["/bin/bash", "-c", "/usr/local/bin/init-vault.sh & nginx -g 'daemon off;'"]

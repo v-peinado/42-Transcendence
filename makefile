@@ -189,6 +189,10 @@ help:
 	@echo "  https://localhost:8443     - Accede a la web desde Nginx (frontend con SSL)"
 	@echo "  https://localhost:8200     - Api Address de Waf"
 	@echo "  https://localhost:8201     - Clustering Address de Waf"
+	@echo "  http://localhost:8202      - redirige a https://localhost:8445"
+	@echo "  https://localhost:8445	 	- Waf"
+	@echo "  https://localhost:8200	 	- Vault "
+
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""

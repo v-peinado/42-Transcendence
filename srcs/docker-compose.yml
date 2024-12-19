@@ -66,16 +66,16 @@ services:
   waf:
     build: ./waf
     ports:
-      - "80:80"
-      - "443:443"
-      - "8200:8200"
+      - "8082:8081"   # http://localhost:8081 para acceder al WAF
+      - "8445:8444"  # https://localhost:8444 para acceder al WAF
+      - "8200:8200" # http://localhost:8200 para acceder a Vault
     networks:
       - trancendence-backend
       - app-network
     volumes:
       - ssl_certs:/tmp/ssl
       - ./waf/rules:/etc/modsecurity/rules:ro
-      - waf_logs:/var/log/modsecurity
+      - waf_logs:/var/log/nginx  # Añadir este volumen
     environment:
       - NGINX_BACKEND=web:8000
     depends_on:
