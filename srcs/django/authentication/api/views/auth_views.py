@@ -4,8 +4,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from ...services.auth_service import AuthenticationService
-from ...forms import UserForm
 import json
+from django.contrib.auth.decorators import login_required
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LoginAPIView(View):
@@ -60,13 +60,14 @@ class LoginAPIView(View):
             }, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class LogoutAPIView(View):
     def post(self, request, *args, **kwargs):
         try:
             AuthenticationService.logout_user(request)
             return JsonResponse({
                 'status': 'success',
-                'message': 'Logout exitoso'
+                'message': AuthenticationService.MESSAGES['logout_success']
             })
         except ValidationError as e:
             return JsonResponse({

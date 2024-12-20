@@ -72,9 +72,9 @@ verification_patterns = [
 
 # two_factor_views
 two_factor_patterns = [
-    path('enable-2fa/', Enable2FAView, name='api_enable_2fa'),
-    path('verify-2fa/', Verify2FAAPIView, name='api_verify_2fa'),
-    path('disable-2fa/', Disable2FAView, name='api_disable_2fa'),
+    path('enable-2fa/', Enable2FAView.as_view(), name='api_enable_2fa'),
+    path('verify-2fa/', Verify2FAAPIView.as_view(), name='api_verify_2fa'),
+    path('disable-2fa/', Disable2FAView.as_view(), name='api_disable_2fa'),
 ]
 
 urlpatterns = [

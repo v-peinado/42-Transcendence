@@ -16,19 +16,12 @@ def login(request, data: AuthSchema) -> Dict:
 @router.post("/register", tags=["auth"])
 def register(request, data: RegisterSchema) -> Dict:
     """Registrar nuevo usuario"""
-    try:
-        # Debug print
-        print(f"RegisterSchema data: {data.dict()}")
-        
+    try:        
         request.data = data.dict()
         response = RegisterAPIView.as_view()(request)
-        
-        # Debug print
-        print(f"Register response: {response.content}")
-        
+
         return response
     except Exception as e:
-        print(f"Error en registro: {str(e)}")  # Debug
         return JsonResponse({
             'status': 'error',
             'message': f'Error en registro: {str(e)}'
