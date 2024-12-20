@@ -34,7 +34,12 @@ def GenerateQRAPIView(request, username):
 def ValidateQRAPIView(request):
     """Vista API para validar QR"""
     try:
-        data = json.loads(request.body)
+        # Obtener datos ya sea de ninja o del request body
+        if hasattr(request, 'data'):
+            data = request.data
+        else:
+            data = json.loads(request.body)
+            
         username = data.get('username')
         
         if not username:
@@ -69,7 +74,7 @@ def ValidateQRAPIView(request):
             'success': False,
             'error': str(e)
         }, status=400)
-
+    
 #########################################################################################################
 # from rest_framework.decorators import api_view, permission_classes
 # from rest_framework.permissions import IsAuthenticated, AllowAny

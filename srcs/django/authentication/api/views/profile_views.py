@@ -9,26 +9,25 @@ import json
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ProfileAPIView(View):
-    # Anteriormente: permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         """Obtener datos del perfil"""
         try:
-            user = request.user
-            profile_data = ProfileService.get_profile_data(user)
+            profile_data = ProfileService.get_profile_data(request.user)
             return JsonResponse(profile_data)
         except Exception as e:
-            return JsonResponse(
-                {'error': str(e)}, 
-                status=500
-            )
+            return JsonResponse({'error': str(e)}, status=500)
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Actualizar perfil del usuario"""
         try:
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+            
             ProfileService.update_profile(
                 user=request.user,
-                data=json.loads(request.body),
+                data=data,
                 files=request.FILES
             )
             return JsonResponse({
@@ -41,30 +40,35 @@ class ProfileAPIView(View):
                 'message': str(e)
             }, status=400)
 
-    def patch(self, request):
+    def patch(self, request, *args, **kwargs):
         try:
-            data = json.loads(request.body)
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+            
             ProfileService.update_profile(request.user, data)
             return JsonResponse({'status': 'success'})
         except ValidationError as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-    def put(self, request):
+    def put(self, request, *args, **kwargs):
         try:
-            user = request.user
-            data = json.loads(request.body)
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
             
-            # Restaurar imagen
+            user = request.user
+
             if data.get('restore_image'):
                 message = ProfileService.handle_image_restoration(user)
                 return JsonResponse({'message': message})
 
-            # Cambio de email
             if not user.is_fortytwo_user and data.get('email'):
                 message = ProfileService.handle_email_change(user, data['email'])
                 return JsonResponse({'message': message})
 
-            # Cambio de contraseña
             if all(data.get(f) for f in ['current_password', 'new_password1', 'new_password2']):
                 if ProfileService.handle_password_change(
                     user,
@@ -75,7 +79,6 @@ class ProfileAPIView(View):
                     update_session_auth_hash(request, user)
                     return JsonResponse({'message': 'Contraseña actualizada correctamente'})
 
-            # Actualizar perfil
             ProfileService.update_profile(user, data, request.FILES)
             return JsonResponse({'message': 'Perfil actualizado correctamente'})
 
@@ -84,32 +87,27 @@ class ProfileAPIView(View):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
+@method_decorator(csrf_exempt, name='dispatch')
 class UserProfileAPIView(View):
-    # Anteriormente: permission_classes = [IsAuthenticated]
-
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         """Obtener perfil de usuario"""
         try:
             profile_data = ProfileService.get_user_profile_data(request.user)
             return JsonResponse(profile_data)
         except Exception as e:
-            return JsonResponse(
-                {'error': str(e)},
-                status=500
-            )
+            return JsonResponse({'error': str(e)}, status=500)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class DeleteAccountAPIView(View):
-    # Anteriormente: permission_classes = [IsAuthenticated]
-    
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Eliminar cuenta de usuario"""
         try:
-            user = request.user
-            data = json.loads(request.body)
-            password = data.get('confirm_password')
-            
-            if ProfileService.delete_user_account(user, password):
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+                
+            if ProfileService.delete_user_account(request.user, data.get('confirm_password')):
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Cuenta eliminada correctamente'
@@ -120,12 +118,16 @@ class DeleteAccountAPIView(View):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
+            }, status=400)
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)
             }, status=500)
-
 #########################################################################################################
 # from django.utils.decorators import method_decorator
 # from django.views.decorators.csrf import csrf_exempt

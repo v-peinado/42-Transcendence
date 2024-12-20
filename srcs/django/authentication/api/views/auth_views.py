@@ -4,7 +4,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
 from ...services.auth_service import AuthenticationService
-from ...forms import UserForm  # Cambiado aquí
+from ...forms import UserForm
 import json
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -22,9 +22,14 @@ class LoginAPIView(View):
                 400: Credenciales inválidas
                 403: Email no verificado
     """
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         try:
-            data = json.loads(request.body)
+            # Obtener datos ya sea de ninja o del request body
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+
             redirect_to = AuthenticationService.login_user(
                 request,
                 data.get('username'),
@@ -48,10 +53,15 @@ class LoginAPIView(View):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
+            }, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class LogoutAPIView(View):
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         try:
             AuthenticationService.logout_user(request)
             return JsonResponse({
@@ -66,116 +76,52 @@ class LogoutAPIView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterAPIView(View):
-    # Anteriormente: permission_classes = [AllowAny]
-
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         try:
-            data = json.loads(request.body)
-            if AuthenticationService.handle_registration(data):
+            # Obtener datos ya sea de ninja o del request body
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+
+            try:
+                result = AuthenticationService.handle_registration(data)
+                
+                if isinstance(result, dict):
+                    # Si el servicio devuelve un diccionario con datos adicionales
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': AuthenticationService.MESSAGES['email_verification'],
+                        'data': result
+                    }, status=201)
+                elif result:
+                    # Si el servicio devuelve True
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': AuthenticationService.MESSAGES['email_verification']
+                    }, status=201)
+                else:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': AuthenticationService.MESSAGES['form_validation']
+                    }, status=400)
+
+            except ValidationError as service_error:
                 return JsonResponse({
-                    'status': 'success',
-                    'message': 'Te hemos enviado un email para verificar tu cuenta',
-                    'data': UserForm(instance=request.user).data
-                }, status=201)
-                
+                    'status': 'error',
+                    'message': str(service_error)
+                }, status=400)
+
+        except json.JSONDecodeError as json_error:
             return JsonResponse({
                 'status': 'error',
-                'message': 'Error en el registro'
+                'message': 'Invalid JSON data'
             }, status=400)
-            
-        except ValidationError as e:
+        except Exception as e:
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
-            }, status=400)
-        
-	
-#########################################################################################################
-# from django.contrib.auth import logout as auth_logout
-# from django.core.exceptions import ValidationError
-# from django.utils.decorators import method_decorator
-# from django.views.decorators.csrf import csrf_exempt
-# from rest_framework import status
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import AllowAny, IsAuthenticated
-# from ...services.auth_service import AuthenticationService
-# from ...serializers.user_serializers import UserSerializer
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class LoginAPIView(APIView):
-#     """
-#     API endpoint para autenticación de usuarios.
-    
-#     Methods:
-#         POST: Autenticar usuario
-#             Params:
-#                 username (str): Nombre de usuario
-#                 password (str): Contraseña
-#             Returns:
-#                 200: Login exitoso
-#                 400: Credenciales inválidas
-#                 403: Email no verificado
-#     """
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         try:
-#             redirect_to = AuthenticationService.login_user(
-#                 request,
-#                 request.data.get('username'),
-#                 request.data.get('password'),
-#                 request.data.get('remember', False)
-#             )
-            
-#             if redirect_to == 'verify_2fa':
-#                 return Response({
-#                     'status': 'pending_2fa',
-#                     'message': 'Código 2FA enviado'
-#                 })
-                
-#             return Response({
-#                 'status': 'success',
-#                 'redirect_url': f'/{redirect_to}/'
-#             })
-            
-#         except ValidationError as e:
-#             return Response({
-#                 'status': 'error',
-#                 'message': str(e)
-#             }, status=status.HTTP_400_BAD_REQUEST)
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class LogoutAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-
-#     def post(self, request):
-#         auth_logout(request)
-#         return Response({
-#             'status': 'success',
-#             'message': 'Logout exitoso'
-#         }, status=status.HTTP_200_OK)
-
-# @method_decorator(csrf_exempt, name='dispatch')
-# class RegisterAPIView(APIView):
-#     permission_classes = [AllowAny]
-
-#     def post(self, request):
-#         try:
-#             if AuthenticationService.handle_registration(request.data):
-#                 return Response({
-#                     'status': 'success',
-#                     'message': 'Te hemos enviado un email para verificar tu cuenta',
-#                     'data': UserSerializer(request.user).data
-#                 }, status=status.HTTP_201_CREATED)
-                
-#             return Response({
-#                 'status': 'error',
-#                 'message': 'Error en el registro'
-#             }, status=status.HTTP_400_BAD_REQUEST)
-            
-#         except ValidationError as e:
-#             return Response({
-#                 'status': 'error',
-#                 'message': str(e)
-#             }, status=status.HTTP_400_BAD_REQUEST)
+                'message': AuthenticationService.MESSAGES.get(
+                    'unexpected_error', 
+                    'Error inesperado en el servidor'
+                )
+            }, status=500)

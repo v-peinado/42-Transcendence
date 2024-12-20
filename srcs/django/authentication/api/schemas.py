@@ -11,6 +11,7 @@ class RegisterSchema(Schema):
     email: str
     password1: str
     password2: str
+    privacy_policy: bool = False
 
 class GDPRSchema(Schema):
     accept_terms: bool

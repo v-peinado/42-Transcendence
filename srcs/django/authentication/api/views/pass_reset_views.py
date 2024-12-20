@@ -16,12 +16,15 @@ class PasswordResetAPIView(View):
         "email": "usuario@ejemplo.com"
     }
     """
-    # Anteriormente: permission_classes = [AllowAny]
-    
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Solicitar reset de contraseña"""
         try:
-            data = json.loads(request.body)
+            # Obtener datos ya sea de ninja o del request body
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+                
             email = data.get('email')
             if PasswordService.initiate_password_reset(email):
                 return JsonResponse({
@@ -37,15 +40,23 @@ class PasswordResetAPIView(View):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
+            }, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PasswordResetConfirmAPIView(View):
-    # Anteriormente: permission_classes = [AllowAny]
-    
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """Confirmar reset de contraseña con token (Sin autenticación)"""
         try:
-            data = json.loads(request.body)
+            # Obtener datos ya sea de ninja o del request body
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                data = json.loads(request.body)
+
             result = PasswordService.confirm_password_reset(
                 data.get('uidb64'),
                 data.get('token'),
@@ -61,7 +72,12 @@ class PasswordResetConfirmAPIView(View):
                 'status': 'error',
                 'message': str(e)
             }, status=400)
-
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
+            }, status=400)
+			
 ################################################################################################
 # from django.utils.decorators import method_decorator
 # from django.views.decorators.csrf import csrf_exempt

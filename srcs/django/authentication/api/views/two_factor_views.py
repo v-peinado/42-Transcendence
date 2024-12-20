@@ -35,17 +35,27 @@ def Verify2FAAPIView(request):
             'error': 'Sesión inválida'
         }, status=401)
 
-    data = json.loads(request.body)
-    code = data.get('code')
-    if TwoFactorService.verify_2fa_code(user, code):
-        TwoFactorService.clean_session_keys(request.session)
-        return JsonResponse({
-            'message': 'Código verificado correctamente'
-        })
+    try:
+        # Obtener datos ya sea de ninja o del request body
+        if hasattr(request, 'data'):
+            data = request.data
+        else:
+            data = json.loads(request.body)
 
-    return JsonResponse({
-        'error': 'Código inválido'
-    }, status=400)
+        code = data.get('code')
+        if TwoFactorService.verify_2fa_code(user, code):
+            TwoFactorService.clean_session_keys(request.session)
+            return JsonResponse({
+                'message': 'Código verificado correctamente'
+            })
+
+        return JsonResponse({
+            'error': 'Código inválido'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=400)
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -65,6 +75,7 @@ def Disable2FAView(request):
             'error': str(e)
         }, status=400)
 
+		
 ##########################################################################################################
 # from rest_framework.decorators import api_view, permission_classes
 # from rest_framework.permissions import IsAuthenticated

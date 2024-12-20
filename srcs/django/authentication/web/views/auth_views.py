@@ -28,8 +28,12 @@ def register(request):
     """Vista de registro para nuevos usuarios que se registran manualmente"""
     if request.method == 'POST':
         try:
-            if AuthenticationService.handle_registration(request.POST):
-                messages.success(request, 'Revisa tu email para verificar tu cuenta')
+            result = AuthenticationService.handle_registration(request.POST)
+            if isinstance(result, dict) and result.get('success'):
+                messages.success(request, AuthenticationService.MESSAGES['email_verification'])
+                return redirect('login')
+            elif result:
+                messages.success(request, AuthenticationService.MESSAGES['email_verification'])
                 return redirect('login')
         except ValidationError as e:
             messages.error(request, str(e))
