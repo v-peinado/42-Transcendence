@@ -1,4 +1,5 @@
 from ninja import Router, File, UploadedFile
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from typing import Dict
 from ..schemas import *
 from ..views import *
@@ -114,13 +115,24 @@ def restore_image(request, data: RestoreImageSchema) -> Dict:
     return EditProfileAPIView.as_view()(request)
 
 @router.post("/profile/image", tags=["profile"])
-def update_profile_image(
-    request, 
-    profile_image: UploadedFile
-) -> Dict:
+def update_profile_image(request, profile_image: UploadedFile) -> Dict:
     """Actualizar imagen de perfil"""
-    request.FILES = {'profile_image': profile_image}
-    return EditProfileAPIView.as_view()(request)
+    try:
+        result = ProfileService.update_profile(
+            user=request.user,
+            data={},
+            files={'profile_image': profile_image}
+        )
+        return {
+            'status': 'success',
+            'message': 'Imagen de perfil actualizada correctamente',
+            'data': result
+        }
+    except Exception as e:
+        return {
+            'status': 'error', 
+            'message': str(e)
+        }
 
 @router.delete("/profile", tags=["profile"])
 def delete_account(request, data: DeleteAccountSchema) -> Dict:
