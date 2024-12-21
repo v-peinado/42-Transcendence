@@ -22,7 +22,7 @@ class ProfileSchema(Schema):
     password: Optional[str]
 
 class QRSchema(Schema):
-    code: str
+    username: str
 
 class TokenSchema(Schema):
     uidb64: str

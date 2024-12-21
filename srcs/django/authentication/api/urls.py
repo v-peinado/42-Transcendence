@@ -41,7 +41,7 @@ auth_patterns = [
 # qr_patterns
 qr_patterns = [
     path('generate-qr/<str:username>/', GenerateQRAPIView.as_view(), name='api_generate_qr'),
-    path('validate-qr/', ValidateQRAPIView, name='api_validate_qr'),
+    path('validate-qr/', ValidateQRAPIView.as_view(), name='api_validate_qr'),
 ]
 
 # gdpr_views
