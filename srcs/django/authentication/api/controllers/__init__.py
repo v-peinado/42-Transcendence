@@ -50,8 +50,8 @@ def privacy_policy(request) -> Dict:
 # Profile endpoints
 @router.get("/profile", tags=["profile"])
 def get_profile(request) -> Dict:
-    """Ver perfil de usuario"""
-    return ProfileAPIView.as_view()(request)
+    """Editar perfil del usuario"""
+    return EditProfileAPIView.as_view()(request)
 
 @router.get("/profile/user", tags=["profile"])
 def get_user_profile(request) -> Dict:

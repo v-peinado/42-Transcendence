@@ -8,9 +8,9 @@ from ...services.profile_service import ProfileService
 import json
 
 @method_decorator(csrf_exempt, name='dispatch')
-class ProfileAPIView(View):
+class EditProfileAPIView(View):
     def get(self, request, *args, **kwargs):
-        """Obtener datos del perfil"""
+        """Editar perfil del usuario"""
         try:
             profile_data = ProfileService.get_profile_data(request.user)
             return JsonResponse(profile_data)
@@ -140,7 +140,7 @@ class DeleteAccountAPIView(View):
 # from ...services.profile_service import ProfileService
 
 # @method_decorator(csrf_exempt, name='dispatch')
-# class ProfileAPIView(APIView):
+# class EditProfileAPIView(APIView):
 #     permission_classes = [IsAuthenticated]
     
 #     def get(self, request):

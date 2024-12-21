@@ -10,7 +10,7 @@ from .views import (
     # pass_reset_views
     PasswordResetAPIView, PasswordResetConfirmAPIView,
     # profile_views
-    ProfileAPIView, UserProfileAPIView, DeleteAccountAPIView,
+    EditProfileAPIView, UserProfileAPIView, DeleteAccountAPIView,
     # verify_email_views
     VerifyEmailAPIView, VerifyEmailChangeAPIView,
 	# qr_views
@@ -53,7 +53,7 @@ gdpr_patterns = [
 
 # profile_views
 profile_patterns = [
-    path('profile/', ProfileAPIView.as_view(), name='api_profile'),
+    path('profile/', EditProfileAPIView.as_view(), name='api_profile'),
 	path('profile/user/', UserProfileAPIView.as_view(), name='api_user_profile'),
 	path('profile/delete-account/', DeleteAccountAPIView.as_view(), name='api_delete_account'),
 ]
