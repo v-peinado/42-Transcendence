@@ -2,6 +2,7 @@ from django.views import View
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import login as auth_login
 from ...services.two_factor_service import TwoFactorService
 import json
 
@@ -45,8 +46,12 @@ class Verify2FAAPIView(View):
             code = data.get('code')
             if TwoFactorService.verify_2fa_code(user, code):
                 TwoFactorService.clean_session_keys(request.session)
+                # Añadir estas líneas
+                auth_login(request, user)
                 return JsonResponse({
-                    'message': 'Código verificado correctamente'
+                    'status': 'success',
+                    'message': 'Código verificado correctamente',
+                    'redirect_url': '/user/'
                 })
 
             return JsonResponse({
