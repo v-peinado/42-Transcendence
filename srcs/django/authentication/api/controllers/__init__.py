@@ -93,8 +93,7 @@ def verify_email_change(request, uidb64: str, token: str) -> Dict:
 @router.get("/qr/generate/{username}", tags=["2fa"])
 def generate_qr(request, username: str) -> Dict:
     """Generar QR para 2FA"""
-    request.data = {'username': username}
-    return GenerateQRAPIView.as_view()(request)
+    return GenerateQRAPIView.as_view()(request, username=username)
 
 @router.post("/qr/validate", tags=["2fa"])
 def validate_qr(request, data: QRSchema) -> Dict:
