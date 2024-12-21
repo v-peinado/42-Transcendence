@@ -55,47 +55,6 @@ def privacy_policy(request) -> Dict:
 
 # Profile endpoints
 
-# @router.get("/profile", tags=["profile"])
-# def get_profile(request) -> Dict:
-#     """Ver perfil del usuario"""
-#     return ProfileAPIView.as_view()(request)
-
-@router.put("/profile", tags=["profile"], response=ProfileImageResponseSchema)
-def update_profile(request, data: ProfileUpdateSchema) -> Dict:
-    """Actualizar perfil básico"""
-    try:
-        if data.profile_image_base64:
-            try:
-                format, imgstr = data.profile_image_base64.split(';base64,')
-                ext = format.split('/')[-1]
-                profile_image = ContentFile(
-                    base64.b64decode(imgstr), 
-                    name=f'profile_{request.user.id}.{ext}'
-                )
-                request.FILES['profile_image'] = profile_image
-            except Exception as e:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': f'Error procesando imagen: {str(e)}'
-                }, status=400)
-
-        result = ProfileService.update_profile(
-            user=request.user,
-            data={'email': data.email} if data.email else {},
-            files=request.FILES
-        )
-        
-        return {
-            'status': 'success',
-            'message': 'Perfil actualizado correctamente',
-            'data': result
-        }
-    except Exception as e:
-        return {
-            'status': 'error',
-            'message': str(e)
-        }
-
 @router.post("/profile/password", tags=["profile"])
 def change_password(request, data: PasswordChangeSchema) -> Dict:
     """Cambiar contraseña"""
@@ -140,10 +99,29 @@ def delete_account(request, data: DeleteAccountSchema) -> Dict:
     request.data = data.dict()
     return DeleteAccountAPIView.as_view()(request)
 
-@router.get("/profile/user", tags=["profile"])
+@router.get("/profile/user", tags=["profile"], response=UserProfileResponseSchema)
 def get_user_profile(request) -> Dict:
     """Ver perfil de otro usuario"""
-    return UserProfileAPIView.as_view()(request)
+    try:
+        profile_data = ProfileService.get_user_profile_data(request.user)
+        # Convertir datos a formato serializable
+        return {
+            'user': {
+                'id': profile_data['user'].id,
+                'username': profile_data['user'].username,
+                'email': profile_data['user'].email,
+                'is_active': profile_data['user'].is_active,
+                'is_fortytwo_user': profile_data['user'].is_fortytwo_user,
+                'email_verified': profile_data['user'].email_verified,
+                'two_factor_enabled': profile_data['user'].two_factor_enabled,
+                'profile_image_url': profile_data['user'].profile_image.url if profile_data['user'].profile_image else None,
+                'date_joined': profile_data['user'].date_joined.isoformat() if profile_data['user'].date_joined else None,
+                'last_login': profile_data['user'].last_login.isoformat() if profile_data['user'].last_login else None
+            },
+            'show_qr': profile_data['show_qr']
+        }
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # Password endpoints
 @router.post("/password/reset", tags=["password"])

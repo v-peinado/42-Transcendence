@@ -60,10 +60,6 @@ class BaseSchema(Schema):
 class ProfileSchema(Schema):
     email: Optional[str]
     password: Optional[str]
-    
-class ProfileUpdateSchema(BaseSchema):
-    email: Optional[str] = None
-    profile_image_base64: Optional[str] = None
 
 class PasswordChangeSchema(BaseSchema):
     current_password: str
@@ -83,3 +79,19 @@ class ProfileImageResponseSchema(BaseSchema):
     status: str
     message: str
     data: Dict[str, Optional[str]]
+
+class UserProfileSchema(Schema):
+    id: int
+    username: str
+    email: str
+    is_active: bool
+    is_fortytwo_user: bool
+    email_verified: bool
+    two_factor_enabled: bool
+    profile_image_url: Optional[str]
+    date_joined: Optional[str]
+    last_login: Optional[str]
+
+class UserProfileResponseSchema(Schema):
+    user: UserProfileSchema
+    show_qr: bool
