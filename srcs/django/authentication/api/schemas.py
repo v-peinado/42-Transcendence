@@ -29,11 +29,11 @@ class GDPRSchema(Schema):
 class QRSchema(Schema):
     username: str
 
-# Token schemas
+# Token schemas (email)
 
-class TokenSchema(Schema):
-    uidb64: str
-    token: str
+# class TokenSchema(Schema):
+#     uidb64: str
+#     token: str
 
 # Password schemas
 

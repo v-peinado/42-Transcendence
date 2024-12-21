@@ -1,12 +1,9 @@
-from ninja import Router, File, UploadedFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
+from ninja import Router, UploadedFile
 from typing import Dict
 from ..schemas import *
 from ..views import *
 from django.http import JsonResponse
 from authentication.services import ProfileService
-import base64
-from django.core.files.base import ContentFile
 
 router = Router()
 
@@ -93,11 +90,23 @@ def update_profile_image(request, profile_image: UploadedFile) -> Dict:
             'message': str(e)
         }
 
-@router.delete("/profile", tags=["profile"])
+@router.post("/profile/delete", tags=["profile"])  # Cambiado de delete a post
 def delete_account(request, data: DeleteAccountSchema) -> Dict:
     """Eliminar cuenta"""
-    request.data = data.dict()
-    return DeleteAccountAPIView.as_view()(request)
+    try:
+        result = ProfileService.delete_user_account(
+            user=request.user,
+            password=data.confirm_password if not request.user.is_fortytwo_user else None
+        )
+        return {
+            'status': 'success',
+            'message': 'Cuenta eliminada correctamente'
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
 
 @router.get("/profile/user", tags=["profile"], response=UserProfileResponseSchema)
 def get_user_profile(request) -> Dict:
@@ -137,17 +146,17 @@ def password_reset_confirm(request, data: PasswordResetConfirmSchema) -> Dict:
     return PasswordResetConfirmAPIView.as_view()(request)
 
 # Email verification endpoints
-@router.post("/verify-email/{uidb64}/{token}", tags=["email"])
-def verify_email(request, uidb64: str, token: str) -> Dict:
-    """Verificar email"""
-    request.data = {'uidb64': uidb64, 'token': token}
-    return VerifyEmailAPIView.as_view()(request)
+# @router.post("/verify-email/{uidb64}/{token}", tags=["email"])
+# def verify_email(request, uidb64: str, token: str) -> Dict:
+#     """Verificar email"""
+#     request.data = {'uidb64': uidb64, 'token': token}
+#     return VerifyEmailAPIView.as_view()(request)
 
-@router.post("/verify-email-change/{uidb64}/{token}", tags=["email"])
-def verify_email_change(request, uidb64: str, token: str) -> Dict:
-    """Verificar cambio de email"""
-    request.data = {'uidb64': uidb64, 'token': token}
-    return VerifyEmailChangeAPIView.as_view()(request)
+# @router.post("/verify-email-change/{uidb64}/{token}", tags=["email"])
+# def verify_email_change(request, uidb64: str, token: str) -> Dict:
+#     """Verificar cambio de email"""
+#     request.data = {'uidb64': uidb64, 'token': token}
+#     return VerifyEmailChangeAPIView.as_view()(request)
 
 # QR endpoints
 
