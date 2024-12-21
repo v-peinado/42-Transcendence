@@ -1,8 +1,11 @@
-from ninja import Router
+from ninja import Router, File, UploadedFile
 from typing import Dict
 from ..schemas import *
 from ..views import *
 from django.http import JsonResponse
+from authentication.services import ProfileService
+import base64
+from django.core.files.base import ContentFile
 
 router = Router()
 
@@ -32,6 +35,8 @@ def logout(request) -> Dict:
     """Cerrar sesión de usuario"""
     return LogoutAPIView.as_view()(request)
 
+# GDPR endpoints
+
 @router.get("/gdpr/settings", tags=["gdpr"])
 def gdpr_settings(request) -> Dict:
     """Obtener configuración GDPR"""
@@ -48,20 +53,85 @@ def privacy_policy(request) -> Dict:
     return PrivacyPolicyAPIView.as_view()(request)
 
 # Profile endpoints
-@router.get("/profile", tags=["profile"])
-def get_profile(request) -> Dict:
-    """Editar perfil del usuario"""
+
+# @router.get("/profile", tags=["profile"])
+# def get_profile(request) -> Dict:
+#     """Ver perfil del usuario"""
+#     return ProfileAPIView.as_view()(request)
+
+@router.put("/profile", tags=["profile"], response=ProfileImageResponseSchema)
+def update_profile(request, data: ProfileUpdateSchema) -> Dict:
+    """Actualizar perfil básico"""
+    try:
+        if data.profile_image_base64:
+            try:
+                format, imgstr = data.profile_image_base64.split(';base64,')
+                ext = format.split('/')[-1]
+                profile_image = ContentFile(
+                    base64.b64decode(imgstr), 
+                    name=f'profile_{request.user.id}.{ext}'
+                )
+                request.FILES['profile_image'] = profile_image
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Error procesando imagen: {str(e)}'
+                }, status=400)
+
+        result = ProfileService.update_profile(
+            user=request.user,
+            data={'email': data.email} if data.email else {},
+            files=request.FILES
+        )
+        
+        return {
+            'status': 'success',
+            'message': 'Perfil actualizado correctamente',
+            'data': result
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@router.post("/profile/password", tags=["profile"])
+def change_password(request, data: PasswordChangeSchema) -> Dict:
+    """Cambiar contraseña"""
+    request.data = data.dict()
     return EditProfileAPIView.as_view()(request)
+
+@router.post("/profile/email", tags=["profile"])
+def change_email(request, data: EmailChangeSchema) -> Dict:
+    """Cambiar email"""
+    request.data = data.dict()
+    return EditProfileAPIView.as_view()(request)
+
+@router.post("/profile/restore-image", tags=["profile"])
+def restore_image(request, data: RestoreImageSchema) -> Dict:
+    """Restaurar imagen de perfil"""
+    request.data = data.dict()
+    return EditProfileAPIView.as_view()(request)
+
+@router.post("/profile/image", tags=["profile"])
+def update_profile_image(
+    request, 
+    profile_image: UploadedFile
+) -> Dict:
+    """Actualizar imagen de perfil"""
+    request.FILES = {'profile_image': profile_image}
+    return EditProfileAPIView.as_view()(request)
+
+@router.delete("/profile", tags=["profile"])
+def delete_account(request, data: DeleteAccountSchema) -> Dict:
+    """Eliminar cuenta"""
+    request.data = data.dict()
+    return DeleteAccountAPIView.as_view()(request)
 
 @router.get("/profile/user", tags=["profile"])
 def get_user_profile(request) -> Dict:
     """Ver perfil de otro usuario"""
     return UserProfileAPIView.as_view()(request)
-
-@router.delete("/profile", tags=["profile"])
-def delete_account(request) -> Dict:
-    """Eliminar cuenta"""
-    return DeleteAccountAPIView.as_view()(request)
 
 # Password endpoints
 @router.post("/password/reset", tags=["password"])
@@ -89,7 +159,8 @@ def verify_email_change(request, uidb64: str, token: str) -> Dict:
     request.data = {'uidb64': uidb64, 'token': token}
     return VerifyEmailChangeAPIView.as_view()(request)
 
-# 2FA endpoints
+# QR endpoints
+
 @router.get("/qr/generate/{username}", tags=["2fa"])
 def generate_qr(request, username: str) -> Dict:
     """Generar QR para 2FA"""
@@ -100,6 +171,8 @@ def validate_qr(request, data: QRSchema) -> Dict:
     """Validar código QR"""
     request.data = data.dict()
     return ValidateQRAPIView.as_view()(request)
+
+# 2FA endpoints
 
 @router.post("/2fa/enable", tags=["2fa"])
 def enable_2fa(request) -> Dict:

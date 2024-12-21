@@ -8,7 +8,7 @@ from .views import (
     # pass_reset_views
     CustomPasswordResetView, CustomPasswordResetConfirmView,
     # profile_views
-    edit_profile, user, delete_account,
+    EditProfileView, UserProfileView, DeleteAccountView,
     # verify_email_views
     verify_email, verify_email_change,
     generate_qr, validate_qr,
@@ -41,9 +41,9 @@ password_patterns = [
 
 # profile_views
 profile_patterns = [
-    path('edit-profile/', edit_profile, name='edit_profile'),
-    path('user/', user, name='user'),
-    path('delete-account/', delete_account, name='delete_account'),
+    path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
+    path('profile/', UserProfileView.as_view(), name='user'),
+    path('profile/delete/', DeleteAccountView.as_view(), name='delete_account'),
 ]
 
 # verify_email_views
