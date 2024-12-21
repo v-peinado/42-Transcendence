@@ -60,10 +60,15 @@ class LoginAPIView(View):
             }, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class LogoutAPIView(View):
     def post(self, request, *args, **kwargs):
         try:
+            if not request.user.is_authenticated:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No hay ningún usuario conectado'
+                }, status=401)
+
             AuthenticationService.logout_user(request)
             return JsonResponse({
                 'status': 'success',
@@ -73,6 +78,11 @@ class LogoutAPIView(View):
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)
+            }, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
             }, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
