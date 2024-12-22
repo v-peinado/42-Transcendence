@@ -8,7 +8,7 @@ from .views import (
     # pass_reset_views
     CustomPasswordResetView, CustomPasswordResetConfirmView,
     # profile_views
-    edit_profile, user, delete_account,
+    EditProfileView, UserProfileView, DeleteAccountView,
     # verify_email_views
     verify_email, verify_email_change,
     generate_qr, validate_qr,
@@ -34,16 +34,16 @@ gdpr_patterns = [
 # pass_reset_views
 password_patterns = [
     path('reset_password/', CustomPasswordResetView.as_view(), name='password_reset'),
-    path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(template_name='authentication/password_reset_confirm.html', success_url=reverse_lazy('login')), name='password_reset_confirm'),
+    path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset_password/done/', auth_views.PasswordResetDoneView.as_view(template_name='authentication/password_reset_done.html'), name='password_reset_done'),				#este metodo viene del modulo auth_views de django (no es propio)
 	path('reset/complete/', auth_views.PasswordResetCompleteView.as_view(template_name='authentication/password_reset_complete.html'), name='password_reset_complete'),			#este metodo viene del modulo auth_views de django (no es propio)
 ]
 
 # profile_views
 profile_patterns = [
-    path('edit-profile/', edit_profile, name='edit_profile'),
-    path('user/', user, name='user'),
-    path('delete-account/', delete_account, name='delete_account'),
+    path('profile/edit/', EditProfileView.as_view(), name='edit_profile'),
+    path('profile/', UserProfileView.as_view(), name='user'),
+    path('profile/delete/', DeleteAccountView.as_view(), name='delete_account'),
 ]
 
 # verify_email_views

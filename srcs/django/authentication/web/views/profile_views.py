@@ -1,14 +1,21 @@
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import ValidationError
 from ...services.profile_service import ProfileService
 
-@login_required
-def edit_profile(request):
-    """Vista web para editar perfil"""
-    if request.method == 'POST':
+@method_decorator(csrf_protect, name='dispatch')
+class EditProfileView(LoginRequiredMixin, View):
+    template_name = 'authentication/edit_profile.html'
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
         try:
             user = request.user
             
@@ -48,26 +55,27 @@ def edit_profile(request):
         except Exception as e:
             messages.error(request, str(e))
             
-    return render(request, 'authentication/edit_profile.html')
+        return render(request, self.template_name)
 
-@login_required
-def user(request):
-    """Vista web del perfil de usuario"""
-    context = ProfileService.get_user_profile_data(request.user)
-    return render(request, 'authentication/user.html', context)
+@method_decorator(csrf_protect, name='dispatch')
+class UserProfileView(LoginRequiredMixin, View):
+    template_name = 'authentication/user.html'
 
-@login_required
-def delete_account(request):
-    """Vista web para eliminar cuenta"""
-    try:
-        if request.method == 'POST':
+    def get(self, request):
+        context = ProfileService.get_user_profile_data(request.user)
+        return render(request, self.template_name, context)
+
+@method_decorator(csrf_protect, name='dispatch')
+class DeleteAccountView(LoginRequiredMixin, View):
+    def post(self, request):
+        try:
             password = request.POST.get('confirm_password')
             if ProfileService.delete_user_account(request.user, password):
                 messages.success(request, 'Tu cuenta ha sido eliminada')
                 return redirect('home')
-    except ValidationError as e:
-        messages.error(request, str(e))
-    except Exception as e:
-        messages.error(request, str(e))
-    
-    return redirect('edit_profile')
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, str(e))
+        
+        return redirect('edit_profile')

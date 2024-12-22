@@ -39,8 +39,6 @@ INSTALLED_APPS = [
     'authentication',
     'authentication.fortytwo_auth',
     'corsheaders',
-    # 'rest_framework',
-    # 'rest_framework.authtoken',
 ]
 
 # Configuración de Jazzmin (panel de administración personalizado basado en Django Admin)
@@ -131,18 +129,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 FILE_UPLOAD_PERMISSIONS = 0o644
 
-
-# Configuración de autenticación y permisos de la API REST con Django Rest Framework
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': [
-#         'rest_framework.authentication.TokenAuthentication',	# Usar autenticación por token
-#         'rest_framework.authentication.SessionAuthentication',	# Usar autenticación por sesión (para el panel de administración)
-#     ],
-#     'DEFAULT_PERMISSION_CLASSES': [
-#         'rest_framework.permissions.AllowAny',					# Permitir acceso a todos los endpoints (es así por defecto)
-#     ],
-# }
-
 # Configuración de autenticación personalizada con el modelo CustomUser definido en authentication.models
 # Usamos el modelo CustomUser en lugar del modelo de usuario predeterminado de Django porque hemos añadido campos adicionales
 # y hemos modificado el comportamiento de la autenticación para permitir el inicio de sesión con 42 o con un correo electrónico
@@ -186,7 +172,7 @@ else:
 
 # Settings de seguridad adicionales
 SECURE_BROWSER_XSS_FILTER = True								# Protección contra ataques XSS
-PASSWORD_RESET_TIMEOUT = 300									# Tiempo de expiración para resetear la contraseña	
+PASSWORD_RESET_TIMEOUT = 300									# 300 segundos (5 minutos)	
 	
 # Estas no son necesarias si se usa NGINX como proxy, pero se pueden dejar activadas para mayor seguridad
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')	# Esto es para Heroku (no es necesario para NGINX)

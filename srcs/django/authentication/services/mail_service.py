@@ -158,26 +158,26 @@ class MailSendingService:
             raise Exception(f"Error al enviar email de verificación de cambio: {str(e)}")
 
     @staticmethod
-    def send_email_change_confirmation(user, old_email):
-        """Enviar confirmación de cambio de email"""
+    def send_password_reset_email(user, verification_data):
+        """Enviar email para resetear contraseña"""
         try:
-            subject = 'Tu email ha sido actualizado'
+            subject = 'Resetear contraseña de PongOrama'
             context = {
                 'user': user,
-                'old_email': old_email
+                'verification_url': f"{settings.SITE_URL}/reset/{verification_data['uid']}/{verification_data['token']}/"
             }
-            html_message = render_to_string('authentication/email_change_confirmation.html', context)
+            
+            html_message = render_to_string('authentication/password_reset_email.html', context)
             plain_message = strip_tags(html_message)
             
-            # Enviar email tanto al antiguo como al nuevo correo
             send_mail(
                 subject,
                 plain_message,
                 settings.DEFAULT_FROM_EMAIL,
-                [old_email, user.email],  # Enviar a ambas direcciones
+                [user.email],
                 html_message=html_message,
                 fail_silently=False
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar confirmación de cambio de email: {str(e)}")
+            raise Exception(f"Error al enviar email de reset: {str(e)}")

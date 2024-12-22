@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from django.conf import settings
 from ..models import CustomUser
 from .token_service import TokenService
@@ -8,6 +9,7 @@ from .password_service import PasswordService
 from ..models import PreviousPassword
 from .gdpr_service import GDPRService
 import re
+import base64
 
 
 class ProfileService:
@@ -73,17 +75,34 @@ class ProfileService:
                     
                     user.email = email.lower()
 
-            # Manejar imagen de perfil
-            if files and 'profile_image' in files:
-                image = files['profile_image']
-                
+            # Procesar imagen - sea base64 o archivo
+            profile_image = None
+            
+            # Revisar si viene una imagen en base64
+            if data.get('profile_image_base64'):
+                try:
+                    format, imgstr = data['profile_image_base64'].split(';base64,')
+                    ext = format.split('/')[-1]
+                    profile_image = ContentFile(
+                        base64.b64decode(imgstr), 
+                        name=f'profile_{user.id}.{ext}'
+                    )
+                except Exception as e:
+                    raise ValidationError(f"Error procesando imagen base64: {str(e)}")
+
+            # Si no hay base64, revisar si hay archivo
+            elif files and 'profile_image' in files:
+                profile_image = files['profile_image']
+
+            # Si hay imagen (de cualquier fuente), procesarla
+            if profile_image:
                 # Validar tamaño
-                if image.size > 5 * 1024 * 1024:  # 5MB
+                if profile_image.size > 5 * 1024 * 1024:  # 5MB
                     raise ValidationError("La imagen no debe exceder 5MB")
                 
                 # Validar extensión
                 valid_extensions = ['jpg', 'jpeg', 'png', 'gif']
-                ext = image.name.split('.')[-1].lower()
+                ext = profile_image.name.split('.')[-1].lower()
                 if ext not in valid_extensions:
                     raise ValidationError(f"Formato no permitido. Use: {', '.join(valid_extensions)}")
                 
@@ -92,10 +111,13 @@ class ProfileService:
                     default_storage.delete(user.profile_image.path)
                 
                 # Guardar nueva imagen
-                user.profile_image = image
+                user.profile_image = profile_image
 
             user.save()
-            return True
+            return {
+                'email': user.email,
+                'profile_image_url': user.profile_image.url if user.profile_image else None
+            }
             
         except Exception as e:
             raise ValidationError(f"Error al actualizar perfil: {str(e)}")

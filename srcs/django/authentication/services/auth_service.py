@@ -5,11 +5,19 @@ from .token_service import TokenService
 from .password_service import PasswordService
 from .two_factor_service import TwoFactorService
 from authentication.forms.auth_forms import RegistrationForm
-from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth import authenticate, login as auth_login, logout
 from django.utils.html import escape
 from authentication.models import PreviousPassword
 
 class AuthenticationService:
+    MESSAGES = {
+        'privacy_policy': 'Debes aceptar la política de privacidad',
+        'email_verification': 'Te hemos enviado un email para verificar tu cuenta',
+        'form_validation': 'Error en la validación del formulario',
+        'logout_success': 'Sesión cerrada correctamente',
+        'no_session': 'No hay sesión activa'
+    }
+
     @staticmethod
     def register_user(username, email, password):
         """Registro básico de usuario"""
@@ -52,6 +60,9 @@ class AuthenticationService:
     @staticmethod
     def handle_registration(form_data):
         """Gestiona el proceso de registro"""
+        if not form_data.get('privacy_policy'):
+            raise ValidationError(AuthenticationService.MESSAGES['privacy_policy'])
+        
         username = escape(form_data.get('username', '').strip())
         email = escape(form_data.get('email', '').strip())
         password = form_data.get('password1')
@@ -83,3 +94,19 @@ class AuthenticationService:
             return True
             
         return False
+
+    @staticmethod
+    def logout_user(request):
+        """
+        Cierra la sesión del usuario actual
+        
+        Args:
+            request: HttpRequest object
+            
+        Raises:
+            ValidationError: Si no hay usuario autenticado
+        """
+        if request.user.is_authenticated:
+            logout(request)
+            return True
+        raise ValidationError(AuthenticationService.MESSAGES['no_session'])
