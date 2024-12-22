@@ -35,10 +35,15 @@ def logout(request) -> Dict:
 
 # GDPR endpoints
 
-@router.get("/gdpr/export", tags=["gdpr"])
+@router.get("/gdpr/export", tags=["gdpr"], response=GDPRExportSchema)
 def export_data(request) -> Dict:
-    """Exportar datos personales"""
+    """Ver datos personales"""
     return ExportPersonalDataAPIView.as_view()(request)
+
+@router.get("/gdpr/export/download", tags=["gdpr"])
+def download_data(request) -> Dict:
+    """Descargar datos personales del usuario autenticado"""
+    return ExportPersonalDataAPIView().get_download(request)
 
 @router.get("/gdpr/privacy", tags=["gdpr"])
 def privacy_policy(request) -> Dict:

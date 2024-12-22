@@ -1,8 +1,5 @@
 from ninja import Schema
 from typing import Optional, Dict
-from pydantic import Field
-from django.core.files import File
-import base64
 
 # Auth schemas
 
@@ -20,9 +17,10 @@ class RegisterSchema(Schema):
 
 # GDPR schemas
 
-class GDPRSchema(Schema):
-    accept_terms: bool
-    accept_cookies: bool
+class GDPRExportSchema(Schema):
+    status: str
+    data: Dict
+    download_url: str
 
 # QR schemas
 
@@ -51,9 +49,9 @@ class BaseSchema(Schema):
     class Config:
         arbitrary_types_allowed = True
 
-class ProfileSchema(Schema):
-    email: Optional[str]
-    password: Optional[str]
+# class ProfileSchema(Schema):
+#     email: Optional[str]
+#     password: Optional[str]
 
 class PasswordChangeSchema(BaseSchema):
     current_password: str
@@ -69,10 +67,10 @@ class RestoreImageSchema(BaseSchema):
 class DeleteAccountSchema(BaseSchema):
     confirm_password: str
 
-class ProfileImageResponseSchema(BaseSchema):
-    status: str
-    message: str
-    data: Dict[str, Optional[str]]
+# class ProfileImageResponseSchema(BaseSchema):
+#     status: str
+#     message: str
+#     data: Dict[str, Optional[str]]
 
 class UserProfileSchema(Schema):
     id: int
