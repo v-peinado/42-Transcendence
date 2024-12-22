@@ -1,11 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import check_password
+from django.conf import settings
 from ..models import PreviousPassword, CustomUser
 from .token_service import TokenService
 from .mail_service import MailSendingService
 from authentication.models import CustomUser
-
 from django.utils.html import escape
 import re
 
@@ -113,7 +113,7 @@ class PasswordService:
         """Iniciar proceso de reset de contraseña"""
         if re.match(r'.*@student\.42.*\.com$', email.lower()):
             raise ValidationError("Los usuarios de 42 deben iniciar sesión a través del botón de login de 42")
-
+        
         users = CustomUser.objects.filter(
             email__iexact=email,
             is_active=True,
@@ -121,29 +121,36 @@ class PasswordService:
         )
 
         if not users.exists():
-            # fallar silenciosamente para no revelar existencia de usuarios
             return False
 
         user = users.first()
         if user.is_fortytwo_user:
             raise ValidationError("Los usuarios de 42 no pueden usar esta función")
 
-        token = TokenService.generate_password_reset_token(user)
-        MailSendingService.send_password_reset_email(user, token)
-        return True
+        token_data = TokenService.generate_password_reset_token(user)
+        MailSendingService.send_password_reset_email(user, token_data)
+        return token_data  # Devolver datos del token
 
     @staticmethod
     def confirm_password_reset(uidb64, token, new_password1, new_password2):
         """Confirmar reset de contraseña"""
         try:
+            print(f"DEBUG - Iniciando confirmación de reset para token: {token[:10]}...")
             user = TokenService.verify_password_reset_token(uidb64, token)
+            print(f"DEBUG - Token verificado para usuario: {user.email}")
             
             PasswordService._validate_password_basic(user, new_password1, new_password2)
+            print("DEBUG - Validación de contraseña exitosa")
             
             user.set_password(new_password1)
             user.save()
             PreviousPassword.objects.create(user=user, password=user.password)
             MailSendingService.send_password_changed_notification(user, is_reset=True)
             return True
-        except Exception as e:
+            
+        except ValidationError as e:
+            print(f"DEBUG - Error de validación: {str(e)}")
             raise ValidationError(str(e))
+        except Exception as e:
+            print(f"DEBUG - Error inesperado: {str(e)}")
+            raise ValidationError(f"Error inesperado: {str(e)}")

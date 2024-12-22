@@ -34,7 +34,7 @@ gdpr_patterns = [
 # pass_reset_views
 password_patterns = [
     path('reset_password/', CustomPasswordResetView.as_view(), name='password_reset'),
-    path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(template_name='authentication/password_reset_confirm.html', success_url=reverse_lazy('login')), name='password_reset_confirm'),
+    path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset_password/done/', auth_views.PasswordResetDoneView.as_view(template_name='authentication/password_reset_done.html'), name='password_reset_done'),				#este metodo viene del modulo auth_views de django (no es propio)
 	path('reset/complete/', auth_views.PasswordResetCompleteView.as_view(template_name='authentication/password_reset_complete.html'), name='password_reset_complete'),			#este metodo viene del modulo auth_views de django (no es propio)
 ]

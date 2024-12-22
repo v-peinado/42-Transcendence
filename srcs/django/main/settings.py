@@ -172,7 +172,7 @@ else:
 
 # Settings de seguridad adicionales
 SECURE_BROWSER_XSS_FILTER = True								# Protección contra ataques XSS
-PASSWORD_RESET_TIMEOUT = 300									# Tiempo de expiración para resetear la contraseña	
+PASSWORD_RESET_TIMEOUT = 3600									# Aumentar a 1 hora (3600 segundos) en lugar de 300 (5 minutos)	
 	
 # Estas no son necesarias si se usa NGINX como proxy, pero se pueden dejar activadas para mayor seguridad
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')	# Esto es para Heroku (no es necesario para NGINX)
