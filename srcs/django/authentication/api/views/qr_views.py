@@ -12,7 +12,7 @@ qr_service = QRService()
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQRAPIView(View):
-    def get(self, request, username=None, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return JsonResponse({
                 'status': 'error',
@@ -20,13 +20,7 @@ class GenerateQRAPIView(View):
             }, status=401)
         
         try:
-            if not username:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Username no proporcionado'
-                }, status=400)
-                
-            buffer = qr_service.generate_qr(username)
+            buffer = qr_service.generate_qr(request.user.username)
             return HttpResponse(
                 buffer.getvalue(), 
                 content_type="image/png",

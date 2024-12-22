@@ -49,10 +49,6 @@ class BaseSchema(Schema):
     class Config:
         arbitrary_types_allowed = True
 
-# class ProfileSchema(Schema):
-#     email: Optional[str]
-#     password: Optional[str]
-
 class PasswordChangeSchema(BaseSchema):
     current_password: str
     new_password1: str
@@ -66,11 +62,6 @@ class RestoreImageSchema(BaseSchema):
 
 class DeleteAccountSchema(BaseSchema):
     confirm_password: str
-
-# class ProfileImageResponseSchema(BaseSchema):
-#     status: str
-#     message: str
-#     data: Dict[str, Optional[str]]
 
 class UserProfileSchema(Schema):
     id: int

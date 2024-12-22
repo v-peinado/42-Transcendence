@@ -147,10 +147,10 @@ def password_reset_confirm(request, data: PasswordResetConfirmSchema) -> Dict:
 
 # QR endpoints
 
-@router.get("/qr/generate/{username}", tags=["2fa"])
-def generate_qr(request, username: str) -> Dict:
-    """Generar QR para 2FA"""
-    return GenerateQRAPIView.as_view()(request, username=username)
+@router.get("/qr/generate", tags=["2fa"])
+def generate_qr(request) -> Dict:
+    """Generar QR del usuario autenticado"""
+    return GenerateQRAPIView.as_view()(request)
 
 @router.post("/qr/validate", tags=["2fa"])
 def validate_qr(request, data: QRSchema) -> Dict:
