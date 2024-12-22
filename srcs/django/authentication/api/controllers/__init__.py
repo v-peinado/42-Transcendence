@@ -35,11 +35,6 @@ def logout(request) -> Dict:
 
 # GDPR endpoints
 
-@router.get("/gdpr/settings", tags=["gdpr"])
-def gdpr_settings(request) -> Dict:
-    """Obtener configuración GDPR"""
-    return GDPRSettingsAPIView.as_view()(request)
-
 @router.get("/gdpr/export", tags=["gdpr"])
 def export_data(request) -> Dict:
     """Exportar datos personales"""
@@ -144,19 +139,6 @@ def password_reset_confirm(request, data: PasswordResetConfirmSchema) -> Dict:
     """Confirmar reset de contraseña"""
     request.data = data.dict()
     return PasswordResetConfirmAPIView.as_view()(request)
-
-# Email verification endpoints
-# @router.post("/verify-email/{uidb64}/{token}", tags=["email"])
-# def verify_email(request, uidb64: str, token: str) -> Dict:
-#     """Verificar email"""
-#     request.data = {'uidb64': uidb64, 'token': token}
-#     return VerifyEmailAPIView.as_view()(request)
-
-# @router.post("/verify-email-change/{uidb64}/{token}", tags=["email"])
-# def verify_email_change(request, uidb64: str, token: str) -> Dict:
-#     """Verificar cambio de email"""
-#     request.data = {'uidb64': uidb64, 'token': token}
-#     return VerifyEmailChangeAPIView.as_view()(request)
 
 # QR endpoints
 
