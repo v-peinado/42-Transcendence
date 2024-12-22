@@ -74,11 +74,8 @@ class UserProfileSchema(Schema):
     profile_image_url: Optional[str]
     date_joined: Optional[str]
     last_login: Optional[str]
-
-class UserProfileResponseSchema(Schema):
-    user: UserProfileSchema
     show_qr: bool
-    
+
 # Auth schemas 42
 class FortyTwoAuthResponseSchema(Schema):
     status: str

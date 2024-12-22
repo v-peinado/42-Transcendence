@@ -52,7 +52,6 @@ class PasswordResetConfirmAPIView(View):
     def post(self, request, *args, **kwargs):
         """Confirmar reset de contraseña con token (Sin autenticación)"""
         try:
-            # Obtener datos ya sea de ninja o del request body
             if hasattr(request, 'data'):
                 data = request.data
             else:

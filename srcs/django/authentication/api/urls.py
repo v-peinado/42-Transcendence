@@ -131,7 +131,6 @@ URLs ABSOLUTAS API (Base: http://localhost:8000):
    * http://localhost:8000/api/disable-2fa/
 
  DJANGO NINJA (Nueva API):
-   * http://localhost:8000/api/ninja/docs        -> Documentación Swagger/OpenAPI
+   * http://localhost:8000/api/ninja/docs         -> Documentación Swagger/OpenAPI
    * http://localhost:8000/api/ninja/openapi.json -> Especificación OpenAPI
-   * http://localhost:8000/api/ninja/auth/hello   -> Endpoint de ejemplo
 """

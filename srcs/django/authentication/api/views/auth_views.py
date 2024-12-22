@@ -24,7 +24,6 @@ class LoginAPIView(View):
     """
     def post(self, request, *args, **kwargs):
         try:
-            # Obtener datos ya sea de ninja o del request body
             if hasattr(request, 'data'):
                 data = request.data
             else:
@@ -89,7 +88,6 @@ class LogoutAPIView(View):
 class RegisterAPIView(View):
     def post(self, request, *args, **kwargs):
         try:
-            # Obtener datos ya sea de ninja o del request body
             if hasattr(request, 'data'):
                 data = request.data
             else:

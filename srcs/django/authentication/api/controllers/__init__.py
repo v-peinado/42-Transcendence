@@ -130,25 +130,21 @@ def delete_account(request, data: DeleteAccountSchema) -> Dict:
             'message': str(e)
         }
 
-@router.get("/profile/user", tags=["profile"], response=UserProfileResponseSchema)
+@router.get("/profile/user", tags=["profile"], response=UserProfileSchema)
 def get_user_profile(request) -> Dict:
-    """Ver perfil de otro usuario"""
     try:
         profile_data = ProfileService.get_user_profile_data(request.user)
-        # Convertir datos a formato serializable
         return {
-            'user': {
-                'id': profile_data['user'].id,
-                'username': profile_data['user'].username,
-                'email': profile_data['user'].email,
-                'is_active': profile_data['user'].is_active,
-                'is_fortytwo_user': profile_data['user'].is_fortytwo_user,
-                'email_verified': profile_data['user'].email_verified,
-                'two_factor_enabled': profile_data['user'].two_factor_enabled,
-                'profile_image_url': profile_data['user'].profile_image.url if profile_data['user'].profile_image else None,
-                'date_joined': profile_data['user'].date_joined.isoformat() if profile_data['user'].date_joined else None,
-                'last_login': profile_data['user'].last_login.isoformat() if profile_data['user'].last_login else None
-            },
+            'id': profile_data['user'].id,
+            'username': profile_data['user'].username,
+            'email': profile_data['user'].email,
+            'is_active': profile_data['user'].is_active,
+            'is_fortytwo_user': profile_data['user'].is_fortytwo_user,
+            'email_verified': profile_data['user'].email_verified,
+            'two_factor_enabled': profile_data['user'].two_factor_enabled,
+            'profile_image_url': profile_data['user'].profile_image.url if profile_data['user'].profile_image else None,
+            'date_joined': profile_data['user'].date_joined.isoformat() if profile_data['user'].date_joined else None,
+            'last_login': profile_data['user'].last_login.isoformat() if profile_data['user'].last_login else None,
             'show_qr': profile_data['show_qr']
         }
     except Exception as e:
