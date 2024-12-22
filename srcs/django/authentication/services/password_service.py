@@ -1,7 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import check_password
-from django.conf import settings
 from ..models import PreviousPassword, CustomUser
 from .token_service import TokenService
 from .mail_service import MailSendingService
@@ -129,18 +128,15 @@ class PasswordService:
 
         token_data = TokenService.generate_password_reset_token(user)
         MailSendingService.send_password_reset_email(user, token_data)
-        return token_data  # Devolver datos del token
+        return token_data
 
     @staticmethod
     def confirm_password_reset(uidb64, token, new_password1, new_password2):
         """Confirmar reset de contraseña"""
         try:
-            print(f"DEBUG - Iniciando confirmación de reset para token: {token[:10]}...")
             user = TokenService.verify_password_reset_token(uidb64, token)
-            print(f"DEBUG - Token verificado para usuario: {user.email}")
             
             PasswordService._validate_password_basic(user, new_password1, new_password2)
-            print("DEBUG - Validación de contraseña exitosa")
             
             user.set_password(new_password1)
             user.save()
@@ -149,8 +145,6 @@ class PasswordService:
             return True
             
         except ValidationError as e:
-            print(f"DEBUG - Error de validación: {str(e)}")
             raise ValidationError(str(e))
         except Exception as e:
-            print(f"DEBUG - Error inesperado: {str(e)}")
             raise ValidationError(f"Error inesperado: {str(e)}")

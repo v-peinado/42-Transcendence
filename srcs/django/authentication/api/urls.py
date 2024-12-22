@@ -1,6 +1,7 @@
 from django.urls import path
 from ninja import NinjaAPI
 from authentication.api.controllers import router as auth_router
+from authentication.fortytwo_auth.views import FortyTwoLoginAPIView, FortyTwoCallbackAPIView
 
 from .views import (
     # auth_views
@@ -77,6 +78,12 @@ two_factor_patterns = [
     path('disable-2fa/', Disable2FAView.as_view(), name='api_disable_2fa'),
 ]
 
+# URLs de la API
+fourtytwo_patterns = [
+    path('api/login/', FortyTwoLoginAPIView.as_view(), name='api_ft_login'),
+    path('api/callback/', FortyTwoCallbackAPIView.as_view(), name='api_ft_callback'),
+]
+
 urlpatterns = [
     *auth_patterns,
 	*qr_patterns,
@@ -85,6 +92,7 @@ urlpatterns = [
     *password_patterns,
     *verification_patterns,
     *two_factor_patterns,
+	*fourtytwo_patterns,
     
     path('ninja/', api.urls),
 ]

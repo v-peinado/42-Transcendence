@@ -9,6 +9,6 @@ urlpatterns = [
     path('callback/', views.fortytwo_callback, name='ft_callback'),
     
     # Rutas API
-    path('api/login/', views.FortyTwoAuthAPIView.as_view(), name='api_ft_login'),
+    path('api/login/', views.FortyTwoLoginAPIView.as_view(), name='api_ft_login'),
     path('api/callback/', views.FortyTwoCallbackAPIView.as_view(), name='api_ft_callback'),
 ]

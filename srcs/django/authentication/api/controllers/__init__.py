@@ -4,6 +4,7 @@ from ..schemas import *
 from ..views import *
 from django.http import JsonResponse
 from authentication.services import ProfileService
+from authentication.fortytwo_auth.views import FortyTwoLoginAPIView, FortyTwoCallbackAPIView
 
 router = Router()
 
@@ -32,6 +33,27 @@ def register(request, data: RegisterSchema) -> Dict:
 def logout(request) -> Dict:
     """Cerrar sesión de usuario"""
     return LogoutAPIView.as_view()(request)
+
+# 42 endpoints
+
+@router.get("/auth/42", tags=["auth"], response=FortyTwoAuthResponseSchema)
+def fortytwo_login(request) -> Dict:
+    """Iniciar autenticación con 42"""
+    return FortyTwoLoginAPIView.as_view()(request)
+
+@router.get(
+    "/auth/42/callback", 
+    tags=["auth"],
+    response=FortyTwoCallbackResponseSchema
+)
+def fortytwo_callback(
+    request,
+    code: str,
+    state: str = None
+) -> Dict:
+    """Callback de autenticación 42"""
+    data = FortyTwoCallbackRequestSchema(code=code, state=state)
+    return FortyTwoCallbackAPIView.as_view()(request, data)
 
 # GDPR endpoints
 

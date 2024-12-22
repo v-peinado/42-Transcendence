@@ -78,3 +78,21 @@ class UserProfileSchema(Schema):
 class UserProfileResponseSchema(Schema):
     user: UserProfileSchema
     show_qr: bool
+    
+# Auth schemas 42
+class FortyTwoAuthResponseSchema(Schema):
+    status: str
+    auth_url: Optional[str]
+    message: Optional[str]
+    user: Optional[Dict] = None
+
+# Auth schemas 42
+class FortyTwoCallbackRequestSchema(Schema):
+    code: str = None
+    state: Optional[str] = None
+
+class FortyTwoCallbackResponseSchema(Schema):
+    status: str
+    message: str 
+    user: Optional[Dict]
+    require_2fa: Optional[bool] = False
