@@ -46,14 +46,15 @@ RUN useradd -r -s /sbin/nologin nginx || true
 
 # Copiar la configuración de nginx y los archivos del frontend
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY templates /etc/nginx/templates
 COPY frontend /usr/share/nginx/html
 COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 # Establecer permisos para el script
 RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh && \
-    chown -R nginx:nginx /docker-entrypoint.d
+    chown -R nginx:nginx /docker-entrypoint.d/20-generate-ssl.sh
 
-EXPOSE 443
+EXPOSE 8080 8443
 
 # No cambiar al usuario nginx para permitir que el entrypoint se ejecute como root
 CMD ["nginx", "-g", "daemon off;"]

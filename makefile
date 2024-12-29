@@ -185,6 +185,7 @@ help:
 	@echo "  make view-users            - Muestra los usuarios autorizados en la base de datos"
 	@echo ""
 	@echo "  http://localhost:8000      - Accede a la web desde Django (backend sin Nginx)"
+	@echo "  http://localhost:8443      - Accede a la web desde Nginx (frontend sin WAF)"
 	@echo "  http://localhost:8082      - WAF redirige a https://localhost (frontend)"
 	@echo "  https://localhost:8445     - WAF entrada principal al frontend"
 	@echo "  http://localhost:8200      - Panel acceso a Vault"

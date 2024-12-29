@@ -1,10 +1,16 @@
 FROM alpine:3.18
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl && \
+    addgroup -S nginxgroup && \
+    adduser -S nginxuser -G nginxgroup
 
 WORKDIR /ssl
 
 COPY ssl/generate-ssl.sh /generate-ssl.sh
-RUN chmod +x /generate-ssl.sh
+RUN chmod +x /generate-ssl.sh && \
+    mkdir -p /tmp/ssl && \
+    chown -R nginxuser:nginxgroup /tmp/ssl
+
+USER nginxuser
 
 CMD ["/generate-ssl.sh"]

@@ -45,9 +45,7 @@ services:
   nginx:
     build: ./nginx
     ports:
-      # - "80:80"
-      # - "443:443"
-      - "8443:8443"
+      - "8443:8443"  # https://localhost:8443 solo para pruebas (borrar en producción)
     expose:
       - "80"
       - "443"
@@ -67,14 +65,17 @@ services:
       - web
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
+      test: ["CMD", "curl", "-k", "https://localhost:8443/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   waf:
     build: ./waf
     ports:
-      - "8082:8081"   # http://localhost:8082 para acceder al WAF
-      - "8445:8444"   # https://localhost:8445 para acceder al WAF
-      - "8200:8200"   # http://localhost:8200 para acceder a Vault
+      - "8082:8081"
+      - "8445:8444"
+      - "8200:8200"
     networks:
       - trancendence-backend
       - app-network
@@ -111,5 +112,3 @@ volumes:
   ssl_certs:
   waf-certs:
   django_static:
-
-
