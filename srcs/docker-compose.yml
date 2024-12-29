@@ -45,8 +45,8 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
-      - "443:443"
+      # - "80:80"
+      # - "443:443"
       - "8443:8443"
     expose:
       - "80"
@@ -84,6 +84,10 @@ services:
       - waf_logs:/var/log/nginx
     environment:
       - NGINX_BACKEND=nginx:8443
+      - VAULT_ROOT_TOKEN=${VAULT_ROOT_TOKEN}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - VAULT_ADDR=http://0.0.0.0:8200
     command: sh -c "rm -f /tmp/nginx.pid && /usr/local/bin/init-vault.sh"
     depends_on:
       - nginx
