@@ -1,6 +1,7 @@
 networks:
   trancendence-backend:
-    name: trancendence-backend
+    driver: bridge
+  app-network:
     driver: bridge
 
 services:
@@ -10,19 +11,23 @@ services:
     container_name: django
     ports:
       - "8000:8000"
-    volumes:
-      - django_code:/app
-      - django_media:/app/media
     networks:
       - trancendence-backend
+    volumes:
+      - django_static:/app/static
+      - django_media:/app/media
+    environment:
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=postgres
+      - SQL_USER=postgres
+      - SQL_PASSWORD=postgres
+      - SQL_HOST=db
+      - SQL_PORT=5432
     depends_on:
       - db
     env_file:
       - .env
     restart: always
-    environment:
-      - SQL_HOST=db
-      - SQL_PORT=5432
 
   db:
     image: postgres:17
@@ -38,14 +43,14 @@ services:
     restart: always
 
   nginx:
-    build:
-      context: ./nginx
-    container_name: nginx
-    ports:
-      - "8443:443"
-      - "8080:80"   
+    build: ./nginx
+    expose:
+      - "80"
+      - "443"
+      - "8443"
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - type: volume
         source: nginx_static
@@ -53,15 +58,55 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # Montar certificados SSL
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - web
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-k", "https://localhost:8443/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  waf:
+    build: ./waf
+    ports:
+      - "8082:8081"
+      - "8445:8444"
+      - "8200:8200"
+    networks:
+      - trancendence-backend
+      - app-network
+    volumes:
+      - ssl_certs:/tmp/ssl
+      - ./waf/rules:/etc/modsecurity/rules:ro
+      - waf_logs:/var/log/nginx
+    environment:
+      - NGINX_BACKEND=nginx:8443
+      - VAULT_ROOT_TOKEN=${VAULT_ROOT_TOKEN}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - VAULT_ADDR=http://0.0.0.0:8200
+    command: sh -c "rm -f /tmp/nginx.pid && /usr/local/bin/init-vault.sh"
+    depends_on:
+      - nginx
+      - web
+    restart: always
+
+  ssl-cert-generator:
+    build: 
+      context: ./waf
+      dockerfile: Dockerfile.ssl
+    volumes:
+      - waf-certs:/ssl
 
 volumes:
   postgres_data: 
   django_media:
   django_code:
   nginx_static:
-
-
+  waf_logs:
+  vault_data:
+  ssl_certs:
+  waf-certs:
+  django_static:
