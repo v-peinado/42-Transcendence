@@ -44,8 +44,6 @@ services:
 
   nginx:
     build: ./nginx
-    ports:
-      - "8443:8443"  # https://localhost:8443 solo para pruebas (borrar en producción)
     expose:
       - "80"
       - "443"
