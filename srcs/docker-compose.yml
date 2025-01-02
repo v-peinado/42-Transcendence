@@ -1,8 +1,6 @@
 networks:
   trancendence-backend:
     driver: bridge
-  app-network:
-    driver: bridge
 
 services:
   web:
@@ -43,7 +41,6 @@ services:
       - "8443"
     networks:
       - trancendence-backend
-      - app-network
     volumes:
       - type: volume
         source: nginx_static
@@ -69,7 +66,6 @@ services:
       - "8200:8200"
     networks:
       - trancendence-backend
-      - app-network
     volumes:
       - ssl_certs:/tmp/ssl
       - ./waf/rules:/etc/modsecurity/rules:ro
@@ -92,10 +88,8 @@ services:
 volumes:
   postgres_data: 
   django_media:
-  django_code:
   nginx_static:
   waf_logs:
-  vault_data:
   ssl_certs:
   waf-certs:
   django_static:
