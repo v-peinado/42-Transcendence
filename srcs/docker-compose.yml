@@ -68,7 +68,6 @@ services:
       - trancendence-backend
     volumes:
       - ssl_certs:/tmp/ssl
-      - ./waf/rules:/etc/modsecurity/rules:ro
       - waf_logs:/var/log/nginx
     env_file:
       - .env
@@ -84,5 +83,4 @@ volumes:
   nginx_static:
   waf_logs:
   ssl_certs:
-  waf-certs:
   django_static:
