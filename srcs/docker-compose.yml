@@ -16,13 +16,6 @@ services:
     volumes:
       - django_static:/app/static
       - django_media:/app/media
-    environment:
-      - SQL_ENGINE=django.db.backends.postgresql
-      - SQL_DATABASE=postgres
-      - SQL_USER=postgres
-      - SQL_PASSWORD=postgres
-      - SQL_HOST=db
-      - SQL_PORT=5432
     depends_on:
       - db
     env_file:
@@ -81,11 +74,11 @@ services:
       - ssl_certs:/tmp/ssl
       - ./waf/rules:/etc/modsecurity/rules:ro
       - waf_logs:/var/log/nginx
+    env_file:
+      - .env
     environment:
+      # Variables críticas con valores específicos
       - NGINX_BACKEND=nginx:8443
-      - VAULT_ROOT_TOKEN=${VAULT_ROOT_TOKEN}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - VAULT_ADDR=http://0.0.0.0:8200
     command: sh -c "rm -f /tmp/nginx.pid && /usr/local/bin/init-vault.sh"
     depends_on:
