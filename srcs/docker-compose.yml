@@ -78,13 +78,6 @@ services:
       - web
     restart: always
 
-  ssl-cert-generator:
-    build: 
-      context: ./waf
-      dockerfile: Dockerfile.ssl
-    volumes:
-      - waf-certs:/ssl
-
 volumes:
   postgres_data: 
   django_media:
