@@ -76,10 +76,6 @@ services:
       - waf_logs:/var/log/nginx
     env_file:
       - .env
-    environment:
-      # Variables críticas con valores específicos
-      - NGINX_BACKEND=nginx:8443
-      - VAULT_ADDR=http://0.0.0.0:8200
     command: sh -c "rm -f /tmp/nginx.pid && /usr/local/bin/init-vault.sh"
     depends_on:
       - nginx
