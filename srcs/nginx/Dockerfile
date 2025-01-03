@@ -1,6 +1,6 @@
 FROM owasp/modsecurity-crs:nginx
 
-# Primero nos aseguramos de ser root para todas las operaciones
+# Aseguramos de ser root para todas las operaciones
 USER root
 
 # Variables de entorno para ModSecurity
