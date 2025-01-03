@@ -34,7 +34,9 @@ services:
     restart: always
 
   nginx:
-    build: ./nginx
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     expose:
       - "80"
       - "443"
@@ -49,6 +51,7 @@ services:
         source: django_media
         target: /usr/share/nginx/html/media
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ssl_certs:/tmp/ssl:rw
     depends_on:
       - web
     restart: always
@@ -59,7 +62,9 @@ services:
       retries: 3
 
   waf:
-    build: ./waf
+    build:
+      context: .
+      dockerfile: waf/Dockerfile
     ports:
       - "8082:8081"
       - "8445:8444"
@@ -67,7 +72,7 @@ services:
     networks:
       - trancendence-backend
     volumes:
-      - ssl_certs:/tmp/ssl
+      - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
     env_file:
       - .env
@@ -83,4 +88,5 @@ volumes:
   nginx_static:
   waf_logs:
   ssl_certs:
+    name: ssl_certs
   django_static:

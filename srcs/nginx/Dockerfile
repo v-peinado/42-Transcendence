@@ -45,10 +45,10 @@ RUN apt-get update && \
 RUN useradd -r -s /sbin/nologin nginx || true
 
 # Copiar la configuración de nginx y los archivos del frontend
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY templates /etc/nginx/templates
-COPY frontend /usr/share/nginx/html
-COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/templates /etc/nginx/templates
+COPY nginx/frontend /usr/share/nginx/html
+COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 # Establecer permisos para el script
 RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh && \

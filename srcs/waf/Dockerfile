@@ -29,11 +29,11 @@ RUN mkdir -p \
         /tmp/modsecurity
 
 # Copiar archivos de configuración
-COPY ./vault/config.hcl /etc/vault.d/
-COPY ./init-vault.sh /usr/local/bin/
-COPY ./ssl/generate-ssl.sh /usr/local/bin/
-COPY ./custom-nginx.conf /etc/nginx/nginx.conf
-COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+COPY waf/vault/config.hcl /etc/vault.d/
+COPY waf/vault/init-vault.sh /usr/local/bin/
+COPY waf/custom-nginx.conf /etc/nginx/nginx.conf
+COPY ssl/generate-ssl.sh /usr/local/bin/
+COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 # Configurar permisos
 RUN chmod +x \
