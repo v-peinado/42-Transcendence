@@ -42,7 +42,19 @@ COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 # ModSecurity setup
 COPY waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
 COPY waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
-RUN ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf
+COPY waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
+
+RUN mkdir -p /etc/modsecurity/crs && \
+    ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf && \
+    ln -sf /etc/modsecurity/crs/crs-setup.conf /usr/share/modsecurity-crs/crs-setup.conf && \
+    chown -R nginx:nginx \
+        /etc/nginx/modsecurity.d \
+        /etc/nginx/modsecurity/rules \
+        /etc/modsecurity/crs && \
+    chmod -R 644 \
+        /etc/nginx/modsecurity.d/* \
+        /etc/nginx/modsecurity/rules/* \
+        /etc/modsecurity/crs/*
 
 # Configurar permisos finales
 RUN chmod +x \
