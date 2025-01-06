@@ -44,10 +44,10 @@ services:
 
   nginx:
     build: ./nginx
-    expose:
-      - "80"
-      - "443"
-      - "8443"
+    ports:  
+      - "8080:80"     # Puerto HTTP
+      - "8443:443"    # Puerto HTTPS principal
+      - "8444:8443"   # Puerto HTTPS adicional
     networks:
       - trancendence-backend
       - app-network
@@ -58,7 +58,7 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ssl_certs:/tmp/ssl:rw    # Cambiado de :ro a :rw para permitir escritura
     depends_on:
       - web
     restart: always
@@ -98,7 +98,19 @@ services:
       context: ./waf
       dockerfile: Dockerfile.ssl
     volumes:
-      - waf-certs:/ssl
+      - ssl_certs:/ssl
+    user: root                   # Añadido para asegurar permisos de escritura
+
+  front:
+    build: ./front
+    container_name: front
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   postgres_data: 

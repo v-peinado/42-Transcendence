@@ -191,6 +191,8 @@ help:
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
+	@echo " http://localhost:3000 - Acceso a front directo"
+	@echo " https://localhost:8443 - A través de nginx"
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
 

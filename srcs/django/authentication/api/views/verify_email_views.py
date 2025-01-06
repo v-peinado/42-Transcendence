@@ -6,7 +6,7 @@ from ...services.mail_service import EmailVerificationService
 
 @method_decorator(csrf_exempt, name='dispatch')
 class VerifyEmailAPIView(View):
-    def get(self, request, uidb64, token, *args, **kwargs):
+    def get(self, request, uidb64, token, *args, **kwargs):  # Aseguramos que use uidb64
         try:
             EmailVerificationService.verify_email(uidb64, token)
             return JsonResponse({

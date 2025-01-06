@@ -3,6 +3,10 @@ FROM owasp/modsecurity-crs:nginx
 # Primero nos aseguramos de ser root para todas las operaciones
 USER root
 
+# Instalar apt-utils primero para evitar el warning
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y apt-utils
+
 # Variables de entorno para ModSecurity
 ENV MODSECURITY=On
 ENV MODSECURITY_AUDIT_ENGINE=On
@@ -46,14 +50,14 @@ RUN useradd -r -s /sbin/nologin nginx || true
 
 # Copiar la configuración de nginx y los archivos del frontend
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY templates /etc/nginx/templates
-COPY frontend /usr/share/nginx/html
+COPY templates /etc/nginx/templates/
 COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 # Establecer permisos para el script
 RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh && \
     chown -R nginx:nginx /docker-entrypoint.d/20-generate-ssl.sh
 
+# Actualizar EXPOSE para reflejar los nuevos puertos
 EXPOSE 8080 8443
 
 # No cambiar al usuario nginx para permitir que el entrypoint se ejecute como root
