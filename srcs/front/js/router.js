@@ -3,6 +3,7 @@ import { LoginView } from '/js/views/auth/LoginView.js';
 import { RegisterView } from '/js/views/auth/RegisterView.js';
 import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
 import { UserView } from '/js/views/user/UserView.js';  // Nueva importación
+import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva importación
 
 class Router {
     routes = {
@@ -24,6 +25,8 @@ class Router {
         '/verify-email/:uid/:token': VerifyEmailView,  // Nueva ruta para verificación
         '/user': UserView,      // Nueva ruta
         '/user/': UserView,     // También manejar con slash final
+        '/profile': UserProfileView,  // Nueva ruta para perfil
+        '/profile/': UserProfileView, // También manejar con slash final
         '/404': () => {
             const app = document.getElementById('app');
             app.innerHTML = `

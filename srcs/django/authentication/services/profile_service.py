@@ -145,10 +145,18 @@ class ProfileService:
 
     @staticmethod
     def get_user_profile_data(user):
-        """Obtiene datos del perfil de usuario"""
+        """Obtener datos del perfil de usuario"""
+        if not user.is_authenticated:
+            raise ValidationError('Usuario no autenticado')
+            
         return {
-            'user': user,
-            'show_qr': user.email_verified
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'is_active': user.is_active,
+            'email_verified': user.email_verified,
+            'date_joined': user.date_joined.isoformat(),
+            'last_login': user.last_login.isoformat() if user.last_login else None,
         }
 
     @staticmethod

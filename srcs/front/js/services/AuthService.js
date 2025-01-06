@@ -163,6 +163,31 @@ class AuthService {
             throw error;
         }
     }
+
+    static async getUserProfile() {
+        try {
+            const response = await fetch(`${this.API_URL}/profile/user/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'  // Importante para las cookies de sesión
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al obtener el perfil');
+            }
+
+            const data = await response.json();
+            console.log('Datos del perfil recibidos:', data);  // Debug
+            return data;
+        } catch (error) {
+            console.error('Error en getUserProfile:', error);
+            throw new Error('No se pudo cargar el perfil de usuario');
+        }
+    }
 }
 
 export default AuthService;

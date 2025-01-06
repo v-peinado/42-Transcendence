@@ -47,7 +47,7 @@ export function LoginView() {
         try {
             const result = await AuthService.login(username, password, remember);
             if (result.success) {
-                window.location.href = result.redirectUrl;
+                window.location.href = '/profile';  // Cambiar a perfil en lugar de /user
             } else if (result.needsEmailVerification) {
                 alertDiv.innerHTML = `
                     <div class="alert alert-warning">
