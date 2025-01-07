@@ -4,5 +4,9 @@
 
 # Ignorar contenido de SSL excepto .gitkeep
 nginx/ssl/*
-!nginx/ssl/.gitkeep
+#!nginx/ssl/.gitkeep
+
+# Ignorar contenido de logs excepto .gitkeep
+django/logs/*
+#!django/logs/.gitkeep
 

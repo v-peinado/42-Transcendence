@@ -10,6 +10,10 @@ def home(request):
 
 def login(request):
     """Vista de inicio de sesión para usuarios registrados de forma manual"""
+    context = {}
+    first_time = request.GET.get('first_time', 'false')
+    context['first_time'] = first_time == 'true'
+    
     if request.method == 'POST':
         try:
             redirect_to = AuthenticationService.login_user(
@@ -22,7 +26,7 @@ def login(request):
         except ValidationError as e:
             messages.error(request, str(e))
             
-    return render(request, 'authentication/login.html')
+    return render(request, 'authentication/login.html', context)
 
 def register(request):
     """Vista de registro para nuevos usuarios que se registran manualmente"""

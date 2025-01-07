@@ -185,3 +185,73 @@ X_FRAME_OPTIONS = 'DENY'										# Protección contra ataques de clickjacking (
 # Settings para la generación de tokens JWT
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
 JWT_ALGORITHM = 'HS256'											# Algoritmo de encriptación estándar
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        # 'logstash': {
+        #     '()': 'logstash_formatter.LogstashFormatterV1',
+        # },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'filters': ['require_debug_true'],
+            'formatter': 'simple',
+        },
+        # 'logstash': {
+        #     'level': 'DEBUG',
+        #     'class': 'logstash.TCPLogstashHandler',
+        #     'host': 'logstash',  # Cambia esto a la dirección de tu servidor Logstash
+        #     'port': 5000,  # Cambia esto al puerto en el que Logstash está escuchando
+        #     'version': 1,
+        #     'message_type': 'logstash',  # Tipo de mensaje (puede ser cualquier string)
+        #     'fqdn': False,
+        #     'tags': ['django'],
+        #     'formatter': 'logstash',
+        #},
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'], 
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'], 
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'mylogger': {
+            'handlers': ['console', 'file'], 
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+            'propagate': True,
+        },
+        'websockets': {
+            'handlers': ['console', 'file'], 
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
