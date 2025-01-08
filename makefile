@@ -135,6 +135,7 @@ destroy-images:
 	docker image prune -a -f
 
 fclean: close destroy-images clean-postgres-data clean-volumes
+	rm -f srcs/django/logs/*.log
 	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
 
 re: fclean all
@@ -186,7 +187,7 @@ help:
 	@echo ""
 	@echo "  http://localhost:8000      - Accede a la web desde Django (backend sin Nginx)"
 	@echo "  http://localhost:8082      - WAF redirige a https://localhost (frontend)"
-	@echo "  https://localhost:8445     - WAF entrada principal al frontend"
+	@echo "  https://localhost:8444     - WAF entrada principal al frontend"
 	@echo "  http://localhost:8200      - Panel acceso a Vault"
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"

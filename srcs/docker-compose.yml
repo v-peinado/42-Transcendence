@@ -14,11 +14,17 @@ services:
     volumes:
       - django_static:/app/static
       - django_media:/app/media
+      - ./django/logs:/app/logs
     depends_on:
       - db
     env_file:
       - .env
     restart: always
+    command: >
+      sh -c "mkdir -p /app/logs &&
+             python manage.py makemigrations &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
 
   db:
     image: postgres:17
@@ -50,7 +56,6 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media
-      - ./nginx/ssl:/etc/nginx/ssl:ro
       - ssl_certs:/tmp/ssl:rw
     depends_on:
       - web
@@ -67,7 +72,7 @@ services:
       dockerfile: waf/Dockerfile
     ports:
       - "8082:8081"
-      - "8445:8444"
+      - "8444:8444"
       - "8200:8200"
     networks:
       - trancendence-backend
@@ -85,8 +90,8 @@ services:
 volumes:
   postgres_data: 
   django_media:
+  django_static:
   nginx_static:
   waf_logs:
   ssl_certs:
     name: ssl_certs
-  django_static:
