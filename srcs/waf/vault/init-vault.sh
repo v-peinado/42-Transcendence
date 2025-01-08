@@ -10,9 +10,9 @@ vault server -dev \
     -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
     -dev-listen-address="0.0.0.0:8200" &
 
-sleep 5
+sleep 5	# Esperar 5 segundos a que se inicie Vault antes de continuar con el script
 
-# Configurar políticas
+# Configurar políticas de acceso a secretos de Django en Vault
 vault policy write django - <<EOF
 path "secret/data/django/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
