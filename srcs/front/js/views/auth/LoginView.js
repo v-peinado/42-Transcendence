@@ -51,6 +51,12 @@ export function LoginView() {
                                         </a>
                                     </div>
                                 </form>
+                                
+                                <div class="text-center mt-3">
+                                    <a href="/reset_password" data-link class="text-light text-decoration-none">
+                                        <i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña?
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

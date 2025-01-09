@@ -5,6 +5,8 @@ import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
 import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';  // Nueva importación
 import { UserView } from '/js/views/user/UserView.js';  // Nueva importación
 import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva importación
+import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
+import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 
 class Router {
     routes = {
@@ -191,6 +193,8 @@ class Router {
         '/user/': UserView,     // También manejar con slash final
         '/profile': UserProfileView,  // Nueva ruta para perfil
         '/profile/': UserProfileView, // También manejar con slash final
+        '/reset_password': RequestPasswordResetView,
+        '/reset/:uid/:token': ResetPasswordView,
         '/404': () => {
             const app = document.getElementById('app');
             app.innerHTML = `
@@ -239,6 +243,17 @@ class Router {
                 const token = parts[1].replace('/', '');
                 console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
+                return;
+            }
+        }
+
+        // Añadir manejo de reset de contraseña
+        if (path.includes('/reset/')) {
+            const parts = path.split('/reset/')[1].split('/');
+            if (parts.length >= 2) {
+                const uidb64 = parts[0];
+                const token = parts[1];
+                ResetPasswordView(uidb64, token);
                 return;
             }
         }
