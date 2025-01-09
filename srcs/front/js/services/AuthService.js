@@ -119,21 +119,31 @@ class AuthService {
         try {
             const response = await fetch(`${this.API_URL}/logout/`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 }
             });
-            
-            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error(data.message || 'Logout failed');
+                throw new Error('Error en logout');
             }
+
+            // Limpiar todo el estado del usuario
+            localStorage.clear();
+            sessionStorage.clear();
             
-            return { success: true, message: data.message };
+            // Limpiar todas las cookies relacionadas con la sesión
+            document.cookie.split(";").forEach(cookie => {
+                document.cookie = cookie
+                    .replace(/^ +/, "")
+                    .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+            });
+
+            return true;
         } catch (error) {
-            console.error('Error en logout:', error);
+            console.error('Error durante logout:', error);
             throw error;
         }
     }
@@ -164,6 +174,41 @@ class AuthService {
         }
     }
 
+    static async verifyEmailChange(uid, token) {
+        try {
+            console.log('Verificando cambio de email:', { uid, token });
+            // Añadir slash final para coincidir con la URL de Django
+            const response = await fetch(`${this.API_URL}/verify-email-change/${uid}/${token}/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            console.log('Respuesta del servidor:', response.status);
+            const data = await response.json();
+            console.log('Datos de verificación:', data);
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error en la verificación');
+            }
+
+            // Forzar actualización del estado
+            await this.getUserProfile();
+
+            return {
+                success: true,
+                message: data.message || 'Email actualizado correctamente'
+            };
+        } catch (error) {
+            console.error('Error verificación cambio email:', error);
+            throw error;
+        }
+    }
+
     static async getUserProfile() {
         try {
             const response = await fetch(`${this.API_URL}/profile/user/`, {
@@ -186,6 +231,39 @@ class AuthService {
         } catch (error) {
             console.error('Error en getUserProfile:', error);
             throw new Error('No se pudo cargar el perfil de usuario');
+        }
+    }
+
+    static async updateProfile(userData) {
+        try {
+            const response = await fetch(`${this.API_URL}/profile/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({
+                    email: userData.email  // Solo enviamos el email por ahora
+                }),
+                credentials: 'include'
+            });
+
+            const responseData = await response.json();
+            console.log('Respuesta actualización:', responseData);  // Debug
+
+            if (!response.ok) {
+                throw new Error(responseData.message || responseData.error || 'Error actualizando perfil');
+            }
+
+            return {
+                success: true,
+                message: responseData.message,
+                requiresVerification: true  // Siempre true para cambios de email
+            };
+        } catch (error) {
+            console.error('Error en updateProfile:', error);
+            throw error;
         }
     }
 }

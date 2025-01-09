@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100">
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+        @keyframes move {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(2px, -2px); }
+        }
+        .paddle { animation: bounce 1s infinite ease-in-out; }
+        .ball { animation: move 0.5s infinite ease-in-out; }
+    </style>
+    <rect width="100" height="100" fill="#24243e"/>
+    <rect class="paddle" x="10" y="40" width="10" height="20" fill="#fff">
+        <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
+    </rect>
+    <circle class="ball" cx="50" cy="50" r="5" fill="#fff">
+        <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <rect class="paddle" x="80" y="40" width="10" height="20" fill="#fff">
+        <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
+    </rect>
+</svg>

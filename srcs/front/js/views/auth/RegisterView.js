@@ -3,47 +3,81 @@ import AuthService from '../../services/AuthService.js';
 export function RegisterView() {
     const app = document.getElementById('app');
     app.innerHTML = `
-        <div class="container mt-4">
-            <div class="row justify-content-center">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h3 class="card-title text-center">Registro</h3>
-                            <div id="registerAlert"></div>
-                            <form id="registerForm">
-                                <div class="mb-3">
-                                    <label for="username" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="username" autocomplete="username" required>
+        <div class="hero-section">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-5">
+                        <div class="card login-card">
+                            <div class="card-body p-5">
+                                <div class="text-center mb-4">
+                                    <svg class="logo mb-3" width="64" height="64" viewBox="0 0 100 100" id="registerLogo">
+                                        <rect x="10" y="40" width="10" height="20" fill="#fff" class="paddle"/>
+                                        <circle cx="50" cy="50" r="5" fill="#fff" class="ball"/>
+                                        <rect x="80" y="40" width="10" height="20" fill="#fff" class="paddle"/>
+                                    </svg>
+                                    <h2 class="fw-bold">Crear Cuenta</h2>
+                                    <p class="text-muted">Únete a la comunidad de Pong</p>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email" autocomplete="email" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="password" autocomplete="new-password" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password2" class="form-label">Confirmar Password</label>
-                                    <input type="password" class="form-control" id="password2" autocomplete="new-password" required>
-                                </div>
-                                <div class="mb-3 form-check">
-                                    <input type="checkbox" class="form-check-input" id="privacy_policy" required>
-                                    <label class="form-check-label" for="privacy_policy">
-                                        Acepto la <a href="/privacy-policy" data-link>política de privacidad</a>
-                                    </label>
-                                </div>
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-primary">Registrarse</button>
-                                    <a href="/login" data-link class="btn btn-outline-secondary">¿Ya tienes cuenta? Login</a>
-                                </div>
-                            </form>
+                                
+                                <div id="registerAlert"></div>
+                                
+                                <form id="registerForm">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control bg-dark text-light" 
+                                               id="username" placeholder="username" required>
+                                        <label for="username">Username</label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="email" class="form-control bg-dark text-light" 
+                                               id="email" placeholder="name@example.com" required>
+                                        <label for="email">Email</label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="password" class="form-control bg-dark text-light" 
+                                               id="password" placeholder="Password" required>
+                                        <label for="password">Password</label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="password" class="form-control bg-dark text-light" 
+                                               id="password2" placeholder="Confirm Password" required>
+                                        <label for="password2">Confirmar Password</label>
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="privacy_policy" required>
+                                        <label class="form-check-label text-light" for="privacy_policy">
+                                            Acepto la <a href="/privacy-policy" data-link class="text-primary">política de privacidad</a>
+                                        </label>
+                                    </div>
+                                    <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
+                                        <i class="fas fa-user-plus me-2"></i>Registrarse
+                                    </button>
+                                    <div class="text-center">
+                                        <a href="/login" data-link class="text-light">
+                                            ¿Ya tienes cuenta? Inicia sesión
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
+
+    // Añadir evento para activar animación
+    const form = document.getElementById('registerForm');
+    const logo = document.getElementById('registerLogo');
+    
+    form.addEventListener('focusin', () => {
+        logo.classList.add('animated');
+    });
+
+    form.addEventListener('focusout', (e) => {
+        if (!form.contains(document.activeElement)) {
+            logo.classList.remove('animated');
+        }
+    });
 
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
