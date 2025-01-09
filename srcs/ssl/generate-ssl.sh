@@ -51,8 +51,8 @@ generate_certificates() {
         -subj "$CERT_SUBJECT" -sha256 || return 1
     
     # Establecer permisos
-    install -m 644 "$CERT_FILE" "$CERT_FILE".tmp && mv "$CERT_FILE".tmp "$CERT_FILE"
-    install -m 600 "$KEY_FILE" "$KEY_FILE".tmp && mv "$KEY_FILE".tmp "$KEY_FILE"
+    chmod 644 "$CERT_FILE"
+    chmod 600 "$KEY_FILE"
     
     # Verificación final
     [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ] || {
