@@ -167,6 +167,9 @@ export function UserProfileView() {
                         </form>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-danger me-auto" id="deleteAccountBtn">
+                            <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-primary" id="saveProfileBtn">Guardar</button>
                     </div>
@@ -175,6 +178,50 @@ export function UserProfileView() {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Modificar el modal de eliminación de cuenta
+    const deleteAccountModal = `
+        <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger">Eliminar Cuenta</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>¡ATENCIÓN!</strong> Esta acción eliminará permanentemente:
+                            <ul class="mt-2 mb-0">
+                                <li>Tu cuenta y perfil</li>
+                                <li>Todo tu historial de partidas</li>
+                                <li>Tus estadísticas y logros</li>
+                            </ul>
+                        </div>
+                        <form id="deleteAccountForm">
+                            <div class="mb-3">
+                                <label class="form-label">Confirma tu contraseña</label>
+                                <input type="password" class="form-control" id="deleteAccountPassword" required>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="confirmDelete" required>
+                                <label class="form-check-label" for="confirmDelete">
+                                    Entiendo que esta acción no se puede deshacer
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                            <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', deleteAccountModal);
 
     // Añadir verificación de URL para email
     const urlParams = new URLSearchParams(window.location.search);
@@ -294,6 +341,42 @@ function setupProfileEvents() {
                 ${error.message || 'Error al actualizar el perfil'}
             `;
         }
+    });
+
+    // Event listener para mostrar modal de eliminar cuenta
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+        editModal.hide();
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
+        deleteModal.show();
+    });
+
+    // Event listener para confirmar eliminación
+    document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+        try {
+            const password = document.getElementById('deleteAccountPassword').value;
+            if (!password) {
+                throw new Error('Debes introducir tu contraseña');
+            }
+
+            const result = await AuthService.deleteAccount(password);
+            if (result.success) {
+                window.location.href = '/';
+            }
+        } catch (error) {
+            const messageDiv = document.getElementById('modalMessage');
+            messageDiv.classList.remove('d-none', 'alert-success');
+            messageDiv.classList.add('alert-danger');
+            messageDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${error.message || 'Error al eliminar la cuenta'}
+            `;
+        }
+    });
+
+    // Event listener para el checkbox de confirmación
+    document.getElementById('confirmDelete')?.addEventListener('change', (e) => {
+        document.getElementById('confirmDeleteBtn').disabled = !e.target.checked;
     });
 }
 

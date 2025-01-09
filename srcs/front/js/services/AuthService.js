@@ -1,10 +1,3 @@
-// js/views/auth/LoginView.js
-// (empty file)
-
-// js/views/auth/RegisterView.js
-// (empty file)
-
-// js/services/AuthService.js
 class AuthService {
     // URL base para las APIs
     static API_URL = '/api';
@@ -320,6 +313,35 @@ class AuthService {
             }
             return data;
         } catch (error) {
+            throw error;
+        }
+    }
+
+    static async deleteAccount(password) {
+        try {
+            const response = await fetch(`${this.API_URL}/profile/delete-account/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ confirm_password: password }),
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Error al eliminar la cuenta');
+            }
+
+            // Limpiar estado de usuario inmediatamente
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            return { success: true };
+        } catch (error) {
+            console.error('Error en deleteAccount:', error);
             throw error;
         }
     }
