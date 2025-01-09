@@ -181,6 +181,19 @@ export function UserProfileView() {
 }
 
 function setupProfileEvents() {
+    // Agregar el event listener para logout
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+        try {
+            await AuthService.logout();
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('username');
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('Error en logout:', error);
+            alert('Error al cerrar sesión');
+        }
+    });
+
     // Event listener para el botón de editar
     document.getElementById('editProfileBtn')?.addEventListener('click', () => {
         const modalElement = document.getElementById('editProfileModal');
