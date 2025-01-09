@@ -236,6 +236,14 @@ class AuthService {
 
     static async updateProfile(userData) {
         try {
+            const data = {};
+            if (userData.email) data.email = userData.email;
+            if (userData.current_password) {
+                data.current_password = userData.current_password;
+                data.new_password1 = userData.new_password1;
+                data.new_password2 = userData.new_password2;
+            }
+
             const response = await fetch(`${this.API_URL}/profile/`, {
                 method: 'POST',
                 headers: {
@@ -243,14 +251,12 @@ class AuthService {
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({
-                    email: userData.email  // Solo enviamos el email por ahora
-                }),
+                body: JSON.stringify(data),
                 credentials: 'include'
             });
 
             const responseData = await response.json();
-            console.log('Respuesta actualización:', responseData);  // Debug
+            console.log('Respuesta actualización:', responseData);
 
             if (!response.ok) {
                 throw new Error(responseData.message || responseData.error || 'Error actualizando perfil');
@@ -259,7 +265,7 @@ class AuthService {
             return {
                 success: true,
                 message: responseData.message,
-                requiresVerification: true  // Siempre true para cambios de email
+                requiresVerification: userData.email ? true : false
             };
         } catch (error) {
             console.error('Error en updateProfile:', error);

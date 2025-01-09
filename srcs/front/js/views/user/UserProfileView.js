@@ -141,6 +141,8 @@ export function UserProfileView() {
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        <!-- Añadir div para mensajes -->
+                        <div id="modalMessage" class="alert d-none mb-3"></div>
                         <form id="editProfileForm">
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
@@ -151,8 +153,16 @@ export function UserProfileView() {
                                 <input type="email" class="form-control" id="editEmail" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Nueva Contraseña (opcional)</label>
-                                <input type="password" class="form-control" id="editPassword">
+                                <label class="form-label">Contraseña Actual</label>
+                                <input type="password" class="form-control" id="currentPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nueva Contraseña</label>
+                                <input type="password" class="form-control" id="newPassword1">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Confirmar Nueva Contraseña</label>
+                                <input type="password" class="form-control" id="newPassword2">
                             </div>
                         </form>
                     </div>
@@ -215,35 +225,74 @@ function setupProfileEvents() {
     // Event listener para guardar cambios
     document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
         try {
+            const updates = {};
+            const modalElement = document.getElementById('editProfileModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            const messageDiv = document.getElementById('modalMessage');
+            
+            // Verificar cambios de email
             const newEmail = document.getElementById('editEmail').value;
             const currentEmail = document.getElementById('profileEmail').textContent;
-
-            // Solo actualizamos si el email ha cambiado
             if (newEmail !== currentEmail) {
-                const result = await AuthService.updateProfile({ email: newEmail });
-                
-                if (result.requiresVerification) {
-                    const modalElement = document.getElementById('editProfileModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    
-                    // Asegurarse de que el modal se cierre correctamente
-                    modalElement.addEventListener('hidden.bs.modal', () => {
-                        modalElement.remove(); // Eliminar el modal del DOM después de cerrarlo
-                    }, { once: true });
-                    
-                    modal.hide();
-                    
-                    // Mostrar mensaje detallado
-                    alert(`Se ha enviado un email de verificación a ${newEmail}. 
-                          Por favor, revisa tu bandeja de entrada y sigue las instrucciones para confirmar el cambio. 
-                          Mientras tanto, tu email actual seguirá siendo ${currentEmail}.`);
+                updates.email = newEmail;
+            }
+
+            // Verificar cambios de contraseña
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword1 = document.getElementById('newPassword1').value;
+            const newPassword2 = document.getElementById('newPassword2').value;
+
+            if (newPassword1 || newPassword2 || currentPassword) {
+                if (!currentPassword) {
+                    throw new Error('Debes introducir tu contraseña actual');
                 }
-            } else {
-                alert('No has realizado ningún cambio en el email.');
+                if (newPassword1 !== newPassword2) {
+                    throw new Error('Las contraseñas nuevas no coinciden');
+                }
+                updates.current_password = currentPassword;
+                updates.new_password1 = newPassword1;
+                updates.new_password2 = newPassword2;
+            }
+
+            if (Object.keys(updates).length === 0) {
+                alert('No has realizado ningún cambio.');
+                return;
+            }
+
+            const result = await AuthService.updateProfile(updates);
+            
+            if (result.requiresVerification) {
+                modal.hide();
+                alert(`Se ha enviado un email de verificación a ${newEmail}. 
+                      Por favor, revisa tu bandeja de entrada.`);
+            } else if (updates.current_password) {
+                messageDiv.classList.remove('d-none', 'alert-danger');
+                messageDiv.classList.add('alert-success');
+                messageDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    ${result.message || 'Tu contraseña ha sido actualizada correctamente'}
+                `;
+                
+                // Limpiar los campos de contraseña
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword1').value = '';
+                document.getElementById('newPassword2').value = '';
+                
+                // Ocultar el mensaje después de 3 segundos y cerrar el modal
+                setTimeout(() => {
+                    messageDiv.classList.add('d-none');
+                    modal.hide();
+                }, 3000);
             }
         } catch (error) {
-            alert(error.message || 'Error al actualizar el perfil');
-            console.error('Error al actualizar perfil:', error);
+            // Mostrar errores en el modal
+            const messageDiv = document.getElementById('modalMessage');
+            messageDiv.classList.remove('d-none', 'alert-success');
+            messageDiv.classList.add('alert-danger');
+            messageDiv.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${error.message || 'Error al actualizar el perfil'}
+            `;
         }
     });
 }
