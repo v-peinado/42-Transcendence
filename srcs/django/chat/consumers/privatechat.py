@@ -1,21 +1,10 @@
 from .base import ChatConsumer
-from .blockusers import BlockConsumer
-from .users import UsersConsumer
-from .messages import MessagesConsumer
-from .friends import FriendRequestsConsumer
-
-from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from django.contrib.auth import get_user_model
-from chat.models import FriendRequest, Friendship, BlockedUser, Group, GroupMembership, PrivateChannel, PrivateChannelMembership
-from channels.db import database_sync_to_async, sync_to_async
-from asgiref.sync import sync_to_async
-from django.db.models import Q
-import logging
-from django.core.exceptions import ValidationError
+from chat.models import PrivateChannel, PrivateChannelMembership
+from channels.db import database_sync_to_async
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
 
 class PrivateConsumer:
     async def create_private_channel(self, data):
@@ -45,6 +34,7 @@ class PrivateConsumer:
             }
         )
 
+    # Se envian la lista de canales privados a cada usuario, para que actualice su lista de canales privados
     async def notify_private_channel_update(self, event):
         channel_id = event['channel_id']
         members = await self.get_private_channel_members(channel_id)
@@ -65,14 +55,12 @@ class PrivateConsumer:
         for c in channels:
             channel_name = c["name"]  # e.g., "dm_1_2"
             await self.channel_layer.group_add(channel_name, self.channel_name)
-            logger.debug(f"{self.username} joined private channel {channel_name}")
 
     async def leave_private_channels(self):
         channels = await self.get_user_private_channels(self.user_id)
         for c in channels:
             channel_name = c["name"]  # e.g., "dm_1_2"
             await self.channel_layer.group_discard(channel_name, self.channel_name)
-            logger.debug(f"{self.username} left private channel {channel_name}")
 
     @database_sync_to_async
     def create_private_channel_in_db(self, user1_id, user2_id):

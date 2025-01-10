@@ -260,12 +260,16 @@
                     this.handlePrivateChannelList(data.channels);
                 } else if (data.type === 'blocked_users') {
                     this.handleBlockedUsers(data.blocked_users);
-                } else if (data.type === 'friend_request_sent') {
-                    alert('Has enviado una solicitud de amistad a ' + data.to_user_username);
                 } else if (data.type === 'pending_friend_requests') {
                     this.handlePendingRequests(data.pending);
                 } else if (data.type === 'friend_list_update') {
                     this.handleFriendList(data.friends);
+                } else if (data.type === 'error') {
+                    alert(data.message);
+                } else if (data.type === 'unblocked') {
+                    alert(data.username + " desbloqueado con éxito.");
+                } else if (data.type === 'blocked') {
+                    alert(data.username + " bloqueado con éxito.");
                 }
             }
 
@@ -532,15 +536,7 @@
                 this.groups.add({ id: groupId, name: groupName });
                 //this.handleUserList(this.userListData); // Actualizar la lista de usuarios para incluir la opción de agregar a grupo
             }
-        
-            handleUserAddedToGroup(data) {
-                const groupId = data.group_id;
-                const userId = data.user_id;
-        
-                console.log(`User ${userId} added to group ${groupId}.`);
-                // Aquí puedes agregar la lógica para actualizar la interfaz de usuario cuando un usuario es agregado a un grupo
-            }
-        
+
             showGroupDropdown(userId, dropdownContent) {
                 const groupDropdown = document.createElement('div');
                 groupDropdown.classList.add('dropdown-content');

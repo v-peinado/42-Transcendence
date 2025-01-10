@@ -3,6 +3,8 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
+#settings.AUTH_USER_MODEL: Es una referencia al modelo de usuario personalizado definido en settings.py
+#se guarda la clave primaria del usuario
 class FriendRequest(models.Model):
     from_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

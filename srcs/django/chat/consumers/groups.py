@@ -1,21 +1,10 @@
 from .base import ChatConsumer
-from .blockusers import BlockConsumer
-from .users import UsersConsumer
-from .messages import MessagesConsumer
-from .friends import FriendRequestsConsumer
-
-from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from django.contrib.auth import get_user_model
-from chat.models import FriendRequest, Friendship, BlockedUser, Group, GroupMembership
-from channels.db import database_sync_to_async, sync_to_async
-from asgiref.sync import sync_to_async
-from django.db.models import Q
-import logging
-from django.core.exceptions import ValidationError
+from chat.models import Group, GroupMembership
+from channels.db import database_sync_to_async
 
 User = get_user_model()
-logger = logging.getLogger(__name__)
 
 class GroupsConsumer:
     # Se crea un grupo y se anade automaticamente el creador del grupo, como miembro del grupo.
@@ -37,7 +26,9 @@ class GroupsConsumer:
 
     async def add_user_to_group(self, data):
         group_id = data.get('group_id')
-        user_ids = data.get('user_ids', [])
+        # Esta función puede recibir una lista de user_ids, para agregar varios usuarios al grupo, de una sola vez
+        # Actualemnte no esta implementado en el frontend, pero se puede hacer facilmente.
+        user_ids = data.get('user_ids', []) # Si no se proporcionan user_ids, se espera que se proporcione un solo user_id
         single_user_id = data.get('user_id')
 
         for uid in user_ids:
@@ -106,7 +97,6 @@ class GroupsConsumer:
                 f"chat_group_{group['id']}",
                 self.channel_name
             )
-            logger.debug(f"{self.username} joined group chat_group_{group['id']}")
 
     async def leave_group_channels(self):
         groups = await self.get_user_groups(self.user_id)
@@ -115,7 +105,6 @@ class GroupsConsumer:
                 f"chat_group_{group['id']}",
                 self.channel_name
             )
-            logger.debug(f"{self.username} left group chat_group_{group['id']}")
             
     @database_sync_to_async
     def get_group_members(self, group_id):
