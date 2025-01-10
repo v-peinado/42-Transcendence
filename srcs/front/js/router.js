@@ -7,6 +7,7 @@ import { UserView } from '/js/views/user/UserView.js';  // Nueva importación
 import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva importación
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
+import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
 
 class Router {
     routes = {
@@ -84,7 +85,16 @@ class Router {
                                                     <i class="fas fa-cog me-2"></i>Configuración
                                                 </a>
                                             </li>
+                                            <li>
+                                                <a class="dropdown-item" href="/gdpr-settings" data-link>
+                                                    <i class="fas fa-shield-alt me-2"></i>Privacidad
+                                                </a>
+                                            </li>
                                             <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" id="logoutBtn">
+                                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                                </button>
                                             <li>
                                                 <button class="dropdown-item text-danger" id="logoutBtn">
                                                     <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
@@ -195,6 +205,8 @@ class Router {
         '/profile/': UserProfileView, // También manejar con slash final
         '/reset_password': RequestPasswordResetView,
         '/reset/:uid/:token': ResetPasswordView,
+        '/gdpr-settings': GDPRSettingsView,
+        '/gdpr-settings/': GDPRSettingsView,
         '/404': () => {
             const app = document.getElementById('app');
             app.innerHTML = `
@@ -305,3 +317,4 @@ class Router {
 }
 
 export default Router;
+
