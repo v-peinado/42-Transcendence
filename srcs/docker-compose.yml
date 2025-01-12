@@ -87,8 +87,23 @@ services:
       - web
     restart: always
 
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"  # Puerto por defecto de Redis
+    networks:
+      - trancendence-backend
+    restart: always
+    command: ["redis-server", "--save", "", "--appendonly", "no"] 
+
 volumes:
-  postgres_data: 
+  postgres_data:
+    driver: local        # Tipo de driver del volumen, en este caso 'local'
+    driver_opts:
+      type: none         # Tipo de dispositivo, se montará un directorio del host, no se utilizará un dispositivo
+      device: ./postgres_data  # Ruta relativa en el host donde se almacenarán los datos de PostgreSQL
+      o: bind
   django_media:
   django_static:
   nginx_static:
