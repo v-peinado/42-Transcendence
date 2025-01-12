@@ -119,6 +119,17 @@ rebuild-images:
 		docker build -t $$image . || exit 1; \
 	done
 
+# Regla para crear directorio de db
+create_postgres_data_dir:
+	@mkdir -p ./srcs/postgres_data
+	@chmod 777 ./srcs/postgres_data
+	@echo "$(COLOR_GREEN)Directorio postgres_data creado y permisos asignados$(COLOR_RESET)"
+
+# Regla para limpiar el directorio de datos de postgres
+clean_postgres_data_dir:
+	@rm -rf ./srcs/postgres_data
+	@echo "$(COLOR_GREEN)Directorio postgres_data eliminado$(COLOR_RESET)"
+
 # Regla para destruir (eliminar) todas las imágenes
 destroy-images:
 	@echo "$(COLOR_GREEN)Destruyendo todas las imágenes de Docker...$(COLOR_RESET)"

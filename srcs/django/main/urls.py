@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from django.core.exceptions import ImproperlyConfigured
 import os
 import warnings
+from chat import views
 
 # Verificar configuración básica
 if 'authentication' not in settings.INSTALLED_APPS:
@@ -36,6 +37,9 @@ urlpatterns = [
     
     # API endpoints (producción)
     path('api/', include('authentication.api.urls')),
+    
+    #chat
+    path('chat/', views.chat, name='chat'),
 ]
 
 # Configuración de archivos media y estáticos

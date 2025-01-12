@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PONG CHAT</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f8ff;
+        }
+        .chat-column, .user-column, .chat-private-column {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .chat-column h2, .user-column h2, .chat-private-column h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #007bff;
+        }
+        .form-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .emoticon-dropdown {
+            margin-left: 10px;
+        }
+        .emoticon-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .emoticon-dropdown:hover .emoticon-dropdown-content {
+            display: block;
+        }
+        .emoticon-option {
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        .emoticon-option:hover {
+            background-color: #ddd;
+        }
+        .btn-block {
+            margin-top: 10px;
+        }
+        .nav-item {
+            cursor: pointer;
+        }
+        .tab-pane {
+            margin-top: 15px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        .msg {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+        
+        .my-msg {
+            background-color: #d1e7dd;
+            text-align: right;
+            margin-left: auto;
+        }
+        
+        .other-msg {
+            background-color: #f8d7da;
+            text-align: left;
+            margin-right: auto;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+    
+        .dropdown-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+    
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+    
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+    
+        .dropdown-content button {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+    
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+    
+        .usuario-propio .dropdown-button {
+            background-color: #FF5733; /* Color diferente para el usuario propio */
+        }
+        .friend-item {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+        
+        .friend-item:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4 text-center">PONG CHAT - 20 de Diciembre</h1>
+        <div class="row">
+            <!-- Chat General -->
+            <div class="col-md-4 chat-column">
+                <h2>Chat General</h2>
+                <section id="chat-log" class="chat-log"></section>
+                <section class="form-group">
+                    <input id="campo-texto" class="form-control" type="text" placeholder="Nuevo mensaje...">
+                    <button id="boton-enviar" class="btn btn-primary ml-2">Enviar</button>
+                    <div class="dropdown emoticon-dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button">😊</button>
+                        <div class="dropdown-menu emoticon-dropdown-content">
+                            <span class="dropdown-item emoticon-option" onclick="chatApp.addEmoticon('😊')">😊</span>
+                            <span class="dropdown-item emoticon-option" onclick="chatApp.addEmoticon('😂')">😂</span>
+                            <span class="dropdown-item emoticon-option" onclick="chatApp.addEmoticon('😍')">😍</span>
+                            <span class="dropdown-item emoticon-option" onclick="chatApp.addEmoticon('😢')">😢</span>
+                            <span class="dropdown-item emoticon-option" onclick="chatApp.addEmoticon('😎')">😎</span>
+                        </div>
+                    </div>
+                    <button id="boton-crear-grupo" class="btn btn-secondary btn-block mt-2">Crear Grupo</button>
+                </section>
+            </div>
+            <!-- Lista de Usuarios -->
+            <div class="col-md-4 user-column">
+                <h2>Usuarios Conectados</h2>
+                <ul id="lista-usuarios" class="list-group"></ul>
+                <h2>Amigos</h2>
+                <ul id="lista-amigos" class="list-group"></ul>
+                <h2>Bloqueados</h2>
+                <ul id="lista-bloqueados" class="list-group"></ul>
+                <h2>Invitaciones Pendientes</h2>
+                <ul id="pending-invitations-list" class="list-group"></ul>
+                <h2>Grupos</h2>
+                <ul id="lista-grupos" class="list-group"></ul>
+                <h2>Canales Privados</h2>
+                <ul id="lista-canales-privados" class="list-group"></ul>
+            </div>
+            <!-- Chat Privado -->
+            <div class="col-md-4 chat-private-column">
+                <h2>Chat Privado</h2>
+                <div class="nav nav-tabs" id="private-chat-tabs"></div>
+                <div class="tab-content" id="private-chat-contents"></div>
+            </div>
+            <!-- Chat de Grupo -->
+            <div class="col-md-4 chat-group-column">
+                <h2>Chat de Grupo</h2>
+                <div class="nav nav-tabs" id="group-chat-tabs"></div>
+                <div class="tab-content" id="group-chat-contents"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        //--------------------------------------------------------------------------------------------
+        // Clase ChatApp, que maneja la lógica del chat y la comunicación con el servidor
+        //--------------------------------------------------------------------------------------------
+        class ChatApp {
+            constructor(username, userId, roomName = 'general') {
+                // Definicion de usuario y socket, recuerda el usuario se pasa en views.py
+                this.username = username;
+                this.userId = Number(userId);
+                this.roomName = roomName;
+                    //this.chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/general/');
+                this.chatSocket = new WebSocket('ws://localhost:8000/ws/chat/general/');
+                this.chatSocket.addEventListener('message', this.handleServerMessage.bind(this));
+                this.opennedChats = new Set();
+                this.groups = new Set();
+                this.privateChannels = new Set();
+                // Definicion de elementos del DOM
+                this.chatLog = document.getElementById('chat-log');
+                this.campoTexto = document.getElementById('campo-texto');
+                this.userList = document.getElementById('lista-usuarios');
+                this.groupList = document.getElementById('lista-grupos');
+                this.friendList = document.getElementById('lista-amigos');
+                this.privateChannelList = document.getElementById('lista-canales-privados');
+                document.getElementById('boton-enviar').addEventListener('click', this.sendMessage.bind(this, this.campoTexto, this.roomName));
+                document.getElementById('campo-texto').addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage(this.campoTexto, this.roomName);
+                    }
+                });
+                // Botón para crear grupo
+                document.getElementById('boton-crear-grupo').addEventListener('click', this.createGroup.bind(this));
+            }
+
+            isCurrentUser(userId) {
+                return userId == this.userId;
+            }
+
+            addEmoticon(emoticon) {
+                this.campoTexto.value += emoticon;
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funcion para manejar los JSON enviados desde el servidor
+            // --------------------------------------------------------------------------------------------
+            handleServerMessage(event) {
+                console.log('Received message:', event.data);
+                const data = JSON.parse(event.data);
+                console.log('Received message:', data);
+                if (data.type === 'chat_message' && data.username && data.message) {
+                    console.log('Adding new message to chat log:', data);
+                    this.addNewMsgHTML(data.username, data.message, this.isCurrentUser(data.user_id), data.channel_name);
+                } else if (data.type === 'user_list' && data.users) {
+                    this.handleUserList(data.users);
+                } else if (data.type === 'user_groups') {
+                    this.handleGroupList(data.groups);
+                } else if (data.type === 'private_channels') {
+                    this.handlePrivateChannelList(data.channels);
+                } else if (data.type === 'blocked_users') {
+                    this.handleBlockedUsers(data.blocked_users);
+                } else if (data.type === 'pending_friend_requests') {
+                    this.handlePendingRequests(data.pending);
+                } else if (data.type === 'friend_list_update') {
+                    this.handleFriendList(data.friends);
+                } else if (data.type === 'error') {
+                    alert(data.message);
+                } else if (data.type === 'unblocked') {
+                    alert(data.username + " desbloqueado con éxito.");
+                } else if (data.type === 'blocked') {
+                    alert(data.username + " bloqueado con éxito.");
+                }
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funcion para enviar mensajes CHAT GENERAL 
+            // --------------------------------------------------------------------------------------------
+            sendMessage(campoTexto, roomName) {
+                const msg = campoTexto.value;
+                if (msg.trim() !== '') {
+                    if (this.chatSocket.readyState === WebSocket.OPEN) {
+                        let channelName;
+                        if (roomName.startsWith('dm_')) {
+                            channelName = roomName;
+                        } else if (roomName.startsWith('chat_group_')) {
+                            channelName = roomName;
+                        } else {
+                            channelName = `chat_${roomName}`;
+                        }
+            
+                        const messageData = {
+                            'type': 'chat_message',
+                            'channel_name': channelName,
+                            'message': msg,
+                        };
+                        console.log('Sending message:', messageData);
+                        this.chatSocket.send(JSON.stringify(messageData));
+                        campoTexto.value = '';
+                        campoTexto.focus();
+                    } else {
+                        console.error('WebSocket no está abierto.');
+                    }
+                }
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funcion para anadir mensajes generica
+            // --------------------------------------------------------------------------------------------
+            addMessageToChat(chatLog, username, message, isCurrentUser) {
+                const newMessage = document.createElement('div');
+                newMessage.classList.add('msg');
+                if (isCurrentUser) {
+                    newMessage.classList.add('my-msg');
+                    newMessage.innerHTML = `<strong>Tú:</strong> ${message}`;
+                } else {
+                    newMessage.classList.add('other-msg');
+                    newMessage.innerHTML = `<strong>${username}:</strong> ${message}`;
+                }
+                chatLog.appendChild(newMessage);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+            // --------------------------------------------------------------------------------------------
+            // Funcion para añadir mensajes al HTML CHAT GENERAL
+            // --------------------------------------------------------------------------------------------
+            addNewMsgHTML(username, message, isCurrentUser, channelName) {
+                if (channelName === `chat_${this.roomName}`) {
+                    this.addMessageToChat(this.chatLog, username, message, isCurrentUser);
+                } else if (channelName && channelName.startsWith('dm_')) {
+                    const userIds = channelName.split('_').slice(1).map(Number).sort((a, b) => a - b);
+                    const userId = userIds.find(id => id !== this.userId);
+                    this.addNewPrivateMsgHTML(username, message, isCurrentUser, userId);
+                } else if (channelName && channelName.startsWith('chat_group_')) {
+                    const groupId = channelName.split('_')[2];
+                    this.addNewGroupMsgHTML(username, message, isCurrentUser, groupId);
+                } else {
+                    console.error('Channel name not recognized:', channelName);
+                }
+            }
+        
+
+            // --------------------------------------------------------------------------------------------
+            // Funciones para manejar el chat privado
+            // --------------------------------------------------------------------------------------------
+            addNewPrivateMsgHTML(username, message, isCurrentUser, userId) {
+                const userIds = [this.userId, userId].sort((a, b) => a - b);
+                const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+        
+                let privateChatLog = document.getElementById(`chat-log-${channelName}`);
+        
+                if (!privateChatLog) {
+                    this.openPrivateChat(userId, username);
+                    setTimeout(() => {
+                        privateChatLog = document.getElementById(`chat-log-${channelName}`);
+                        if (privateChatLog) {
+                            this.addMessageToChat(privateChatLog, username, message, isCurrentUser);
+                        } else {
+                            console.error(`Elemento chat-log-${channelName} no encontrado.`);
+                        }
+                    }, 100);
+                } else {
+                    this.addMessageToChat(privateChatLog, username, message, isCurrentUser);
+                }
+            }
+
+            handlePrivateChannelList(channels) {
+                const privateChannelList = document.getElementById('lista-canales-privados');
+                if (!privateChannelList) {
+                    console.error('Elemento lista-canales-privados es null.');
+                    return;
+                }
+                privateChannelList.innerHTML = '';
+        
+                if (channels && Array.isArray(channels)) {
+                    channels.forEach(channel => {
+                        // Buscar el "otro" usuario
+                        const otherMember = channel.members.find(m => m.id !== this.userId);
+                        if (!otherMember) {
+                            return; // Si no hay otro miembro, saltar
+                        }
+        
+                        const channelItem = document.createElement('li');
+                        channelItem.classList.add('canal-privado-item');
+        
+                        // Nombre del canal (por ejemplo: dm_1_2)
+                        const channelName = document.createElement('span');
+                        channelName.textContent = channel.name;
+        
+                        // Botón para abrir el chat
+                        const openChannelButton = document.createElement('button');
+                        openChannelButton.textContent = 'Abrir Canal';
+                        openChannelButton.classList.add('btn', 'btn-primary', 'ml-2');
+                        openChannelButton.addEventListener('click', () => {
+                            this.openPrivateChat(otherMember.id, otherMember.username);
+                        });
+        
+                        channelItem.appendChild(channelName);
+                        channelItem.appendChild(openChannelButton);
+                        privateChannelList.appendChild(channelItem);
+                    });
+                } else {
+                    console.error('La lista de canales privados no es válida.');
+                }
+            }
+        
+            // En openPrivateChat, la lógica para crear/mostrar el tab
+            openPrivateChat(userId, username) {
+                const tabs = document.getElementById('private-chat-tabs');
+                const contents = document.getElementById('private-chat-contents');
+        
+                const userIds = [this.userId, userId].sort((a, b) => a - b);
+                const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+        
+                if (this.opennedChats.has(channelName)) {
+                    document.getElementById(`tab-${channelName}`).click();
+                    return;
+                }
+        
+                this.opennedChats.add(channelName);
+        
+                const tabId = `tab-${channelName}`;
+                const contentId = `content-${channelName}`;
+        
+                const newTab = document.createElement('a');
+                newTab.className = 'nav-item nav-link';
+                newTab.id = tabId;
+                newTab.href = `#${contentId}`;
+                newTab.setAttribute('data-bs-toggle', 'tab');
+                newTab.innerText = `Chat con ${username}`;
+                tabs.appendChild(newTab);
+        
+                const newContent = document.createElement('div');
+                newContent.className = 'tab-pane fade';
+                newContent.id = contentId;
+                newContent.innerHTML = `
+                    <div class="private-chat-log" id="chat-log-${channelName}"></div>
+                    <input id="campo-texto-${channelName}" class="form-control mt-2" type="text" placeholder="Nuevo mensaje...">
+                    <button class="btn btn-primary btn-block mt-2" onclick="chatApp.sendMessage(document.getElementById('campo-texto-${channelName}'), '${channelName}')">Enviar</button>
+                    <button class="btn btn-danger btn-block mt-2" onclick="chatApp.closePrivateChat('${userId}')">Cerrar</button>
+                `;
+                contents.appendChild(newContent);
+        
+                newTab.click();
+        
+                const campoPrivado = document.getElementById(`campo-texto-${channelName}`);
+                if (campoPrivado) {
+                    campoPrivado.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') {
+                            this.sendMessage(campoPrivado, channelName);
+                            campoPrivado.value = '';
+                        }
+                    });
+                }
+        
+                // Enviar solicitud al servidor para crear el canal privado
+                const messageData = {
+                    type: 'create_private_channel',
+                    user1_id: this.userId,
+                    user2_id: userId
+                };
+                this.chatSocket.send(JSON.stringify(messageData));
+            }
+        
+            closePrivateChat(userId) {
+                const userIds = [this.userId, userId].sort((a, b) => a - b);
+                const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+        
+                this.opennedChats.delete(channelName);
+        
+                const tabId = `tab-${channelName}`;
+                const contentId = `content-${channelName}`;
+        
+                const tab = document.getElementById(tabId);
+                const content = document.getElementById(contentId);
+        
+                if (tab) tab.remove();
+                if (content) content.remove();
+        
+                const firstTab = document.querySelector('#private-chat-tabs .nav-item');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            }
+        
+            // --------------------------------------------------------------------------------------------
+            // Funcion para crear grupos
+            // --------------------------------------------------------------------------------------------
+
+            handleGroupList(groups) {
+                this.groups = groups; // Guardar la lista de grupos
+                if (!this.groupList) {
+                    console.error('Elemento lista-grupos es null.');
+                    return;
+                }
+                this.groupList.innerHTML = '';
+                groups.forEach(group => {
+                    const groupItem = document.createElement('li');
+                    groupItem.classList.add('grupo-item');
+                    
+                    // Crear el nombre del grupo con los miembros entre paréntesis
+                    const groupName = document.createElement('span');
+                    groupName.textContent = `${group.name} (${group.members.map(member => member.username).join(', ')})`;
+                    
+                    // Crear el botón para abrir el chat del grupo
+                    const openGroupButton = document.createElement('button');
+                    openGroupButton.textContent = 'Abrir Grupo';
+                    openGroupButton.classList.add('btn', 'btn-primary', 'ml-2');
+                    openGroupButton.addEventListener('click', () => {
+                        this.openGroupChat(group.id, group.name);
+                    });
+                    
+                    groupItem.appendChild(groupName);
+                    groupItem.appendChild(openGroupButton);
+                    this.groupList.appendChild(groupItem);
+                });
+            }
+
+            createGroup() {
+                const groupName = prompt('Ingrese el nombre del grupo:');
+                if (groupName) {
+                    const messageData = {
+                        'type': 'create_group',
+                        'group_name': groupName
+                    };
+                    console.log('Creating group:', messageData);
+                    this.chatSocket.send(JSON.stringify(messageData));
+                }
+                
+            }
+
+            handleGroupCreated(data) {
+                const groupId = data.group_id;
+                const groupName = data.group_name;
+        
+                console.log(`Group ${groupName} created with ID ${groupId}.`);
+                this.groups.add({ id: groupId, name: groupName });
+                //this.handleUserList(this.userListData); // Actualizar la lista de usuarios para incluir la opción de agregar a grupo
+            }
+
+            showGroupDropdown(userId, dropdownContent) {
+                const groupDropdown = document.createElement('div');
+                groupDropdown.classList.add('dropdown-content');
+        
+                this.groups.forEach(group => {
+                    const groupButton = document.createElement('button');
+                    groupButton.textContent = group.name;
+                    groupButton.addEventListener('click', () => {
+                        this.addUserToGroup(userId, group.id);
+                    });
+                    groupDropdown.appendChild(groupButton);
+                });
+        
+                if (dropdownContent) {
+                    dropdownContent.appendChild(groupDropdown);
+                } else {
+                    console.error('Dropdown content element not found.');
+                }
+            }
+        
+            addUserToGroup(userId, groupId) {
+                const messageData = {
+                    'type': 'add_user_to_group',
+                    'group_id': groupId,
+                    'user_id': userId
+                };
+                console.log('Adding user to group:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
+            }
+
+            openGroupChat(groupId, groupName) {
+                const tabs = document.getElementById('group-chat-tabs');
+                const contents = document.getElementById('group-chat-contents');
+            
+                const channelName = `chat_group_${groupId}`;
+            
+                if (this.opennedChats.has(channelName)) {
+                    document.getElementById(`tab-${channelName}`).click();
+                    return;
+                }
+            
+                this.opennedChats.add(channelName);
+            
+                const tabId = `tab-${channelName}`;
+                const contentId = `content-${channelName}`;
+            
+                const newTab = document.createElement('a');
+                newTab.className = 'nav-item nav-link';
+                newTab.id = tabId;
+                newTab.href = `#${contentId}`;
+                newTab.setAttribute('data-bs-toggle', 'tab');
+                newTab.innerText = `Chat del grupo: ${groupName}`;
+                tabs.appendChild(newTab);
+            
+                const newContent = document.createElement('div');
+                newContent.className = 'tab-pane fade';
+                newContent.id = contentId;
+                newContent.innerHTML = `
+                    <div class="group-chat-log" id="chat-log-${channelName}"></div>
+                    <input id="campo-texto-${channelName}" class="form-control mt-2" type="text" placeholder="Nuevo mensaje...">
+                    <button class="btn btn-primary btn-block mt-2" onclick="chatApp.sendMessage(document.getElementById('campo-texto-${channelName}'), '${channelName}')">Enviar</button>
+                    <button class="btn btn-danger btn-block mt-2" onclick="chatApp.closeGroupChat('${groupId}')">Cerrar</button>
+                `;
+                contents.appendChild(newContent);
+            
+                newTab.click();
+            
+                const campoPrivado = document.getElementById(`campo-texto-${channelName}`);
+                if (campoPrivado) {
+                    campoPrivado.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') {
+                            this.sendMessage(campoPrivado, channelName);
+                            campoPrivado.value = '';
+                        }
+                    });
+                }
+            }
+        
+            closeGroupChat(groupId) {
+                const channelName = `chat_group_${groupId}`;
+            
+                const tabId = `tab-${channelName}`;
+                const contentId = `content-${channelName}`;
+            
+                const tab = document.getElementById(tabId);
+                const content = document.getElementById(contentId);
+            
+                tab.remove();
+                content.remove();
+            
+                this.opennedChats.delete(channelName);
+            
+                const firstTab = document.querySelector('#group-chat-tabs .nav-item');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            }
+        
+            addNewGroupMsgHTML(username, message, isCurrentUser, groupId) {
+                const channelName = `chat_group_${groupId}`;
+            
+                let groupChatLog = document.getElementById(`chat-log-${channelName}`);
+            
+                if (!groupChatLog) {
+                    this.openGroupChat(groupId, `Grupo ${groupId}`);
+                    setTimeout(() => {
+                        groupChatLog = document.getElementById(`chat-log-${channelName}`);
+                        if (groupChatLog) {
+                            this.addMessageToChat(groupChatLog, username, message, isCurrentUser);
+                        } else {
+                            console.error(`Elemento chat-log-${channelName} no encontrado.`);
+                        }
+                    }, 100);
+                } else {
+                    this.addMessageToChat(groupChatLog, username, message, isCurrentUser);
+                }
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funciones para manejar la lista de usuarios
+            // --------------------------------------------------------------------------------------------
+            handleUserList(users) {
+                if (!this.userList) {
+                    console.error('Elemento lista-usuarios es null.');
+                    return;
+                }
+                this.userList.innerHTML = '';
+                users.forEach(user => {
+                    const userItem = document.createElement('div'); // Cambiado de 'li' a 'div'
+                    userItem.classList.add(user.id === this.userId ? 'usuario-propio' : 'usuario-otro');
+                    const dropdown = document.createElement('div');
+                    dropdown.classList.add('dropdown');
+    
+                    const dropdownButton = document.createElement('button');
+                    dropdownButton.textContent = user.username;
+                    dropdownButton.classList.add('dropdown-button');
+                    dropdown.appendChild(dropdownButton);
+    
+                    const dropdownContent = document.createElement('div');
+                    dropdownContent.classList.add('dropdown-content');
+    
+                    const viewProfileButton = document.createElement('button');
+                    viewProfileButton.textContent = 'Ver perfil';
+                    viewProfileButton.addEventListener('click', () => {
+                        alert(`Ver perfil de ${user.username}`);
+                    });
+                    dropdownContent.appendChild(viewProfileButton);
+    
+                    if (user.id !== this.userId) {
+                        const addFriendButton = document.createElement('button');
+                        addFriendButton.textContent = 'Agregar a amigos';
+                        addFriendButton.addEventListener('click', () => {
+                            this.sendFriendRequest(user.id);
+                        });
+    
+                        const playButton = document.createElement('button');
+                        playButton.textContent = 'Jugar';
+                        playButton.addEventListener('click', () => {
+                            alert(`Jugar con ${user.username}`);
+                        });
+    
+                        const blockButton = document.createElement('button');
+                        blockButton.textContent = 'Bloquear';
+                        blockButton.addEventListener('click', () => {
+                            this.sendBlockRequest(user.id);
+                        });
+    
+                        const privateMessageButton = document.createElement('button');
+                        privateMessageButton.textContent = 'Mensaje privado';
+                        privateMessageButton.addEventListener('click', () => {
+                            this.openPrivateChat(user.id, user.username);
+                        });
+
+                        const addToGroupButton = document.createElement('button');
+                        addToGroupButton.textContent = 'Agregar a grupo';
+                        addToGroupButton.addEventListener('click', () => {
+                            this.showGroupDropdown(user.id, dropdownContent);
+                        });
+    
+                        dropdownContent.appendChild(addFriendButton);
+                        dropdownContent.appendChild(playButton);
+                        dropdownContent.appendChild(blockButton);
+                        dropdownContent.appendChild(privateMessageButton);
+                        dropdownContent.appendChild(addToGroupButton);
+                    }
+    
+                    dropdown.appendChild(dropdownContent);
+                    userItem.appendChild(dropdown);
+                    this.userList.appendChild(userItem);
+                });
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funciones para manejar la lista de bloqueados
+            // --------------------------------------------------------------------------------------------
+            handleBlockedUsers(blockedUsers) {
+                const blockedUsersList = document.getElementById('lista-bloqueados');
+                if (!blockedUsersList) {
+                    console.error('Elemento lista-bloqueados es null.');
+                    return;
+                }
+                blockedUsersList.innerHTML = '';
+                blockedUsers.forEach(user => {
+                    const blockedUserItem = document.createElement('li');
+                    blockedUserItem.textContent = user.username;
+                    blockedUsersList.appendChild(blockedUserItem);
+                });
+            }
+
+            sendBlockRequest(userId) {
+                const messageData = {
+                    'type': 'block_user',
+                    'user_id': userId
+                };
+                console.log('Blocking user:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
+            }
+
+            // --------------------------------------------------------------------------------------------
+            // Funciones para manejar las solicitudes de amistad
+            // --------------------------------------------------------------------------------------------
+
+            handlePendingRequests(pendingRequests) {
+                const pendingList = document.getElementById('pending-invitations-list');
+                pendingList.innerHTML = '';
+              
+                pendingRequests.forEach(req => {
+                  const item = document.createElement('div');
+                  item.innerHTML = `
+                    <p>El usuario ${req.from_user_username} (ID ${req.from_user_id}) quiere ser tu amigo</p>
+                  `;
+              
+                  const acceptButton = document.createElement('button');
+                  acceptButton.textContent = 'Aceptar';
+                  acceptButton.addEventListener('click', () => {
+                    this.acceptFriendRequest(req.request_id);
+                  });
+              
+                  const rejectButton = document.createElement('button');
+                  rejectButton.textContent = 'Descartar';
+                  rejectButton.addEventListener('click', () => {
+                    this.rejectFriendRequest(req.request_id);
+                  });
+              
+                  item.appendChild(acceptButton);
+                  item.appendChild(rejectButton);
+                  pendingList.appendChild(item);
+                });
+              }
+              // Llama a las funciones que envían mensajes de WebSocket al servidor
+              acceptFriendRequest(requestId) {
+                this.chatSocket.send(JSON.stringify({
+                  type: 'accept_friend_request',
+                  request_id: requestId
+                }));
+              }
+              
+              rejectFriendRequest(requestId) {
+                this.chatSocket.send(JSON.stringify({
+                  type: 'reject_friend_request',
+                  request_id: requestId
+                }));
+              }
+
+            sendFriendRequest(userId) {
+                const messageData = {
+                    'type': 'send_friend_request',
+                    'to_user_id': userId
+                };
+                console.log('Send friend request:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
+              }
+
+            // --------------------------------------------------------------------------------------------
+            // Funciones para manejar la lista de amigos
+            // --------------------------------------------------------------------------------------------
+            handleFriendList(friends) {
+                if (!this.friendList) {
+                    console.error('Elemento friend-list es null.');
+                    return;
+                }
+            
+                // Limpiar la lista existente
+                this.friendList.innerHTML = '';
+            
+                friends.forEach(friend => {
+                    // Determinar si el usuario1 es el usuario actual
+                    const isUser1Current = this.isCurrentUser(friend.user1_id);
+                    const friendName = isUser1Current ? friend.user2__username : friend.user1__username;
+                    const friendId = isUser1Current ? friend.user2_id : friend.user1_id;
+                    const friendshipId = friend.id;
+            
+                    // Crear el contenedor del amigo
+                    const friendItem = document.createElement('div');
+                    friendItem.classList.add('friend-item');
+            
+                    // Nombre del amigo
+                    const nameElement = document.createElement('span');
+                    nameElement.textContent = friendName;
+                    friendItem.appendChild(nameElement);
+            
+                    // Botón "Ver perfil"
+                    const viewProfileBtn = document.createElement('button');
+                    viewProfileBtn.textContent = 'Ver perfil';
+                    viewProfileBtn.classList.add('btn', 'btn-primary', 'btn-sm', 'ms-2');
+                    viewProfileBtn.addEventListener('click', () => {
+                        window.location.href = `/profile/${friendId}/`;
+                    });
+                    friendItem.appendChild(viewProfileBtn);
+            
+                    // Botón "Dejar de ser amigo"
+                    const unfriendBtn = document.createElement('button');
+                    unfriendBtn.textContent = 'Dejar de ser amigo';
+                    unfriendBtn.classList.add('btn', 'btn-danger', 'btn-sm', 'ms-2');
+                    unfriendBtn.addEventListener('click', () => {
+                        if (confirm(`¿Estás seguro de que deseas dejar de ser amigo de ${friendName}?`)) {
+                            this.deleteFriend(friendshipId);
+                        }
+                    });
+                    friendItem.appendChild(unfriendBtn);
+            
+                    // Añadir el elemento a la lista de amigos en el frontend
+                    this.friendList.appendChild(friendItem);
+                });
+            }
+            deleteFriend(friendshipId) {
+                this.chatSocket.send(JSON.stringify({
+                    type: 'delete_friendship',
+                    friendship_id: friendshipId
+                }));
+            }
+        }
+        const USERNAME = '{{ username|escapejs }}';
+        const USER_ID = '{{ user_id|escapejs }}';
+        const chatApp = new ChatApp(USERNAME, USER_ID);
+        
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+</body>
+</html>

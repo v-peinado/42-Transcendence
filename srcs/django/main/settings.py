@@ -32,6 +32,7 @@ DEBUG = True																# Modo de depuración (True para desarrollo, False p
 
 # Definir aplicaciones instaladas en el proyecto
 INSTALLED_APPS = [
+    'daphne',
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'authentication',
     'authentication.fortytwo_auth',
+    'channels',
+    'chat',
     'corsheaders',
 ]
 
@@ -96,6 +99,16 @@ TEMPLATES = [
 # WSGI = Web Server Gateway Interface (Interfaz de pasarela de servidor web)
 # Es una especificación para la comunicación entre servidores web y aplicaciones web o frameworks de aplicaciones web
 WSGI_APPLICATION = 'main.wsgi.application'
+ASGI_APPLICATION = 'main.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
 
 # Configuración de la base de datos
 DATABASES = {
