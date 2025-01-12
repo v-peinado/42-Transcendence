@@ -25,7 +25,7 @@ else
     DOCKER_SOCKET=/var/run/docker.sock
 endif
 
-all: up help
+all: create_postgres_data_dir up help
 
 # Configurar Docker rootless en Linux
 configure-rootless:
@@ -121,9 +121,13 @@ rebuild-images:
 
 # Regla para crear directorio de db
 create_postgres_data_dir:
-	@mkdir -p ./srcs/postgres_data
-	@chmod 777 ./srcs/postgres_data
-	@echo "$(COLOR_GREEN)Directorio postgres_data creado y permisos asignados$(COLOR_RESET)"
+	@if [ ! -d "./srcs/postgres_data" ]; then \
+        mkdir -p ./srcs/postgres_data; \
+        chmod 777 ./srcs/postgres_data; \
+        echo "$(COLOR_GREEN)Directorio postgres_data creado y permisos asignados$(COLOR_RESET)"; \
+	else \
+		echo "$(COLOR_YELLOW)Directorio postgres_data ya existe$(COLOR_RESET)"; \
+	fi
 
 # Regla para limpiar el directorio de datos de postgres
 clean_postgres_data_dir:
