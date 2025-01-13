@@ -34,44 +34,86 @@ start_vault() {
         vault server -dev \
             -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
             -dev-listen-address="0.0.0.0:8200" \
-            -log-level=info \
-            2>> "${ERROR_LOG}" \
-            1>> "${SYSTEM_LOG}" &
+            -log-level=debug &
     else
         log_message "Iniciando Vault en modo producción..."
         vault server -config="${VAULT_CONFIG}" \
-            2>> "${ERROR_LOG}" \
-            1>> "${SYSTEM_LOG}" &
+            -log-level=debug &
     fi
-    sleep 5
+    
+    # Esperar a que Vault esté disponible
+    for i in $(seq 1 60); do
+        if curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
+            log_message "Vault está disponible"
+            return 0
+        fi
+        log_message "Esperando a que Vault inicie... intento $i"
+        sleep 2
+    done
+    
+    log_message "Error: Timeout esperando a Vault"
+    return 1
 }
 
-# Inicializar Vault en producción
 initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
-        if ! vault status > /dev/null 2>&1; then
+        export VAULT_ADDR='http://127.0.0.1:8200'
+        log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
+
+        # Esperar a que Vault esté disponible
+        sleep 10
+        until curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; do
+            log_message "Esperando a que Vault esté disponible..."
+            sleep 2
+        done
+
+        # Verificar si necesita inicialización
+        if ! vault operator init -status > /dev/null 2>&1; then
             log_message "Inicializando Vault..."
-            vault operator init -key-shares=5 -key-threshold=3 > "${LOG_DIR}/init.txt"
+            vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
+            chmod 600 "${LOG_DIR}/init.txt"
+            chown nginxuser:nginxuser "${LOG_DIR}/init.txt"
+            
+            # Extraer las claves necesarias
+            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
+            ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
+            
+            # Dessellar Vault
+            log_message "Dessellando Vault..."
+            vault operator unseal "$UNSEAL_KEY"
+            
+            # Configurar token root
+            export VAULT_TOKEN="$ROOT_TOKEN"
+            vault login "$ROOT_TOKEN"
         fi
-
-        if vault status 2>/dev/null | grep -q "Sealed: true"; then
-            log_message "Unsealing Vault..."
-            cat "${LOG_DIR}/init.txt" | grep "Unseal Key" | awk '{print $4}' | head -n 3 | \
-            while read key; do
-                vault operator unseal "$key"
-            done
-        fi
-
-        ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-        vault login "$ROOT_TOKEN"
     fi
 }
 
-# Configurar Vault
 configure_vault() {
-    export VAULT_ADDR='https://127.0.0.1:8200'
-    export VAULT_TOKEN="${VAULT_ROOT_TOKEN}"
-    export VAULT_SKIP_VERIFY=true
+    # Asegurarse de que tenemos el token
+    if [ ! -f "${LOG_DIR}/init.txt" ]; then
+        log_message "Error: No se encuentra init.txt"
+        return 1
+    fi
+    
+    # Configurar variables de entorno
+    export VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
+    export VAULT_ADDR='http://127.0.0.1:8200'
+    
+    # Verificar que Vault está dessellado
+    until vault status >/dev/null 2>&1; do
+        if vault status 2>/dev/null | grep -q "Sealed: true"; then
+            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
+            vault operator unseal "$UNSEAL_KEY"
+        fi
+        sleep 2
+    done
+
+    # Habilitar el motor KV si no está habilitado
+    if ! vault secrets list | grep -q '^secret/'; then
+        vault secrets enable -path=secret kv
+		log_message "Motor KV habilitado"
+    fi
 
     log_message "Configurando auditoría..."
     vault audit enable file \
@@ -82,16 +124,28 @@ configure_vault() {
         prefix="vault-audit" \
         description="Audit logs for Vault operations"
 
-    log_message "Configurando políticas de acceso..."
-    vault policy write django - <<EOF
-path "secret/data/django/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
+		log_message "Configurando políticas de acceso..."
+		vault policy write django - <<-EOF
+		# Permitir acceso a los secretos de Django
+		path "secret/data/django/*" {
+			capabilities = ["create", "read", "update", "delete", "list"]
+		}
+
+		# Permitir listar los secretos
+		path "secret/metadata/django/*" {
+			capabilities = ["list"]
+		}
 EOF
 }
 
 # Almacenar secretos
 store_secrets() {
+    # Verificar que tenemos acceso a Vault
+    if ! vault token lookup >/dev/null 2>&1; then
+        log_message "Error: No hay acceso válido a Vault"
+        return 1
+	fi
+
     log_message "Almacenando secretos de Django..."
     vault kv put secret/django/database \
         ENGINE="${SQL_ENGINE}" \

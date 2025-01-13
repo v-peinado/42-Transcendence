@@ -12,7 +12,8 @@ RUN apt-get update && \
         unzip \
         openssl \
         libmodsecurity3 \
-        modsecurity-crs && \
+        modsecurity-crs \
+        netcat-traditional && \
     curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
     unzip vault.zip && \
     mv vault /usr/local/bin/ && \
@@ -55,10 +56,12 @@ RUN chown -R nginxuser:nginxuser \
         /tmp/modsecurity \
         /etc/nginx/modsecurity.d \
         /etc/nginx/modsecurity && \
-    touch /var/log/vault/audit.log && \
+    chmod 755 /etc/vault.d && \
     chmod 750 /etc/vault.d/data && \
     chmod -R 755 /var/log/vault && \
+    touch /var/log/vault/audit.log && \
     chmod 640 /var/log/vault/audit.log && \
+    chown -R nginxuser:nginxuser /var/log/vault/audit.log && \
     chmod +x \
         /usr/local/bin/generate-ssl.sh \
         /usr/local/bin/init-vault.sh \
@@ -72,7 +75,7 @@ RUN chown -R nginxuser:nginxuser \
     /usr/local/bin/generate-ssl.sh
 
 ENV MODSECURITY=On \
-    VAULT_ADDR=https://127.0.0.1:8200 \
+    VAULT_ADDR=http://127.0.0.1:8200 \
     VAULT_SKIP_VERIFY=true \
     PATH="${PATH}:/usr/local/bin"
 
@@ -81,4 +84,4 @@ EXPOSE 8081 8200 8444
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8081/health || exit 1
 
-CMD ["/bin/bash", "-c", "/usr/local/bin/init-vault.sh & nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "/usr/local/bin/init-vault.sh && nginx -g 'daemon off;'"]
