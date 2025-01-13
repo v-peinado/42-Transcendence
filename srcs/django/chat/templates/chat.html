@@ -384,7 +384,7 @@
         
                         // Nombre del canal (por ejemplo: dm_1_2)
                         const channelName = document.createElement('span');
-                        channelName.textContent = channel.name;
+                        channelName.textContent = "Conversacion con " + otherMember.username;
         
                         // Botón para abrir el chat
                         const openChannelButton = document.createElement('button');
@@ -393,9 +393,18 @@
                         openChannelButton.addEventListener('click', () => {
                             this.openPrivateChat(otherMember.id, otherMember.username);
                         });
+                        
+                        // Botón para eliminar el canal
+                        const deleteChannelButton = document.createElement('button');
+                        deleteChannelButton.textContent = 'Eliminar Canal';
+                        deleteChannelButton.classList.add('btn', 'btn-danger', 'ml-2');
+                        deleteChannelButton.addEventListener('click', () => {
+                            this.deletePrivateChat(channel.id);
+                        });
         
                         channelItem.appendChild(channelName);
                         channelItem.appendChild(openChannelButton);
+                        channelItem.appendChild(deleteChannelButton);
                         privateChannelList.appendChild(channelItem);
                     });
                 } else {
@@ -455,8 +464,8 @@
                 // Enviar solicitud al servidor para crear el canal privado
                 const messageData = {
                     type: 'create_private_channel',
-                    user1_id: this.userId,
-                    user2_id: userId
+                    user1_id: userIds[0],
+                    user2_id: userIds[1]
                 };
                 this.chatSocket.send(JSON.stringify(messageData));
             }
@@ -480,6 +489,35 @@
                 if (firstTab) {
                     firstTab.click();
                 }
+            }
+
+            deletePrivateChat(userId, username) {
+                const userIds = [this.userId, userId].sort((a, b) => a - b);
+                const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+        
+                this.opennedChats.delete(channelName);
+        
+                const tabId = `tab-${channelName}`;
+                const contentId = `content-${channelName}`;
+        
+                const tab = document.getElementById(tabId);
+                const content = document.getElementById(contentId);
+        
+                if (tab) tab.remove();
+                if (content) content.remove();
+        
+                const firstTab = document.querySelector('#private-chat-tabs .nav-item');
+                if (firstTab) {
+                    firstTab.click();
+                }
+        
+                const messageData = {
+                    type: 'delete_private_channel',
+                    user1_id: userIds[0],
+                    user2_id: userIds[1]
+                };
+                console.log('Deleting private channel:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
             }
         
             // --------------------------------------------------------------------------------------------

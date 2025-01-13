@@ -59,14 +59,14 @@
                 <div class="card-body p-4">
                     <div class="d-grid">
                         <a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">
-                            {% if first_time %}
+                            {% if request.GET.first_time %}
                                 Register with 42
                             {% else %}
                                 Login with 42
                             {% endif %}
                         </a>
                         <small class="text-muted text-center mt-2">
-                            {% if first_time %}
+                            {% if request.GET.first_time %}
                                 Primera vez? Regístrate con tu cuenta de 42
                             {% else %}
                                 Inicia sesión con tu cuenta de 42
