@@ -62,7 +62,7 @@ class GroupsConsumer:
         await self.channel_layer.group_discard(f"chat_group_{group_id}", self.channel_name)
         # Notificar al grupo sobre la actualización
         await self.channel_layer.group_send(
-            group_name,
+            f"chat_group_{group_id}",
             {
                 'type': 'notify_group_update',
                 'group_id': group_id
@@ -71,9 +71,6 @@ class GroupsConsumer:
         # Notificar al usuario que ha salido del grupo
         await self.send_user_groups()
         
-
-
-
     @database_sync_to_async
     def remove_user_from_group_in_db(self, group_id, user_id):
         GroupMembership.objects.filter(group_id=group_id, user_id=user_id).delete()
