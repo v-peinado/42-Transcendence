@@ -375,6 +375,7 @@
                     channels.forEach(channel => {
                         // Buscar el "otro" usuario
                         const otherMember = channel.members.find(m => m.id !== this.userId);
+                        const channelId = channel.id;
                         if (!otherMember) {
                             return; // Si no hay otro miembro, saltar
                         }
@@ -399,7 +400,7 @@
                         deleteChannelButton.textContent = 'Eliminar Canal';
                         deleteChannelButton.classList.add('btn', 'btn-danger', 'ml-2');
                         deleteChannelButton.addEventListener('click', () => {
-                            this.deletePrivateChat(channel.id);
+                            this.deletePrivateChat(otherMember.id, channel.id, channel.name);
                         });
         
                         channelItem.appendChild(channelName);
@@ -491,9 +492,10 @@
                 }
             }
 
-            deletePrivateChat(userId, username) {
+            deletePrivateChat(userId, channelId, channelName) {
                 const userIds = [this.userId, userId].sort((a, b) => a - b);
-                const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+                //const channelName = `dm_${userIds[0]}_${userIds[1]}`;
+                console.log(('Nombre del canal:', channelName));
         
                 this.opennedChats.delete(channelName);
         
@@ -510,11 +512,14 @@
                 if (firstTab) {
                     firstTab.click();
                 }
-        
+                console.log('USERS: user1: ', userIds[0], 'user2: ', userIds[1]);
                 const messageData = {
                     type: 'delete_private_channel',
+                    id: channelId,
+                    name : channelName,
                     user1_id: userIds[0],
-                    user2_id: userIds[1]
+                    user2_id: userIds[1],
+                    deleting_user_id: this.userId
                 };
                 console.log('Deleting private channel:', messageData);
                 this.chatSocket.send(JSON.stringify(messageData));
@@ -546,9 +551,18 @@
                     openGroupButton.addEventListener('click', () => {
                         this.openGroupChat(group.id, group.name);
                     });
+
+                    // Crear el botón para salir del grupo
+                    const leaveGroupButton = document.createElement('button');
+                    leaveGroupButton.textContent = 'Abandonar Grupo';
+                    leaveGroupButton.classList.add('btn', 'btn-danger', 'ml-2');
+                    leaveGroupButton.addEventListener('click', () => {
+                        this.leaveGroupChat(group.id, group.name, this.userId);
+                    });
                     
                     groupItem.appendChild(groupName);
                     groupItem.appendChild(openGroupButton);
+                    groupItem.appendChild(leaveGroupButton);
                     this.groupList.appendChild(groupItem);
                 });
             }
@@ -564,6 +578,17 @@
                     this.chatSocket.send(JSON.stringify(messageData));
                 }
                 
+            }
+
+            leaveGroupChat(groupId, groupName, userId) {
+                const messageData = {
+                    'type': 'leave_group',
+                    'id': groupId,
+                    'groupname': groupName,
+                    'userId': userId
+                };
+                console.log('Leaving group:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
             }
 
             handleGroupCreated(data) {

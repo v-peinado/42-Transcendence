@@ -3,66 +3,57 @@ import json
 from django.contrib.auth import get_user_model
 from chat.models import PrivateChannel, PrivateChannelMembership
 from channels.db import database_sync_to_async
+from django.db.models import Q
 
 User = get_user_model()
 
-class PrivateConsumer:
+class PrivateConsumer:   
     async def create_private_channel(self, data):
+        await self.manage_private_channel(data, 'create')
+
+    async def delete_private_channel(self, data):
+        await self.manage_private_channel(data, 'delete')
+
+    async def manage_private_channel(self, data, action):
         user1_id = data.get('user1_id')
         user2_id = data.get('user2_id')
-        # Crear o recuperar canal de DB
-        channel = await self.create_private_channel_in_db(user1_id, user2_id)
+        deleting_user_id = data.get('deleting_user_id')
+        other_user_id = user1_id if deleting_user_id == user2_id else user2_id
 
-        # Usar el channel.name ("dm_minID_maxID") como nombre de grupo
-        group_name = channel.name
+        if action == 'create':
+            channel = await self.create_private_channel_in_db(user1_id, user2_id)
+            group_name = channel.name
+            await self.add_users_to_group(group_name, [user1_id, user2_id])
+        elif action == 'delete':
+            await self.delete_private_channel_in_db(data)
+            await self.send_user_private_channels()
+            await self.notify_user_group(other_user_id)
 
-        # Conectar usuarios si están activos
-        user1_channel_name = ChatConsumer.connected_users.get(user1_id)
-        user2_channel_name = ChatConsumer.connected_users.get(user2_id)
-        if user1_channel_name:
-            await self.channel_layer.group_add(group_name, user1_channel_name)
-        if user2_channel_name:
-            await self.channel_layer.group_add(group_name, user2_channel_name)
-
-        # Notificar a ambos de la creación/actualización del canal
+    async def add_users_to_group(self, group_name, user_ids):
+        for user_id in user_ids:
+            user_channel_name = ChatConsumer.connected_users.get(user_id)
+            if user_channel_name:
+                await self.channel_layer.group_add(group_name, user_channel_name)
+                await self.channel_layer.group_send(
+                    group_name,
+                    {
+                        'type': 'send_user_private_channels',
+                        'user_id': user_id
+                    }
+                )
+        
+    async def notify_user_group(self, user_id):
+        user_group = f"user_{user_id}"
         await self.channel_layer.group_send(
-            group_name,
+            user_group,
             {
-                'type': 'notify_private_channel_update',
-                'channel_id': channel.id  # Usamos el ID para obtener miembros
+                'type': 'send_user_private_channels',
+                'channel_id': user_id
             }
         )
-        
-    async def delete_private_channel(self, data):
-        channel_id = data.get('channel_id')
-        channel = await self.get_private_channel_by_id(channel_id)
-        if channel:
-            await self.channel_layer.group_discard(channel.name, self.channel_name)
-            if ChatConsumer.connected_users.get(channel.user1_id):
-                await self.channel_layer.group_discard(channel.name, ChatConsumer.connected_users.get(channel.user1_id))
-            if ChatConsumer.connected_users.get(channel.user2_id):
-                await self.channel_layer.group_discard(channel.name, ChatConsumer.connected_users.get(channel.user2_id))
-            await channel.delete()
-            await self.send_user_private_channels()
-        
-        await self.delete_private_channel_in_db(channel_id)
-        
-        
-    @database_sync_to_async
-    def delete_private_channel_in_db(self, channel_id):
-        #PrivateChannelMembership.objects.filter(channel_id=channel_id).delete()
-        return PrivateChannel.objects.filter(id=channel_id).delete()
 
-    # Se envian la lista de canales privados a cada usuario, para que actualice su lista de canales privados
-    async def notify_private_channel_update(self, event):
-        channel_id = event['channel_id']
-        members = await self.get_private_channel_members(channel_id)
-        for m in members:
-            await self.send_user_private_channels(m['id'])
-
-    async def send_user_private_channels(self, user_id=None):
-        if user_id is None:
-            user_id = self.user_id
+    async def send_user_private_channels(self, event=None):
+        user_id = event.get('user_id', self.user_id) if event else self.user_id
         channels = await self.get_user_private_channels(user_id)
         await self.send(text_data=json.dumps({
             'type': 'private_channels',
@@ -101,18 +92,12 @@ class PrivateConsumer:
         return channel
     
     @database_sync_to_async
-    def delete_private_channel(data):
-        user1_id = data.get('user1_id')
-        user2_id = data.get('user2_id')
-
-        if not user1_id or not user2_id:
-            # Manejar IDs faltantes
-            return
-
-        return PrivateChannel.objects.filter(
-            user1_id=user1_id,
-            user2_id=user2_id
+    def delete_private_channel_in_db(self, data):
+        PrivateChannel.objects.filter(
+            user1_id = data.get('user1_id'),
+            user2_id = data.get('user2_id')
         ).delete()
+
 
     @database_sync_to_async
     def get_user_private_channels(self, user_id):
@@ -130,14 +115,3 @@ class PrivateConsumer:
                 'members': channel_members
             })
         return channels
-
-    @database_sync_to_async
-    def get_private_channel_members(self, channel_id):
-        memberships = PrivateChannelMembership.objects.filter(
-            channel_id=channel_id
-        ).select_related('user')
-        return [{'id': m.user.id, 'username': m.user.username} for m in memberships]
-    
-    @database_sync_to_async
-    def get_private_channel_by_id(self, channel_id):
-        return PrivateChannel.objects.filter(id=channel_id).first()

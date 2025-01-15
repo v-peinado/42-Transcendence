@@ -48,3 +48,5 @@ class MainChatConsumer(
             await self.delete_friendship(data.get('friendship_id'))
         elif message_type == 'delete_private_channel':
             await self.delete_private_channel(data)
+        elif message_type == 'leave_group':
+            await self.leave_group(data)
