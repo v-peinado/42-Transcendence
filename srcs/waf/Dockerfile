@@ -81,7 +81,7 @@ ENV MODSECURITY=On \
 
 EXPOSE 8081 8200 8444
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD curl -f -k https://localhost:8444/health || exit 1
 
 CMD ["sh", "-c", "/usr/local/bin/init-vault.sh && nginx -g 'daemon off;'"]
