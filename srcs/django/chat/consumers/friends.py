@@ -180,8 +180,7 @@ class FriendRequestsConsumer:
     def delete_friendship_append(self, friendship_id):
         friendship = Friendship.objects.get(id=friendship_id)
         friendship.delete()
-        
-        
+           
     @database_sync_to_async
     def get_friends(self, user_id):
         # Convertimos en lista el query de amistades, para poder serializarlo

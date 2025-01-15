@@ -34,8 +34,7 @@ class MessagesConsumer:
     
     async def handle_message(self, data, channel_name):
         message = data.get('message')
-        from_user = self.scope["user"]
-        
+        from_user = self.scope["user"] 
 
         if message:
             if channel_name.startswith('dm_'): # Si el canal es un mensaje directo

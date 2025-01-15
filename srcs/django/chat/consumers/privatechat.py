@@ -3,7 +3,6 @@ import json
 from django.contrib.auth import get_user_model
 from chat.models import PrivateChannel, PrivateChannelMembership
 from channels.db import database_sync_to_async
-from django.db.models import Q
 
 User = get_user_model()
 
@@ -81,8 +80,8 @@ class PrivateConsumer:
 
         # Crear o recuperar el canal en la DB
         channel, created = PrivateChannel.objects.get_or_create(
-            user1=min(user1, user2, key=lambda u: u.id),
-            user2=max(user1, user2, key=lambda u: u.id),
+            user1=self.get_min_user(user1, user2),
+            user2=self.get_max_user(user1, user2),
             defaults={'name': channel_name}
         )
         # Crear membresías si el canal es nuevo
@@ -91,13 +90,18 @@ class PrivateConsumer:
             PrivateChannelMembership.objects.create(channel=channel, user=user2)
         return channel
     
+    def get_min_user(self, user1, user2):
+        return user1 if user1.id < user2.id else user2
+
+    def get_max_user(self, user1, user2):
+        return user1 if user1.id > user2.id else user2
+    
     @database_sync_to_async
     def delete_private_channel_in_db(self, data):
         PrivateChannel.objects.filter(
             user1_id = data.get('user1_id'),
             user2_id = data.get('user2_id')
         ).delete()
-
 
     @database_sync_to_async
     def get_user_private_channels(self, user_id):

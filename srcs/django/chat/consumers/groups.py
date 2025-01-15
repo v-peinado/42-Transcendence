@@ -145,7 +145,6 @@ class GroupsConsumer:
         GroupMembership.objects.create(group=group, user=creator)
         return group
 
-
     @database_sync_to_async
     def add_user_to_group_in_db(self, group_id, user_id):
         group = Group.objects.get(id=group_id)

@@ -83,7 +83,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send_blocked_users()
         await self.send_user_groups()
         await self.send_user_private_channels()
-                 
-    @database_sync_to_async
-    def get_channel_name(self, username):
-        return self.connected_users.get(username)
