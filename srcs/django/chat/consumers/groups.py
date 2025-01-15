@@ -50,6 +50,36 @@ class GroupsConsumer:
                 'group_id': group.id
             }
         )
+        
+    async def leave_group(self, data):
+        group_id = data.get('id')
+        group_name = data.get('groupname')
+        user_id = data.get('userId')
+
+        # Eliminar la membresía del grupo
+        await self.remove_user_from_group_in_db(group_id, user_id)
+        # Salir del canal del grupo
+        await self.channel_layer.group_discard(f"chat_group_{group_id}", self.channel_name)
+        # Notificar al grupo sobre la actualización
+        await self.channel_layer.group_send(
+            group_name,
+            {
+                'type': 'notify_group_update',
+                'group_id': group_id
+            }
+        )
+        # Notificar al usuario que ha salido del grupo
+        await self.send_user_groups()
+        
+
+
+
+    @database_sync_to_async
+    def remove_user_from_group_in_db(self, group_id, user_id):
+        GroupMembership.objects.filter(group_id=group_id, user_id=user_id).delete()
+        # Si no hay mas miembros en el grupo, eliminar el grupo
+        if not GroupMembership.objects.filter(group_id=group_id).exists():
+            Group.objects.filter(id=group_id).delete()
 
     async def notify_group_update(self, event):
         # Avisar a cada miembro del grupo para que actualice su lista

@@ -149,7 +149,7 @@ destroy-images:
 	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
 	docker image prune -a -f
 
-fclean: close destroy-images clean-postgres-data clean-volumes clean_postgres_data_dir
+fclean: close destroy-images clean-postgres-data clean-volumes
 	rm -f srcs/django/logs/*.log
 	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
 
