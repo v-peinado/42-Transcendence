@@ -35,6 +35,9 @@ urlpatterns = [
     # Panel de administración
     path('admin/', admin.site.urls),
     
+    # API de tournament
+    # path('api/tournament/', include('tournament.api.urls')),
+    
     # API endpoints (producción)
     path('api/', include('authentication.api.urls')),
     

@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'authentication.fortytwo_auth',
     'channels',
     'chat',
+    'tournament',
     'corsheaders',
 ]
 
