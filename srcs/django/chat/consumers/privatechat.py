@@ -3,12 +3,28 @@ import json
 from django.contrib.auth import get_user_model
 from chat.models import PrivateChannel, PrivateChannelMembership
 from channels.db import database_sync_to_async
+from .blockusers import BlockConsumer
+from .friends import FriendRequestsConsumer
+import logging
 
 User = get_user_model()
 
 class PrivateConsumer:   
     async def create_private_channel(self, data):
-        await self.manage_private_channel(data, 'create')
+        user_1_id = data.get('user1_id')
+        user_2_id = data.get('user2_id')
+                
+        # Determinar el usuario propio
+        own_user_id = self.scope["user"].id
+        
+        # Determinar el otro usuario
+        other_user_id = user_1_id if own_user_id == user_2_id else user_2_id
+
+        # Verificar si el otro usuario ha bloqueado al usuario propio
+        if await self.is_blocked(other_user_id, own_user_id):
+            await self.send_error('The other user has blocked you. The private channel cannot be created and the message will not be sent.')
+        else:
+            await self.manage_private_channel(data, 'create')
 
     async def delete_private_channel(self, data):
         await self.manage_private_channel(data, 'delete')

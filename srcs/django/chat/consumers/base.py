@@ -57,6 +57,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # Elimina al usuario del grupo de chat y de la lista de usuarios conectados.
     # También envía una lista actualizada de usuarios conectados.
     # Este método se ejecuta automáticamente cuando un usuario se desconecta del WebSocket.
+    # close_code es un código que indica la razón por la que se cerró la conexión, si la conexión se cerró correctamente, el código será 1000.
     async def disconnect(self, close_code):
         ChatConsumer.connected_users.pop(self.user_id, None)
         await self.channel_layer.group_discard(

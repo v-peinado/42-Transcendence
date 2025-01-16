@@ -41,17 +41,18 @@ class MessagesConsumer:
                 to_user_ids = channel_name.split('_')[1:] # [:1], asi extraemos el primer elemento de la lista, ej: [4 , 2]
                 # Usaremos map para aplicar el int() a cada elemento de la lista y guardarlo en user1_id = 4 y user2_id = 2
                 user1_id, user2_id = map(int, channel_name.split('_')[1:])
-                # Creamos un canal privado en la base de datos si no existe
-                await self.create_private_channel_in_db(user1_id, user2_id)
                 
                 to_user_ids = [user1_id, user2_id]
 
                 # Si no existe el canal privado en el diccionario de canales privados, lo añadimos
-                if channel_name not in ChatConsumer.private_channels:
-                    ChatConsumer.private_channels[channel_name] = to_user_ids
+                # si no esta bloqueado, el nombre de canal se guardara en la db y se hara un add al grupo
+                # en la clase PrivateChatConsumer
+                # Si esta bloqueado no se guardara en la db y no se hara un add al grupo cuando se conecte, por lo
+                # hasta que no se vuelva a enviar un mensaje no se volvera a intentar añadir al grupo
+                ChatConsumer.private_channels[channel_name] = to_user_ids
                     # Añadimos a ambos usuarios al canal privado
-                    for user_id in to_user_ids:
-                        if user_id in ChatConsumer.connected_users:
+                for user_id in to_user_ids:
+                    if user_id in ChatConsumer.connected_users:
                             await self.channel_layer.group_add(
                                 channel_name,
                                 ChatConsumer.connected_users[user_id]

@@ -54,13 +54,12 @@ class BlockConsumer:
     async def get_blocked_users(self, user):
         # Usamos list() para convertir el queryset en una lista de diccionarios, es necesario porque no se puede serializar un queryset.
         # Una lista es basicamente un campo serializable, ejemplo: [{'username': 'user1'}, {'username': 'user2'}]
-        #select_related('blocked') se utiliza para obtener los datos del campo blocked en la misma consulta.
-        blocked = await sync_to_async(list)(BlockedUser.objects.filter(
-            blocker=user
-        ).select_related('blocked'))
-        # retornamos de cada acciion de bloqueo b, del bloqueado blocked, el username
+        # User.blocking es un campo relacionado con el modelo User, que se obtiene a través de la relación ForeignKey en el modelo BlockedUser.
+        # select_related('blocked') se utiliza para obtener los datos del campo blocked en la misma consulta.
+        blocked = await sync_to_async(list)(user.blocking.select_related('blocked'))
+        # retornamos de cada acción de bloqueo b, del bloqueado blocked, el username
         return [{'username': b.blocked.username} for b in blocked]
-    
+
     # Enviar la lista de usuarios bloqueados al cliente
     async def send_blocked_users(self):
         blocked_users = await self.get_blocked_users(self.scope["user"])
@@ -69,7 +68,7 @@ class BlockConsumer:
             'type': 'blocked_users',
             'blocked_users': blocked_users
         }))
-    
+        
     @database_sync_to_async
     def get_user_by_id(self, user_id):
         return User.objects.get(id=user_id)

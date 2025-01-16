@@ -48,9 +48,10 @@ class Friendship(models.Model):
         if self.user1 == self.user2:
             raise ValidationError("Un usuario no puede ser amigo de sí mismo.")
 
+    # Sobreescribir el método save para validar los datos antes de guardar
     def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+        self.clean()  # Llama a clean() para realizar validaciones personalizadas
+        super().save(*args, **kwargs)  # Llama al método save() de la clase base
 
     def __str__(self):
         return f"{self.user1} & {self.user2}"
@@ -76,8 +77,9 @@ class BlockedUser(models.Model):
 
 class Group(models.Model):
     name = models.CharField(max_length=255)
-    channel_name = models.CharField(max_length=255, unique=True, blank=True)  # Nombre único para Channels
+    channel_name = models.CharField(max_length=255)  # Nombre único para Channels
 
+    # Sobreescribir el método save para asignar un nombre de canal si no se proporciona
     def save(self, *args, **kwargs):
         if not self.channel_name:
             super().save(*args, **kwargs)  # Guarda primero para obtener el ID
@@ -88,14 +90,11 @@ class Group(models.Model):
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='created_groups',
-        on_delete=models.CASCADE
+        on_delete=models.SET_NULL,
+        null=True,  # Permitir valores nulos
+        blank=True  # Permitir valores en blanco
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['name', 'creator'], name='unique_group_name_per_creator')
-        ]
 
     def __str__(self):
         return self.name
