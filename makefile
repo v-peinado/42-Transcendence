@@ -150,7 +150,6 @@ destroy-images:
 	docker image prune -a -f
 
 fclean: close destroy-images clean-postgres-data clean-volumes
-	rm -f srcs/django/logs/*.log
 	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
 
 re: fclean all

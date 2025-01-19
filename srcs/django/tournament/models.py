@@ -20,7 +20,7 @@ class Tournament(models.Model):
         return self.name
 
 class Match(models.Model):
-    tournament = models.ForeignKey(Tournament, on_delete=models.SET_NULL, null=True, related_name='matches')
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, related_name='matches')
     user1 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='matches_as_user1')
     user2 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='matches_as_user2')
     score_user1 = models.IntegerField(null=True, blank=True)
@@ -31,7 +31,7 @@ class Match(models.Model):
 
 class TournamentMatch(models.Model):
     match = models.ForeignKey(Match, on_delete=models.SET_NULL, null=True, related_name='tournament_matches')
-    tournament = models.ForeignKey(Tournament, on_delete=models.SET_NULL, null=True, related_name='tournament_matches')
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, related_name='tournament_matches')
     round = models.IntegerField(help_text="Ronda del torneo a la que pertenece el partido")
     is_played = models.BooleanField(default=False)
 
@@ -40,7 +40,7 @@ class TournamentMatch(models.Model):
     
 class PlayerTournament(models.Model):
     player = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='player_tournaments')
-    tournament = models.ForeignKey(Tournament, on_delete=models.SET_NULL, null=True, related_name='player_tournaments')
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, null=True, related_name='player_tournaments')
     place = models.IntegerField(null=True, blank=True, help_text="Ronda a la que se ha llegado en el torneo")
 
     def __str__(self):

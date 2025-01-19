@@ -9,7 +9,7 @@ class FriendRequest(models.Model):
     from_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='friend_requests_sent',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE # Si se elimina un usuario, se eliminan todas sus solicitudes de amistad
     )
     to_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
