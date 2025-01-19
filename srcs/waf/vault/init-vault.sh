@@ -170,9 +170,19 @@ store_secrets() {
         HOST_PASSWORD="${EMAIL_HOST_PASSWORD}" \
         FROM_EMAIL="${DEFAULT_FROM_EMAIL}"
 
-    vault kv put secret/django/security \
-        SECRET_KEY="${DJANGO_SECRET_KEY}" \
-        JWT_SECRET="${JWT_SECRET_KEY}"
+	vault kv put secret/django/settings \
+    	DEBUG="${DJANGO_DEBUG}" \
+    	ALLOWED_HOSTS="${DJANGO_ALLOWED_HOSTS}" \
+		SECRET_KEY="${DJANGO_SECRET_KEY}"
+	
+	vault kv put secret/django/jwt \
+    	secret_key="${JWT_SECRET_KEY}" \
+    	algorithm="${JWT_ALGORITHM}" \
+    	expiration_time="${JWT_EXPIRATION_TIME}"
+
+	vault kv put secret/nginx/ssl \
+    	ssl_certificate="$(cat ${SSL_CERT} 2>/dev/null || echo '')" \
+    	ssl_certificate_key="$(cat ${SSL_KEY} 2>/dev/null || echo '')"
 }
 
 # Iniciar nginx
