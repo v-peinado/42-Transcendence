@@ -91,8 +91,7 @@ class Group(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='created_groups',
         on_delete=models.SET_NULL,
-        null=True,  # Permitir valores nulos
-        blank=True  # Permitir valores en blanco
+        null=True  # Permitir valores nulos
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -158,3 +157,16 @@ class PrivateChannelMembership(models.Model):
 
     def __str__(self):
         return f"{self.user.username} in {self.channel}"
+    
+class ArchivedMessage(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    channel_name = models.CharField(max_length=255)
+    content = models.TextField()
+    timestamp = models.DateTimeField()
+    
+class Message(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    channel_name = models.CharField(max_length=255)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_archived = models.BooleanField(default=False)

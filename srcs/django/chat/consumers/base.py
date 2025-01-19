@@ -1,7 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
-import logging
 
 User = get_user_model()
 
@@ -51,6 +50,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.join_group_channels()
         await self.join_private_channels()
         await self.update_all_lists()
+               
+        # Llamar a la función para enviar los mensajes no archivados
+        await self.send_unarchived_messages()
 
 
     # Método disconnect: se ejecuta cuando un usuario se desconecta del WebSocket.

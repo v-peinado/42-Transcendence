@@ -1,6 +1,9 @@
 import json
 from django.contrib.auth import get_user_model
 from .base import ChatConsumer
+from channels.db import database_sync_to_async
+from chat.models import Message, PrivateChannelMembership, PrivateChannel
+
 
 User = get_user_model()
 
@@ -91,3 +94,19 @@ class MessagesConsumer:
             'message': event['message'],
             'channel_name': event['channel_name'],
         }))
+        
+    async def send_unarchived_messages(self):
+        # messages = await self.get_unarchived_messages()
+        # for message in messages:
+        #     await self.send(text_data=json.dumps({
+        #         'user_id': message.user.id,
+        #         'username': message.user.username,
+        #         'message': message.content,
+        #         'timestamp': message.timestamp.isoformat(),
+        #     }))
+        pass
+
+    @database_sync_to_async
+    def get_unarchived_messages(self):
+        pass
+        #return list(Message.objects.filter(channel_name=self.channel_name, is_archived=False).order_by('timestamp'))
