@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Variables de configuración
-VAULT_MODE=${VAULT_MODE:-"production"}  # Valores: "development" o "production"
+VAULT_MODE=${VAULT_MODE:-"production"}  # Valores posibles: "development" o "production"
 LOG_DIR="/var/log/vault"
 AUDIT_LOG="${LOG_DIR}/audit.log"
 ERROR_LOG="${LOG_DIR}/error.log"
@@ -9,39 +9,45 @@ SYSTEM_LOG="${LOG_DIR}/system.log"
 OPERATION_LOG="${LOG_DIR}/operation.log"
 VAULT_CONFIG="/etc/vault.d/config.hcl"
 
-# Función para logging
+# Manejo de logs
 log_message() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "${OPERATION_LOG}"
 }
 
 # Configuración inicial
 setup_initial() {
+
+	# Crear directorios y archivos de log
     mkdir -p "${LOG_DIR}"
     chmod 755 "${LOG_DIR}"
     touch "${OPERATION_LOG}"
     chmod 640 "${OPERATION_LOG}"
 
+	# Generar certificados SSL si no existen
     if [ ! -f "/tmp/ssl/transcendence.crt" ]; then
         log_message "Generando certificados SSL..."
         /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}"
     fi
 }
 
-# Iniciar Vault según modo
+# Iniciar Vault en modo desarrollo o producción
 start_vault() {
+
+	# Modo desarrollo
     if [ "${VAULT_MODE}" = "development" ]; then
         log_message "Iniciando Vault en modo desarrollo..."
         vault server -dev \
             -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
             -dev-listen-address="0.0.0.0:8200" \
             -log-level=debug &
-    else
+    # Modo producción
+	else
         log_message "Iniciando Vault en modo producción..."
         vault server -config="${VAULT_CONFIG}" \
             -log-level=debug &
     fi
     
-    # Esperar a que Vault esté disponible
+    # Esperar a que Vault esté disponible antes de continuar con la configuración
     for i in $(seq 1 60); do
         if curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
             log_message "Vault está disponible"
@@ -55,17 +61,11 @@ start_vault() {
     return 1
 }
 
+# Una vez que Vault está disponible, seguir con la inicialización
 initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
         export VAULT_ADDR='http://127.0.0.1:8200'
         log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
-
-        # Esperar a que Vault esté disponible
-        sleep 10
-        until curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; do
-            log_message "Esperando a que Vault esté disponible..."
-            sleep 2
-        done
 
         # Verificar si necesita inicialización
         if ! vault operator init -status > /dev/null 2>&1; then
