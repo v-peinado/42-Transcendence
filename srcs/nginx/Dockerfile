@@ -3,9 +3,7 @@ FROM nginx:alpine
 USER root
 
 RUN apk add --no-cache openssl && \
-    mkdir -p \
-        /tmp/ssl \
-        /etc/nginx/ssl && \
+    mkdir -p /tmp/ssl && \
     chown -R nginx:nginx \
         /tmp/ssl \
         /etc/nginx \
