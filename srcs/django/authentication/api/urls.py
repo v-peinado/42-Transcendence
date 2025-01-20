@@ -80,8 +80,8 @@ two_factor_patterns = [
 
 # URLs de la API
 fourtytwo_patterns = [
-    path('api/login/', FortyTwoLoginAPIView.as_view(), name='api_ft_login'),
-    path('api/callback/', FortyTwoCallbackAPIView.as_view(), name='api_ft_callback'),
+    path('authentication/42/api/login/', FortyTwoLoginAPIView.as_view(), name='api_ft_login'),
+    path('authentication/42/api/callback/', FortyTwoCallbackAPIView.as_view(), name='api_ft_callback'),
 ]
 
 urlpatterns = [

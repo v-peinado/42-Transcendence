@@ -384,21 +384,23 @@ async function loadUserData() {
     try {
         const userInfo = await AuthService.getUserProfile();
         
-        // Forzar recarga de datos desde el servidor sin caché
-        const freshUserInfo = await AuthService.getUserProfile({ cache: 'no-store' });
-        
         // Actualizar información del usuario
         document.getElementById('userInfo').innerHTML = `
-            <h5 class="my-3">${freshUserInfo.username}</h5>
-            <p class="text-muted mb-1">${freshUserInfo.email}</p>
+            <h5 class="my-3">${userInfo.username}</h5>
+            <p class="text-muted mb-1">${userInfo.email}</p>
         `;
 
+        // Si es usuario de 42, ocultar campo de contraseña
+        if (userInfo.is_fortytwo_user) {
+            document.getElementById('deleteAccountPassword').parentElement.style.display = 'none';
+        }
+
         // Actualizar detalles del perfil
-        document.getElementById('profileUsername').textContent = freshUserInfo.username;
-        document.getElementById('profileEmail').textContent = freshUserInfo.email;
+        document.getElementById('profileUsername').textContent = userInfo.username;
+        document.getElementById('profileEmail').textContent = userInfo.email;
         document.getElementById('profileStatus').innerHTML = `
-            <span class="badge ${freshUserInfo.is_active ? 'bg-success' : 'bg-warning'}">
-                ${freshUserInfo.is_active ? 'Activo' : 'Pendiente'}
+            <span class="badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}">
+                ${userInfo.is_active ? 'Activo' : 'Pendiente'}
             </span>
         `;
 

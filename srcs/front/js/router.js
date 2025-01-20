@@ -232,8 +232,14 @@ class Router {
     }
 
     handleInitialRoute() {
-        const path = window.location.pathname || '/';
-        console.log('Ruta inicial:', path);  // Debug
+        const path = window.location.pathname + window.location.search;  // Incluir query params
+        console.log('Ruta inicial completa:', path);  // Debug
+
+        // Manejar login con código de 42
+        if (path.startsWith('/login') && path.includes('code=')) {
+            LoginView();  // Como LoginView es async, necesitamos manejarlo correctamente
+            return;
+        }
 
         // Verificar email en la carga inicial también
         if (path.includes('/verify-email/')) {
@@ -270,16 +276,32 @@ class Router {
             }
         }
 
-        const route = this.routes[path] || this.routes['/'];
-        route();
+        const normalizedPath = path.split('?')[0];
+        const route = this.routes[normalizedPath] || this.routes['/404'];
+        
+        if (typeof route === 'function') {
+            if (route.constructor.name === 'AsyncFunction') {
+                route().catch(console.error);  // Manejar promesas rechazadas
+            } else {
+                route();
+            }
+        }
     }
 
-    handleRoute() {
-        const path = window.location.pathname;
+    async handleRoute() {
+        const path = window.location.pathname + window.location.search;  // Incluir query params
+        console.log('Manejando ruta completa:', path);  // Debug
+        
         // Reset data-page attribute
         document.body.removeAttribute('data-page');
         
         console.log('Ruta actual:', path);
+
+        // Manejar login con código de 42
+        if (path.startsWith('/login') && path.includes('code=')) {
+            await LoginView();
+            return;
+        }
 
         // Manejar verificación de email sin redirección automática
         if (path.includes('/verify-email/')) {
@@ -305,9 +327,16 @@ class Router {
             }
         }
 
-        const normalizedPath = path.endsWith('/') ? path.slice(0, -1) : path;
+        const normalizedPath = path.split('?')[0];  // Eliminar query params para matching
         const route = this.routes[normalizedPath] || this.routes['/404'];
-        route();
+        
+        if (typeof route === 'function') {
+            if (route.constructor.name === 'AsyncFunction') {
+                await route();
+            } else {
+                route();
+            }
+        }
     }
 
     navigateTo(url) {

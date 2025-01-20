@@ -317,7 +317,7 @@ class AuthService {
         }
     }
 
-    static async deleteAccount(password) {
+    static async deleteAccount(password = null) {
         try {
             const response = await fetch(`${this.API_URL}/profile/delete-account/`, {
                 method: 'POST',
@@ -325,7 +325,7 @@ class AuthService {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ confirm_password: password }),
+                body: JSON.stringify(password ? { confirm_password: password } : {}),
                 credentials: 'include'
             });
 
@@ -441,6 +441,59 @@ class AuthService {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (error) {
+            throw error;
+        }
+    }
+
+    static async get42AuthUrl() {
+        try {
+            const response = await fetch(`${this.API_URL}/authentication/42/api/login/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Error obteniendo URL de autenticación');
+            }
+
+            return data.auth_url;
+        } catch (error) {
+            console.error('Error obteniendo URL de 42:', error);
+            throw error;
+        }
+    }
+
+    static async handle42Callback(code) {
+        try {
+            console.log('AuthService: Enviando código a backend:', code);
+            const response = await fetch(`${this.API_URL}/authentication/42/api/callback/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ code }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('AuthService: Respuesta del servidor:', data);
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error en autenticación con 42');
+            }
+
+            if (data.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', data.username);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('AuthService: Error en callback:', error);
             throw error;
         }
     }

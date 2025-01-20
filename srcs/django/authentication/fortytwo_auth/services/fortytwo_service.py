@@ -61,7 +61,7 @@ class FortyTwoAuthService:
             defaults={
                 'email': user_data['email'],
                 'fortytwo_id': str(user_data['id']),
-                'is_fortytwo_user': True,
+                'is_fortytwo_user': True,  # Este campo es importante
                 'is_active': False,
                 'email_verified': False,
                 'fortytwo_image': user_data.get('image', {}).get('link')
@@ -69,7 +69,7 @@ class FortyTwoAuthService:
         )
 
         if created:
-            self._handle_new_user(user)
+            self._handle_new_user(user)  # Envía email de verificación
 
         return user, created
 
@@ -92,8 +92,8 @@ class FortyTwoAuthService:
             return False, None, str(e)
 
     @classmethod
-    def handle_callback(cls, request, is_api=False):
-        code = request.GET.get('code')
+    def handle_callback(cls, request, is_api=False, code=None):
+        code = code or request.GET.get('code')
         if not code:
             return False, None, 'No se proporcionó código de autorización'
 
@@ -103,18 +103,8 @@ class FortyTwoAuthService:
             user_data = service.get_user_info(token_data['access_token'])
             user, created = service.process_user_authentication(user_data)
 
-            if not user.email_verified:
+            if created or not user.email_verified:
                 return False, user, 'Verifica tu email para acceder a tu cuenta'
-
-            if user.two_factor_enabled:
-                code = TwoFactorService.generate_2fa_code(user)
-                TwoFactorService.send_2fa_code(user, code)
-                request.session.update({
-                    'pending_user_id': user.id,
-                    'user_authenticated': True,
-                    'fortytwo_user': True
-                })
-                return True, user, 'pending_2fa'
 
             auth_login(request, user)
             return True, user, None

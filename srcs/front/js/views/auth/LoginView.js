@@ -1,6 +1,33 @@
 import AuthService from '../../services/AuthService.js';
 
-export function LoginView() {
+export async function LoginView() {  // Hacer la función asíncrona
+    // Comprobar si hay código de 42 en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+        console.log('Código 42 detectado:', code);
+        try {
+            const result = await AuthService.handle42Callback(code);
+            if (result.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', result.username);
+                window.location.href = '/profile';
+                return; // Importante: detener ejecución si el login es exitoso
+            } else if (result.message.includes('verifica tu email')) {
+                const alertDiv = document.getElementById('loginAlert');
+                alertDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <p>${result.message}</p>
+                        <p>Por favor, revisa tu email para activar tu cuenta.</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error en callback de 42:', error);
+        }
+    }
+
     const app = document.getElementById('app');
     app.innerHTML = `
         <div class="hero-section">
@@ -43,6 +70,12 @@ export function LoginView() {
                                     
                                     <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
                                         <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                                    </button>
+                                    
+                                    <button type="button" class="w-100 btn btn-lg btn-dark mb-3" 
+                                            onclick="handleFtAuth()">
+                                        <img src="/public/42_logo.svg" alt="42 Logo" class="me-2" style="height: 20px;">
+                                        Login con 42
                                     </button>
                                     
                                     <div class="text-center">
@@ -125,4 +158,19 @@ export function LoginView() {
             `;
         }
     });
+
+    // Añadir esta función después de los event listeners existentes
+    window.handleFtAuth = async () => {
+        try {
+            const authUrl = await AuthService.get42AuthUrl();
+            window.location.href = authUrl;
+        } catch (error) {
+            const alertDiv = document.getElementById('loginAlert');
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error al iniciar sesión con 42: ${error.message}</p>
+                </div>
+            `;
+        }
+    };
 }

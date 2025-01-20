@@ -1,6 +1,6 @@
 import AuthService from '../../services/AuthService.js';
 
-export function RequestPasswordResetView() {  // Cambiar nombre de la función
+export function RequestPasswordResetView() {
     const app = document.getElementById('app');
     app.innerHTML = `
         <div class="hero-section">
