@@ -1,5 +1,6 @@
 FROM owasp/modsecurity-crs:nginx
 
+# Configuración de la imagen
 USER root
 WORKDIR /app
 
@@ -74,14 +75,18 @@ RUN chown -R nginxuser:nginxuser \
         /etc/modsecurity/crs/* && \
     /usr/local/bin/generate-ssl.sh
 
+# Variables de entorno
 ENV MODSECURITY=On \
     VAULT_ADDR=http://127.0.0.1:8200 \
     VAULT_SKIP_VERIFY=true \
     PATH="${PATH}:/usr/local/bin"
 
+# Exponer puertos de la aplicación
 EXPOSE 8081 8200 8444
 
+# HEALTHCHECK para el contenedor
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
     CMD curl -f -k https://localhost:8444/health || exit 1
 
+# Comando de inicio
 CMD ["sh", "-c", "/usr/local/bin/init-vault.sh && nginx -g 'daemon off;'"]

@@ -1,5 +1,13 @@
 #!/bin/sh
 
+# Script de inicialización y configuración de HashiCorp Vault
+# Propósito: Gestionar el almacenamiento seguro de secretos y políticas de acceso
+# Pasos:
+# - Inicialización y dessellado de Vault
+# - Configuración de políticas y auditoría
+# - Almacenamiento seguro de secretos de Django y Nginx
+# - Integración con nginx para servir la aplicación
+
 # Variables de configuración
 VAULT_MODE=${VAULT_MODE:-"production"}  # Valores posibles: "development" o "production"
 LOG_DIR="/var/log/vault"
@@ -74,7 +82,7 @@ initialize_vault() {
             chmod 600 "${LOG_DIR}/init.txt"
             chown nginxuser:nginxuser "${LOG_DIR}/init.txt"
             
-            # Extraer las claves necesarias
+            # Extraer las claves de dessellado y el token root para configurar Vault
             UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
             ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
             
@@ -90,13 +98,13 @@ initialize_vault() {
 }
 
 configure_vault() {
-    # Asegurarse de que tenemos el token
+    # Verificar que se ha encontrado el archivo de inicialización
     if [ ! -f "${LOG_DIR}/init.txt" ]; then
         log_message "Error: No se encuentra init.txt"
         return 1
     fi
     
-    # Configurar variables de entorno
+    # Configurar variables de entorno para acceder a Vault
     export VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
     export VAULT_ADDR='http://127.0.0.1:8200'
     
@@ -115,6 +123,7 @@ configure_vault() {
 		log_message "Motor KV habilitado"
     fi
 
+	# Habilitar el motor de auditoría para guardar logs)
     log_message "Configurando auditoría..."
     vault audit enable file \
         file_path="${AUDIT_LOG}" \
@@ -138,7 +147,7 @@ configure_vault() {
 EOF
 }
 
-# Almacenar secretos
+# Almacenar secretos en Vault
 store_secrets() {
     # Verificar que tenemos acceso a Vault
     if ! vault token lookup >/dev/null 2>&1; then
@@ -185,7 +194,7 @@ store_secrets() {
     	ssl_certificate_key="$(cat ${SSL_KEY} 2>/dev/null || echo '')"
 }
 
-# Iniciar nginx
+# Iniciar nginx para servir la aplicación
 start_nginx() {
     log_message "Verificando configuración de nginx..."
     nginx -t || {
