@@ -75,7 +75,6 @@ CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False						# Permitir todos los orígenes en desarrollo 
 CORS_ALLOWED_ORIGINS = [												# Orígenes permitidos para CORS
     "https://localhost:8443",
-    "http://localhost:8080",
 ]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS								# Orígenes de confianza para CSRF
 

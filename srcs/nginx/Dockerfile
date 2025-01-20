@@ -23,6 +23,6 @@ COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh
 
-EXPOSE 8080 8443
+EXPOSE 8443
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-set -e  # Detener en errores
-trap 'cleanup' EXIT  # Limpiar al salir
+set -e  				# Salir en caso de error
+trap 'cleanup' EXIT		# Limpiar al salir
 
-# Colores para logs
+# Colores para mensajes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
@@ -14,7 +14,8 @@ KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
 CONF_FILE="${SSL_DIR}/openssl.cnf"
 
-# Función de limpieza
+
+# Función de limpieza al salir del script
 cleanup() {
     if [ $? -ne 0 ]; then
         rm -f "$KEY_FILE" "$CERT_FILE" "$CONF_FILE"
@@ -22,14 +23,17 @@ cleanup() {
     fi
 }
 
+# Mensajes de log
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
 
+# Mensajes de error
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
+# Crear directorio para almacenar certificados SSL y configuración de certificado
 create_ssl_directory() {
     log_info "Creando directorios..."
     install -d -m 755 "$SSL_DIR" || {
@@ -37,7 +41,7 @@ create_ssl_directory() {
         return 1
     }
 
-    # Crear archivo de configuración OpenSSL
+    # Crear configuración de certificado
     cat > "$CONF_FILE" << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -63,13 +67,14 @@ IP.1 = 127.0.0.1
 EOF
 }
 
+# Generar certificados SSL autofirmados
 generate_certificates() {
     log_info "Generando certificados SSL..."
     
-    # Limpiar certificados anteriores
+    # Limpiar certificados anteriores si existen
     rm -f "$CERT_FILE" "$KEY_FILE"
     
-    # Generar certificados con extensiones
+    # Generar certificados SSL autofirmados
     openssl req -x509 -nodes \
         -days 365 \
         -newkey rsa:2048 \
@@ -79,11 +84,11 @@ generate_certificates() {
         -extensions v3_req \
         -copy_extensions=copy || return 1
     
-    # Establecer permisos
+    # Establecer permisos adecuados
     chmod 644 "$CERT_FILE"
     chmod 600 "$KEY_FILE"
     
-    # Verificación final
+    # Comprobar que los certificados se han generado correctamente
     [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ] || {
         log_error "Verificación de certificados fallida"
         return 1
@@ -92,6 +97,7 @@ generate_certificates() {
     log_info "Certificados generados en: $SSL_DIR"
 }
 
+# Función principal 
 main() {
     log_info "Iniciando configuración SSL..."
     create_ssl_directory && generate_certificates
