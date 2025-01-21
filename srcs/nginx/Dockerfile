@@ -31,8 +31,8 @@ RUN apt-get update && \
 
 RUN rm -f /docker-entrypoint.d/10-generate-certificate.sh
 
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/templates /etc/nginx/templates
+COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
 COPY nginx/frontend /usr/share/nginx/html
 COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
