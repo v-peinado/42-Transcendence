@@ -392,7 +392,8 @@ async function loadUserData() {
                 <img src="${profileImage}" 
                      alt="avatar" 
                      class="rounded-circle profile-avatar" 
-                     width="300"  /* Actualizado a 300px */
+                     width="400"  /* Aumentado significativamente */
+                     height="400" /* Aumentado significativamente */
                      onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
                 <h5 class="my-4">${userInfo.username}</h5>
                 <p class="text-muted mb-1">${userInfo.email}</p>

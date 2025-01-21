@@ -862,11 +862,11 @@ body #app .hero-section {
 
 /* Tamaño mucho más grande para la imagen principal del perfil */
 .profile-card .profile-avatar {
-    width: 300px;  /* Aumentado a 300px */
-    height: 300px; /* Aumentado a 300px */
+    width: 200px !important;  /* Aumentado significativamente */
+    height: 200px !important; /* Aumentado significativamente */
     margin: auto;
-    border: 4px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease;
 }
 
