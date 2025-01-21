@@ -470,7 +470,6 @@ class AuthService {
         try {
             console.log('AuthService: Enviando código a backend:', code);
             
-            // Simplificar la solicitud al máximo
             const response = await fetch(`${this.API_URL}/authentication/42/api/callback/`, {
                 method: 'POST',
                 headers: {
@@ -478,26 +477,33 @@ class AuthService {
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }), // Solo enviar el código sin redirect_uri
+                body: JSON.stringify({ code }),
                 credentials: 'include'
             });
 
-            // Imprimir la respuesta completa para debug
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-            
             const data = await response.json();
             console.log('AuthService: Respuesta del servidor:', data);
             
-            if (!response.ok || data.status === 'error') {
+            if (response.ok && data.status === 'success') {
+                // Usuario autenticado correctamente
+                return {
+                    status: 'success',
+                    username: data.username
+                };
+            } else if (response.ok && data.is_verified) {
+                // Usuario ya verificado
+                return {
+                    status: 'verified',
+                    username: data.username
+                };
+            } else {
+                // Necesita verificación o hay error
                 return {
                     status: 'error',
                     needsEmailVerification: true,
                     message: data.message || 'Error en la autenticación'
                 };
             }
-
-            return data;
         } catch (error) {
             console.error('AuthService: Error detallado:', error);
             throw error;

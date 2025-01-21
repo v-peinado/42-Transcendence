@@ -37,34 +37,40 @@ export async function LoginView() {  // Hacer la función asíncrona
                 localStorage.setItem('username', result.username);
                 window.location.href = '/profile';
                 return;
-            }
-
-            // Si hay error o necesita verificación, mostrar el mensaje
-            app.innerHTML = `
-                <div class="hero-section">
-                    <div class="container">
-                        <div class="row justify-content-center">
-                            <div class="col-md-6 col-lg-5">
-                                <div class="card login-card">
-                                    <div class="card-body p-5">
-                                        <div class="text-center mb-4">
-                                            <h2 class="fw-bold">¡Cuenta Creada!</h2>
-                                        </div>
-                                        <div class="alert alert-success">
-                                            <h5 class="mb-3">¡Gracias por registrarte!</h5>
-                                            <p class="mb-0">Te hemos enviado un email con las instrucciones para activar tu cuenta.</p>
-                                        </div>
-                                        <div class="text-center mt-4">
-                                            <a href="/login" data-link class="btn btn-primary">Volver al Login</a>
+            } else if (result.status === 'verified') {
+                // Si el usuario ya está verificado, redirigir al perfil
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', result.username);
+                window.location.href = '/profile';
+                return;
+            } else if (result.needsEmailVerification) {
+                // Solo mostrar mensaje de verificación si realmente necesita verificar
+                app.innerHTML = `
+                    <div class="hero-section">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-md-6 col-lg-5">
+                                    <div class="card login-card">
+                                        <div class="card-body p-5">
+                                            <div class="text-center mb-4">
+                                                <h2 class="fw-bold">¡Cuenta Creada!</h2>
+                                            </div>
+                                            <div class="alert alert-success">
+                                                <h5 class="mb-3">¡Gracias por registrarte!</h5>
+                                                <p class="mb-0">Te hemos enviado un email con las instrucciones para activar tu cuenta.</p>
+                                            </div>
+                                            <div class="text-center mt-4">
+                                                <a href="/login" data-link class="btn btn-primary">Volver al Login</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-            return;
+                `;
+                return;
+            }
         } catch (error) {
             console.error('Error en callback de 42:', error);
             app.innerHTML = `
