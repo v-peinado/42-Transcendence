@@ -2,6 +2,10 @@ import AuthService from '../../services/AuthService.js';
 
 export function UserProfileView() {
     const app = document.getElementById('app');
+    
+    // ...existing code until userInfo div...
+
+    // Modificar la parte del template donde está el userInfo para incluir la sección de imagen directamente
     app.innerHTML = `
         <div class="profile-section">
             <div class="container py-4">
@@ -10,12 +14,26 @@ export function UserProfileView() {
                     <div class="col-lg-4">
                         <div class="card profile-card h-100">
                             <div class="card-body p-3">
-                                <div class="text-center">
-                                    <div id="userInfo">
-                                        <div class="placeholder-glow">
-                                            <span class="placeholder col-6"></span>
-                                        </div>
+                                <div id="userInfo">
+                                    <div class="placeholder-glow">
+                                        <span class="placeholder col-6"></span>
                                     </div>
+                                </div>
+                                
+                                <!-- Sección de imagen de perfil -->
+                                <div class="text-center mt-3">
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="imageInput" 
+                                           accept="image/*" 
+                                           style="display: none;">
+                                    <button class="btn btn-primary me-2" id="changeImageBtn">
+                                        <i class="fas fa-camera me-2"></i>Cambiar Imagen
+                                    </button>
+                                    <button class="btn btn-outline-secondary" id="restoreImageBtn">
+                                        <i class="fas fa-undo me-2"></i>Restaurar
+                                    </button>
+                                    <div class="alert mt-3" id="imageAlert" style="display: none;"></div>
                                 </div>
                                 
                                 <!-- Stats Grid -->
@@ -236,13 +254,13 @@ export function UserProfileView() {
 }
 
 function setupProfileEvents() {
-    // Agregar el event listener para logout
+    // Modificar el event listener para logout
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         try {
             await AuthService.logout();
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('username');
-            window.location.href = '/login';
+            window.location.href = '/';  // Cambiado de '/login' a '/'
         } catch (error) {
             console.error('Error en logout:', error);
             alert('Error al cerrar sesión');
@@ -376,6 +394,85 @@ function setupProfileEvents() {
     document.getElementById('confirmDelete')?.addEventListener('change', (e) => {
         document.getElementById('confirmDeleteBtn').disabled = !e.target.checked;
     });
+
+    // Añade estos event listeners después de renderizar el template
+    document.getElementById('changeImageBtn')?.addEventListener('click', () => {
+        document.getElementById('imageInput').click();
+    });
+
+    document.getElementById('imageInput')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        const alertEl = document.getElementById('imageAlert');
+        
+        if (file) {
+            // Validar tamaño (max 5MB) y tipo
+            if (file.size > 5 * 1024 * 1024) {
+                alertEl.className = 'alert alert-danger';
+                alertEl.textContent = 'La imagen no debe superar 5MB';
+                alertEl.style.display = 'block';
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                alertEl.className = 'alert alert-danger';
+                alertEl.textContent = 'Por favor, selecciona una imagen válida';
+                alertEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                const result = await AuthService.updateProfileImage(file);
+                
+                // Actualizar la imagen mostrada
+                const profileImage = document.getElementById('profileImage');
+                const navbarAvatar = document.getElementById('navbarUserAvatar');
+                const dropdownAvatar = document.getElementById('dropdownUserAvatar');
+                
+                // Añadir timestamp para forzar recarga de la imagen
+                const newImageUrl = `${result.profile_image_url}?t=${Date.now()}`;
+                
+                profileImage.src = newImageUrl;
+                if (navbarAvatar) navbarAvatar.src = newImageUrl;
+                if (dropdownAvatar) dropdownAvatar.src = newImageUrl;
+
+                alertEl.className = 'alert alert-success';
+                alertEl.textContent = 'Imagen actualizada correctamente';
+                alertEl.style.display = 'block';
+            } catch (error) {
+                alertEl.className = 'alert alert-danger';
+                alertEl.textContent = error.message;
+                alertEl.style.display = 'block';
+            }
+        }
+    });
+
+    document.getElementById('restoreImageBtn')?.addEventListener('click', async () => {
+        const alertEl = document.getElementById('imageAlert');
+        
+        try {
+            const result = await AuthService.updateProfile({ restore_image: true });
+            
+            // Actualizar la imagen mostrada con la imagen por defecto
+            const profileImage = document.getElementById('profileImage');
+            const navbarAvatar = document.getElementById('navbarUserAvatar');
+            const dropdownAvatar = document.getElementById('dropdownUserAvatar');
+            
+            const username = localStorage.getItem('username');
+            const defaultImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+            
+            profileImage.src = defaultImage;
+            if (navbarAvatar) navbarAvatar.src = defaultImage;
+            if (dropdownAvatar) dropdownAvatar.src = defaultImage;
+
+            alertEl.className = 'alert alert-success';
+            alertEl.textContent = 'Imagen restaurada correctamente';
+            alertEl.style.display = 'block';
+        } catch (error) {
+            alertEl.className = 'alert alert-danger';
+            alertEl.textContent = error.message;
+            alertEl.style.display = 'block';
+        }
+    });
 }
 
 async function loadUserData() {
@@ -383,19 +480,19 @@ async function loadUserData() {
         const userInfo = await AuthService.getUserProfile();
         console.log('UserInfo recibido:', userInfo);
         
-        // Usar fortytwo_image si existe, si no usar DiceBear
-        const profileImage = userInfo.fortytwo_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
-        console.log('Profile Image a usar:', profileImage);
+        const profileImage = userInfo.profile_image || userInfo.fortytwo_image || 
+                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
         
         document.getElementById('userInfo').innerHTML = `
             <div class="text-center">
                 <img src="${profileImage}" 
                      alt="avatar" 
-                     class="rounded-circle profile-avatar" 
-                     width="400"  /* Aumentado significativamente */
-                     height="400" /* Aumentado significativamente */
+                     class="rounded-circle profile-avatar mb-3" 
+                     width="128"
+                     height="128"
+                     id="profileImage"
                      onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
-                <h5 class="my-4">${userInfo.username}</h5>
+                <h5 class="mb-2">${userInfo.username}</h5>
                 <p class="text-muted mb-1">${userInfo.email}</p>
             </div>
         `;

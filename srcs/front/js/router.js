@@ -131,14 +131,22 @@ class Router {
                                     <div class="col-lg-8 text-center">
                                         <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
                                         <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                            <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                            </a>
-                                            <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                <i class="fas fa-user-plus me-2"></i>Registrarse
-                                            </a>
-                                        </div>
+                                        ${!isAuthenticated ? `
+                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
+                                                    <i class="fas fa-play me-2"></i>Empezar a Jugar
+                                                </a>
+                                                <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
+                                                    <i class="fas fa-user-plus me-2"></i>Registrarse
+                                                </a>
+                                            </div>
+                                        ` : `
+                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                <a href="/game" data-link class="btn btn-primary btn-lg px-4">
+                                                    <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                                </a>
+                                            </div>
+                                        `}
                                     </div>
                                 </div>
                             </div>
@@ -305,14 +313,22 @@ class Router {
                                             <div class="col-lg-8 text-center">
                                                 <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
                                                 <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                    <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                        <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                                    </a>
-                                                    <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                        <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                    </a>
-                                                </div>
+                                                ${!isAuthenticated ? `
+                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                        <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
+                                                            <i class="fas fa-play me-2"></i>Empezar a Jugar
+                                                        </a>
+                                                        <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
+                                                            <i class="fas fa-user-plus me-2"></i>Registrarse
+                                                        </a>
+                                                    </div>
+                                                ` : `
+                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                        <a href="/game" data-link class="btn btn-primary btn-lg px-4">
+                                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                                        </a>
+                                                    </div>
+                                                `}
                                             </div>
                                         </div>
                                     </div>
@@ -361,7 +377,7 @@ class Router {
                         try {
                             await AuthService.logout();
                             localStorage.removeItem('isAuthenticated');
-                            window.location.href = '/login';
+                            window.location.href = '/';  // Cambiado de '/login' a '/'
                         } catch (error) {
                             console.error('Error en logout:', error);
                         }

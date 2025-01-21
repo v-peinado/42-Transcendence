@@ -32,6 +32,14 @@ class AuthService {
                         message: data.message
                     };
                 }
+                // Manejar el caso de sesión activa
+                if (data.code === 'active_session') {
+                    return {
+                        success: false,
+                        activeSession: true,
+                        message: data.message
+                    };
+                }
                 const errorMessage = Array.isArray(data.message) 
                     ? data.message.join(', ') 
                     : data.message || 'Error en el login';
@@ -263,6 +271,34 @@ class AuthService {
             };
         } catch (error) {
             console.error('Error en updateProfile:', error);
+            throw error;
+        }
+    }
+
+    static async updateProfileImage(imageFile) {
+        try {
+            const formData = new FormData();
+            formData.append('profile_image', imageFile);
+
+            const response = await fetch(`${this.API_URL}/profile/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.getCSRFToken(),
+                    // No incluir Content-Type, fetch lo establecerá automáticamente con el boundary
+                },
+                body: formData,
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error actualizando imagen');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Error en updateProfileImage:', error);
             throw error;
         }
     }

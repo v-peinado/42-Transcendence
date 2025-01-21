@@ -143,8 +143,8 @@ export async function LoginView() {  // Hacer la función asíncrona
                                     
                                     <button type="button" class="w-100 btn btn-lg btn-dark mb-3" 
                                             onclick="handleFtAuth()">
-                                        <img src="/public/42_logo.svg" alt="42 Logo" class="me-2" style="height: 20px;">
-                                        Login con 42
+                                        <img src="/public/42_logo.png" alt="42 Logo" class="me-2" style="height: 40px;">
+                                        Login
                                     </button>
                                     
                                     <div class="text-center">
@@ -191,6 +191,43 @@ export async function LoginView() {  // Hacer la función asíncrona
         
         try {
             const result = await AuthService.login(username, password, remember);
+            
+            if (result.activeSession) {
+                alertDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        ${result.message}
+                        <div class="mt-3">
+                            <button class="btn btn-warning btn-sm" id="forceLogoutBtn">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión activa
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Añadir event listener para el botón de forzar logout
+                document.getElementById('forceLogoutBtn')?.addEventListener('click', async () => {
+                    try {
+                        await AuthService.logout();
+                        // Intentar login nuevamente
+                        const newResult = await AuthService.login(username, password, remember);
+                        if (newResult.success) {
+                            localStorage.setItem('isAuthenticated', 'true');
+                            localStorage.setItem('username', username);
+                            window.location.href = '/profile';
+                        }
+                    } catch (error) {
+                        alertDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                Error al cerrar la sesión anterior
+                            </div>
+                        `;
+                    }
+                });
+                return;
+            }
+
             if (result.success) {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
