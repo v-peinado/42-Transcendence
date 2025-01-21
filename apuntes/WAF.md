@@ -50,10 +50,3 @@
 	curl \
 		-H "X-Vault-Token: myroot" \
 		http://localhost:8200/v1/secret/data/test
-
-
-Notas Importantes
-	-El modo inmem significa que los datos se pierden al reiniciar
-	-El token myroot es solo para desarrollo
-	-Los puertos 8200/8201 deben estar accesibles
-	-Version 1.13.0 es estable para desarrollo

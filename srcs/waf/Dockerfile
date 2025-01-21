@@ -32,7 +32,7 @@ RUN mkdir -p \
     /tmp/ssl
 
 # Copiar archivos de configuración
-COPY waf/vault/config.hcl /etc/vault.d/
+COPY waf/vault/config.conf /etc/vault.d/config.hcl
 COPY waf/vault/init-vault.sh /usr/local/bin/
 COPY waf/custom-nginx.conf /etc/nginx/nginx.conf
 COPY ssl/generate-ssl.sh /usr/local/bin/
