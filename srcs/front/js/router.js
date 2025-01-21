@@ -96,10 +96,6 @@ class Router {
                                                 <button class="dropdown-item text-danger" id="logoutBtn">
                                                     <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
                                                 </button>
-                                            <li>
-                                                <button class="dropdown-item text-danger" id="logoutBtn">
-                                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                                </button>
                                             </li>
                                         </ul>
                                     </li>
@@ -274,10 +270,6 @@ class Router {
                                                         </a>
                                                     </li>
                                                     <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <button class="dropdown-item text-danger" id="logoutBtn">
-                                                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                                        </button>
                                                     <li>
                                                         <button class="dropdown-item text-danger" id="logoutBtn">
                                                             <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión

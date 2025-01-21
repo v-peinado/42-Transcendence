@@ -2,99 +2,151 @@ import AuthService from '../../services/AuthService.js';
 
 export function UserProfileView() {
     const app = document.getElementById('app');
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const username = localStorage.getItem('username');
     
-    // ...existing code until userInfo div...
-
-    // Modificar la parte del template donde está el userInfo para incluir la sección de imagen directamente
     app.innerHTML = `
-        <div class="profile-section">
+        <!-- Navbar simplificado para perfil -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" href="/" data-link>
+                    <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
+                        <rect x="10" y="40" width="10" height="20" fill="#fff">
+                            <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
+                        </rect>
+                        <circle cx="50" cy="50" r="5" fill="#fff">
+                            <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
+                            <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
+                        </circle>
+                        <rect x="80" y="40" width="10" height="20" fill="#fff">
+                            <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
+                        </rect>
+                    </svg>
+                    <span class="brand-text">Transcendence</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/game" data-link>
+                                <i class="fas fa-play me-1"></i>Jugar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/leaderboard" data-link>
+                                <i class="fas fa-trophy me-1"></i>Clasificación
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/chat" data-link>
+                                <i class="fas fa-comments me-1"></i>Chat
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link text-danger-hover" id="navLogoutBtn" href="#" style="cursor: pointer;">
+                                <i class="fas fa-sign-out-alt me-2"></i>Salir
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenedor principal con padding ajustado -->
+        <main class="profile-section">
             <div class="container py-4">
                 <div class="row g-3">
-                    <!-- Perfil Card Compacto -->
+                    <!-- Perfil Card Principal -->
                     <div class="col-lg-4">
-                        <div class="card profile-card h-100">
-                            <div class="card-body p-3">
-                                <div id="userInfo">
+                        <div class="card profile-card bg-dark text-light border-0 shadow h-100">
+                            <div class="card-body p-4">
+                                <div id="userInfo" class="text-center">
                                     <div class="placeholder-glow">
                                         <span class="placeholder col-6"></span>
                                     </div>
                                 </div>
                                 
-                                <!-- Sección de imagen de perfil -->
-                                <div class="text-center mt-3">
+                                <!-- Sección de imagen de perfil con nuevo estilo -->
+                                <div class="text-center mt-4">
                                     <input type="file" 
-                                           class="form-control" 
+                                           class="form-control bg-dark text-light" 
                                            id="imageInput" 
                                            accept="image/*" 
                                            style="display: none;">
-                                    <button class="btn btn-primary me-2" id="changeImageBtn">
-                                        <i class="fas fa-camera me-2"></i>Cambiar Imagen
-                                    </button>
-                                    <button class="btn btn-outline-secondary" id="restoreImageBtn">
-                                        <i class="fas fa-undo me-2"></i>Restaurar
-                                    </button>
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-primary" id="changeImageBtn">
+                                            <i class="fas fa-camera me-2"></i>Cambiar Imagen
+                                        </button>
+                                        <button class="btn btn-outline-light" id="restoreImageBtn">
+                                            <i class="fas fa-undo me-2"></i>Restaurar
+                                        </button>
+                                    </div>
                                     <div class="alert mt-3" id="imageAlert" style="display: none;"></div>
                                 </div>
                                 
-                                <!-- Stats Grid -->
-                                <div class="row g-2 mt-3 text-center">
+                                <!-- Stats con nuevo diseño -->
+                                <div class="row g-3 mt-4">
                                     <div class="col-4">
-                                        <div class="stats-badge">
-                                            <i class="fas fa-trophy text-warning"></i>
-                                            <div class="mt-1">25</div>
-                                            <small>Victorias</small>
+                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
+                                            <i class="fas fa-trophy text-warning fs-4 mb-2"></i>
+                                            <h3 class="fs-4 mb-0">25</h3>
+                                            <small class="text-muted">Victorias</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="stats-badge">
-                                            <i class="fas fa-gamepad text-primary"></i>
-                                            <div class="mt-1">42</div>
-                                            <small>Partidas</small>
+                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
+                                            <i class="fas fa-gamepad text-primary fs-4 mb-2"></i>
+                                            <h3 class="fs-4 mb-0">42</h3>
+                                            <small class="text-muted">Partidas</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="stats-badge">
-                                            <i class="fas fa-star text-info"></i>
-                                            <div class="mt-1">8</div>
-                                            <small>Nivel</small>
+                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
+                                            <i class="fas fa-star text-info fs-4 mb-2"></i>
+                                            <h3 class="fs-4 mb-0">8</h3>
+                                            <small class="text-muted">Nivel</small>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Action Buttons -->
-                                <div class="d-flex gap-2 mt-3">
-                                    <button class="btn btn-primary flex-grow-1">
+                                <!-- Botones de acción con nuevo estilo -->
+                                <div class="d-grid gap-2 mt-4">
+                                    <a href="/game" class="btn btn-lg btn-primary">
                                         <i class="fas fa-gamepad me-2"></i>Jugar
-                                    </button>
-                                    <button id="editProfileBtn" class="btn btn-outline-light">
-                                        <i class="fas fa-cog"></i>
-                                    </button>
-                                    <button id="logoutBtn" class="btn btn-outline-danger">
-                                        <i class="fas fa-sign-out-alt"></i>
+                                    </a>
+                                    <button id="editProfileBtn" class="btn btn-outline-light w-100">
+                                        <i class="fas fa-cog me-2"></i>Configuración
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Info y Historial -->
+                    <!-- Panel derecho con información y estadísticas -->
                     <div class="col-lg-8">
                         <div class="row g-3">
-                            <!-- Info Card -->
+                            <!-- Info Card con nuevo estilo -->
                             <div class="col-12">
-                                <div class="card profile-card">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div>
-                                                <small class="text-muted">Username</small>
-                                                <div id="profileUsername">Cargando...</div>
+                                <div class="card bg-dark text-light border-0 shadow">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">
+                                            <i class="fas fa-user me-2"></i>Información del Perfil
+                                        </h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <small class="text-muted d-block">Username</small>
+                                                <div id="profileUsername" class="fs-5">Cargando...</div>
                                             </div>
-                                            <div>
-                                                <small class="text-muted">Email</small>
-                                                <div id="profileEmail">Cargando...</div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted d-block">Email</small>
+                                                <div id="profileEmail" class="fs-5">Cargando...</div>
                                             </div>
-                                            <div>
-                                                <small class="text-muted">Estado</small>
+                                            <div class="col-md-4">
+                                                <small class="text-muted d-block">Estado</small>
                                                 <div id="profileStatus">
                                                     <span class="badge bg-secondary">Cargando...</span>
                                                 </div>
@@ -104,15 +156,15 @@ export function UserProfileView() {
                                 </div>
                             </div>
 
-                            <!-- Match History Card -->
+                            <!-- Historial de Partidas con nuevo estilo -->
                             <div class="col-12">
-                                <div class="card match-history">
-                                    <div class="card-body p-3">
-                                        <h6 class="text-light mb-3">
-                                            <i class="fas fa-history me-2"></i>Últimas Partidas
-                                        </h6>
-                                        <div class="table-responsive" style="max-height: 200px;">
-                                            <table class="table table-sm table-hover mb-0">
+                                <div class="card bg-dark text-light border-0 shadow">
+                                    <div class="card-body p-4">
+                                        <h5 class="card-title mb-4">
+                                            <i class="fas fa-history me-2"></i>Historial de Partidas
+                                        </h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-hover">
                                                 <thead>
                                                     <tr>
                                                         <th>Fecha</th>
@@ -124,13 +176,21 @@ export function UserProfileView() {
                                                 <tbody>
                                                     <tr>
                                                         <td>2024-01-20</td>
-                                                        <td>Player123</td>
+                                                        <td>
+                                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Player123" 
+                                                                 alt="Avatar" class="rounded-circle me-2" width="24" height="24">
+                                                            Player123
+                                                        </td>
                                                         <td><span class="badge bg-success">Victoria</span></td>
                                                         <td>10-8</td>
                                                     </tr>
                                                     <tr>
                                                         <td>2024-01-19</td>
-                                                        <td>GameMaster</td>
+                                                        <td>
+                                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=GameMaster" 
+                                                                 alt="Avatar" class="rounded-circle me-2" width="24" height="24">
+                                                            GameMaster
+                                                        </td>
                                                         <td><span class="badge bg-danger">Derrota</span></td>
                                                         <td>5-10</td>
                                                     </tr>
@@ -144,7 +204,7 @@ export function UserProfileView() {
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     `;
 
     // Añadir el modal al body
@@ -251,22 +311,21 @@ export function UserProfileView() {
 
     loadUserData();
     setupProfileEvents();
-}
 
-function setupProfileEvents() {
-    // Modificar el event listener para logout
-    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    // Añadir event listener para el botón de logout del navbar
+    document.getElementById('navLogoutBtn')?.addEventListener('click', async () => {
         try {
             await AuthService.logout();
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('username');
-            window.location.href = '/';  // Cambiado de '/login' a '/'
+            window.location.href = '/';
         } catch (error) {
             console.error('Error en logout:', error);
-            alert('Error al cerrar sesión');
         }
     });
+}
 
+function setupProfileEvents() {
     // Event listener para el botón de editar
     document.getElementById('editProfileBtn')?.addEventListener('click', () => {
         const modalElement = document.getElementById('editProfileModal');

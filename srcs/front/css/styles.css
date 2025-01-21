@@ -909,3 +909,40 @@ body #app .hero-section {
 .rounded-circle {
     aspect-ratio: 1;
 }
+
+/* Variables globales */
+:root {
+    --navbar-height: 56px;
+}
+
+/* Ajustes para el navbar fijo */
+.hero-section {
+    padding-top: calc(var(--navbar-height) + 20px);
+}
+
+main {
+    padding-top: calc(var(--navbar-height) + 20px);
+}
+
+/* Estilos específicos para el perfil */
+.profile-section {
+    padding-top: 96px !important; /* Más espacio que el navbar */
+    min-height: calc(100vh - 76px);
+    position: relative;
+    z-index: 1;
+}
+
+.profile-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+/* Asegurar que el navbar quede por encima */
+.navbar.fixed-top {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+    height: 76px;
+}
