@@ -149,7 +149,7 @@ class ProfileService:
         if not user.is_authenticated:
             raise ValidationError('Usuario no autenticado')
             
-        return {
+        data = {
             'id': user.id,
             'username': user.username,
             'email': user.email,
@@ -157,7 +157,11 @@ class ProfileService:
             'email_verified': user.email_verified,
             'date_joined': user.date_joined.isoformat(),
             'last_login': user.last_login.isoformat() if user.last_login else None,
+            'is_fortytwo_user': user.is_fortytwo_user,
+            'fortytwo_image': user.fortytwo_image  # Asegurémonos de que este campo existe
         }
+        print("DEBUG - Profile data:", data)  # Para ver qué datos nos llegan
+        return data
 
     @staticmethod
     def delete_user_account(user, password=None):

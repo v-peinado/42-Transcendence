@@ -219,8 +219,9 @@ class AuthService {
             }
 
             const data = await response.json();
-            console.log('Datos del perfil recibidos:', data);  // Debug
-            return data;
+            console.log('Datos brutos del perfil:', data); // Debug log
+
+            return data;  // Devolver los datos tal cual vienen del backend
         } catch (error) {
             console.error('Error en getUserProfile:', error);
             throw new Error('No se pudo cargar el perfil de usuario');

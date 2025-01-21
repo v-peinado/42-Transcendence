@@ -839,3 +839,73 @@ body #app .hero-section {
     border-color: rgba(255, 255, 255, 0.4);
     transform: scale(1.05);
 }
+
+/* Estilos para las imágenes de perfil */
+.profile-avatar, 
+#navbarUserAvatar, 
+#dropdownUserAvatar {
+    object-fit: cover;
+    object-position: center;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tamaños específicos para el navbar */
+#navbarUserAvatar {
+    width: 32px;
+    height: 32px;
+}
+
+#dropdownUserAvatar {
+    width: 48px;
+    height: 48px;
+}
+
+/* Tamaño mucho más grande para la imagen principal del perfil */
+.profile-card .profile-avatar {
+    width: 300px;  /* Aumentado a 300px */
+    height: 300px; /* Aumentado a 300px */
+    margin: auto;
+    border: 4px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+/* Efecto hover opcional para la imagen del perfil */
+.profile-card .profile-avatar:hover {
+    transform: scale(1.02);
+}
+
+/* Estilos para las imágenes de perfil */
+.profile-avatar, 
+#navbarUserAvatar, 
+#dropdownUserAvatar {
+    object-fit: cover;
+    object-position: center;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tamaños específicos para el navbar */
+#navbarUserAvatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;  /* Previene deformación */
+}
+
+/* Tamaños específicos para el dropdown */
+#dropdownUserAvatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;  /* Previene deformación */
+}
+
+/* Tamaño específico para la imagen principal del perfil */
+.profile-card .profile-avatar {
+    width: 100px;
+    height: 100px;
+    margin: auto;
+}
+
+/* Asegurar que todas las imágenes redondas mantengan su forma */
+.rounded-circle {
+    aspect-ratio: 1;
+}

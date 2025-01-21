@@ -8,10 +8,11 @@ import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva i
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
+import AuthService from '/js/services/AuthService.js';
 
 class Router {
     routes = {
-        '/': () => {
+        '/': async () => {  // Hacer la función asíncrona
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             const username = localStorage.getItem('username');
             const app = document.getElementById('app');
@@ -62,13 +63,13 @@ class Router {
                                         <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
                                            data-bs-toggle="dropdown" aria-expanded="false">
                                             <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
-                                                 alt="Avatar" class="rounded-circle" width="32" height="32">
+                                                 alt="Avatar" class="rounded-circle" width="32" height="32" id="navbarUserAvatar">
                                             <span>${username}</span>
                                         </a>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
                                                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
-                                                     alt="Avatar" class="rounded-circle me-2" width="48" height="48">
+                                                     alt="Avatar" class="rounded-circle me-2" width="48" height="48" id="dropdownUserAvatar">
                                                 <div class="text-truncate">
                                                     <div class="fw-bold">${username}</div>
                                                     <small class="text-muted">Ver perfil</small>
@@ -183,15 +184,191 @@ class Router {
 
             // Agregar evento de logout si el usuario está autenticado
             if (isAuthenticated) {
-                document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-                    try {
-                        await AuthService.logout();
-                        localStorage.removeItem('isAuthenticated');
-                        window.location.href = '/login';
-                    } catch (error) {
-                        console.error('Error en logout:', error);
-                    }
-                });
+                try {
+                    // Obtener perfil antes de renderizar
+                    const userInfo = await AuthService.getUserProfile();
+                    const profileImage = userInfo.fortytwo_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+                    
+                    // Actualizar la UI con la imagen correcta
+                    app.innerHTML = `
+                        <!-- Navbar con nuevo logo -->
+                        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+                            <div class="container">
+                                <a class="navbar-brand d-flex align-items-center" href="/" data-link>
+                                    <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
+                                        <rect x="10" y="40" width="10" height="20" fill="#fff">
+                                            <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <circle cx="50" cy="50" r="5" fill="#fff">
+                                            <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
+                                            <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
+                                        </circle>
+                                        <rect x="80" y="40" width="10" height="20" fill="#fff">
+                                            <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
+                                        </rect>
+                                    </svg>
+                                    <span class="brand-text">Transcendence</span>
+                                </a>
+                                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                                    <span class="navbar-toggler-icon"></span>
+                                </button>
+                                <div class="collapse navbar-collapse" id="navbarNav">
+                                    <ul class="navbar-nav me-auto">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="/game" data-link>
+                                                <i class="fas fa-play me-1"></i>Jugar
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="/leaderboard" data-link>
+                                                <i class="fas fa-trophy me-1"></i>Clasificación
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <!-- Menú para usuarios autenticados -->
+                                    ${isAuthenticated ? `
+                                        <ul class="navbar-nav">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/chat" data-link>
+                                                    <i class="fas fa-comments me-1"></i>Chat
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
+                                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <img src="${profileImage}" 
+                                                         alt="Avatar" class="rounded-circle" width="32" height="32" id="navbarUserAvatar">
+                                                    <span>${username}</span>
+                                                </a>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
+                                                        <img src="${profileImage}" 
+                                                             alt="Avatar" class="rounded-circle me-2" width="48" height="48" id="dropdownUserAvatar">
+                                                        <div class="text-truncate">
+                                                            <div class="fw-bold">${username}</div>
+                                                            <small class="text-muted">Ver perfil</small>
+                                                        </div>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="/profile" data-link>
+                                                            <i class="fas fa-user me-2"></i>Perfil
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="/settings" data-link>
+                                                            <i class="fas fa-cog me-2"></i>Configuración
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="/gdpr-settings" data-link>
+                                                            <i class="fas fa-shield-alt me-2"></i>Privacidad
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <button class="dropdown-item text-danger" id="logoutBtn">
+                                                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                                        </button>
+                                                    <li>
+                                                        <button class="dropdown-item text-danger" id="logoutBtn">
+                                                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                                        </button>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                    ` : `
+                                        <ul class="navbar-nav">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/login" data-link>
+                                                    <i class="fas fa-sign-in-alt me-1"></i>Login
+                                                </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/register" data-link>
+                                                    <i class="fas fa-user-plus me-1"></i>Registro
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    `}
+                                </div>
+                            </div>
+                        </nav>
+
+                        <!-- Hero Section con nueva estructura -->
+                        <main>
+                            <div class="hero-section">
+                                <div class="hero-content">
+                                    <div class="container">
+                                        <div class="row justify-content-center">
+                                            <div class="col-lg-8 text-center">
+                                                <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
+                                                <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
+                                                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                    <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
+                                                        <i class="fas fa-play me-2"></i>Empezar a Jugar
+                                                    </a>
+                                                    <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
+                                                        <i class="fas fa-user-plus me-2"></i>Registrarse
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Features Section con nuevo fondo -->
+                            <div class="features-section">
+                                <div class="container">
+                                    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+                                        <div class="col d-flex align-items-start">
+                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                <i class="fas fa-gamepad"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="fs-2">Juega Online</h3>
+                                                <p>Compite contra otros jugadores en tiempo real.</p>
+                                            </div>
+                                        </div>
+                                        <div class="col d-flex align-items-start">
+                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                <i class="fas fa-trophy"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="fs-2">Clasificación</h3>
+                                                <p>Compite por los primeros puestos del ranking.</p>
+                                            </div>
+                                        </div>
+                                        <div class="col d-flex align-items-start">
+                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="fs-2">Comunidad</h3>
+                                                <p>Únete a una comunidad activa de jugadores.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    `;
+
+                    // Configurar logout después
+                    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+                        try {
+                            await AuthService.logout();
+                            localStorage.removeItem('isAuthenticated');
+                            window.location.href = '/login';
+                        } catch (error) {
+                            console.error('Error en logout:', error);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                }
             }
         },
         '/login': LoginView,

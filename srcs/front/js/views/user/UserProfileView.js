@@ -11,9 +11,7 @@ export function UserProfileView() {
                         <div class="card profile-card h-100">
                             <div class="card-body p-3">
                                 <div class="text-center">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=default" 
-                                         alt="avatar" class="rounded-circle profile-avatar" width="100">
-                                    <div class="mt-2" id="userInfo">
+                                    <div id="userInfo">
                                         <div class="placeholder-glow">
                                             <span class="placeholder col-6"></span>
                                         </div>
@@ -383,11 +381,22 @@ function setupProfileEvents() {
 async function loadUserData() {
     try {
         const userInfo = await AuthService.getUserProfile();
+        console.log('UserInfo recibido:', userInfo);
         
-        // Actualizar información del usuario
+        // Usar fortytwo_image si existe, si no usar DiceBear
+        const profileImage = userInfo.fortytwo_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+        console.log('Profile Image a usar:', profileImage);
+        
         document.getElementById('userInfo').innerHTML = `
-            <h5 class="my-3">${userInfo.username}</h5>
-            <p class="text-muted mb-1">${userInfo.email}</p>
+            <div class="text-center">
+                <img src="${profileImage}" 
+                     alt="avatar" 
+                     class="rounded-circle profile-avatar" 
+                     width="300"  /* Actualizado a 300px */
+                     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
+                <h5 class="my-4">${userInfo.username}</h5>
+                <p class="text-muted mb-1">${userInfo.email}</p>
+            </div>
         `;
 
         // Si es usuario de 42, ocultar campo de contraseña
