@@ -82,7 +82,6 @@ services:
       - waf_logs:/var/log/nginx
     env_file:
       - .env
-    command: sh -c "rm -f /tmp/nginx.pid && /usr/local/bin/init-vault.sh" # borra el pid de nginx (se queda colgado)
     depends_on:
       - nginx
       - web
