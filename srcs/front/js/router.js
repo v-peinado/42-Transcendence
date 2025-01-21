@@ -11,6 +11,25 @@ import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
 import AuthService from '/js/services/AuthService.js';
 
 class Router {
+    constructor() {
+        // Limpiar el estado al iniciar la aplicación
+        if (window.location.pathname === '/') {
+            localStorage.clear();
+            sessionStorage.clear();
+        }
+        
+        this.currentPath = window.location.pathname;
+        this.handleInitialRoute();  // Manejar la ruta inicial explícitamente
+        
+        window.addEventListener('popstate', () => this.handleRoute());
+        document.addEventListener('click', e => {
+            if (e.target.matches('[data-link]')) {
+                e.preventDefault();
+                this.navigateTo(e.target.href);
+            }
+        });
+    }
+
     routes = {
         '/': async () => {  // Hacer la función asíncrona
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -402,19 +421,6 @@ class Router {
             `;
         }
     };
-
-    constructor() {
-        this.currentPath = window.location.pathname;
-        this.handleInitialRoute();  // Manejar la ruta inicial explícitamente
-        
-        window.addEventListener('popstate', () => this.handleRoute());
-        document.addEventListener('click', e => {
-            if (e.target.matches('[data-link]')) {
-                e.preventDefault();
-                this.navigateTo(e.target.href);
-            }
-        });
-    }
 
     handleInitialRoute() {
         const path = window.location.pathname + window.location.search;

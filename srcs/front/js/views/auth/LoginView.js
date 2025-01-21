@@ -1,6 +1,10 @@
 import AuthService from '../../services/AuthService.js';
 
 export async function LoginView() {  // Hacer la función asíncrona
+    // Limpiar cualquier estado anterior al cargar la vista de login
+    localStorage.clear();
+    sessionStorage.clear();
+    
     // Obtener el elemento app primero
     const app = document.getElementById('app');
     
