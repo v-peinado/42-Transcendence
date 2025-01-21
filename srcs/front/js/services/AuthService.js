@@ -469,31 +469,37 @@ class AuthService {
     static async handle42Callback(code) {
         try {
             console.log('AuthService: Enviando código a backend:', code);
+            
+            // Simplificar la solicitud al máximo
             const response = await fetch(`${this.API_URL}/authentication/42/api/callback/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code }), // Solo enviar el código sin redirect_uri
                 credentials: 'include'
             });
 
+            // Imprimir la respuesta completa para debug
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
             const data = await response.json();
             console.log('AuthService: Respuesta del servidor:', data);
             
-            if (!response.ok) {
-                throw new Error(data.message || 'Error en autenticación con 42');
-            }
-
-            if (data.status === 'success') {
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', data.username);
+            if (!response.ok || data.status === 'error') {
+                return {
+                    status: 'error',
+                    needsEmailVerification: true,
+                    message: data.message || 'Error en la autenticación'
+                };
             }
 
             return data;
         } catch (error) {
-            console.error('AuthService: Error en callback:', error);
+            console.error('AuthService: Error detallado:', error);
             throw error;
         }
     }

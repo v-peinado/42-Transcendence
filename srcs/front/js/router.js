@@ -232,16 +232,20 @@ class Router {
     }
 
     handleInitialRoute() {
-        const path = window.location.pathname + window.location.search;  // Incluir query params
+        const path = window.location.pathname + window.location.search;
         console.log('Ruta inicial completa:', path);  // Debug
 
-        // Manejar login con código de 42
-        if (path.startsWith('/login') && path.includes('code=')) {
-            LoginView();  // Como LoginView es async, necesitamos manejarlo correctamente
+        // Manejar código de 42 primero
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+
+        if (path.startsWith('/login') && code) {
+            // Render inmediato de LoginView
+            LoginView();
             return;
         }
 
-        // Verificar email en la carga inicial también
+        // Manejar verificación de email
         if (path.includes('/verify-email/')) {
             const parts = path.split('/verify-email/')[1].split('/');
             if (parts.length >= 2) {

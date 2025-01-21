@@ -1,34 +1,97 @@
 import AuthService from '../../services/AuthService.js';
 
 export async function LoginView() {  // Hacer la función asíncrona
+    // Obtener el elemento app primero
+    const app = document.getElementById('app');
+    
     // Comprobar si hay código de 42 en la URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
     if (code) {
         console.log('Código 42 detectado:', code);
+        // Mostrar pantalla de carga inmediatamente
+        app.innerHTML = `
+            <div class="hero-section">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6 col-lg-5">
+                            <div class="card login-card">
+                                <div class="card-body p-5 text-center">
+                                    <div class="spinner-border text-primary mb-3"></div>
+                                    <h4>Verificando autenticación...</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
         try {
             const result = await AuthService.handle42Callback(code);
+            console.log('Resultado callback 42:', result);
+
             if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
                 window.location.href = '/profile';
-                return; // Importante: detener ejecución si el login es exitoso
-            } else if (result.message.includes('verifica tu email')) {
-                const alertDiv = document.getElementById('loginAlert');
-                alertDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        <p>${result.message}</p>
-                        <p>Por favor, revisa tu email para activar tu cuenta.</p>
-                    </div>
-                `;
+                return;
             }
+
+            // Si hay error o necesita verificación, mostrar el mensaje
+            app.innerHTML = `
+                <div class="hero-section">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 col-lg-5">
+                                <div class="card login-card">
+                                    <div class="card-body p-5">
+                                        <div class="text-center mb-4">
+                                            <h2 class="fw-bold">¡Cuenta Creada!</h2>
+                                        </div>
+                                        <div class="alert alert-success">
+                                            <h5 class="mb-3">¡Gracias por registrarte!</h5>
+                                            <p class="mb-0">Te hemos enviado un email con las instrucciones para activar tu cuenta.</p>
+                                        </div>
+                                        <div class="text-center mt-4">
+                                            <a href="/login" data-link class="btn btn-primary">Volver al Login</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
         } catch (error) {
             console.error('Error en callback de 42:', error);
+            app.innerHTML = `
+                <div class="hero-section">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 col-lg-5">
+                                <div class="card login-card">
+                                    <div class="card-body p-5">
+                                        <div class="alert alert-danger">
+                                            <h4>Error de Autenticación</h4>
+                                            <p>${error.message}</p>
+                                            <div class="mt-3">
+                                                <a href="/login" class="btn btn-primary">Volver a intentar</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
         }
     }
 
-    const app = document.getElementById('app');
     app.innerHTML = `
         <div class="hero-section">
             <div class="container">
