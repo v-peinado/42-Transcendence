@@ -1,9 +1,21 @@
 import AuthService from '../../services/AuthService.js';
 
-export async function LoginView() {  // Hacer la función asíncrona
+export async function LoginView() {
+    // Verificar si el usuario ya está autenticado
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    if (isAuthenticated) {
+        // Reemplazar la entrada actual del historial con /profile
+        window.history.replaceState(null, '', '/profile');
+        // Redirigir al perfil
+        window.location.href = '/profile';
+        return;
+    }
+
     // Limpiar cualquier estado anterior al cargar la vista de login
-    localStorage.clear();
-    sessionStorage.clear();
+    if (!isAuthenticated) {
+        localStorage.clear();
+        sessionStorage.clear();
+    }
     
     // Obtener el elemento app primero
     const app = document.getElementById('app');
@@ -195,64 +207,19 @@ export async function LoginView() {  // Hacer la función asíncrona
         
         try {
             const result = await AuthService.login(username, password, remember);
-            
-            if (result.activeSession) {
-                alertDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${result.message}
-                        <div class="mt-3">
-                            <button class="btn btn-warning btn-sm" id="forceLogoutBtn">
-                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión activa
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                // Añadir event listener para el botón de forzar logout
-                document.getElementById('forceLogoutBtn')?.addEventListener('click', async () => {
-                    try {
-                        await AuthService.logout();
-                        // Intentar login nuevamente
-                        const newResult = await AuthService.login(username, password, remember);
-                        if (newResult.success) {
-                            localStorage.setItem('isAuthenticated', 'true');
-                            localStorage.setItem('username', username);
-                            window.location.href = '/profile';
-                        }
-                    } catch (error) {
-                        alertDiv.innerHTML = `
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                Error al cerrar la sesión anterior
-                            </div>
-                        `;
-                    }
-                });
-                return;
-            }
-
             if (result.success) {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
-                window.location.href = '/profile';  // Cambiar a perfil en lugar de /user
+                // Reemplazar la entrada actual del historial
+                window.history.replaceState(null, '', '/profile');
+                window.location.href = '/profile';
             } else if (result.needsEmailVerification) {
                 alertDiv.innerHTML = `
                     <div class="alert alert-warning">
                         <p>${result.message}</p>
                         <div class="mt-3">
                             <p>Por favor, revisa tu email para activar tu cuenta.</p>
-                            <p class="text-muted small">¿No recibiste el email? 
-                                <a href="/resend-verification" data-link>Reenviar email de verificación</a>
-                            </p>
-                            <a href="/" data-link class="btn btn-primary mt-2">Volver al inicio</a>
                         </div>
-                    </div>
-                `;
-            } else if (result.pending2FA) {
-                alertDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        ${result.message}
                     </div>
                 `;
             }
@@ -260,12 +227,11 @@ export async function LoginView() {  // Hacer la función asíncrona
             alertDiv.innerHTML = `
                 <div class="alert alert-danger">
                     <p>${error.message}</p>
-                    <div class="mt-3">
-                        <a href="/register" data-link class="btn btn-outline-primary">Registrarse</a>
-                        <a href="/" data-link class="btn btn-secondary">Volver al inicio</a>
-                    </div>
                 </div>
             `;
+            setTimeout(() => {
+                alertDiv.innerHTML = '';
+            }, 3000);
         }
     });
 

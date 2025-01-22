@@ -15,7 +15,8 @@ class AuthService {
                 body: JSON.stringify({ 
                     username: username, 
                     password: password, 
-                    remember: remember 
+                    remember: remember,
+                    force_login: true  // Añadido para forzar el cierre de sesiones previas
                 }),
                 credentials: 'include'  // Importante para las cookies
             });
@@ -24,6 +25,10 @@ class AuthService {
             console.log('Respuesta del servidor:', data);
             
             if (!response.ok) {
+                if (response.status === 403) {
+                    await this.logout(); // Intentar cerrar cualquier sesión existente
+                    return this.login(username, password, remember); // Reintentar el login
+                }
                 // Manejar específicamente el caso de email no verificado
                 if (data.message && data.message.includes('verifica tu email')) {
                     return {
@@ -47,9 +52,14 @@ class AuthService {
                 throw new Error(errorMessage);
             }
 
+            if (response.ok) {
+                // Reemplazar la entrada actual del historial
+                window.history.replaceState(null, '', '/profile');
+            }
+
             return {
                 success: data.status === 'success',
-                redirectUrl: data.redirect_url || '/',
+                redirectUrl: data.redirect_url || '/profile',
                 pending2FA: data.status === 'pending_2fa',
                 message: data.message
             };
