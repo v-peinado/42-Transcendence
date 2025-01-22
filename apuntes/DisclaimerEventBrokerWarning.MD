@@ -37,7 +37,7 @@ Success! Data written to: secret/django/email
 
 ## Decisión de Diseño
 
-Este proyecto se centra en la seguridad básica y la gestión de secretos. Incluir el event broker añadiría una complejidad innecesaria sin aportar beneficios significativos para los requisitos del proyecto.
+Este módulo se centra en la seguridad básica con WAF y la gestión de secretos. Incluir el event broker añadiría una complejidad innecesaria sin aportar beneficios significativos para los requisitos del proyecto.
 
 Esta decisión está alineada con los requisitos del módulo de Cybersecurity del subject, que solo especifica "WAF/ModSecurity with Hardened Configuration and HashiCorp Vault for Secrets Management" sin mencionar requisitos específicos sobre event brokers.
 ```
