@@ -144,6 +144,11 @@ configure_vault() {
 	path "secret/metadata/nginx/*" {
 		capabilities = ["list"]
 	}
+	
+	# Gestión de tokens
+	path "auth/token/*-self" {
+		capabilities = ["read", "update"]
+}
 	EOF
 }
 
