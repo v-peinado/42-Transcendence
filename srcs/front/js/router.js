@@ -12,15 +12,11 @@ import AuthService from '/js/services/AuthService.js';
 
 class Router {
     constructor() {
-        // Limpiar el estado al iniciar la aplicación
-        if (window.location.pathname === '/') {
-            localStorage.clear();
-            sessionStorage.clear();
-        }
-        
+        // Eliminar la limpieza del localStorage del constructor
         this.currentPath = window.location.pathname;
-        this.handleInitialRoute();  // Manejar la ruta inicial explícitamente
+        this.handleInitialRoute();
         
+        // Añadir manejo de navegación
         window.addEventListener('popstate', () => this.handleRoute());
         document.addEventListener('click', e => {
             if (e.target.matches('[data-link]')) {
@@ -34,6 +30,13 @@ class Router {
         '/': async () => {  // Hacer la función asíncrona
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             const username = localStorage.getItem('username');
+            
+            // Si el usuario no está autenticado y viene de otra página, limpiar el estado
+            if (!isAuthenticated) {
+                localStorage.clear();
+                sessionStorage.clear();
+            }
+
             const app = document.getElementById('app');
             app.innerHTML = `
                 <!-- Navbar con nuevo logo -->
@@ -144,21 +147,22 @@ class Router {
                             <div class="container">
                                 <div class="row justify-content-center">
                                     <div class="col-lg-8 text-center">
-                                        <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
-                                        <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                        ${!isAuthenticated ? `
+                                        ${isAuthenticated ? `
+                                            <h1 class="display-4 fw-bold mb-4">¡Hola, ${username}!</h1>
+                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                                                <a href="/game" data-link class="btn btn-primary btn-lg px-4">
+                                                    <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                                </a>
+                                            </div>
+                                        ` : `
+                                            <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
+                                            <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
                                             <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
                                                 <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
                                                     <i class="fas fa-play me-2"></i>Empezar a Jugar
                                                 </a>
                                                 <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
                                                     <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                </a>
-                                            </div>
-                                        ` : `
-                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                <a href="/game" data-link class="btn btn-primary btn-lg px-4">
-                                                    <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
                                                 </a>
                                             </div>
                                         `}
@@ -168,49 +172,59 @@ class Router {
                         </div>
                     </div>
 
-                    <!-- Features Section con nuevo fondo -->
-                    <div class="features-section">
-                        <div class="container">
-                            <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-gamepad"></i>
+                    ${!isAuthenticated ? `
+                        <!-- Features Section con nuevo fondo -->
+                        <div class="features-section">
+                            <div class="container">
+                                <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Juega Online</h3>
+                                            <p>Compite contra otros jugadores en tiempo real.</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 class="fs-2">Juega Online</h3>
-                                        <p>Compite contra otros jugadores en tiempo real.</p>
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Clasificación</h3>
+                                            <p>Compite por los primeros puestos del ranking.</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Clasificación</h3>
-                                        <p>Compite por los primeros puestos del ranking.</p>
-                                    </div>
-                                </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Comunidad</h3>
-                                        <p>Únete a una comunidad activa de jugadores.</p>
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Comunidad</h3>
+                                            <p>Únete a una comunidad activa de jugadores.</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ` : ''}
                 </main>
             `;
 
-            // Agregar evento de logout si el usuario está autenticado
+            // Modificar esta sección para solo obtener el perfil si el usuario está autenticado
             if (isAuthenticated) {
                 try {
-                    // Obtener perfil antes de renderizar
                     const userInfo = await AuthService.getUserProfile();
-                    const profileImage = userInfo.fortytwo_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+                    if (!userInfo) {
+                        // Si no se puede obtener el perfil, hacer logout
+                        await AuthService.logout();
+                        localStorage.clear();
+                        window.location.href = '/';
+                        return;
+                    }
+                    
+                    const profileImage = userInfo.fortytwo_image || 
+                                       `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
                     
                     // Actualizar la UI con la imagen correcta
                     app.innerHTML = `
@@ -322,21 +336,22 @@ class Router {
                                     <div class="container">
                                         <div class="row justify-content-center">
                                             <div class="col-lg-8 text-center">
-                                                <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
-                                                <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                                ${!isAuthenticated ? `
+                                                ${isAuthenticated ? `
+                                                    <h1 class="display-4 fw-bold mb-4">¡Hola, ${username}!</h1>
+                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                                                        <a href="/game" data-link class="btn btn-primary btn-lg px-4">
+                                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                                        </a>
+                                                    </div>
+                                                ` : `
+                                                    <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
+                                                    <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
                                                     <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
                                                         <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
                                                             <i class="fas fa-play me-2"></i>Empezar a Jugar
                                                         </a>
                                                         <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
                                                             <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                        </a>
-                                                    </div>
-                                                ` : `
-                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                        <a href="/game" data-link class="btn btn-primary btn-lg px-4">
-                                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
                                                         </a>
                                                     </div>
                                                 `}
@@ -346,40 +361,42 @@ class Router {
                                 </div>
                             </div>
 
-                            <!-- Features Section con nuevo fondo -->
-                            <div class="features-section">
-                                <div class="container">
-                                    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-gamepad"></i>
+                            ${!isAuthenticated ? `
+                                <!-- Features Section con nuevo fondo -->
+                                <div class="features-section">
+                                    <div class="container">
+                                        <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+                                            <div class="col d-flex align-items-start">
+                                                <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                    <i class="fas fa-gamepad"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="fs-2">Juega Online</h3>
+                                                    <p>Compite contra otros jugadores en tiempo real.</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 class="fs-2">Juega Online</h3>
-                                                <p>Compite contra otros jugadores en tiempo real.</p>
+                                            <div class="col d-flex align-items-start">
+                                                <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                    <i class="fas fa-trophy"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="fs-2">Clasificación</h3>
+                                                    <p>Compite por los primeros puestos del ranking.</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-trophy"></i>
-                                            </div>
-                                            <div>
-                                                <h3 class="fs-2">Clasificación</h3>
-                                                <p>Compite por los primeros puestos del ranking.</p>
-                                            </div>
-                                        </div>
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-users"></i>
-                                            </div>
-                                            <div>
-                                                <h3 class="fs-2">Comunidad</h3>
-                                                <p>Únete a una comunidad activa de jugadores.</p>
+                                            <div class="col d-flex align-items-start">
+                                                <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                                    <i class="fas fa-users"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 class="fs-2">Comunidad</h3>
+                                                    <p>Únete a una comunidad activa de jugadores.</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            ` : ''}
                         </main>
                     `;
 
@@ -395,6 +412,10 @@ class Router {
                     });
                 } catch (error) {
                     console.error('Error loading user profile:', error);
+                    // En caso de error, hacer logout
+                    await AuthService.logout();
+                    localStorage.clear();
+                    window.location.href = '/';
                 }
             }
         },
@@ -540,5 +561,7 @@ class Router {
     }
 }
 
+
 export default Router;
+
 
