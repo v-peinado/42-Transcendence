@@ -4,7 +4,7 @@ FROM owasp/modsecurity-crs:nginx
 # Configuración de la imagen
 USER root
 
-ARG VAULT_VERSION=1.13.0
+ARG VAULT_VERSION=1.15.2
 
 # Instalar dependencias
 RUN apt-get update && \

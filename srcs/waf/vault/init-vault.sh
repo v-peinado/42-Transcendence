@@ -119,32 +119,32 @@ configure_vault() {
 
     # Habilitar el motor KV si no está habilitado
     if ! vault secrets list | grep -q '^secret/'; then
-        vault secrets enable -path=secret kv
-		log_message "Motor KV habilitado"
+        vault secrets enable -path=secret kv-v2
+		log_message "Motor KV-2 habilitado"
     fi
 
-	# Habilitar el motor de auditoría para guardar logs)
-    log_message "Configurando auditoría..."
-    vault audit enable file \
-        file_path="${AUDIT_LOG}" \
-        mode="0640" \
-        log_raw=true \
-        format=json \
-        prefix="vault-audit" \
-        description="Audit logs for Vault operations"
+	# Actualizar política para KV-v2
+	log_message "Configurando políticas de acceso..."
+	vault policy write django - <<-EOF
+	# Permitir acceso a los secretos de Django
+	path "secret/data/django/*" {
+		capabilities = ["create", "read", "update", "delete", "list"]
+	}
 
-		log_message "Configurando políticas de acceso..."
-		vault policy write django - <<-EOF
-		# Permitir acceso a los secretos de Django
-		path "secret/data/django/*" {
-			capabilities = ["create", "read", "update", "delete", "list"]
-		}
+	# Permitir listar los secretos
+	path "secret/metadata/django/*" {
+		capabilities = ["list"]
+	}
 
-		# Permitir listar los secretos
-		path "secret/metadata/django/*" {
-			capabilities = ["list"]
-		}
-EOF
+	# Permitir acceso a los secretos de Nginx
+	path "secret/data/nginx/*" {
+		capabilities = ["create", "read", "update", "delete", "list"]
+	}
+
+	path "secret/metadata/nginx/*" {
+		capabilities = ["list"]
+	}
+	EOF
 }
 
 # Almacenar secretos en Vault
@@ -190,8 +190,8 @@ store_secrets() {
     	expiration_time="${JWT_EXPIRATION_TIME}"
 
 	vault kv put secret/nginx/ssl \
-    	ssl_certificate="$(cat ${SSL_CERT} 2>/dev/null || echo '')" \
-    	ssl_certificate_key="$(cat ${SSL_KEY} 2>/dev/null || echo '')"
+		ssl_certificate="$(base64 /tmp/ssl/transcendence.crt 2>/dev/null || echo '')" \
+		ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')"
 }
 
 # Iniciar nginx para servir la aplicación
