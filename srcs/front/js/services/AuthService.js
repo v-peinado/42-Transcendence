@@ -4,7 +4,6 @@ class AuthService {
 
     static async login(username, password, remember = false) {
         try {
-            console.log('Intentando login con:', { username, remember });
             const response = await fetch(`${this.API_URL}/login/`, {
                 method: 'POST',
                 headers: {
@@ -13,58 +12,30 @@ class AuthService {
                     'X-CSRFToken': this.getCSRFToken()
                 },
                 body: JSON.stringify({ 
-                    username: username, 
-                    password: password, 
-                    remember: remember,
-                    force_login: true  // Añadido para forzar el cierre de sesiones previas
+                    username, 
+                    password, 
+                    remember,
+                    force_login: true  // Para forzar el cierre de otras sesiones
                 }),
-                credentials: 'include'  // Importante para las cookies
+                credentials: 'include'
             });
             
             const data = await response.json();
-            console.log('Respuesta del servidor:', data);
             
             if (!response.ok) {
                 if (response.status === 403) {
-                    await this.logout(); // Intentar cerrar cualquier sesión existente
-                    return this.login(username, password, remember); // Reintentar el login
+                    // Intentar cerrar sesión existente y reintentar
+                    await this.logout();
+                    return this.login(username, password, remember);
                 }
-                // Manejar específicamente el caso de email no verificado
-                if (data.message && data.message.includes('verifica tu email')) {
-                    return {
-                        success: false,
-                        needsEmailVerification: true,
-                        message: data.message
-                    };
-                }
-                // Manejar el caso de sesión activa
-                if (data.code === 'active_session') {
-                    return {
-                        success: false,
-                        activeSession: true,
-                        message: data.message
-                    };
-                }
-                const errorMessage = Array.isArray(data.message) 
-                    ? data.message.join(', ') 
-                    : data.message || 'Error en el login';
-                console.error('Error de login:', errorMessage);
-                throw new Error(errorMessage);
-            }
-
-            if (response.ok) {
-                // Reemplazar la entrada actual del historial
-                window.history.replaceState(null, '', '/profile');
+                throw new Error(data.message || 'Error en el login');
             }
 
             return {
-                success: data.status === 'success',
-                redirectUrl: data.redirect_url || '/profile',
-                pending2FA: data.status === 'pending_2fa',
-                message: data.message
+                success: true,
+                username: username
             };
         } catch (error) {
-            console.error('Error en login:', error);
             throw error;
         }
     }

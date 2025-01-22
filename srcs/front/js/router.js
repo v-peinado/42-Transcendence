@@ -12,8 +12,9 @@ import AuthService from '/js/services/AuthService.js';
 
 class Router {
     constructor() {
-        // Limpiar el estado al iniciar la aplicación
-        if (window.location.pathname === '/') {
+        // Solo limpiar el estado si no hay una sesión activa
+        if (window.location.pathname === '/' && 
+            localStorage.getItem('isAuthenticated') !== 'true') {
             localStorage.clear();
             sessionStorage.clear();
         }
@@ -36,189 +37,18 @@ class Router {
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             const username = localStorage.getItem('username');
             
-            // Si el usuario no está autenticado y viene de otra página, limpiar el estado
+            // Solo limpiar si no hay sesión activa
             if (!isAuthenticated) {
                 localStorage.clear();
                 sessionStorage.clear();
             }
 
             const app = document.getElementById('app');
-            app.innerHTML = `
-                <!-- Navbar con nuevo logo -->
-                <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-                    <div class="container">
-                        <a class="navbar-brand d-flex align-items-center" href="/" data-link>
-                            <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
-                                <rect x="10" y="40" width="10" height="20" fill="#fff">
-                                    <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
-                                </rect>
-                                <circle cx="50" cy="50" r="5" fill="#fff">
-                                    <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
-                                    <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
-                                </circle>
-                                <rect x="80" y="40" width="10" height="20" fill="#fff">
-                                    <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
-                                </rect>
-                            </svg>
-                            <span class="brand-text">Transcendence</span>
-                        </a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav me-auto">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/game" data-link>
-                                        <i class="fas fa-play me-1"></i>Jugar
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/leaderboard" data-link>
-                                        <i class="fas fa-trophy me-1"></i>Clasificación
-                                    </a>
-                                </li>
-                            </ul>
-                            <!-- Menú para usuarios autenticados -->
-                            ${isAuthenticated ? `
-                                <ul class="navbar-nav">
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/chat" data-link>
-                                            <i class="fas fa-comments me-1"></i>Chat
-                                        </a>
-                                    </li>
-                                    <li class="nav-item dropdown">
-                                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
-                                           data-bs-toggle="dropdown" aria-expanded="false">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
-                                                 alt="Avatar" class="rounded-circle" width="32" height="32" id="navbarUserAvatar">
-                                            <span>${username}</span>
-                                        </a>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
-                                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
-                                                     alt="Avatar" class="rounded-circle me-2" width="48" height="48" id="dropdownUserAvatar">
-                                                <div class="text-truncate">
-                                                    <div class="fw-bold">${username}</div>
-                                                    <small class="text-muted">Ver perfil</small>
-                                                </div>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" href="/profile" data-link>
-                                                    <i class="fas fa-user me-2"></i>Perfil
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="/settings" data-link>
-                                                    <i class="fas fa-cog me-2"></i>Configuración
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="/gdpr-settings" data-link>
-                                                    <i class="fas fa-shield-alt me-2"></i>Privacidad
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <button class="dropdown-item text-danger" id="logoutBtn">
-                                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                                </button>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            ` : `
-                                <ul class="navbar-nav">
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/login" data-link>
-                                            <i class="fas fa-sign-in-alt me-1"></i>Login
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/register" data-link>
-                                            <i class="fas fa-user-plus me-1"></i>Registro
-                                        </a>
-                                    </li>
-                                </ul>
-                            `}
-                        </div>
-                    </div>
-                </nav>
-
-                <!-- Hero Section con nueva estructura -->
-                <main>
-                    <div class="hero-section">
-                        <div class="hero-content">
-                            <div class="container">
-                                <div class="row justify-content-center">
-                                    <div class="col-lg-8 text-center">
-                                        <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
-                                        <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                        ${!isAuthenticated ? `
-                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                    <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                                </a>
-                                                <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                    <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                </a>
-                                            </div>
-                                        ` : `
-                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                <a href="/game" data-link class="btn btn-primary btn-lg px-4">
-                                                    <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
-                                                </a>
-                                            </div>
-                                        `}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Features Section con nuevo fondo -->
-                    <div class="features-section">
-                        <div class="container">
-                            <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-gamepad"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Juega Online</h3>
-                                        <p>Compite contra otros jugadores en tiempo real.</p>
-                                    </div>
-                                </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Clasificación</h3>
-                                        <p>Compite por los primeros puestos del ranking.</p>
-                                    </div>
-                                </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-users"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Comunidad</h3>
-                                        <p>Únete a una comunidad activa de jugadores.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            `;
-
-            // Agregar evento de logout si el usuario está autenticado
+            
             if (isAuthenticated) {
                 try {
                     const userInfo = await AuthService.getUserProfile();
                     if (!userInfo) {
-                        // Si no se puede obtener el perfil, hacer logout
                         await AuthService.logout();
                         localStorage.clear();
                         window.location.href = '/';
@@ -228,42 +58,141 @@ class Router {
                     const profileImage = userInfo.fortytwo_image || 
                                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
                     
-                    // cambiar contenido del hero
+                    // Vista simplificada para usuarios autenticados
                     app.innerHTML = `
-                        <!-- Navbar con el mismo diseño -->
                         <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
                             <div class="container">
-                                <a class="navbar-brand d-flex align-items-center" href="/" data-link>
-                                    <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
-                                        <rect x="10" y="40" width="10" height="20" fill="#fff">
-                                            <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
-                                        </rect>
-                                        <circle cx="50" cy="50" r="5" fill="#fff">
-                                            <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
-                                            <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
-                                        </circle>
-                                        <rect x="80" y="40" width="10" height="20" fill="#fff">
-                                            <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
-                                        </rect>
-                                    </svg>
-                                    <span class="brand-text">Transcendence</span>
-                                </a>
+                                <a class="navbar-brand" href="/" data-link>Transcendence</a>
                                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                                     <span class="navbar-toggler-icon"></span>
                                 </button>
                                 <div class="collapse navbar-collapse" id="navbarNav">
                                     <ul class="navbar-nav ms-auto">
                                         <li class="nav-item dropdown">
+                                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" 
+                                               data-bs-toggle="dropdown">
+                                                <img src="${profileImage}" 
+                                                     class="rounded-circle me-2" width="32" height="32">
+                                                ${username}
+                                            </a>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><button class="dropdown-item" id="logoutBtn">
+                                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                                </button></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </nav>
+
+                        <div class="hero-section">
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <div class="col-lg-8 text-center">
+                                        <h1 class="display-4 fw-bold">¡Hola, ${username}!</h1>
+                                        <div class="mt-4">
+                                            <a href="/game" data-link class="btn btn-primary btn-lg">
+                                                <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Configurar logout
+                    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+                        try {
+                            await AuthService.logout();
+                            localStorage.clear();
+                            window.location.href = '/';
+                        } catch (error) {
+                            console.error('Error en logout:', error);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                    await AuthService.logout();
+                    localStorage.clear();
+                    window.location.href = '/';
+                }
+            } else {
+                // Renderizar vista normal para usuarios no autenticados
+                app.innerHTML = `
+                    <!-- Navbar con nuevo logo -->
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+                        <div class="container">
+                            <a class="navbar-brand d-flex align-items-center" href="/" data-link>
+                                <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
+                                    <rect x="10" y="40" width="10" height="20" fill="#fff">
+                                        <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
+                                    </rect>
+                                    <circle cx="50" cy="50" r="5" fill="#fff">
+                                        <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
+                                        <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
+                                    </circle>
+                                    <rect x="80" y="40" width="10" height="20" fill="#fff">
+                                        <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
+                                    </rect>
+                                </svg>
+                                <span class="brand-text">Transcendence</span>
+                            </a>
+                            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarNav">
+                                <ul class="navbar-nav me-auto">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="/game" data-link>
+                                            <i class="fas fa-play me-1"></i>Jugar
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="/leaderboard" data-link>
+                                            <i class="fas fa-trophy me-1"></i>Clasificación
+                                        </a>
+                                    </li>
+                                </ul>
+                                <!-- Menú para usuarios autenticados -->
+                                ${isAuthenticated ? `
+                                    <ul class="navbar-nav">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="/chat" data-link>
+                                                <i class="fas fa-comments me-1"></i>Chat
+                                            </a>
+                                        </li>
+                                        <li class="nav-item dropdown">
                                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
                                                data-bs-toggle="dropdown" aria-expanded="false">
-                                                <img src="${profileImage}" 
+                                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
                                                      alt="Avatar" class="rounded-circle" width="32" height="32" id="navbarUserAvatar">
                                                 <span>${username}</span>
                                             </a>
                                             <ul class="dropdown-menu dropdown-menu-end">
+                                                <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
+                                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${username}" 
+                                                         alt="Avatar" class="rounded-circle me-2" width="48" height="48" id="dropdownUserAvatar">
+                                                    <div class="text-truncate">
+                                                        <div class="fw-bold">${username}</div>
+                                                        <small class="text-muted">Ver perfil</small>
+                                                    </div>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
                                                 <li>
                                                     <a class="dropdown-item" href="/profile" data-link>
                                                         <i class="fas fa-user me-2"></i>Perfil
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="/settings" data-link>
+                                                        <i class="fas fa-cog me-2"></i>Configuración
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="/gdpr-settings" data-link>
+                                                        <i class="fas fa-shield-alt me-2"></i>Privacidad
                                                     </a>
                                                 </li>
                                                 <li><hr class="dropdown-divider"></li>
@@ -275,129 +204,25 @@ class Router {
                                             </ul>
                                         </li>
                                     </ul>
-                                </div>
-                            </div>
-                        </nav>
-
-                        <!-- Hero Section con el mismo diseño pero contenido personalizado -->
-                        <main>
-                            <div class="hero-section">
-                                <div class="hero-content">
-                                    <div class="container">
-                                        <div class="row justify-content-center">
-                                            <div class="col-lg-8 text-center">
-                                                <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
-                                                <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                                ${!isAuthenticated ? `
-                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                        <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                            <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                                        </a>
-                                                        <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                            <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                        </a>
-                                                    </div>
-                                                ` : `
-                                                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                        <a href="/game" data-link class="btn btn-primary btn-lg px-4">
-                                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
-                                                        </a>
-                                                    </div>
-                                                `}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Features Section con nuevo fondo -->
-                            <div class="features-section">
-                                <div class="container">
-                                    <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-gamepad"></i>
-                                            </div>
-                                            <div>
-                                                <h3 class="fs-2">Juega Online</h3>
-                                                <p>Compite contra otros jugadores en tiempo real.</p>
-                                            </div>
-                                        </div>
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-trophy"></i>
-                                            </div>
-                                            <div>
-                                                <h3 class="fs-2">Clasificación</h3>
-                                                <p>Compite por los primeros puestos del ranking.</p>
-                                            </div>
-                                        </div>
-                                        <div class="col d-flex align-items-start">
-                                            <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                                <i class="fas fa-users"></i>
-                                            </div>
-                                            <div>
-                                                <h3 class="fs-2">Comunidad</h3>
-                                                <p>Únete a una comunidad activa de jugadores.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </main>
-                    `;
-
-                    // Configurar logout
-                    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-                        try {
-                            await AuthService.logout();
-                            localStorage.removeItem('isAuthenticated');
-                            localStorage.removeItem('username');
-                            window.location.href = '/';
-                        } catch (error) {
-                            console.error('Error en logout:', error);
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error loading user profile:', error);
-                    // En caso de error, hacer logout
-                    await AuthService.logout();
-                    localStorage.clear();
-                    window.location.href = '/';
-                }
-            } else {
-                // Renderizar la vista para usuarios no autenticados
-                app.innerHTML = `
-                    <!-- Navbar para usuarios no autenticados -->
-                    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-                        <div class="container">
-                            <a class="navbar-brand d-flex align-items-center" href="/" data-link>
-                                <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
-                                    <!-- ...existing SVG code... -->
-                                </svg>
-                                <span class="brand-text">Transcendence</span>
-                            </a>
-                            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                                <span class="navbar-toggler-icon"></span>
-                            </button>
-                            <div class="collapse navbar-collapse" id="navbarNav">
-                                <ul class="navbar-nav ms-auto">
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/login" data-link>
-                                            <i class="fas fa-sign-in-alt me-1"></i>Login
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="/register" data-link>
-                                            <i class="fas fa-user-plus me-1"></i>Registro
-                                        </a>
-                                    </li>
-                                </ul>
+                                ` : `
+                                    <ul class="navbar-nav">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="/login" data-link>
+                                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="/register" data-link>
+                                                <i class="fas fa-user-plus me-1"></i>Registro
+                                            </a>
+                                        </li>
+                                    </ul>
+                                `}
                             </div>
                         </div>
                     </nav>
 
-                    <!-- Contenido principal para usuarios no autenticados -->
+                    <!-- Hero Section con nueva estructura -->
                     <main>
                         <div class="hero-section">
                             <div class="hero-content">
@@ -406,14 +231,57 @@ class Router {
                                         <div class="col-lg-8 text-center">
                                             <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
                                             <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                                <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                    <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                                </a>
-                                                <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                    <i class="fas fa-user-plus me-2"></i>Registrarse
-                                                </a>
-                                            </div>
+                                            ${!isAuthenticated ? `
+                                                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                    <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
+                                                        <i class="fas fa-play me-2"></i>Empezar a Jugar
+                                                    </a>
+                                                    <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
+                                                        <i class="fas fa-user-plus me-2"></i>Registrarse
+                                                    </a>
+                                                </div>
+                                            ` : `
+                                                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
+                                                    <a href="/game" data-link class="btn btn-primary btn-lg px-4">
+                                                        <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                                    </a>
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Features Section con nuevo fondo -->
+                        <div class="features-section">
+                            <div class="container">
+                                <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Juega Online</h3>
+                                            <p>Compite contra otros jugadores en tiempo real.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Clasificación</h3>
+                                            <p>Compite por los primeros puestos del ranking.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col d-flex align-items-start">
+                                        <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="fs-2">Comunidad</h3>
+                                            <p>Únete a una comunidad activa de jugadores.</p>
                                         </div>
                                     </div>
                                 </div>

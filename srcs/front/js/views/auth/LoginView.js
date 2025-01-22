@@ -210,9 +210,9 @@ export async function LoginView() {
             if (result.success) {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
-                // Reemplazar la entrada actual del historial
-                window.history.replaceState(null, '', '/profile');
-                window.location.href = '/profile';
+                // Reemplazar la entrada actual del historial con /
+                window.history.replaceState(null, '', '/');
+                window.location.href = '/';
             } else if (result.needsEmailVerification) {
                 alertDiv.innerHTML = `
                     <div class="alert alert-warning">
