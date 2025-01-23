@@ -164,9 +164,19 @@ class ArchivedMessage(models.Model):
     content = models.TextField()
     timestamp = models.DateTimeField()
     
+    def __str__(self):
+        return f"{self.user} in {self.channel_name}"
+    
 class Message(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True  # Ensure this is set so SET_NULL works
+    )
     channel_name = models.CharField(max_length=255)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     is_archived = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.user} in {self.channel_name}"

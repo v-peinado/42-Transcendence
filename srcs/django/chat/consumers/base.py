@@ -52,7 +52,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.update_all_lists()
                
         # Llamar a la función para enviar los mensajes no archivados
-        await self.send_unarchived_messages()
+        await self.load_unarchived_messages(self.user_id)
 
 
     # Método disconnect: se ejecuta cuando un usuario se desconecta del WebSocket.

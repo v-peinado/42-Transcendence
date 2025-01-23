@@ -2,10 +2,13 @@ import json
 from django.contrib.auth import get_user_model
 from .base import ChatConsumer
 from channels.db import database_sync_to_async
-from chat.models import Message, PrivateChannelMembership, PrivateChannel
+from chat.models import Message, PrivateChannelMembership, GroupMembership
+import logging
 
 
 User = get_user_model()
+
+logger = logging.getLogger(__name__)
 
 class MessagesConsumer:   
     # Flujo de Mensajes
@@ -60,6 +63,7 @@ class MessagesConsumer:
                                 channel_name,
                                 ChatConsumer.connected_users[user_id]
                             )
+            await self.save_message(from_user, channel_name, message)
             # Enviamos el mensaje al canal, el cual puede ser un canal privado o un grupo
             # Al enviarlo al canal, se enviará a todos los consumidores suscritos al canal
             await self.send_to_channel(channel_name, from_user.id, from_user.username, message)
@@ -95,18 +99,52 @@ class MessagesConsumer:
             'channel_name': event['channel_name'],
         }))
         
-    async def send_unarchived_messages(self):
-        # messages = await self.get_unarchived_messages()
-        # for message in messages:
-        #     await self.send(text_data=json.dumps({
-        #         'user_id': message.user.id,
-        #         'username': message.user.username,
-        #         'message': message.content,
-        #         'timestamp': message.timestamp.isoformat(),
-        #     }))
-        pass
+    async def load_unarchived_messages(self, user_id):
+        channels = await self.get_user_channels(user_id)
+        for channel_name in channels:
+            messages = await self.get_unarchived_messages(channel_name)
+            for message in messages:
+                await self.send(text_data=json.dumps({
+                    "type": "chat_message",
+                    "user_id": await self.get_user_id(message),
+                    "username": await self.get_username(message),
+                    "message": message.content,
+                    "channel_name": message.channel_name,
+                }))
 
     @database_sync_to_async
-    def get_unarchived_messages(self):
-        pass
-        #return list(Message.objects.filter(channel_name=self.channel_name, is_archived=False).order_by('timestamp'))
+    def get_unarchived_messages(self, channel_name):
+        return list(Message.objects.filter(channel_name=channel_name, is_archived=False).order_by('timestamp'))
+
+    @database_sync_to_async
+    def get_user_id(self, message):
+        return message.user.id if message.user else None
+
+    @database_sync_to_async
+    def get_username(self, message):
+        return message.user.username if message.user else None
+
+    @database_sync_to_async
+    def get_user_channels(self, user_id):
+        # Obtener los nombres de los canales privados a los que el usuario pertenece
+        private_channels = PrivateChannelMembership.objects.filter(
+            user_id=user_id
+        ).values_list('channel__name', flat=True)
+        
+        # Obtener los nombres de los canales de grupo a los que el usuario pertenece
+        group_channels = GroupMembership.objects.filter(
+            user_id=user_id
+        ).values_list('group__channel_name', flat=True)
+        
+        return list(private_channels) + list(group_channels) + ['chat_general']
+    
+    @database_sync_to_async   
+    def save_message(self, user, channel_name, content):
+        # Confirm channel_name and content are correct
+        logger.info(f"Saving message to channel: {channel_name}, content: {content}")
+        Message.objects.create(
+            user=user,
+            channel_name=channel_name,
+            content=content,
+            # ensure default is_archived=False in the model
+        )
