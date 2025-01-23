@@ -56,9 +56,11 @@ export function VerifyEmailView(uidb64, token) {
                                         <div class="alert alert-success bg-success bg-opacity-25 text-light border-success mb-4">
                                             Tu cuenta ha sido verificada correctamente.
                                         </div>
-                                        <a href="/login" data-link class="btn btn-primary btn-lg">
-                                            <i class="fas fa-sign-in-alt me-2"></i>Ir a Login
-                                        </a>
+                                        <div class="text-center">
+                                            <a href="/login" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -66,6 +68,10 @@ export function VerifyEmailView(uidb64, token) {
                     </div>
                 </div>
             `;
+            
+            // Limpiar cualquier estado anterior
+            localStorage.clear();
+            sessionStorage.clear();
         })
         .catch(error => {
             app.innerHTML = `

@@ -108,25 +108,23 @@ class AuthService {
                 }
             });
 
+            // No lanzar error si es 401, simplemente limpiar el estado local
+            if (response.status === 401) {
+                return true;
+            }
+
             if (!response.ok) {
                 throw new Error('Error en logout');
             }
 
-            // Limpiar todo el estado del usuario
-            localStorage.clear();
-            sessionStorage.clear();
-            
-            // Limpiar todas las cookies relacionadas con la sesión
-            document.cookie.split(";").forEach(cookie => {
-                document.cookie = cookie
-                    .replace(/^ +/, "")
-                    .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-            });
-
             return true;
         } catch (error) {
             console.error('Error durante logout:', error);
-            throw error;
+            return true; // Retornar true de todas formas para permitir la limpieza local
+        } finally {
+            // Limpiar estado local independientemente del resultado
+            localStorage.clear();
+            sessionStorage.clear();
         }
     }
 
@@ -203,17 +201,18 @@ class AuthService {
                 credentials: 'include'  // Importante para las cookies de sesión
             });
 
+            if (response.status === 401 || response.status === 403) {
+                return { error: 'unauthorized' };
+            }
+
             if (!response.ok) {
                 throw new Error('Error al obtener el perfil');
             }
 
-            const data = await response.json();
-            console.log('Datos brutos del perfil:', data); // Debug log
-
-            return data;  // Devolver los datos tal cual vienen del backend
+            return await response.json();
         } catch (error) {
             console.error('Error en getUserProfile:', error);
-            throw new Error('No se pudo cargar el perfil de usuario');
+            return { error: error.message };
         }
     }
 
