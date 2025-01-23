@@ -4,6 +4,7 @@ from .base import ChatConsumer
 from channels.db import database_sync_to_async
 from chat.models import Message, PrivateChannelMembership, GroupMembership
 import logging
+import asyncio
 
 
 User = get_user_model()
@@ -100,17 +101,23 @@ class MessagesConsumer:
         }))
         
     async def load_unarchived_messages(self, user_id):
+        logger.info(f"Loading unarchived messages for user {user_id}")
         channels = await self.get_user_channels(user_id)
         for channel_name in channels:
             messages = await self.get_unarchived_messages(channel_name)
+            logger.info(f"Loading {len(messages)} unarchived messages for channel {channel_name}")
             for message in messages:
+                logger.info(f"Sending message: {message.content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}")
                 await self.send(text_data=json.dumps({
                     "type": "chat_message",
                     "user_id": await self.get_user_id(message),
                     "username": await self.get_username(message),
                     "message": message.content,
                     "channel_name": message.channel_name,
+                    "timestamp": message.timestamp.isoformat()
                 }))
+                #await asyncio.sleep(0.1)  # Añadir un pequeño retraso de 100ms
+
 
     @database_sync_to_async
     def get_unarchived_messages(self, channel_name):
