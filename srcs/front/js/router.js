@@ -12,14 +12,18 @@ import AuthService from '/js/services/AuthService.js';
 
 class Router {
     constructor() {
-        // Solo limpiar el estado si no hay una sesión activa
-        if (window.location.pathname === '/' && 
-            localStorage.getItem('isAuthenticated') !== 'true') {
-            localStorage.clear();
-            sessionStorage.clear();
+        // Limpiar estado al iniciar en rutas específicas
+        if (window.location.pathname === '/' || 
+            window.location.pathname === '/login') {
+            AuthService.clearSession().then(() => {
+                // Esperar un momento después de limpiar
+                setTimeout(() => {
+                    this.handleInitialRoute();
+                }, 100);
+            });
+            return;
         }
         
-        this.currentPath = window.location.pathname;
         this.handleInitialRoute();
         
         // Añadir manejo de navegación
@@ -371,6 +375,25 @@ class Router {
                 const token = parts[1];  // Quitar el replace('/', '') porque necesitamos el slash
                 console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
+                return;
+            }
+        }
+
+        // Verificar rutas protegidas
+        if (path.startsWith('/profile') && localStorage.getItem('isAuthenticated') !== 'true') {
+            window.location.href = '/login';
+            return;
+        }
+
+        // Verificar autenticación pendiente para rutas protegidas
+        if (path.startsWith('/profile')) {
+            if (sessionStorage.getItem('pendingAuth') === 'true') {
+                // Redirigir de vuelta al login si hay auth pendiente
+                window.location.replace('/login');
+                return;
+            }
+            if (localStorage.getItem('isAuthenticated') !== 'true') {
+                window.location.replace('/login');
                 return;
             }
         }

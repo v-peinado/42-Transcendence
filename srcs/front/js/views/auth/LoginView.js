@@ -1,18 +1,17 @@
 import AuthService from '../../services/AuthService.js';
 
 export async function LoginView() {
-    // Verificar si el usuario ya está autenticado
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    if (isAuthenticated) {
-        // Reemplazar la entrada actual del historial con /profile
-        window.history.replaceState(null, '', '/profile');
-        // Redirigir al perfil
-        window.location.href = '/profile';
-        return;
-    }
-
-    // Limpiar cualquier estado anterior al cargar la vista de login
-    if (!isAuthenticated) {
+    // Limpiar todo el estado al inicio
+    await AuthService.clearSession();
+    
+    // Esperar un momento para asegurar que todo está limpio
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Verificar si venimos de una verificación de email
+    const isVerificationReturn = document.referrer.includes('/verify-email/');
+    
+    // Si no viene de verificación, asegurar que no hay estado guardado
+    if (!isVerificationReturn) {
         localStorage.clear();
         sessionStorage.clear();
     }
@@ -183,6 +182,37 @@ export async function LoginView() {
         </div>
     `;
 
+    // Añadir el modal de 2FA después del formulario de login
+    app.innerHTML += `
+        <div class="modal fade" id="twoFactorModal" data-bs-backdrop="static" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Verificación en dos pasos</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted">Introduce el código que hemos enviado a tu email</p>
+                        <div id="verify2FAAlert"></div>
+                        <form id="verify2FAForm">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control bg-dark text-light" 
+                                       id="code" placeholder="Código" required
+                                       pattern="[0-9]{6}" maxlength="6"
+                                       autocomplete="off">
+                                <label for="code">Código de verificación</label>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-check me-2"></i>Verificar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
     // Añadir evento para activar animación
     const form = document.getElementById('loginForm');
     const logo = document.getElementById('loginLogo');
@@ -206,22 +236,50 @@ export async function LoginView() {
         const alertDiv = document.getElementById('loginAlert');
         
         try {
+            alertDiv.innerHTML = '';
             const result = await AuthService.login(username, password, remember);
-            if (result.success) {
+            console.log('Resultado login:', result);
+            
+            if (result.status === 'pending_2fa') {
+                // Guardar estado temporal y mostrar modal 2FA
+                sessionStorage.setItem('pendingAuth', 'true');
+                sessionStorage.setItem('pendingUsername', username);
+                const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+                modal.show();
+                // Limpiar y enfocar campo de código
+                document.getElementById('code').value = '';
+                document.getElementById('code').focus();
+                return;
+            }
+            
+            if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
-                // Reemplazar la entrada actual del historial con /
-                window.history.replaceState(null, '', '/');
-                window.location.href = '/';
-            } else if (result.needsEmailVerification) {
-                alertDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        <p>${result.message}</p>
-                        <div class="mt-3">
-                            <p>Por favor, revisa tu email para activar tu cuenta.</p>
-                        </div>
-                    </div>
-                `;
+                window.location.replace('/profile');
+            }
+        } catch (error) {
+            console.error('Error en login:', error);
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>${error.message}</p>
+                </div>
+            `;
+        }
+    });
+
+    // Añadir manejador para el formulario 2FA
+    document.getElementById('verify2FAForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('code').value;
+        const alertDiv = document.getElementById('verify2FAAlert');
+        
+        try {
+            const result = await AuthService.verify2FACode(code);
+            if (result.status === 'success') {
+                // Ocultar modal y redirigir
+                const modal = bootstrap.Modal.getInstance(document.getElementById('twoFactorModal'));
+                modal.hide();
+                window.location.replace('/profile');
             }
         } catch (error) {
             alertDiv.innerHTML = `
@@ -229,9 +287,6 @@ export async function LoginView() {
                     <p>${error.message}</p>
                 </div>
             `;
-            setTimeout(() => {
-                alertDiv.innerHTML = '';
-            }, 3000);
         }
     });
 

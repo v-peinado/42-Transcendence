@@ -121,6 +121,10 @@ export function UserProfileView() {
                                     <button id="editProfileBtn" class="btn btn-outline-light w-100">
                                         <i class="fas fa-cog me-2"></i>Configuración
                                     </button>
+                                    <button id="toggle2FABtn" class="btn btn-outline-info">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        <span id="2faButtonText">Activar 2FA</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -532,6 +536,47 @@ function setupProfileEvents() {
             alertEl.style.display = 'block';
         }
     });
+
+    // Event listener para el botón de 2FA
+    document.getElementById('toggle2FABtn')?.addEventListener('click', async () => {
+        try {
+            const button = document.getElementById('toggle2FABtn');
+            const buttonText = document.getElementById('2faButtonText');
+            const is2FAEnabled = button.dataset.enabled === 'true';
+
+            if (!is2FAEnabled) {
+                // Mostrar mensaje de confirmación
+                const confirmed = confirm(
+                    'La autenticación en dos pasos añade una capa extra de seguridad a tu cuenta. ' +
+                    'Cada vez que inicies sesión, necesitarás introducir un código que te enviaremos por email. ' +
+                    '¿Deseas continuar?'
+                );
+
+                if (!confirmed) return;
+
+                const result = await AuthService.enable2FA();
+                button.dataset.enabled = 'true';
+                buttonText.textContent = 'Desactivar 2FA';
+                button.classList.replace('btn-outline-info', 'btn-outline-warning');
+                
+                // Mostrar mensaje de éxito
+                alert('2FA activado correctamente. A partir de ahora necesitarás un código de verificación para iniciar sesión.');
+            } else {
+                // Confirmar desactivación
+                const confirmed = confirm('¿Estás seguro de que quieres desactivar la autenticación en dos pasos?');
+                if (!confirmed) return;
+
+                const result = await AuthService.disable2FA();
+                button.dataset.enabled = 'false';
+                buttonText.textContent = 'Activar 2FA';
+                button.classList.replace('btn-outline-warning', 'btn-outline-info');
+                
+                alert('2FA desactivado correctamente.');
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    });
 }
 
 async function loadUserData() {
@@ -569,6 +614,19 @@ async function loadUserData() {
                 ${userInfo.is_active ? 'Activo' : 'Pendiente'}
             </span>
         `;
+
+        // Actualizar estado del botón 2FA
+        const toggle2FABtn = document.getElementById('toggle2FABtn');
+        const buttonText = document.getElementById('2faButtonText');
+        if (userInfo.two_factor_enabled) {
+            toggle2FABtn.dataset.enabled = 'true';
+            buttonText.textContent = 'Desactivar 2FA';
+            toggle2FABtn.classList.replace('btn-outline-info', 'btn-outline-warning');
+        } else {
+            toggle2FABtn.dataset.enabled = 'false';
+            buttonText.textContent = 'Activar 2FA';
+            toggle2FABtn.classList.replace('btn-outline-warning', 'btn-outline-info');
+        }
 
     } catch (error) {
         console.error('Error cargando datos:', error);

@@ -4,6 +4,14 @@ class AuthService {
 
     static async login(username, password, remember = false) {
         try {
+            // Asegurarse de que no hay sesión activa
+            await this.clearSession();
+            
+            // Esperar un momento para asegurar que todo está limpio
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            console.log('Enviando request de login...'); // Debug
+            
             const response = await fetch(`${this.API_URL}/login/`, {
                 method: 'POST',
                 headers: {
@@ -14,30 +22,76 @@ class AuthService {
                 body: JSON.stringify({ 
                     username, 
                     password, 
-                    remember,
-                    force_login: true  // Para forzar el cierre de otras sesiones
+                    remember
                 }),
                 credentials: 'include'
             });
             
             const data = await response.json();
+            console.log('Respuesta login:', data);
             
             if (!response.ok) {
-                if (response.status === 403) {
-                    // Intentar cerrar sesión existente y reintentar
-                    await this.logout();
-                    return this.login(username, password, remember);
-                }
                 throw new Error(data.message || 'Error en el login');
             }
 
-            return {
-                success: true,
-                username: username
-            };
+            // Si requiere 2FA, NO establecer autenticación todavía
+            if (data.status === 'pending_2fa') {
+                console.log('Backend requiere 2FA');
+                return { 
+                    status: 'pending_2fa',
+                    message: data.message || 'Se requiere verificación en dos pasos'
+                };
+            }
+
+            // Solo establecer autenticación si el login es exitoso y no requiere 2FA
+            if (data.status === 'success') {
+                return {
+                    status: 'success',
+                    message: 'Login exitoso'
+                };
+            }
+
+            throw new Error(data.message || 'Error desconocido en el login');
         } catch (error) {
+            console.error('Error en login service:', error);
             throw error;
         }
+    }
+
+    static async clearSession() {
+        try {
+            // Limpiar todo el estado local primero
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Limpiar todas las cookies relacionadas
+            this.clearAllCookies();
+            
+            // Solo entonces intentar el logout en el backend
+            try {
+                await fetch(`${this.API_URL}/logout/`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCSRFToken()
+                    }
+                });
+            } catch (error) {
+                console.warn('Error en logout backend:', error);
+                // Continuar incluso si falla el logout del backend
+            }
+        } catch (error) {
+            console.error('Error limpiando sesión:', error);
+        }
+    }
+
+    static clearAllCookies() {
+        document.cookie.split(';').forEach(cookie => {
+            const name = cookie.split('=')[0].trim();
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/;`;
+        });
     }
 
     static async register(userData) {
@@ -107,24 +161,13 @@ class AuthService {
                     'X-CSRFToken': this.getCSRFToken()
                 }
             });
-
-            // No lanzar error si es 401, simplemente limpiar el estado local
-            if (response.status === 401) {
-                return true;
-            }
-
-            if (!response.ok) {
-                throw new Error('Error en logout');
-            }
-
-            return true;
+            
+            // Esperar la respuesta antes de limpiar
+            await response.json();
         } catch (error) {
             console.error('Error durante logout:', error);
-            return true; // Retornar true de todas formas para permitir la limpieza local
         } finally {
-            // Limpiar estado local independientemente del resultado
-            localStorage.clear();
-            sessionStorage.clear();
+            await this.clearSession();
         }
     }
 
@@ -191,25 +234,38 @@ class AuthService {
 
     static async getUserProfile() {
         try {
+            const sessionId = localStorage.getItem('sessionId');
+            const headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.getCSRFToken()
+            };
+
+            if (sessionId) {
+                headers['X-Session-ID'] = sessionId;
+            }
+
             const response = await fetch(`${this.API_URL}/profile/user/`, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCSRFToken()
-                },
-                credentials: 'include'  // Importante para las cookies de sesión
+                headers: headers,
+                credentials: 'include'
             });
 
             if (response.status === 401 || response.status === 403) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.replace('/login');
                 return { error: 'unauthorized' };
             }
 
+            const data = await response.json();
+            console.log('Respuesta getUserProfile:', data);
+
             if (!response.ok) {
-                throw new Error('Error al obtener el perfil');
+                throw new Error(data.message || 'Error al obtener el perfil');
             }
 
-            return await response.json();
+            return data;
         } catch (error) {
             console.error('Error en getUserProfile:', error);
             return { error: error.message };
@@ -523,6 +579,101 @@ class AuthService {
             }
         } catch (error) {
             console.error('AuthService: Error detallado:', error);
+            throw error;
+        }
+    }
+
+    static async enable2FA() {
+        try {
+            const response = await fetch(`${this.API_URL}/enable-2fa/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Error al activar 2FA');
+            }
+
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async disable2FA() {
+        try {
+            const response = await fetch(`${this.API_URL}/disable-2fa/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Error al desactivar 2FA');
+            }
+
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async verify2FACode(code) {
+        try {
+            console.log('Verificando código 2FA:', code);
+            
+            const response = await fetch(`${this.API_URL}/verify-2fa/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ code }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Respuesta verify2FA:', data);
+
+            if (!response.ok) {
+                throw new Error(data.error || data.message || 'Código inválido');
+            }
+
+            if (data.status === 'success') {
+                // Asegurarnos de que la sesión está establecida
+                const username = data.username || sessionStorage.getItem('pendingUsername');
+                
+                // Establecer autenticación
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', username);
+                localStorage.setItem('sessionId', data.session_id);
+                
+                // Limpiar estado temporal
+                sessionStorage.removeItem('pendingAuth');
+                sessionStorage.removeItem('pendingUsername');
+                
+                // Forzar actualización de CSRF token
+                document.cookie = `csrftoken=${this.getCSRFToken()}; path=/`;
+                
+                return {
+                    status: 'success',
+                    username: username
+                };
+            }
+
+            throw new Error('Error en la verificación');
+        } catch (error) {
+            console.error('Error en verify2FA:', error);
             throw error;
         }
     }
