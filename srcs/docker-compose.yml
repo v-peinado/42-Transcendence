@@ -1,6 +1,8 @@
 networks:
   trancendence-backend:
     driver: bridge
+  app-network:
+    driver: bridge
 
 services:
   web:
@@ -41,15 +43,14 @@ services:
       start_period: 10s
 
   nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    expose:
-      - "80"
-      - "443"
-      - "8443"
+    build: ./nginx
+    ports:  
+      - "8080:80"     # Puerto HTTP
+      - "8443:443"    # Puerto HTTPS principal
+      - "8444:8443"   # Puerto HTTPS adicional
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - type: volume
         source: nginx_static
@@ -77,6 +78,7 @@ services:
       - "8200:8200"
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
@@ -96,6 +98,17 @@ services:
       - trancendence-backend
     restart: always
     command: ["redis-server", "--save", "", "--appendonly", "no"] 
+  
+  front:
+    build: ./front
+    container_name: front
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   postgres_data:

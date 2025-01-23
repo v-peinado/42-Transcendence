@@ -29,6 +29,14 @@ class LoginAPIView(View):
             else:
                 data = json.loads(request.body)
 
+            # Verificar si hay una sesión activa
+            if request.session.session_key:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Ya hay una sesión activa. Por favor, cierra la sesión antes de iniciar una nueva.',
+                    'code': 'active_session'
+                }, status=403)
+
             redirect_to = AuthenticationService.login_user(
                 request,
                 data.get('username'),

@@ -31,13 +31,14 @@ RUN apt-get update && \
 
 RUN rm -f /docker-entrypoint.d/10-generate-certificate.sh
 
-COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
-COPY nginx/frontend /usr/share/nginx/html
-COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+# Copiar la configuración de nginx y los archivos del frontend
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY templates /etc/nginx/templates/
+COPY ./ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 
 RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh
 
-EXPOSE 8443
+# Actualizar EXPOSE para reflejar los nuevos puertos
+EXPOSE 8080 8443
 
 CMD ["nginx", "-g", "daemon off;"]

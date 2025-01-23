@@ -173,18 +173,26 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')		
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'						# Se requiere verificar la dirección de correo electrónico para activar la cuenta
 
+# Frontend settings
+FRONTEND_URL = 'https://localhost:8445'  # URL del WAF
+SITE_URL = FRONTEND_URL                  # Asegurar que se usa la misma URL
+EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
+
+# Actualizar los CORS y CSRF settings
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8445",    # WAF
+    "https://localhost:8443",    # NGINX
+    "http://localhost:3000"      # Frontend desarrollo
+]
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+
 # Settings para el manejo de sesiones y cookies
 if DEBUG:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']					# Hosts permitidos en desarrollo
-    SITE_URL = 'http://localhost:8000'							# URL del sitio en desarrollo
-    SECURE_SSL_REDIRECT = False									# Redirección a HTTPS
-    SESSION_COOKIE_SECURE = False								# Cookies seguras (no las vamos a usar en desarrollo porqué no tenemos HTTPS)
-    CSRF_COOKIE_SECURE = False								
+    ALLOWED_HOSTS = ['*']
+    CORS_ALLOW_ALL_ORIGINS = True
 else:
-    SITE_URL = 'https://localhost:8443'							# URL del sitio en producción
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    CORS_ALLOW_ALL_ORIGINS = False
 
 # Settings de seguridad adicionales
 SECURE_BROWSER_XSS_FILTER = True								# Protección contra ataques XSS
