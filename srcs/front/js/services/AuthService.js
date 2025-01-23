@@ -60,11 +60,19 @@ class AuthService {
 
     static async clearSession() {
         try {
-            // Limpiar todo el estado local primero
+            // Mantener el estado 2FA temporalmente
+            const two_factor_enabled = localStorage.getItem('two_factor_enabled');
+            
+            // Limpiar todo el estado local
             localStorage.clear();
             sessionStorage.clear();
             
-            // Limpiar todas las cookies relacionadas
+            // Restaurar estado 2FA si existía
+            if (two_factor_enabled) {
+                localStorage.setItem('two_factor_enabled', two_factor_enabled);
+            }
+            
+            // Limpiar todas las cookies relacionadas excepto las necesarias
             this.clearAllCookies();
             
             // Solo entonces intentar el logout en el backend
@@ -234,20 +242,13 @@ class AuthService {
 
     static async getUserProfile() {
         try {
-            const sessionId = localStorage.getItem('sessionId');
-            const headers = {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRFToken': this.getCSRFToken()
-            };
-
-            if (sessionId) {
-                headers['X-Session-ID'] = sessionId;
-            }
-
             const response = await fetch(`${this.API_URL}/profile/user/`, {
                 method: 'GET',
-                headers: headers,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
                 credentials: 'include'
             });
 
@@ -261,11 +262,17 @@ class AuthService {
             const data = await response.json();
             console.log('Respuesta getUserProfile:', data);
 
+            // Mantener el estado 2FA en localStorage incluso si el backend no lo envía
+            const two_factor_enabled = localStorage.getItem('two_factor_enabled') === 'true';
+            
             if (!response.ok) {
                 throw new Error(data.message || 'Error al obtener el perfil');
             }
 
-            return data;
+            return {
+                ...data,
+                two_factor_enabled: data.two_factor_enabled || two_factor_enabled
+            };
         } catch (error) {
             console.error('Error en getUserProfile:', error);
             return { error: error.message };
@@ -599,7 +606,13 @@ class AuthService {
                 throw new Error(data.error || 'Error al activar 2FA');
             }
 
-            return data;
+            // Actualizar estado local
+            localStorage.setItem('two_factor_enabled', 'true');
+
+            return {
+                success: true,
+                ...data
+            };
         } catch (error) {
             throw error;
         }
@@ -616,12 +629,18 @@ class AuthService {
                 credentials: 'include'
             });
 
+            const data = await response.json();
             if (!response.ok) {
-                const data = await response.json();
                 throw new Error(data.error || 'Error al desactivar 2FA');
             }
 
-            return await response.json();
+            // Limpiar estado local
+            localStorage.removeItem('two_factor_enabled');
+
+            return {
+                success: true,
+                ...data
+            };
         } catch (error) {
             throw error;
         }
@@ -653,21 +672,20 @@ class AuthService {
                 // Asegurarnos de que la sesión está establecida
                 const username = data.username || sessionStorage.getItem('pendingUsername');
                 
-                // Establecer autenticación
+                // Establecer autenticación y estado 2FA
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
                 localStorage.setItem('sessionId', data.session_id);
+                localStorage.setItem('two_factor_enabled', 'true'); // Añadir esta línea
                 
                 // Limpiar estado temporal
                 sessionStorage.removeItem('pendingAuth');
                 sessionStorage.removeItem('pendingUsername');
                 
-                // Forzar actualización de CSRF token
-                document.cookie = `csrftoken=${this.getCSRFToken()}; path=/`;
-                
                 return {
                     status: 'success',
-                    username: username
+                    username: username,
+                    two_factor_enabled: true
                 };
             }
 
