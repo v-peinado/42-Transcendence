@@ -201,15 +201,16 @@ help:
 	@echo ""
 	@echo "  http://localhost:8000      - Accede a la web desde Django (backend sin Nginx)"
 	@echo "  http://localhost:8082      - WAF redirige a https://localhost (frontend)"
-	@echo "  https://localhost:8444     - WAF entrada principal al frontend"
+	@echo ""
+	@echo "  https://localhost:8445     - WAF entrada principal al frontend <<<<<<<<<<<<<<<<===================="
+	@echo ""
+	@echo "  http://localhost:3000      - Acceso a front directo"
 	@echo ""
 	@echo "  http://localhost:8200      - Panel acceso a Vault"
 	@echo "                             * Ver waf/vault/init-vault.sh para más información"
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
-	@echo " http://localhost:3000 - Acceso a front directo"
-	@echo " https://localhost:8443 - A través de nginx"
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
 

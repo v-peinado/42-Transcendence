@@ -76,7 +76,7 @@ ENV MODSECURITY=On \
     PATH="${PATH}:/usr/local/bin"
 
 # Puertos de la aplicación
-EXPOSE 8081 8200 8444
+EXPOSE 8081 8200 8445
 
 # HEALTHCHECK para el contenedor
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
