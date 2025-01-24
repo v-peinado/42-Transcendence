@@ -47,16 +47,11 @@ export async function LoginView() {
             const result = await AuthService.handle42Callback(code);
             console.log('Resultado callback 42:', result);
 
-            if (result.status === 'success') {
+            if (result.status === 'success' || result.status === 'verified') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
-                window.location.href = '/profile';
-                return;
-            } else if (result.status === 'verified') {
-                // Si el usuario ya está verificado, redirigir al perfil
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', result.username);
-                window.location.href = '/profile';
+                // Cambiar para que use el mismo flujo que el login normal
+                window.location.replace('/');
                 return;
             } else if (result.needsEmailVerification) {
                 // Solo mostrar mensaje de verificación si realmente necesita verificar
@@ -239,6 +234,14 @@ export async function LoginView() {
             alertDiv.innerHTML = '';
             const result = await AuthService.login(username, password, remember);
             console.log('Resultado login:', result);
+            
+            if (result.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', username);
+                // Forzar recarga de la página al redirigir
+                window.location.replace('/');
+                return;
+            }
             
             if (result.status === 'pending_2fa') {
                 // Guardar estado temporal y mostrar modal 2FA
