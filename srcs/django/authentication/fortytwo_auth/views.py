@@ -6,6 +6,8 @@ from django.views import View
 from ninja.responses import Response
 from authentication.fortytwo_auth.services.fortytwo_service import FortyTwoAuthService
 from authentication.api.schemas import FortyTwoCallbackRequestSchema
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 
@@ -47,37 +49,52 @@ class FortyTwoLoginAPIView(View):
             'message': error
         })
 
+@method_decorator(csrf_exempt, name='dispatch')
 class FortyTwoCallbackAPIView(View):
-    def get(self, request, data: FortyTwoCallbackRequestSchema) -> Response:
-        # Añadir el código al request.GET
-        request.GET = request.GET.copy()
-        request.GET['code'] = data.code
-        if data.state:
-            request.GET['state'] = data.state
+    def post(self, request):  # Cambiar de get a post
+        try:
+            # Obtener el código del body JSON
+            import json
+            data = json.loads(request.body)
+            code = data.get('code')
             
-        success, user, message = FortyTwoAuthService.handle_callback(
-            request,
-            is_api=True
-        )
-        
-        if not success:
-            return Response({
-                'status': 'error',
-                'message': message
-            }, status=400)
+            if not code:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Código no proporcionado'
+                }, status=400)
+                
+            success, user, message = FortyTwoAuthService.handle_callback(
+                request,
+                is_api=True,
+                code=code
+            )
             
-        if message == 'pending_2fa':
-            return Response({
+            if not success:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': message
+                }, status=400)
+                
+            if message == 'pending_2fa':
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Por favor verifica el código 2FA',
+                    'require_2fa': True
+                })
+                
+            return JsonResponse({
                 'status': 'success',
-                'message': 'Por favor verifica el código 2FA',
-                'require_2fa': True
+                'message': 'Login exitoso',
+                'username': user.username
             })
-            
-        return Response({
-            'status': 'success',
-            'message': 'Login exitoso',
-            'user': {
-                'username': user.username,
-                'email': user.email
-            }
-        })
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Formato JSON inválido'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)

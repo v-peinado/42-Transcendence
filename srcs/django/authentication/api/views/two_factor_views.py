@@ -46,12 +46,13 @@ class Verify2FAAPIView(View):
             code = data.get('code')
             if TwoFactorService.verify_2fa_code(user, code):
                 TwoFactorService.clean_session_keys(request.session)
-                # Añadir estas líneas
                 auth_login(request, user)
+                request.session['is_2fa_verified'] = True  # Añadir esta línea
                 return JsonResponse({
                     'status': 'success',
                     'message': 'Código verificado correctamente',
-                    'redirect_url': '/user/'
+                    'username': user.username,  # Añadir username
+                    'session_id': request.session.session_key  # Añadir session_id
                 })
 
             return JsonResponse({

@@ -1,6 +1,8 @@
 networks:
   trancendence-backend:
     driver: bridge
+  app-network:
+    driver: bridge
 
 services:
   web:
@@ -39,7 +41,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
   nginx:
     build:
       context: .
@@ -50,6 +51,7 @@ services:
       - "8443"
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - type: volume
         source: nginx_static
@@ -66,17 +68,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
   waf:
     build:
       context: .
       dockerfile: waf/Dockerfile
     ports:
       - "8082:8081"
-      - "8444:8444"
+      - "8445:8444"
       - "8200:8200"
     networks:
       - trancendence-backend
+      - app-network
     volumes:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
@@ -96,6 +98,17 @@ services:
       - trancendence-backend
     restart: always
     command: ["redis-server", "--save", "", "--appendonly", "no"] 
+  
+  front:
+    build: ./front
+    container_name: front
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./front:/app
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   postgres_data:

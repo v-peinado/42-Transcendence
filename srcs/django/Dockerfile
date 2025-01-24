@@ -8,6 +8,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir gunicorn pyotp==2.8.0
 
+# Crear directorio de logs
+RUN mkdir -p /app/logs && \
+    chmod 777 /app/logs
+
 # Copiar el código de la aplicación (el propio proyecto que se ha creado)
 COPY . .
 
