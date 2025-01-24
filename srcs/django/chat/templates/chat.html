@@ -357,7 +357,7 @@
                         } else {
                             console.error(`Elemento chat-log-${channelName} no encontrado.`);
                         }
-                    }, 100);
+                    }, 0);
                 } else {
                     this.addMessageToChat(privateChatLog, username, message, isCurrentUser);
                 }
@@ -712,7 +712,7 @@
                         } else {
                             console.error(`Elemento chat-log-${channelName} no encontrado.`);
                         }
-                    }, 100);
+                    }, 0);
                 } else {
                     this.addMessageToChat(groupChatLog, username, message, isCurrentUser);
                 }
