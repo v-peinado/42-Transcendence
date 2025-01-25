@@ -42,7 +42,7 @@ class PrivateConsumer:
         elif action == 'delete':
             await self.delete_private_channel_in_db(data)
             # obtener el nombre del grupo, y borrar los mensajes mediante el channel_name
-            # await self.delete_private_msgs(data)
+            await self.delete_private_msgs(data)
             await self.send_user_private_channels()
             await self.notify_user_group(other_user_id)
 

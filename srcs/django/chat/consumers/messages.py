@@ -2,7 +2,7 @@ import json
 from django.contrib.auth import get_user_model
 from .base import ChatConsumer
 from channels.db import database_sync_to_async
-from chat.models import Message, PrivateChannelMembership, GroupMembership
+from chat.models import Message, PrivateChannelMembership, GroupMembership, PrivateChannel
 import logging
 import asyncio
 
@@ -155,3 +155,17 @@ class MessagesConsumer:
             content=content,
             # ensure default is_archived=False in the model
         )
+        
+    async def delete_private_msgs(self, data):
+        logger.info(f"Deleting private messages, channel_name: {data.get('name')}")
+        channel_name = data.get('name')
+        if not channel_name:
+            return
+
+        # Eliminar los mensajes asociados al canal
+        await self.delete_messages_by_channel_name(channel_name)
+
+    @database_sync_to_async
+    def delete_messages_by_channel_name(self, channel_name):
+        logger.info(f"NO RETORNA NULL,Deleting messages with channel_name: {channel_name}")
+        Message.objects.filter(channel_name=channel_name).delete()
