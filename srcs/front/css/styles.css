@@ -1179,3 +1179,18 @@ main {
     border-left: 4px solid #0dcaf0;
     color: #4dd0e1;
 }
+
+/* Estilos para el QR */
+#qrContainer {
+    min-height: 256px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#qrContainer img {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background: white;
+    padding: 1rem;
+}

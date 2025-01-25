@@ -125,6 +125,9 @@ export function UserProfileView() {
                                         <i class="fas fa-shield-alt me-2"></i>
                                         <span id="2faButtonText">Activar 2FA</span>
                                     </button>
+                                    <button id="showQRBtn" class="btn btn-outline-light w-100 mb-2">
+                                        <i class="fas fa-qrcode me-2"></i>Ver código QR
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -302,6 +305,31 @@ export function UserProfileView() {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', deleteAccountModal);
+
+    // Añadir el modal de QR después del contenido existente
+    const qrModalHTML = `
+        <div class="modal fade" id="qrModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-qrcode me-2"></i>Tu código QR
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="qrContainer" class="mb-3">
+                            <div class="spinner-border text-primary"></div>
+                        </div>
+                        <p class="text-muted">
+                            Usa este código QR para iniciar sesión rápidamente desde tu móvil
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', qrModalHTML);
 
     // Añadir verificación de URL para email
     const urlParams = new URLSearchParams(window.location.search);
@@ -576,6 +604,28 @@ function setupProfileEvents() {
             }
         } catch (error) {
             alert(error.message);
+        }
+    });
+
+    // Añadir el event listener para el botón QR
+    document.getElementById('showQRBtn')?.addEventListener('click', async () => {
+        const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+        modal.show();
+        
+        try {
+            const username = localStorage.getItem('username');
+            const qrUrl = await AuthService.generateQR(username);
+            
+            document.getElementById('qrContainer').innerHTML = `
+                <img src="${qrUrl}" alt="QR Code" class="img-fluid" style="max-width: 256px;">
+            `;
+        } catch (error) {
+            document.getElementById('qrContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error generando el código QR
+                </div>
+            `;
         }
     });
 }

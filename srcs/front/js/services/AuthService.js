@@ -806,6 +806,30 @@ class AuthService {
             throw error;
         }
     }
+
+    static async generateQR(username) {
+        try {
+            const response = await fetch(`${this.API_URL}/generate-qr/${username}/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'image/png',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Error generando código QR');
+            }
+
+            // Convertir la respuesta a blob
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+        } catch (error) {
+            console.error('Error en generateQR:', error);
+            throw error;
+        }
+    }
 }
 
 export default AuthService;
