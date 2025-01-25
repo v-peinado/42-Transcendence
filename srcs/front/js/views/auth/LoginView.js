@@ -260,6 +260,13 @@ export async function LoginView() {
                                             ¿No tienes cuenta? Regístrate
                                         </a>
                                     </div>
+                                    
+                                    <!-- Añadir botón de escanear QR -->
+                                    <div class="text-center mt-3">
+                                        <button type="button" class="btn btn-outline-light w-100" id="scanQRBtn">
+                                            <i class="fas fa-qrcode me-2"></i>Escanear QR para iniciar sesión
+                                        </button>
+                                    </div>
                                 </form>
                                 
                                 <div class="text-center mt-3">
@@ -310,26 +317,28 @@ export async function LoginView() {
                 </div>
             </div>
         </div>
+    `;
 
-        <!-- Modal de verificación completada -->
-        <div class="modal fade" id="verificationSuccessModal">
+    // Añadir el modal del escáner QR
+    app.innerHTML += `
+        <div class="modal fade" id="qrScannerModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content bg-dark">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-check-circle me-2"></i>
-                            Verificación Completada
+                            <i class="fas fa-qrcode me-2"></i>Escanear QR
                         </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body text-center">
-                        <div class="status-message">
-                            <i class="fas fa-check-circle icon text-success"></i>
-                            <p class="mb-4">Tu cuenta ha sido verificada correctamente.</p>
+                    <div class="modal-body text-center p-0"> <!-- Removed padding -->
+                        <div id="qrScannerContainer">
+                            <video id="qrVideo" playsinline></video>
+                            <div class="scan-overlay"></div>
                         </div>
-                        <div class="d-grid">
-                            <button class="btn btn-primary btn-lg" data-bs-dismiss="modal">
-                                <i class="fas fa-sign-in-alt me-2"></i>Continuar
-                            </button>
+                        <div class="p-3">
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-camera me-2"></i>Apunta con la cámara al código QR
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -442,4 +451,100 @@ export async function LoginView() {
             `;
         }
     };
+
+    // Modificar el event listener del botón de escanear QR
+    document.getElementById('scanQRBtn')?.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            });
+            
+            const video = document.getElementById('qrVideo');
+            video.srcObject = stream;
+            video.setAttribute('playsinline', true);
+            video.style.width = '100%';
+            video.style.height = '100%';  // Cambiado a 100%
+            video.style.maxWidth = '100%';
+            video.style.backgroundColor = '#000';
+
+            // Esperar a que el video esté listo
+            await video.play();
+
+            const scannerModal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+            scannerModal.show();
+
+            // Función para procesar frames
+            function tick() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    const canvasCtx = canvas.getContext('2d');
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    canvasCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = canvasCtx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        console.log('QR detectado:', code.data); // Debug
+                        
+                        try {
+                            // Detener el escaneo
+                            stream.getTracks().forEach(track => track.stop());
+                            scannerModal.hide();
+                            // Si el código QR es directamente el username
+                            const username = code.data;
+                            
+                            AuthService.validateQR(username)
+                                .then(result => {
+                                    console.log('Resultado validación QR:', result); // Debug
+                                    
+                                    if (result.success) {
+                                        if (result.require_2fa) {
+                                            // Mostrar modal 2FA
+                                            sessionStorage.setItem('pendingAuth', 'true');
+                                            sessionStorage.setItem('pendingUsername', username);
+                                            const twoFactorModal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+                                            twoFactorModal.show();
+                                        } else {
+                                            // Login directo
+                                            localStorage.setItem('isAuthenticated', 'true');
+                                            localStorage.setItem('username', username);
+                                            window.location.replace('/profile');
+                                        }
+                                    } else {
+                                        throw new Error(result.error || 'Error validando el QR');
+                                    }
+                                })
+                                .catch(error => {
+                                    alert(`Error al validar el código QR: ${error.message}`);
+                                });
+                        } catch (error) {
+                            console.error('Error procesando QR:', error);
+                            alert('Error al procesar el código QR');
+                        }
+                    }
+                }
+                if (video.srcObject) {
+                    requestAnimationFrame(tick);
+                }
+            }
+
+            requestAnimationFrame(tick);
+
+            // Detener el escaneo cuando se cierre el modal
+            document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', () => {
+                stream.getTracks().forEach(track => track.stop());
+            });
+        } catch (error) {
+            alert('Error al acceder a la cámara: ' + error.message);
+            console.error('Error detallado:', error);
+        }
+    });
 }

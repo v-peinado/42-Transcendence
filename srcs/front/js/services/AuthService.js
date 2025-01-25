@@ -830,6 +830,69 @@ class AuthService {
             throw error;
         }
     }
+
+    async validateQR(username) {
+        try {
+            const response = await fetch('/api/validate-qr/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error validando el código QR');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error en validateQR:', error);
+            throw error;
+        }
+    }
+
+    static async validateQR(username) {
+        try {
+            const response = await fetch(`${this.API_URL}/validate-qr/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ username }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al validar QR');
+            }
+
+            // Verificar si requiere 2FA
+            if (data.require_2fa) {
+                return {
+                    success: true,
+                    require_2fa: true,
+                    redirect_url: data.redirect_url
+                };
+            }
+
+            return {
+                success: true,
+                redirect_url: data.redirect_url
+            };
+        } catch (error) {
+            console.error('Error en validateQR:', error);
+            throw error;
+        }
+    }
 }
 
 export default AuthService;

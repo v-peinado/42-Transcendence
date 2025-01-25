@@ -37,10 +37,8 @@ class QRService:
             if user.two_factor_enabled:
                 code = TwoFactorService.generate_2fa_code(user)
                 TwoFactorService.send_2fa_code(user, code)
-                return True, 'Código 2FA enviado a tu email', '/verify-2fa/'
+                return True, 'Código 2FA enviado', True
                 
-            return True, None, '/user/'
-        except CustomUser.DoesNotExist:
-            return False, 'Usuario no encontrado', None
+            return True, None, False
         except Exception as e:
             return False, str(e), None
