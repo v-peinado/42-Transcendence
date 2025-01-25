@@ -1,3 +1,5 @@
+import { messages } from '../translations.js';
+
 class AuthService {
     // URL base para las APIs
     static API_URL = '/api';
@@ -31,7 +33,8 @@ class AuthService {
             console.log('Respuesta login:', data);
             
             if (!response.ok) {
-                throw new Error(data.message || 'Error en el login');
+                const errorData = this.mapBackendError(data.message);
+                throw new Error(errorData.html); // Ahora enviamos el HTML formateado
             }
 
             // Si requiere 2FA, NO establecer autenticación todavía
@@ -56,6 +59,74 @@ class AuthService {
             console.error('Error en login service:', error);
             throw error;
         }
+    }
+
+    // Nuevo método para mapear errores del backend
+    static mapBackendError(backendMessage) {
+        const errorStyles = {
+            invalid_credentials: {
+                icon: 'fas fa-user-lock fa-bounce',
+                message: messages.AUTH.ERRORS.INVALID_CREDENTIALS,
+                type: 'danger',
+                title: '¡Acceso Denegado!'
+            },
+            email_not_verified: {
+                icon: 'fas fa-envelope-circle-check fa-beat',
+                message: messages.AUTH.ERRORS.EMAIL_NOT_VERIFIED,
+                type: 'warning',
+                title: '¡Falta un Paso!'
+            },
+            no_session: {
+                icon: 'fas fa-hourglass-end fa-spin',
+                message: messages.AUTH.ERRORS.NO_SESSION,
+                type: 'warning',
+                title: '¡Sesión Expirada!'
+            },
+            privacy_policy: {
+                icon: 'fas fa-shield-halved fa-flip',
+                message: messages.AUTH.ERRORS.PRIVACY_POLICY,
+                type: 'info',
+                title: '¡Un Momento!'
+            },
+            default: {
+                icon: 'fas fa-triangle-exclamation fa-shake',
+                message: messages.AUTH.ERRORS.DEFAULT,
+                type: 'danger',
+                title: '¡Error!'
+            }
+        };
+
+        // Mapear mensaje del backend al estilo correspondiente
+        let errorConfig;
+        switch(backendMessage) {
+            case 'Usuario o contraseña incorrectos':
+                errorConfig = errorStyles.invalid_credentials;
+                break;
+            case 'Por favor verifica tu email para activar tu cuenta':
+                errorConfig = errorStyles.email_not_verified;
+                break;
+            case 'No hay sesión activa':
+                errorConfig = errorStyles.no_session;
+                break;
+            case 'Debes aceptar la política de privacidad':
+                errorConfig = errorStyles.privacy_policy;
+                break;
+            default:
+                errorConfig = errorStyles.default;
+        }
+
+        return {
+            html: `
+                <div class="alert alert-${errorConfig.type} fade show">
+                    <i class="${errorConfig.icon}"></i>
+                    <div class="ms-2">
+                        <h6 class="alert-heading mb-1">${errorConfig.title}</h6>
+                        <span>${errorConfig.message}</span>
+                    </div>
+                </div>
+            `,
+            message: errorConfig.message
+        };
     }
 
     static async clearSession() {
@@ -568,7 +639,7 @@ class AuthService {
             if (data.needsEmailVerification) {
                 return {
                     status: 'pending_verification',
-                    message: 'Por favor, verifica tu email para continuar'  // ← SE TRADUCE AQUÍ
+                    message: messages.AUTH.EMAIL_VERIFICATION.MESSAGE
                 };
             }
 
@@ -588,7 +659,7 @@ class AuthService {
                 window.location.replace('/profile');  // Cambiar '/user' por '/profile'
             }
 
-            throw new Error(data.message || 'Error en la autenticación');
+            throw new Error(data.message || messages.AUTH.ERRORS.LOGIN_FAILED);
         } catch (error) {
             console.error('AuthService: Error detallado:', error);
             throw error;

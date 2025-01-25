@@ -391,11 +391,8 @@ export async function LoginView() {
             }
         } catch (error) {
             console.error('Error en login:', error);
-            alertDiv.innerHTML = `
-                <div class="alert alert-danger">
-                    <p>${error.message}</p>
-                </div>
-            `;
+            // Ahora podemos usar directamente el mensaje HTML formateado
+            alertDiv.innerHTML = error.message;
         }
     });
 

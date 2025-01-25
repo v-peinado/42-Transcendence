@@ -358,24 +358,54 @@ a:hover {
 
 /* Alerts personalizados */
 .alert {
+    background: rgba(33, 37, 41, 0.98);
     border: none;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.alert-success {
-    background: rgba(25, 135, 84, 0.1);
-    border-left: 4px solid #198754;
+.alert i {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+    background: none;
+    width: auto;
+    height: auto;
+    margin-top: -5px;
+}
+
+.alert-heading {
+    color: inherit;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.alert span {
+    font-size: 1rem;
+    opacity: 0.9;
+    line-height: 1.4;
 }
 
 .alert-danger {
-    background: rgba(220, 53, 69, 0.1);
-    border-left: 4px solid #dc3545;
+    border-left: 5px solid #dc3545;
+    color: #ff6b6b;
 }
 
 .alert-warning {
-    background: rgba(255, 193, 7, 0.1);
-    border-left: 4px solid #ffc107;
+    border-left: 5px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    border-left: 5px solid #0dcaf0;
+    color: #4dd0e1;
 }
 
 /* Estilos para la página de inicio */
@@ -1054,4 +1084,98 @@ main {
     font-size: 2rem;
     margin-bottom: 1rem;
     color: #0d6efd;
+}
+
+/* Estilos mejorados para alertas y mensajes de error */
+.alert {
+    background: rgba(33, 37, 41, 0.98);
+    border: none;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.alert i {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+    background: none;
+    width: auto;
+    height: auto;
+    margin-top: -5px;
+}
+
+.alert-heading {
+    color: inherit;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.alert span {
+    font-size: 1rem;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.alert-danger {
+    border-left: 5px solid #dc3545;
+    color: #ff6b6b;
+}
+
+.alert-warning {
+    border-left: 5px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    border-left: 5px solid #0dcaf0;
+    color: #4dd0e1;
+}
+
+/* Estilos mejorados para alertas y mensajes de error */
+.alert {
+    border: none;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    backdrop-filter: blur(10px);
+}
+
+.alert i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid #dc3545;
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background: rgba(25, 135, 84, 0.1);
+    border-left: 4px solid #198754;
+    color: #2ecc71;
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    background: rgba(13, 202, 240, 0.1);
+    border-left: 4px solid #0dcaf0;
+    color: #4dd0e1;
 }
