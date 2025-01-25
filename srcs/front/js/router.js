@@ -3,8 +3,7 @@ import { LoginView } from '/js/views/auth/LoginView.js';
 import { RegisterView } from '/js/views/auth/RegisterView.js';
 import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
 import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';  // Nueva importación
-import { UserView } from '/js/views/user/UserView.js';  // Nueva importación
-import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva importación
+import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Mantener solo UserProfileView
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
@@ -66,10 +65,8 @@ class Router {
         '/verify-email/:uid/:token': VerifyEmailView,  // Nueva ruta para verificación
         '/verify-email-change/:uid/:token': VerifyEmailChangeView,  // Añadir esta ruta
         '/verify-email-change/:uid/:token/': VerifyEmailChangeView,  // Añadir slash final
-        '/user': UserView,      // Nueva ruta
-        '/user/': UserView,     // También manejar con slash final
-        '/profile': UserProfileView,  // Nueva ruta para perfil
-        '/profile/': UserProfileView, // También manejar con slash final
+        '/profile': UserProfileView,  // Mantener solo la ruta de profile
+        '/profile/': UserProfileView, // Con slash final también
         '/reset_password': RequestPasswordResetView,
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,

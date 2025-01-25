@@ -25,7 +25,7 @@ export async function LoginView() {
 
     if (code) {
         console.log('Código 42 detectado:', code);
-        // Mostrar pantalla de carga inmediatamente
+        // Asegurar que el modal se crea antes de intentar mostrarlo
         app.innerHTML = `
             <div class="hero-section">
                 <div class="container">
@@ -41,48 +41,94 @@ export async function LoginView() {
                     </div>
                 </div>
             </div>
+
+            <!-- Modal 2FA -->
+            <div class="modal fade" id="twoFactorModal" data-bs-backdrop="static" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content bg-dark">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Verificación en dos pasos</h5>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-muted">Introduce el código que hemos enviado a tu email</p>
+                            <div id="verify2FAAlert"></div>
+                            <form id="verify2FAForm">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control bg-dark text-light" 
+                                           id="code" placeholder="Código" required
+                                           pattern="[0-9]{6}" maxlength="6"
+                                           autocomplete="off">
+                                    <label for="code">Código de verificación</label>
+                                </div>
+                                <div class="d-grid">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-check me-2"></i>Verificar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
 
         try {
             const result = await AuthService.handle42Callback(code);
-            console.log('Resultado callback 42:', result);
+            console.log('Resultado 42 callback:', result);
+            
+            if (result.status === 'pending_2fa') {
+                // Asegurarnos de que el modal existe antes de inicializarlo
+                const modalElement = document.getElementById('twoFactorModal');
+                if (!modalElement) {
+                    throw new Error('Error al inicializar el modal 2FA');
+                }
 
-            if (result.status === 'success' || result.status === 'verified') {
+                // Guardar datos en sessionStorage
+                sessionStorage.setItem('pendingAuth', 'true');
+                sessionStorage.setItem('fortytwo_user', 'true');
+                sessionStorage.setItem('pendingUsername', result.username);
+
+                // Inicializar y mostrar el modal
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+
+                // Configurar el evento del formulario 2FA
+                document.getElementById('verify2FAForm')?.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const code = document.getElementById('code').value;
+                    const alertDiv = document.getElementById('verify2FAAlert');
+                    
+                    try {
+                        const verifyResult = await AuthService.verify2FACode(code, true);
+                        if (verifyResult.status === 'success') {
+                            // Limpiar estado temporal
+                            sessionStorage.removeItem('pendingAuth');
+                            sessionStorage.removeItem('fortytwo_user');
+                            sessionStorage.removeItem('pendingUsername');
+                            
+                            // Establecer autenticación
+                            localStorage.setItem('isAuthenticated', 'true');
+                            localStorage.setItem('username', verifyResult.username);
+                            
+                            // Ocultar modal y redirigir
+                            modal.hide();
+                            window.location.replace('/profile');
+                        }
+                    } catch (error) {
+                        alertDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <p>${error.message}</p>
+                            </div>
+                        `;
+                    }
+                });
+            } else if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
-                // Cambiar para que use el mismo flujo que el login normal
-                window.location.replace('/');
-                return;
-            } else if (result.needsEmailVerification) {
-                // Solo mostrar mensaje de verificación si realmente necesita verificar
-                app.innerHTML = `
-                    <div class="hero-section">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-md-6 col-lg-5">
-                                    <div class="card login-card">
-                                        <div class="card-body p-5">
-                                            <div class="text-center mb-4">
-                                                <h2 class="fw-bold">¡Cuenta Creada!</h2>
-                                            </div>
-                                            <div class="alert alert-success">
-                                                <h5 class="mb-3">¡Gracias por registrarte!</h5>
-                                                <p class="mb-0">Te hemos enviado un email con las instrucciones para activar tu cuenta.</p>
-                                            </div>
-                                            <div class="text-center mt-4">
-                                                <a href="/login" data-link class="btn btn-primary">Volver al Login</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                return;
+                window.location.replace('/profile');
             }
         } catch (error) {
-            console.error('Error en callback de 42:', error);
+            console.error('Error en 42 callback:', error);
             app.innerHTML = `
                 <div class="hero-section">
                     <div class="container">
@@ -104,8 +150,8 @@ export async function LoginView() {
                     </div>
                 </div>
             `;
-            return;
         }
+        return;
     }
 
     app.innerHTML = `
@@ -275,10 +321,19 @@ export async function LoginView() {
         e.preventDefault();
         const code = document.getElementById('code').value;
         const alertDiv = document.getElementById('verify2FAAlert');
+        const isFortytwoUser = sessionStorage.getItem('fortytwo_user') === 'true';
         
         try {
-            const result = await AuthService.verify2FACode(code);
+            const result = await AuthService.verify2FACode(code, isFortytwoUser);
             if (result.status === 'success') {
+                // Limpiar estado temporal
+                sessionStorage.removeItem('pendingAuth');
+                sessionStorage.removeItem('fortytwo_user');
+                
+                // Establecer autenticación
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', result.username);
+                
                 // Ocultar modal y redirigir
                 const modal = bootstrap.Modal.getInstance(document.getElementById('twoFactorModal'));
                 modal.hide();

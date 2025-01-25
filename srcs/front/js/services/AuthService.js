@@ -557,36 +557,73 @@ class AuthService {
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code }), // Este es el código de autorización de 42
                 credentials: 'include'
             });
 
             const data = await response.json();
             console.log('AuthService: Respuesta del servidor:', data);
-            
-            if (response.ok && data.status === 'success') {
-                // Usuario autenticado correctamente
+
+            // Si el usuario necesita verificar email primero
+            if (data.needsEmailVerification) {
                 return {
-                    status: 'success',
-                    username: data.username
-                };
-            } else if (response.ok && data.is_verified) {
-                // Usuario ya verificado
-                return {
-                    status: 'verified',
-                    username: data.username
-                };
-            } else {
-                // Necesita verificación o hay error
-                return {
-                    status: 'error',
-                    needsEmailVerification: true,
-                    message: data.message || 'Error en la autenticación'
+                    status: 'pending_verification',
+                    message: 'Por favor, verifica tu email para continuar'
                 };
             }
+
+            // Si el usuario está verificado y tiene 2FA
+            if (data.require_2fa) {
+                return {
+                    status: 'pending_2fa',
+                    username: data.username,
+                    message: 'Se requiere verificación en dos pasos'
+                };
+            }
+
+            // Si todo está ok y no necesita 2FA
+            if (data.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', data.username);
+                window.location.replace('/profile');  // Cambiar '/user' por '/profile'
+            }
+
+            throw new Error(data.message || 'Error en la autenticación');
         } catch (error) {
             console.error('AuthService: Error detallado:', error);
             throw error;
+        }
+    }
+
+    // Esta es la que está causando el problema
+    static async handleFortyTwoCallback(code) {
+        try {
+            const response = await fetch('/api/auth/42/callback', {  // ❌ URL incorrecta
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code })
+            });
+
+            const data = await response.json();
+
+            if (data.require_2fa) {
+                // Guardar estado temporal para 2FA
+                sessionStorage.setItem('pendingAuth', 'true');
+                sessionStorage.setItem('fortytwo_user', 'true');
+                return { requireTwoFactor: true };
+            }
+
+            if (data.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', data.username);
+                return { success: true };
+            }
+
+            throw new Error(data.message);
+        } catch (error) {
+            throw new Error(error.message || 'Error en la autenticación con 42');
         }
     }
 
@@ -646,50 +683,53 @@ class AuthService {
         }
     }
 
-    static async verify2FACode(code) {
+    static async verify2FACode(code, isFortytwoUser = false) {
         try {
-            console.log('Verificando código 2FA:', code);
+            console.log('Verificando código 2FA:', { code, isFortytwoUser });
             
-            const response = await fetch(`${this.API_URL}/verify-2fa/`, {
+            // Corregir la ruta para que coincida con la URL en Django
+            const endpoint = isFortytwoUser ? 
+                `${this.API_URL}/auth/42/verify-2fa/` :  // Usar la misma ruta que en Django
+                `${this.API_URL}/verify-2fa/`;
+            
+            console.log('Usando endpoint:', endpoint);  // Debug
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code }), // Este es el código 2FA
                 credentials: 'include'
             });
 
-            const data = await response.json();
-            console.log('Respuesta verify2FA:', data);
+            // Debug para ver la respuesta raw
+            const responseText = await response.text();
+            console.log('Respuesta raw:', responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Error parseando respuesta:', e);
+                throw new Error('Error en la respuesta del servidor');
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || data.message || 'Código inválido');
             }
 
             if (data.status === 'success') {
-                // Asegurarnos de que la sesión está establecida
-                const username = data.username || sessionStorage.getItem('pendingUsername');
-                
-                // Establecer autenticación y estado 2FA
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', username);
-                localStorage.setItem('sessionId', data.session_id);
-                localStorage.setItem('two_factor_enabled', 'true'); // Añadir esta línea
-                
-                // Limpiar estado temporal
-                sessionStorage.removeItem('pendingAuth');
-                sessionStorage.removeItem('pendingUsername');
-                
-                return {
-                    status: 'success',
-                    username: username,
-                    two_factor_enabled: true
-                };
+                window.location.replace('/profile');  // Cambiar de '/user' a '/profile'
             }
 
-            throw new Error('Error en la verificación');
+            return {
+                status: 'success',
+                username: data.username || sessionStorage.getItem('pendingUsername'),
+                two_factor_enabled: true
+            };
         } catch (error) {
             console.error('Error en verify2FA:', error);
             throw error;
