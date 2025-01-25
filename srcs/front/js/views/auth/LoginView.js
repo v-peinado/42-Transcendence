@@ -1,4 +1,5 @@
 import AuthService from '../../services/AuthService.js';
+import { messages } from '../../translations.js';
 
 export async function LoginView() {
     // Limpiar todo el estado al inicio
@@ -44,25 +45,31 @@ export async function LoginView() {
 
             <!-- Modal 2FA -->
             <div class="modal fade" id="twoFactorModal" data-bs-backdrop="static" tabindex="-1">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content bg-dark">
                         <div class="modal-header">
-                            <h5 class="modal-title">Verificación en dos pasos</h5>
+                            <h5 class="modal-title">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                ${messages.AUTH.TWO_FACTOR.TITLE}
+                            </h5>
                         </div>
                         <div class="modal-body">
-                            <p class="text-muted">Introduce el código que hemos enviado a tu email</p>
+                            <div class="status-message">
+                                <i class="fas fa-envelope icon"></i>
+                                <p class="mb-4">${messages.AUTH.TWO_FACTOR.MESSAGE}</p>
+                            </div>
                             <div id="verify2FAAlert"></div>
                             <form id="verify2FAForm">
                                 <div class="form-floating mb-3">
-                                    <input type="text" class="form-control bg-dark text-light" 
+                                    <input type="text" class="form-control" 
                                            id="code" placeholder="Código" required
                                            pattern="[0-9]{6}" maxlength="6"
                                            autocomplete="off">
                                     <label for="code">Código de verificación</label>
                                 </div>
                                 <div class="d-grid">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="fas fa-check me-2"></i>Verificar
+                                    <button class="btn btn-primary btn-lg">
+                                        <i class="fas fa-check me-2"></i>${messages.AUTH.TWO_FACTOR.BUTTON}
                                     </button>
                                 </div>
                             </form>
@@ -75,6 +82,39 @@ export async function LoginView() {
         try {
             const result = await AuthService.handle42Callback(code);
             console.log('Resultado 42 callback:', result);
+            
+            if (result.status === 'pending_verification') {
+                app.innerHTML = `
+                    <div class="hero-section">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-md-6 col-lg-5">
+                                    <div class="card login-card verification-message">
+                                        <div class="card-body p-5 text-center">
+                                            <svg class="logo mb-4" width="64" height="64" viewBox="0 0 100 100">
+                                                <rect width="100" height="100" fill="none"/>
+                                                <circle cx="50" cy="50" r="40" fill="none" stroke="#0d6efd" stroke-width="8"/>
+                                                <path d="M30 50 L45 65 L70 35" stroke="#0d6efd" stroke-width="8" fill="none"/>
+                                            </svg>
+                                            <h3 class="text-light mb-3">${messages.AUTH.EMAIL_VERIFICATION.TITLE}</h3>
+                                            <p class="text-white fs-6 mb-4">
+                                                ${messages.AUTH.EMAIL_VERIFICATION.MESSAGE}<br>
+                                                <small class="d-block mt-2 text-white-75">${messages.AUTH.EMAIL_VERIFICATION.SUBMESSAGE}</small>
+                                            </p>
+                                            <div class="d-grid">
+                                                <a href="/login" class="btn btn-primary btn-lg">
+                                                    <i class="fas fa-arrow-left me-2"></i>${messages.AUTH.EMAIL_VERIFICATION.BUTTON}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
             
             if (result.status === 'pending_2fa') {
                 // Asegurarnos de que el modal existe antes de inicializarlo
@@ -134,14 +174,26 @@ export async function LoginView() {
                     <div class="container">
                         <div class="row justify-content-center">
                             <div class="col-md-6 col-lg-5">
-                                <div class="card login-card">
-                                    <div class="card-body p-5">
-                                        <div class="alert alert-danger">
-                                            <h4>Error de Autenticación</h4>
-                                            <p>${error.message}</p>
-                                            <div class="mt-3">
-                                                <a href="/login" class="btn btn-primary">Volver a intentar</a>
-                                            </div>
+                                <div class="card login-card verification-message">
+                                    <div class="card-body p-5 text-center">
+                                        <svg class="logo mb-4" width="64" height="64" viewBox="0 0 100 100">
+                                            <rect width="100" height="100" fill="none"/>
+                                            <circle cx="50" cy="50" r="40" fill="none" stroke="#0d6efd" stroke-width="8">
+                                                <animate attributeName="stroke-dasharray" from="0,251.2" to="251.2,0" dur="2s" fill="freeze"/>
+                                            </circle>
+                                            <path d="M30 50 L45 65 L70 35" stroke="#0d6efd" stroke-width="8" fill="none">
+                                                <animate attributeName="stroke-dasharray" from="0,90" to="90,0" dur="1s" fill="freeze" begin="1s"/>
+                                            </path>
+                                        </svg>
+                                        <h3 class="text-light fw-bold mb-3">${messages.AUTH.EMAIL_VERIFICATION.TITLE}</h3>
+                                        <p class="text-white fs-6 mb-4">
+                                            ${messages.AUTH.EMAIL_VERIFICATION.MESSAGE}<br>
+                                            <small class="d-block mt-2 text-white-75">${messages.AUTH.EMAIL_VERIFICATION.SUBMESSAGE}</small>
+                                        </p>
+                                        <div class="d-grid">
+                                            <a href="/login" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-arrow-left me-2"></i>${messages.AUTH.EMAIL_VERIFICATION.BUTTON}
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -226,28 +278,59 @@ export async function LoginView() {
     // Añadir el modal de 2FA después del formulario de login
     app.innerHTML += `
         <div class="modal fade" id="twoFactorModal" data-bs-backdrop="static" tabindex="-1">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content bg-dark">
                     <div class="modal-header">
-                        <h5 class="modal-title">Verificación en dos pasos</h5>
+                        <h5 class="modal-title">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            ${messages.AUTH.TWO_FACTOR.TITLE}
+                        </h5>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted">Introduce el código que hemos enviado a tu email</p>
+                        <div class="status-message">
+                            <i class="fas fa-envelope icon"></i>
+                            <p class="mb-4">${messages.AUTH.TWO_FACTOR.MESSAGE}</p>
+                        </div>
                         <div id="verify2FAAlert"></div>
                         <form id="verify2FAForm">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control bg-dark text-light" 
+                                <input type="text" class="form-control" 
                                        id="code" placeholder="Código" required
                                        pattern="[0-9]{6}" maxlength="6"
                                        autocomplete="off">
                                 <label for="code">Código de verificación</label>
                             </div>
                             <div class="d-grid">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="fas fa-check me-2"></i>Verificar
+                                <button class="btn btn-primary btn-lg">
+                                    <i class="fas fa-check me-2"></i>${messages.AUTH.TWO_FACTOR.BUTTON}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de verificación completada -->
+        <div class="modal fade" id="verificationSuccessModal">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Verificación Completada
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="status-message">
+                            <i class="fas fa-check-circle icon text-success"></i>
+                            <p class="mb-4">Tu cuenta ha sido verificada correctamente.</p>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg" data-bs-dismiss="modal">
+                                <i class="fas fa-sign-in-alt me-2"></i>Continuar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

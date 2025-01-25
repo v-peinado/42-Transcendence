@@ -106,7 +106,10 @@ class FortyTwoAuthService:
 
             # Verificar email primero
             if created or not user.email_verified:
-                return False, user, 'Verifica tu email para acceder a tu cuenta'
+                return False, user, {
+                    'status': 'pending_verification',
+                    'message': '¡Casi listo! Te hemos enviado un email de verificación. Por favor, revisa tu bandeja de entrada para activar tu cuenta.'
+                }
 
             # Si tiene 2FA activado, generar y enviar código
             if user.two_factor_enabled:

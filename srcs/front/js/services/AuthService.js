@@ -568,7 +568,7 @@ class AuthService {
             if (data.needsEmailVerification) {
                 return {
                     status: 'pending_verification',
-                    message: 'Por favor, verifica tu email para continuar'
+                    message: 'Por favor, verifica tu email para continuar'  // ← SE TRADUCE AQUÍ
                 };
             }
 

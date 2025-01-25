@@ -946,3 +946,112 @@ main {
     z-index: 1030;
     height: 76px;
 }
+
+/* Estilos para el mensaje de verificación */
+.verification-message {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.verification-message .text-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.verification-message .text-white-75 {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 0.95rem;
+}
+
+.verification-message .logo {
+    filter: drop-shadow(0 0 5px rgba(13, 110, 253, 0.5));
+}
+
+/* Estilos unificados para modales */
+.modal-content.bg-dark {
+    background: rgba(33, 37, 41, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-body .form-control {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.modal-body .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.modal-body .form-floating label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modal-body .alert {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+.modal-dialog {
+    margin-top: 4rem;
+}
+
+/* Animaciones para modales */
+.modal.fade .modal-dialog {
+    transform: translateY(-10px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translateY(0);
+}
+
+.modal-backdrop.show {
+    opacity: 0.8;
+    backdrop-filter: blur(4px);
+}
+
+/* Estilo específico para mensajes de estado */
+.status-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.status-message .icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #0d6efd;
+}

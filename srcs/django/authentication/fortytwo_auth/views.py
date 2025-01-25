@@ -31,7 +31,7 @@ def fortytwo_callback(request):
     if message == 'pending_2fa':
         return HttpResponseRedirect(reverse('verify_2fa'))
         
-    return redirect('user')
+    return redirect('profile')
 
 # Vistas API
 class FortyTwoLoginAPIView(View):
