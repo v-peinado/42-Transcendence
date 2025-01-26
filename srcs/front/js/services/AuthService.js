@@ -336,6 +336,11 @@ class AuthService {
             // Mantener el estado 2FA en localStorage incluso si el backend no lo envía
             const two_factor_enabled = localStorage.getItem('two_factor_enabled') === 'true';
             
+            // Convertir la URL de la imagen de perfil a una URL absoluta
+            if (data.profile_image && !data.profile_image.startsWith('http')) {
+                data.profile_image = `http://localhost:8000${data.profile_image}`;
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Error al obtener el perfil');
             }
@@ -359,6 +364,10 @@ class AuthService {
                 data.new_password1 = userData.new_password1;
                 data.new_password2 = userData.new_password2;
             }
+            // Añadir el flag de restauración si existe
+            if (userData.restore_image) {
+                data.restore_image = true;
+            }
 
             const response = await fetch(`${this.API_URL}/profile/`, {
                 method: 'POST',
@@ -376,6 +385,11 @@ class AuthService {
 
             if (!response.ok) {
                 throw new Error(responseData.message || responseData.error || 'Error actualizando perfil');
+            }
+
+            // Si estamos restaurando la imagen, forzar una recarga del perfil
+            if (userData.restore_image) {
+                return await this.getUserProfile();
             }
 
             return {
@@ -398,19 +412,20 @@ class AuthService {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': this.getCSRFToken(),
-                    // No incluir Content-Type, fetch lo establecerá automáticamente con el boundary
                 },
                 body: formData,
                 credentials: 'include'
             });
 
             const data = await response.json();
+            console.log('Respuesta updateProfileImage:', data); // Añadir este log
             
             if (!response.ok) {
                 throw new Error(data.message || 'Error actualizando imagen');
             }
 
-            return data;
+            // Forzar una recarga del perfil completo
+            return await this.getUserProfile();
         } catch (error) {
             console.error('Error en updateProfileImage:', error);
             throw error;

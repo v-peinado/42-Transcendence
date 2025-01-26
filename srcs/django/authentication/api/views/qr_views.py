@@ -20,20 +20,12 @@ class GenerateQRAPIView(View):
             }, status=401)
         
         try:
-            download = request.GET.get('download', False)
             buffer = qr_service.generate_qr(request.user.username)
-            
-            response = HttpResponse(
+            return HttpResponse(
                 buffer.getvalue(), 
-                content_type="image/png"
+                content_type="image/png",
+                headers={'Cache-Control': 'no-store'}
             )
-            
-            if download:
-                response['Content-Disposition'] = f'attachment; filename="qr-{request.user.username}.png"'
-            else:
-                response['Cache-Control'] = 'no-store'
-                
-            return response
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
