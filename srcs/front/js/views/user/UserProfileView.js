@@ -649,9 +649,27 @@ function setupProfileEvents() {
         }
     });
 
-    document.getElementById('downloadQRBtn')?.addEventListener('click', async () => {
-        const username = localStorage.getItem('username');
-        window.location.href = `/api/generate-qr/${username}/?download=true`;
+    document.getElementById('downloadQRBtn')?.addEventListener('click', () => {
+        const qrImage = document.querySelector('#qrContainer img');
+        if (qrImage) {
+            // Crear un canvas temporal
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Configurar el tamaño del canvas al tamaño de la imagen
+            canvas.width = qrImage.naturalWidth;
+            canvas.height = qrImage.naturalHeight;
+            
+            // Dibujar la imagen en el canvas
+            ctx.drawImage(qrImage, 0, 0);
+            
+            // Crear un link temporal y descargar
+            const link = document.createElement('a');
+            const username = localStorage.getItem('username');
+            link.download = `qr-login-${username}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
     });
 }
 
