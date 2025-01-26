@@ -34,7 +34,7 @@ setup_initial() {
 	# Generar certificados SSL si no existen
     if [ ! -f "/tmp/ssl/transcendence.crt" ]; then
         log_message "Generando certificados SSL..."
-        /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}"
+        /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}" &
     fi
 }
 
@@ -52,19 +52,18 @@ start_vault() {
             -log-level=error > /dev/null 2>&1 &
     # Modo producción
     else
-        log_message "Iniciando Vault en modo producción..."
         vault server -config="${VAULT_CONFIG}" \
-            -log-level=error > /dev/null 2>&1 &
+            -log-level=warn > /dev/null 2>&1 &
     fi
     
     # Esperar a que el servicio interno esté disponible
     echo "🔄 Iniciando servicios internos... esto puede llevar unos minutos. Por favor, espere."
-    for i in $(seq 1 30); do
+    for i in $(seq 1 15); do
         if curl -s https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
             return 0
         fi
-        printf "⏳ Progreso: %d/30\r" "$i"
-        sleep 2
+        printf "⏳ Progreso: %d/15\r" "$i"
+        sleep 1
     done
 	echo "✅ Servicios internos iniciados correctamente"
     return 1

@@ -73,16 +73,16 @@ services:
       context: .
       dockerfile: waf/Dockerfile
     ports:
-      - "8082:8081"  # HTTP redirect
-      - "8445:8444"  # HTTPS
-      - "8200:8200"  # Vault API
+      - "8082:8081" 
+      - "8445:8444"
+      - "8200:8200"
     networks:
       - trancendence-backend
       - app-network
     volumes:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
-      - vault_data:/etc/vault.d/data  # Almacenamiento persistente de Vault
+      - vault_data:/etc/vault.d/data
     environment:
       - VAULT_ADDR=https://127.0.0.1:8200
       - VAULT_SKIP_VERIFY=true
@@ -123,10 +123,10 @@ services:
 
 volumes:
   postgres_data:
-    driver: local        # Tipo de driver del volumen, en este caso 'local'
+    driver: local
     driver_opts:
-      type: none         # Tipo de dispositivo, se montará un directorio del host, no se utilizará un dispositivo
-      device: ./postgres_data  # Ruta relativa en el host donde se almacenarán los datos de PostgreSQL
+      type: none
+      device: ./postgres_data
       o: bind
   django_media:
   django_static:
