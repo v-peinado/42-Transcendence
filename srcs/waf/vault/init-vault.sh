@@ -57,7 +57,7 @@ start_vault() {
     
     # Esperar a que Vault esté disponible antes de continuar con la configuración
     for i in $(seq 1 60); do
-        if curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
+        if curl -s https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
             log_message "Vault está disponible"
             return 0
         fi
@@ -72,7 +72,8 @@ start_vault() {
 # Una vez que Vault está disponible, seguir con la inicialización
 initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
-        export VAULT_ADDR='http://127.0.0.1:8200'
+        export VAULT_ADDR='https://127.0.0.1:8200'
+		export VAULT_SKIP_VERIFY=true
         log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
 
         # Verificar si necesita inicialización
@@ -106,7 +107,7 @@ configure_vault() {
     
     # Configurar variables de entorno para acceder a Vault
     export VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-    export VAULT_ADDR='http://127.0.0.1:8200'
+    export VAULT_ADDR='https://127.0.0.1:8200'
     
     # Verificar que Vault está dessellado
     until vault status >/dev/null 2>&1; do
