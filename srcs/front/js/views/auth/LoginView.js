@@ -326,17 +326,33 @@ export async function LoginView() {
                 <div class="modal-content bg-dark">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i class="fas fa-qrcode me-2"></i>Escanear QR
+                            <i class="fas fa-qrcode me-2"></i>Iniciar sesión con QR
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body text-center p-0"> <!-- Removed padding -->
-                        <div id="qrScannerContainer">
+                    <div class="modal-body text-center">
+                        <div class="d-grid gap-3">
+                            <!-- Botón para escanear -->
+                            <button class="btn btn-primary" id="scanQRWithCameraBtn">
+                                <i class="fas fa-camera me-2"></i>Escanear con cámara
+                            </button>
+                            <!-- Botón para subir archivo -->
+                            <div class="text-center">
+                                <input type="file" 
+                                       id="qrFileInput" 
+                                       accept="image/*" 
+                                       style="display: none;">
+                                <button class="btn btn-outline-light" id="uploadQRBtn">
+                                    <i class="fas fa-upload me-2"></i>Subir archivo QR
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenedor para el escáner -->
+                        <div id="qrScannerContainer" style="display: none;" class="mt-3">
                             <video id="qrVideo" playsinline></video>
                             <div class="scan-overlay"></div>
-                        </div>
-                        <div class="p-3">
-                            <p class="text-muted mb-0">
+                            <p class="text-muted mt-2 mb-0">
                                 <i class="fas fa-camera me-2"></i>Apunta con la cámara al código QR
                             </p>
                         </div>
@@ -453,9 +469,19 @@ export async function LoginView() {
     };
 
     // Modificar el event listener del botón de escanear QR
-    document.getElementById('scanQRBtn')?.addEventListener('click', async () => {
+    document.getElementById('scanQRBtn')?.addEventListener('click', () => {
+        const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
+        modal.show();
+    });
+
+    // Añadir event listeners para los nuevos botones
+    document.getElementById('scanQRWithCameraBtn')?.addEventListener('click', async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            const container = document.getElementById('qrScannerContainer');
+            container.style.display = 'block';
+            
+            // Aquí va el código existente de la cámara
+            const stream = await navigator.mediaDevices.getUserMedia({
                 video: { 
                     facingMode: "environment",
                     width: { ideal: 1280 },
@@ -545,6 +571,67 @@ export async function LoginView() {
         } catch (error) {
             alert('Error al acceder a la cámara: ' + error.message);
             console.error('Error detallado:', error);
+        }
+    });
+
+    document.getElementById('uploadQRBtn')?.addEventListener('click', () => {
+        document.getElementById('qrFileInput').click();
+    });
+
+    document.getElementById('qrFileInput')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                // Crear un canvas para procesar la imagen
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = async () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        // Usar el mismo código de procesamiento que existe para la cámara
+                        const username = code.data;
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+                        modal.hide();
+                        
+                        try {
+                            const result = await AuthService.validateQR(username);
+                            // ...resto del código de validación existente...
+                            if (result.success) {
+                                if (result.require_2fa) {
+                                    // Mostrar modal 2FA
+                                    sessionStorage.setItem('pendingAuth', 'true');
+                                    sessionStorage.setItem('pendingUsername', username);
+                                    const twoFactorModal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+                                    twoFactorModal.show();
+                                } else {
+                                    // Login directo
+                                    localStorage.setItem('isAuthenticated', 'true');
+                                    localStorage.setItem('username', username);
+                                    window.location.replace('/profile');
+                                }
+                            } else {
+                                throw new Error(result.error || 'Error validando el QR');
+                            }
+                        } catch (error) {
+                            alert('Error al validar el QR: ' + error.message);
+                        }
+                    } else {
+                        alert('No se pudo detectar un código QR válido en la imagen');
+                    }
+                };
+                
+                img.src = URL.createObjectURL(file);
+            } catch (error) {
+                alert('Error al procesar el archivo: ' + error.message);
+            }
         }
     });
 }

@@ -321,9 +321,12 @@ export function UserProfileView() {
                         <div id="qrContainer" class="mb-3">
                             <div class="spinner-border text-primary"></div>
                         </div>
-                        <p class="text-muted">
+                        <p class="text-muted mb-3">
                             Usa este código QR para iniciar sesión rápidamente desde tu móvil
                         </p>
+                        <button class="btn btn-primary" id="downloadQRBtn">
+                            <i class="fas fa-download me-2"></i>Descargar QR
+                        </button>
                     </div>
                 </div>
             </div>
@@ -627,6 +630,11 @@ function setupProfileEvents() {
                 </div>
             `;
         }
+    });
+
+    document.getElementById('downloadQRBtn')?.addEventListener('click', async () => {
+        const username = localStorage.getItem('username');
+        window.location.href = `/api/generate-qr/${username}/?download=true`;
     });
 }
 
