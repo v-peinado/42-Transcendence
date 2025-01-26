@@ -73,7 +73,7 @@ services:
       context: .
       dockerfile: waf/Dockerfile
     ports:
-      - "8082:8081"
+      - "8082:8081" 
       - "8445:8444"
       - "8200:8200"
     networks:
@@ -82,12 +82,23 @@ services:
     volumes:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
+      - vault_data:/etc/vault.d/data
+    environment:
+      - VAULT_ADDR=https://127.0.0.1:8200
+      - VAULT_SKIP_VERIFY=true
+      - VAULT_MODE=production
     env_file:
       - .env
     depends_on:
       - nginx
       - web
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-k", "https://localhost:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   redis:
     image: redis:latest
@@ -112,10 +123,10 @@ services:
 
 volumes:
   postgres_data:
-    driver: local        # Tipo de driver del volumen, en este caso 'local'
+    driver: local
     driver_opts:
-      type: none         # Tipo de dispositivo, se montará un directorio del host, no se utilizará un dispositivo
-      device: ./postgres_data  # Ruta relativa en el host donde se almacenarán los datos de PostgreSQL
+      type: none
+      device: ./postgres_data
       o: bind
   django_media:
   django_static:
@@ -123,3 +134,5 @@ volumes:
   waf_logs:
   ssl_certs:
     name: ssl_certs
+  vault_data:
+    driver: local

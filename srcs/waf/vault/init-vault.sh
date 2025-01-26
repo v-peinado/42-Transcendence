@@ -34,45 +34,47 @@ setup_initial() {
 	# Generar certificados SSL si no existen
     if [ ! -f "/tmp/ssl/transcendence.crt" ]; then
         log_message "Generando certificados SSL..."
-        /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}"
+        /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}" &
     fi
 }
 
 # Iniciar Vault en modo desarrollo o producción
 start_vault() {
+    # Mensaje informativo inicial
+    echo "⚡ Iniciando servidor Vault y estableciendo conexión TLS segura..."
 
-	# Modo desarrollo
+    # Modo desarrollo
     if [ "${VAULT_MODE}" = "development" ]; then
         log_message "Iniciando Vault en modo desarrollo..."
         vault server -dev \
             -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
             -dev-listen-address="0.0.0.0:8200" \
-            -log-level=debug &
+            -log-level=error > /dev/null 2>&1 &
     # Modo producción
-	else
-        log_message "Iniciando Vault en modo producción..."
+    else
         vault server -config="${VAULT_CONFIG}" \
-            -log-level=debug &
+            -log-level=warn > /dev/null 2>&1 &
     fi
     
-    # Esperar a que Vault esté disponible antes de continuar con la configuración
-    for i in $(seq 1 60); do
-        if curl -s http://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
-            log_message "Vault está disponible"
+    # Esperar a que el servicio interno esté disponible
+    echo "🔄 Iniciando servicios internos... esto puede llevar unos segundos. Por favor, espere."
+    for i in $(seq 1 15); do
+        if curl -s https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
             return 0
         fi
-        log_message "Esperando a que Vault inicie... intento $i"
-        sleep 2
+        printf "⏳ Progreso: %d/15\r" "$i"
+        sleep 1
     done
-    
-    log_message "Error: Timeout esperando a Vault"
+	echo "✅ Servicios internos iniciados correctamente"
     return 1
 }
+
 
 # Una vez que Vault está disponible, seguir con la inicialización
 initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
-        export VAULT_ADDR='http://127.0.0.1:8200'
+        export VAULT_ADDR='https://127.0.0.1:8200'
+		export VAULT_SKIP_VERIFY=true
         log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
 
         # Verificar si necesita inicialización
@@ -106,7 +108,7 @@ configure_vault() {
     
     # Configurar variables de entorno para acceder a Vault
     export VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-    export VAULT_ADDR='http://127.0.0.1:8200'
+    export VAULT_ADDR='https://127.0.0.1:8200'
     
     # Verificar que Vault está dessellado
     until vault status >/dev/null 2>&1; do

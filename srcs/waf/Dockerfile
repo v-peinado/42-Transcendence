@@ -71,7 +71,7 @@ RUN useradd -r -s /sbin/nologin nginxuser || true && \
 
 # Variables de entorno
 ENV MODSECURITY=On \
-    VAULT_ADDR=http://127.0.0.1:8200 \
+    VAULT_ADDR=https://127.0.0.1:8200 \
     VAULT_SKIP_VERIFY=true \
     PATH="${PATH}:/usr/local/bin"
 
