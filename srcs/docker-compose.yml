@@ -95,10 +95,10 @@ services:
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-k", "https://localhost:8200/v1/sys/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 15s
 
   redis:
     image: redis:latest

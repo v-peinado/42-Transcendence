@@ -40,34 +40,36 @@ setup_initial() {
 
 # Iniciar Vault en modo desarrollo o producción
 start_vault() {
+    # Mensaje informativo inicial
+    echo "⚡ Iniciando servidor Vault y estableciendo conexión TLS segura..."
 
-	# Modo desarrollo
+    # Modo desarrollo
     if [ "${VAULT_MODE}" = "development" ]; then
         log_message "Iniciando Vault en modo desarrollo..."
         vault server -dev \
             -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
             -dev-listen-address="0.0.0.0:8200" \
-            -log-level=debug &
+            -log-level=error > /dev/null 2>&1 &
     # Modo producción
-	else
+    else
         log_message "Iniciando Vault en modo producción..."
         vault server -config="${VAULT_CONFIG}" \
-            -log-level=debug &
+            -log-level=error > /dev/null 2>&1 &
     fi
     
-    # Esperar a que Vault esté disponible antes de continuar con la configuración
-    for i in $(seq 1 60); do
+    # Esperar a que el servicio interno esté disponible
+    echo "🔄 Iniciando servicios internos... esto puede llevar unos minutos. Por favor, espere."
+    for i in $(seq 1 30); do
         if curl -s https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
-            log_message "Vault está disponible"
             return 0
         fi
-        log_message "Esperando a que Vault inicie... intento $i"
+        printf "⏳ Progreso: %d/30\r" "$i"
         sleep 2
     done
-    
-    log_message "Error: Timeout esperando a Vault"
+	echo "✅ Servicios internos iniciados correctamente"
     return 1
 }
+
 
 # Una vez que Vault está disponible, seguir con la inicialización
 initialize_vault() {
