@@ -57,7 +57,7 @@ start_vault() {
     fi
     
     # Esperar a que el servicio interno esté disponible
-    echo "🔄 Iniciando servicios internos... esto puede llevar unos minutos. Por favor, espere."
+    echo "🔄 Iniciando servicios internos... esto puede llevar unos segundos. Por favor, espere."
     for i in $(seq 1 15); do
         if curl -s https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
             return 0
