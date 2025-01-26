@@ -677,6 +677,8 @@ body #app .hero-section {
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: 1px;
+    display: flex;
+    align-items: center;
 }
 
 .logo {
@@ -1224,4 +1226,45 @@ main {
     border: 2px solid #0d6efd;
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+/* Mejoras para las imágenes de perfil en el navbar */
+.nav-link .rounded-circle {
+    width: 38px;
+    height: 38px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    object-fit: cover;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link:hover .rounded-circle {
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Mejoras para el menú desplegable */
+.dropdown-menu .bg-dark-subtle {
+    background: rgba(255, 255, 255, 0.05) !important;
+    padding: 1rem !important;
+    border-radius: 8px;
+}
+
+.dropdown-menu .rounded-circle {
+    width: 48px;
+    height: 48px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    object-fit: cover;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ajuste del espaciado en el dropdown toggle */
+.dropdown-toggle.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
 }

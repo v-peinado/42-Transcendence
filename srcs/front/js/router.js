@@ -8,6 +8,7 @@ import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetVie
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
 import AuthService from '/js/services/AuthService.js';
+import { getNavbarHTML } from '/js/components/Navbar.js';
 
 class Router {
     constructor() {
@@ -84,28 +85,10 @@ class Router {
 
     async renderHomePage(isAuthenticated, userInfo = null) {
         const app = document.getElementById('app');
+        
         if (!isAuthenticated) {
-            // Renderizar versión no autenticada
             app.innerHTML = `
-                <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-                    <div class="container">
-                        <a class="navbar-brand" href="/" data-link>Transcendence</a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav ms-auto">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/login" data-link>Login</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/register" data-link>Registro</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
-                <!-- Hero Section con nueva estructura -->
+                ${getNavbarHTML(false)}
                 <main>
                     <div class="hero-section">
                         <div class="hero-content">
@@ -165,87 +148,13 @@ class Router {
                 </main>
             `;
         } else {
-            // Renderizar versión autenticada
-            const username = userInfo.username || localStorage.getItem('username');
-            const profileImage = userInfo.fortytwo_image || 
-                               `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-            
             app.innerHTML = `
-                <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-                    <div class="container">
-                        <a class="navbar-brand" href="/" data-link>Transcendence</a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav me-auto">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/game" data-link>
-                                        <i class="fas fa-gamepad me-1"></i>Jugar
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/leaderboard" data-link>
-                                        <i class="fas fa-trophy me-1"></i>Clasificación
-                                    </a>
-                                </li>
-                            </ul>
-                            <ul class="navbar-nav">
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/chat" data-link>
-                                        <i class="fas fa-comments me-1"></i>Chat
-                                    </a>
-                                </li>
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
-                                       data-bs-toggle="dropdown" aria-expanded="false">
-                                        <img src="${profileImage}" 
-                                             alt="Avatar" class="rounded-circle" width="32" height="32">
-                                        <span>${username}</span>
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
-                                            <img src="${profileImage}" 
-                                                 alt="Avatar" class="rounded-circle me-2" width="48" height="48">
-                                            <div class="text-truncate">
-                                                <div class="fw-bold">${username}</div>
-                                                <small class="text-muted">Ver perfil</small>
-                                            </div>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item" href="/profile" data-link>
-                                                <i class="fas fa-user me-2"></i>Perfil
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="/settings" data-link>
-                                                <i class="fas fa-cog me-2"></i>Configuración
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="/gdpr-settings" data-link>
-                                                <i class="fas fa-shield-alt me-2"></i>Privacidad
-                                            </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button class="dropdown-item text-danger" id="logoutBtn">
-                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </nav>
-
+                ${getNavbarHTML(true, userInfo)}
                 <div class="hero-section">
                     <div class="container">
                         <div class="row justify-content-center">
                             <div class="col-lg-8 text-center">
-                                <h1 class="display-4 fw-bold">¡Hola, ${username}!</h1>
+                                <h1 class="display-4 fw-bold">¡Hola, ${userInfo.username}!</h1>
                                 <div class="mt-4">
                                     <a href="/game" data-link class="btn btn-primary btn-lg">
                                         <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!

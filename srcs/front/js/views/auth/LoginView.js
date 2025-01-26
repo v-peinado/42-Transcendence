@@ -1,5 +1,6 @@
 import AuthService from '../../services/AuthService.js';
 import { messages } from '../../translations.js';
+import { getNavbarHTML } from '../../components/Navbar.js';
 
 export async function LoginView() {
     // Limpiar todo el estado al inicio
@@ -28,6 +29,7 @@ export async function LoginView() {
         console.log('Código 42 detectado:', code);
         // Asegurar que el modal se crea antes de intentar mostrarlo
         app.innerHTML = `
+            ${getNavbarHTML(false)}
             <div class="hero-section">
                 <div class="container">
                     <div class="row justify-content-center">
@@ -85,6 +87,7 @@ export async function LoginView() {
             
             if (result.status === 'pending_verification') {
                 app.innerHTML = `
+                    ${getNavbarHTML(false)}
                     <div class="hero-section">
                         <div class="container">
                             <div class="row justify-content-center">
@@ -170,6 +173,7 @@ export async function LoginView() {
         } catch (error) {
             console.error('Error en 42 callback:', error);
             app.innerHTML = `
+                ${getNavbarHTML(false)}
                 <div class="hero-section">
                     <div class="container">
                         <div class="row justify-content-center">
@@ -207,6 +211,7 @@ export async function LoginView() {
     }
 
     app.innerHTML = `
+        ${getNavbarHTML(false)}
         <div class="hero-section">
             <div class="container">
                 <div class="row justify-content-center">
