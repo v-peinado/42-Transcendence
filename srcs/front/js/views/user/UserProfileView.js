@@ -125,6 +125,9 @@ export function UserProfileView() {
                                         <i class="fas fa-shield-alt me-2"></i>
                                         <span id="2faButtonText">Activar 2FA</span>
                                     </button>
+                                    <button id="showQRBtn" class="btn btn-outline-light w-100 mb-2">
+                                        <i class="fas fa-qrcode me-2"></i>Ver código QR
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -303,6 +306,34 @@ export function UserProfileView() {
     `;
     document.body.insertAdjacentHTML('beforeend', deleteAccountModal);
 
+    // Añadir el modal de QR después del contenido existente
+    const qrModalHTML = `
+        <div class="modal fade" id="qrModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-qrcode me-2"></i>Tu código QR
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div id="qrContainer" class="mb-3">
+                            <div class="spinner-border text-primary"></div>
+                        </div>
+                        <p class="text-muted mb-3">
+                            Usa este código QR para iniciar sesión rápidamente desde tu móvil
+                        </p>
+                        <button class="btn btn-primary" id="downloadQRBtn">
+                            <i class="fas fa-download me-2"></i>Descargar QR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', qrModalHTML);
+
     // Añadir verificación de URL para email
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('email_verified') === 'true') {
@@ -468,7 +499,7 @@ function setupProfileEvents() {
         const alertEl = document.getElementById('imageAlert');
         
         if (file) {
-            // Validar tamaño (max 5MB) y tipo
+            // Validar tamaño y tipo
             if (file.size > 5 * 1024 * 1024) {
                 alertEl.className = 'alert alert-danger';
                 alertEl.textContent = 'La imagen no debe superar 5MB';
@@ -484,22 +515,30 @@ function setupProfileEvents() {
             }
 
             try {
-                const result = await AuthService.updateProfileImage(file);
+                const userInfo = await AuthService.updateProfileImage(file);
                 
-                // Actualizar la imagen mostrada
-                const profileImage = document.getElementById('profileImage');
-                const navbarAvatar = document.getElementById('navbarUserAvatar');
-                const dropdownAvatar = document.getElementById('dropdownUserAvatar');
-                
-                // Añadir timestamp para forzar recarga de la imagen
-                const newImageUrl = `${result.profile_image_url}?t=${Date.now()}`;
-                
-                profileImage.src = newImageUrl;
-                if (navbarAvatar) navbarAvatar.src = newImageUrl;
-                if (dropdownAvatar) dropdownAvatar.src = newImageUrl;
+                if (userInfo && userInfo.profile_image) {
+                    // Actualizar todas las instancias de la imagen con la URL del backend
+                    const imageUrl = userInfo.profile_image;
+                    
+                    const imageElements = [
+                        document.getElementById('profileImage'),
+                        document.getElementById('navbarUserAvatar'),
+                        document.getElementById('dropdownUserAvatar')
+                    ];
 
-                alertEl.className = 'alert alert-success';
-                alertEl.textContent = 'Imagen actualizada correctamente';
+                    imageElements.forEach(el => {
+                        if (el) {
+                            el.src = imageUrl;
+                        }
+                    });
+
+                    alertEl.className = 'alert alert-success';
+                    alertEl.textContent = 'Imagen actualizada correctamente';
+                } else {
+                    throw new Error('Error al actualizar la imagen');
+                }
+                
                 alertEl.style.display = 'block';
             } catch (error) {
                 alertEl.className = 'alert alert-danger';
@@ -513,19 +552,28 @@ function setupProfileEvents() {
         const alertEl = document.getElementById('imageAlert');
         
         try {
-            const result = await AuthService.updateProfile({ restore_image: true });
+            const userInfo = await AuthService.updateProfile({ restore_image: true });
             
-            // Actualizar la imagen mostrada con la imagen por defecto
+            // Actualizar la imagen mostrada inmediatamente con la respuesta del backend
             const profileImage = document.getElementById('profileImage');
             const navbarAvatar = document.getElementById('navbarUserAvatar');
             const dropdownAvatar = document.getElementById('dropdownUserAvatar');
             
-            const username = localStorage.getItem('username');
-            const defaultImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+            const imageUrl = userInfo.profile_image || // usar la imagen del perfil si existe
+                            userInfo.fortytwo_image || // o la imagen de 42 si es usuario de 42
+                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`; // o dicebear como último recurso
             
-            profileImage.src = defaultImage;
-            if (navbarAvatar) navbarAvatar.src = defaultImage;
-            if (dropdownAvatar) dropdownAvatar.src = defaultImage;
+            const imageElements = [profileImage, navbarAvatar, dropdownAvatar];
+            imageElements.forEach(el => {
+                if (el) {
+                    el.src = imageUrl;
+                    // Solo usar dicebear como fallback si la imagen principal falla
+                    el.onerror = function() {
+                        const username = localStorage.getItem('username');
+                        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+                    };
+                }
+            });
 
             alertEl.className = 'alert alert-success';
             alertEl.textContent = 'Imagen restaurada correctamente';
@@ -577,6 +625,33 @@ function setupProfileEvents() {
         } catch (error) {
             alert(error.message);
         }
+    });
+
+    // Añadir el event listener para el botón QR
+    document.getElementById('showQRBtn')?.addEventListener('click', async () => {
+        const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+        modal.show();
+        
+        try {
+            const username = localStorage.getItem('username');
+            const qrUrl = await AuthService.generateQR(username);
+            
+            document.getElementById('qrContainer').innerHTML = `
+                <img src="${qrUrl}" alt="QR Code" class="img-fluid" style="max-width: 256px;">
+            `;
+        } catch (error) {
+            document.getElementById('qrContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error generando el código QR
+                </div>
+            `;
+        }
+    });
+
+    document.getElementById('downloadQRBtn')?.addEventListener('click', async () => {
+        const username = localStorage.getItem('username');
+        window.location.href = `/api/generate-qr/${username}/?download=true`;
     });
 }
 

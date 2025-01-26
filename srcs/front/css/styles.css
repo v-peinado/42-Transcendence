@@ -358,24 +358,54 @@ a:hover {
 
 /* Alerts personalizados */
 .alert {
+    background: rgba(33, 37, 41, 0.98);
     border: none;
-    border-radius: 10px;
-    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.alert-success {
-    background: rgba(25, 135, 84, 0.1);
-    border-left: 4px solid #198754;
+.alert i {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+    background: none;
+    width: auto;
+    height: auto;
+    margin-top: -5px;
+}
+
+.alert-heading {
+    color: inherit;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.alert span {
+    font-size: 1rem;
+    opacity: 0.9;
+    line-height: 1.4;
 }
 
 .alert-danger {
-    background: rgba(220, 53, 69, 0.1);
-    border-left: 4px solid #dc3545;
+    border-left: 5px solid #dc3545;
+    color: #ff6b6b;
 }
 
 .alert-warning {
-    background: rgba(255, 193, 7, 0.1);
-    border-left: 4px solid #ffc107;
+    border-left: 5px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    border-left: 5px solid #0dcaf0;
+    color: #4dd0e1;
 }
 
 /* Estilos para la página de inicio */
@@ -945,4 +975,253 @@ main {
     left: 0;
     z-index: 1030;
     height: 76px;
+}
+
+/* Estilos para el mensaje de verificación */
+.verification-message {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.verification-message .text-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.verification-message .text-white-75 {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-size: 0.95rem;
+}
+
+.verification-message .logo {
+    filter: drop-shadow(0 0 5px rgba(13, 110, 253, 0.5));
+}
+
+/* Estilos unificados para modales */
+.modal-content.bg-dark {
+    background: rgba(33, 37, 41, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-body .form-control {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.modal-body .form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.modal-body .form-floating label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modal-body .alert {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 4px solid;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+}
+
+.modal-dialog {
+    margin-top: 4rem;
+}
+
+/* Animaciones para modales */
+.modal.fade .modal-dialog {
+    transform: translateY(-10px);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: translateY(0);
+}
+
+.modal-backdrop.show {
+    opacity: 0.8;
+    backdrop-filter: blur(4px);
+}
+
+/* Estilo específico para mensajes de estado */
+.status-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.status-message .icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: #0d6efd;
+}
+
+/* Estilos mejorados para alertas y mensajes de error */
+.alert {
+    background: rgba(33, 37, 41, 0.98);
+    border: none;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.alert i {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+    background: none;
+    width: auto;
+    height: auto;
+    margin-top: -5px;
+}
+
+.alert-heading {
+    color: inherit;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.alert span {
+    font-size: 1rem;
+    opacity: 0.9;
+    line-height: 1.4;
+}
+
+.alert-danger {
+    border-left: 5px solid #dc3545;
+    color: #ff6b6b;
+}
+
+.alert-warning {
+    border-left: 5px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    border-left: 5px solid #0dcaf0;
+    color: #4dd0e1;
+}
+
+/* Estilos mejorados para alertas y mensajes de error */
+.alert {
+    border: none;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    backdrop-filter: blur(10px);
+}
+
+.alert i {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 4px solid #dc3545;
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background: rgba(25, 135, 84, 0.1);
+    border-left: 4px solid #198754;
+    color: #2ecc71;
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid #ffc107;
+    color: #ffd43b;
+}
+
+.alert-info {
+    background: rgba(13, 202, 240, 0.1);
+    border-left: 4px solid #0dcaf0;
+    color: #4dd0e1;
+}
+
+/* Estilos para el QR */
+#qrContainer {
+    min-height: 256px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#qrContainer img {
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    background: white;
+    padding: 1rem;
+}
+
+/* Estilos actualizados para el escáner QR */
+#qrScannerContainer {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
+    aspect-ratio: 4/3;
+    background: #000;
+}
+
+#qrVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: #000;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
 }

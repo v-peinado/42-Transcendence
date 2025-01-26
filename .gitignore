@@ -11,4 +11,4 @@ django/logs/*
 !django/logs/.gitkeep
 srcs/django/logs/*
 !srcs/django/logs/.gitkeep
-
+srcs/postgres_data/

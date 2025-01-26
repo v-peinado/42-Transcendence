@@ -3,8 +3,7 @@ import { LoginView } from '/js/views/auth/LoginView.js';
 import { RegisterView } from '/js/views/auth/RegisterView.js';
 import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
 import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';  // Nueva importación
-import { UserView } from '/js/views/user/UserView.js';  // Nueva importación
-import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Nueva importación
+import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Mantener solo UserProfileView
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
@@ -12,11 +11,14 @@ import AuthService from '/js/services/AuthService.js';
 
 class Router {
     constructor() {
-        // Limpiar estado al iniciar en rutas específicas
-        if (window.location.pathname === '/' || 
-            window.location.pathname === '/login') {
+        // Solo limpiar sesión si NO estamos autenticados
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        
+        if (!isAuthenticated && (
+            window.location.pathname === '/' || 
+            window.location.pathname === '/login'
+        )) {
             AuthService.clearSession().then(() => {
-                // Esperar un momento después de limpiar
                 setTimeout(() => {
                     this.handleInitialRoute();
                 }, 100);
@@ -40,39 +42,31 @@ class Router {
         '/': async () => {
             const app = document.getElementById('app');
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-
-            // Si no está autenticado, mostrar página de inicio normal
-            if (!isAuthenticated) {
-                localStorage.clear();
-                sessionStorage.clear();
-                await this.renderHomePage(false);
-                return;
-            }
-
-            // Si está autenticado, intentar obtener el perfil
-            try {
-                const userInfo = await AuthService.getUserProfile();
-                if (!userInfo || userInfo.error) {
-                    throw new Error('Error al obtener perfil');
+            
+            if (isAuthenticated) {
+                try {
+                    const userInfo = await AuthService.getUserProfile();
+                    if (userInfo && !userInfo.error) {
+                        await this.renderHomePage(true, userInfo);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
                 }
-                await this.renderHomePage(true, userInfo);
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                // Si hay error, limpiar estado y mostrar página no autenticada
+                // Si hay error, limpiar estado
                 localStorage.clear();
                 sessionStorage.clear();
-                await this.renderHomePage(false);
             }
+            // Si no está autenticado o hubo error, mostrar página no autenticada
+            await this.renderHomePage(false);
         },
         '/login': LoginView,
         '/register': RegisterView,
         '/verify-email/:uid/:token': VerifyEmailView,  // Nueva ruta para verificación
         '/verify-email-change/:uid/:token': VerifyEmailChangeView,  // Añadir esta ruta
         '/verify-email-change/:uid/:token/': VerifyEmailChangeView,  // Añadir slash final
-        '/user': UserView,      // Nueva ruta
-        '/user/': UserView,     // También manejar con slash final
-        '/profile': UserProfileView,  // Nueva ruta para perfil
-        '/profile/': UserProfileView, // También manejar con slash final
+        '/profile': UserProfileView,  // Mantener solo la ruta de profile
+        '/profile/': UserProfileView, // Con slash final también
         '/reset_password': RequestPasswordResetView,
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
@@ -279,9 +273,28 @@ class Router {
         }
     }
 
-    handleInitialRoute() {
+    async handleInitialRoute() {
         const path = window.location.pathname + window.location.search;
         console.log('Ruta inicial completa:', path);  // Debug
+
+        // Si estamos en la página principal, verificar autenticación primero
+        if (path === '/' || path === '') {
+            const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+            if (isAuthenticated) {
+                try {
+                    const userInfo = await AuthService.getUserProfile();
+                    if (userInfo && !userInfo.error) {
+                        await this.renderHomePage(true, userInfo);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                }
+            }
+            // Si no está autenticado o hay error, mostrar página normal
+            await this.renderHomePage(false);
+            return;
+        }
 
         // Manejar código de 42 primero
         const searchParams = new URLSearchParams(window.location.search);
@@ -411,6 +424,11 @@ class Router {
     }
 
     navigateTo(url) {
+        // Si es la página principal y el usuario está autenticado, forzar recarga
+        if (url === '/' && localStorage.getItem('isAuthenticated') === 'true') {
+            window.location.reload();
+            return;
+        }
         window.history.pushState(null, null, url);
         this.handleRoute();
     }

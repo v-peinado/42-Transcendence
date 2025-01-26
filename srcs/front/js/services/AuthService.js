@@ -1,3 +1,5 @@
+import { messages } from '../translations.js';
+
 class AuthService {
     // URL base para las APIs
     static API_URL = '/api';
@@ -31,7 +33,8 @@ class AuthService {
             console.log('Respuesta login:', data);
             
             if (!response.ok) {
-                throw new Error(data.message || 'Error en el login');
+                const errorData = this.mapBackendError(data.message);
+                throw new Error(errorData.html); // Ahora enviamos el HTML formateado
             }
 
             // Si requiere 2FA, NO establecer autenticación todavía
@@ -56,6 +59,74 @@ class AuthService {
             console.error('Error en login service:', error);
             throw error;
         }
+    }
+
+    // Nuevo método para mapear errores del backend
+    static mapBackendError(backendMessage) {
+        const errorStyles = {
+            invalid_credentials: {
+                icon: 'fas fa-user-lock fa-bounce',
+                message: messages.AUTH.ERRORS.INVALID_CREDENTIALS,
+                type: 'danger',
+                title: '¡Acceso Denegado!'
+            },
+            email_not_verified: {
+                icon: 'fas fa-envelope-circle-check fa-beat',
+                message: messages.AUTH.ERRORS.EMAIL_NOT_VERIFIED,
+                type: 'warning',
+                title: '¡Falta un Paso!'
+            },
+            no_session: {
+                icon: 'fas fa-hourglass-end fa-spin',
+                message: messages.AUTH.ERRORS.NO_SESSION,
+                type: 'warning',
+                title: '¡Sesión Expirada!'
+            },
+            privacy_policy: {
+                icon: 'fas fa-shield-halved fa-flip',
+                message: messages.AUTH.ERRORS.PRIVACY_POLICY,
+                type: 'info',
+                title: '¡Un Momento!'
+            },
+            default: {
+                icon: 'fas fa-triangle-exclamation fa-shake',
+                message: messages.AUTH.ERRORS.DEFAULT,
+                type: 'danger',
+                title: '¡Error!'
+            }
+        };
+
+        // Mapear mensaje del backend al estilo correspondiente
+        let errorConfig;
+        switch(backendMessage) {
+            case 'Usuario o contraseña incorrectos':
+                errorConfig = errorStyles.invalid_credentials;
+                break;
+            case 'Por favor verifica tu email para activar tu cuenta':
+                errorConfig = errorStyles.email_not_verified;
+                break;
+            case 'No hay sesión activa':
+                errorConfig = errorStyles.no_session;
+                break;
+            case 'Debes aceptar la política de privacidad':
+                errorConfig = errorStyles.privacy_policy;
+                break;
+            default:
+                errorConfig = errorStyles.default;
+        }
+
+        return {
+            html: `
+                <div class="alert alert-${errorConfig.type} fade show">
+                    <i class="${errorConfig.icon}"></i>
+                    <div class="ms-2">
+                        <h6 class="alert-heading mb-1">${errorConfig.title}</h6>
+                        <span>${errorConfig.message}</span>
+                    </div>
+                </div>
+            `,
+            message: errorConfig.message
+        };
     }
 
     static async clearSession() {
@@ -265,6 +336,11 @@ class AuthService {
             // Mantener el estado 2FA en localStorage incluso si el backend no lo envía
             const two_factor_enabled = localStorage.getItem('two_factor_enabled') === 'true';
             
+            // Convertir la URL de la imagen de perfil a una URL absoluta
+            if (data.profile_image && !data.profile_image.startsWith('http')) {
+                data.profile_image = `http://localhost:8000${data.profile_image}`;
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Error al obtener el perfil');
             }
@@ -288,6 +364,10 @@ class AuthService {
                 data.new_password1 = userData.new_password1;
                 data.new_password2 = userData.new_password2;
             }
+            // Añadir el flag de restauración si existe
+            if (userData.restore_image) {
+                data.restore_image = true;
+            }
 
             const response = await fetch(`${this.API_URL}/profile/`, {
                 method: 'POST',
@@ -305,6 +385,11 @@ class AuthService {
 
             if (!response.ok) {
                 throw new Error(responseData.message || responseData.error || 'Error actualizando perfil');
+            }
+
+            // Si estamos restaurando la imagen, forzar una recarga del perfil
+            if (userData.restore_image) {
+                return await this.getUserProfile();
             }
 
             return {
@@ -327,19 +412,20 @@ class AuthService {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': this.getCSRFToken(),
-                    // No incluir Content-Type, fetch lo establecerá automáticamente con el boundary
                 },
                 body: formData,
                 credentials: 'include'
             });
 
             const data = await response.json();
+            console.log('Respuesta updateProfileImage:', data); // Añadir este log
             
             if (!response.ok) {
                 throw new Error(data.message || 'Error actualizando imagen');
             }
 
-            return data;
+            // Forzar una recarga del perfil completo
+            return await this.getUserProfile();
         } catch (error) {
             console.error('Error en updateProfileImage:', error);
             throw error;
@@ -557,36 +643,73 @@ class AuthService {
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code }), // Este es el código de autorización de 42
                 credentials: 'include'
             });
 
             const data = await response.json();
             console.log('AuthService: Respuesta del servidor:', data);
-            
-            if (response.ok && data.status === 'success') {
-                // Usuario autenticado correctamente
+
+            // Si el usuario necesita verificar email primero
+            if (data.needsEmailVerification) {
                 return {
-                    status: 'success',
-                    username: data.username
-                };
-            } else if (response.ok && data.is_verified) {
-                // Usuario ya verificado
-                return {
-                    status: 'verified',
-                    username: data.username
-                };
-            } else {
-                // Necesita verificación o hay error
-                return {
-                    status: 'error',
-                    needsEmailVerification: true,
-                    message: data.message || 'Error en la autenticación'
+                    status: 'pending_verification',
+                    message: messages.AUTH.EMAIL_VERIFICATION.MESSAGE
                 };
             }
+
+            // Si el usuario está verificado y tiene 2FA
+            if (data.require_2fa) {
+                return {
+                    status: 'pending_2fa',
+                    username: data.username,
+                    message: 'Se requiere verificación en dos pasos'
+                };
+            }
+
+            // Si todo está ok y no necesita 2FA
+            if (data.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', data.username);
+                window.location.replace('/profile');  // Cambiar '/user' por '/profile'
+            }
+
+            throw new Error(data.message || messages.AUTH.ERRORS.LOGIN_FAILED);
         } catch (error) {
             console.error('AuthService: Error detallado:', error);
             throw error;
+        }
+    }
+
+    // Esta es la que está causando el problema
+    static async handleFortyTwoCallback(code) {
+        try {
+            const response = await fetch('/api/auth/42/callback', {  // ❌ URL incorrecta
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code })
+            });
+
+            const data = await response.json();
+
+            if (data.require_2fa) {
+                // Guardar estado temporal para 2FA
+                sessionStorage.setItem('pendingAuth', 'true');
+                sessionStorage.setItem('fortytwo_user', 'true');
+                return { requireTwoFactor: true };
+            }
+
+            if (data.status === 'success') {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', data.username);
+                return { success: true };
+            }
+
+            throw new Error(data.message);
+        } catch (error) {
+            throw new Error(error.message || 'Error en la autenticación con 42');
         }
     }
 
@@ -646,52 +769,142 @@ class AuthService {
         }
     }
 
-    static async verify2FACode(code) {
+    static async verify2FACode(code, isFortytwoUser = false) {
         try {
-            console.log('Verificando código 2FA:', code);
+            console.log('Verificando código 2FA:', { code, isFortytwoUser });
             
-            const response = await fetch(`${this.API_URL}/verify-2fa/`, {
+            // Corregir la ruta para que coincida con la URL en Django
+            const endpoint = isFortytwoUser ? 
+                `${this.API_URL}/auth/42/verify-2fa/` :  // Usar la misma ruta que en Django
+                `${this.API_URL}/verify-2fa/`;
+            
+            console.log('Usando endpoint:', endpoint);  // Debug
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
                 },
-                body: JSON.stringify({ code }),
+                body: JSON.stringify({ code }), // Este es el código 2FA
                 credentials: 'include'
             });
 
-            const data = await response.json();
-            console.log('Respuesta verify2FA:', data);
+            // Debug para ver la respuesta raw
+            const responseText = await response.text();
+            console.log('Respuesta raw:', responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Error parseando respuesta:', e);
+                throw new Error('Error en la respuesta del servidor');
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || data.message || 'Código inválido');
             }
 
             if (data.status === 'success') {
-                // Asegurarnos de que la sesión está establecida
-                const username = data.username || sessionStorage.getItem('pendingUsername');
-                
-                // Establecer autenticación y estado 2FA
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', username);
-                localStorage.setItem('sessionId', data.session_id);
-                localStorage.setItem('two_factor_enabled', 'true'); // Añadir esta línea
-                
-                // Limpiar estado temporal
-                sessionStorage.removeItem('pendingAuth');
-                sessionStorage.removeItem('pendingUsername');
-                
+                window.location.replace('/profile');  // Cambiar de '/user' a '/profile'
+            }
+
+            return {
+                status: 'success',
+                username: data.username || sessionStorage.getItem('pendingUsername'),
+                two_factor_enabled: true
+            };
+        } catch (error) {
+            console.error('Error en verify2FA:', error);
+            throw error;
+        }
+    }
+
+    static async generateQR(username) {
+        try {
+            const response = await fetch(`${this.API_URL}/generate-qr/${username}/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'image/png',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Error generando código QR');
+            }
+
+            // Convertir la respuesta a blob
+            const blob = await response.blob();
+            return URL.createObjectURL(blob);
+        } catch (error) {
+            console.error('Error en generateQR:', error);
+            throw error;
+        }
+    }
+
+    async validateQR(username) {
+        try {
+            const response = await fetch('/api/validate-qr/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error validando el código QR');
+            }
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error en validateQR:', error);
+            throw error;
+        }
+    }
+
+    static async validateQR(username) {
+        try {
+            const response = await fetch(`${this.API_URL}/validate-qr/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ username }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al validar QR');
+            }
+
+            // Verificar si requiere 2FA
+            if (data.require_2fa) {
                 return {
-                    status: 'success',
-                    username: username,
-                    two_factor_enabled: true
+                    success: true,
+                    require_2fa: true,
+                    redirect_url: data.redirect_url
                 };
             }
 
-            throw new Error('Error en la verificación');
+            return {
+                success: true,
+                redirect_url: data.redirect_url
+            };
         } catch (error) {
-            console.error('Error en verify2FA:', error);
+            console.error('Error en validateQR:', error);
             throw error;
         }
     }

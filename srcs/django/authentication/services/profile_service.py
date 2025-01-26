@@ -158,7 +158,8 @@ class ProfileService:
             'date_joined': user.date_joined.isoformat(),
             'last_login': user.last_login.isoformat() if user.last_login else None,
             'is_fortytwo_user': user.is_fortytwo_user,
-            'fortytwo_image': user.fortytwo_image  # Asegurémonos de que este campo existe
+            'profile_image': user.profile_image.url if user.profile_image else None,
+            'fortytwo_image': user.fortytwo_image
         }
         print("DEBUG - Profile data:", data)  # Para ver qué datos nos llegan
         return data
