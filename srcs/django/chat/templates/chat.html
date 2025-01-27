@@ -213,6 +213,7 @@
                 this.roomName = roomName;
                     //this.chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/general/');
                 this.chatSocket = new WebSocket('ws://localhost:8000/ws/chat/general/');
+				//this.chatSocket = new WebSocket('wss://localhost:8445/ws/chat/general/');
                 this.chatSocket.addEventListener('message', this.handleServerMessage.bind(this));
                 this.opennedChats = new Set();
                 this.groups = new Set();
