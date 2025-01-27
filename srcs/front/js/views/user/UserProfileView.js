@@ -616,37 +616,135 @@ function setupProfileEvents() {
             const is2FAEnabled = button.dataset.enabled === 'true';
 
             if (!is2FAEnabled) {
-                const confirmed = confirm(
-                    'La autenticación en dos pasos añade una capa extra de seguridad a tu cuenta. ' +
-                    'Cada vez que inicies sesión, necesitarás introducir un código que te enviaremos por email. ' +
-                    '¿Deseas continuar?'
-                );
+                // Crear el modal de confirmación
+                const modalHTML = `
+                    <div class="modal fade" id="confirm2FAModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content bg-dark">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-shield-alt me-2"></i>Activar 2FA
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="modal-info-box">
+                                        <div class="info-section">
+                                            <i class="fas fa-info-circle text-info"></i>
+                                            <div class="info-content">
+                                                <h6>Autenticación en dos pasos</h6>
+                                                <p>La autenticación en dos pasos añade una capa extra de seguridad a tu cuenta. 
+                                                Cada vez que inicies sesión, necesitarás introducir un código que te enviaremos por email.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-primary" id="confirm2FABtn">
+                                        <i class="fas fa-check me-2"></i>Activar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
-                if (!confirmed) return;
+                // Añadir el modal al DOM
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-                const result = await AuthService.enable2FA();
-                if (result.success) {
-                    button.dataset.enabled = 'true';
-                    buttonText.textContent = 'Desactivar 2FA';
-                    button.classList.replace('btn-outline-info', 'btn-outline-warning');
-                    localStorage.setItem('two_factor_enabled', 'true');
-                    alert('2FA activado correctamente. A partir de ahora necesitarás un código de verificación para iniciar sesión.');
-                }
+                // Inicializar y mostrar el modal
+                const modalElement = document.getElementById('confirm2FAModal');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+
+                // Event listener para el botón de confirmar
+                document.getElementById('confirm2FABtn').addEventListener('click', async () => {
+                    const result = await AuthService.enable2FA();
+                    if (result.success) {
+                        button.dataset.enabled = 'true';
+                        buttonText.textContent = 'Desactivar 2FA';
+                        button.classList.replace('btn-outline-info', 'btn-outline-warning');
+                        localStorage.setItem('two_factor_enabled', 'true');
+                        modal.hide();
+                        
+                        // Eliminar el modal del DOM después de ocultarlo
+                        modalElement.addEventListener('hidden.bs.modal', () => {
+                            modalElement.remove();
+                        });
+                    }
+                });
+
+                // Limpiar el modal cuando se cierre
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    modalElement.remove();
+                });
             } else {
-                const confirmed = confirm('¿Estás seguro de que quieres desactivar la autenticación en dos pasos?');
-                if (!confirmed) return;
+                // Crear el modal de desactivación
+                const modalHTML = `
+                    <div class="modal fade" id="disable2FAModal" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content bg-dark">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-shield-alt me-2"></i>Desactivar 2FA
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="modal-info-box">
+                                        <div class="info-section">
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            <div class="info-content">
+                                                <h6 class="text-warning">¿Estás seguro?</h6>
+                                                <p>Al desactivar la autenticación en dos pasos, tu cuenta será menos segura.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-warning" id="confirm2FADisableBtn">
+                                        <i class="fas fa-shield-alt me-2"></i>Desactivar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
 
-                const result = await AuthService.disable2FA();
-                if (result.success) {
-                    button.dataset.enabled = 'false';
-                    buttonText.textContent = 'Activar 2FA';
-                    button.classList.replace('btn-outline-warning', 'btn-outline-info');
-                    localStorage.removeItem('two_factor_enabled');
-                    alert('2FA desactivado correctamente.');
-                }
+                // Añadir el modal al DOM
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+                // Inicializar y mostrar el modal
+                const modalElement = document.getElementById('disable2FAModal');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+
+                // Event listener para el botón de confirmar desactivación
+                document.getElementById('confirm2FADisableBtn').addEventListener('click', async () => {
+                    const result = await AuthService.disable2FA();
+                    if (result.success) {
+                        button.dataset.enabled = 'false';
+                        buttonText.textContent = 'Activar 2FA';
+                        button.classList.replace('btn-outline-warning', 'btn-outline-info');
+                        localStorage.removeItem('two_factor_enabled');
+                        modal.hide();
+                        
+                        // Eliminar el modal del DOM después de ocultarlo
+                        modalElement.addEventListener('hidden.bs.modal', () => {
+                            modalElement.remove();
+                        });
+                    }
+                });
+
+                // Limpiar el modal cuando se cierre
+                modalElement.addEventListener('hidden.bs.modal', () => {
+                    modalElement.remove();
+                });
             }
         } catch (error) {
-            alert(error.message);
+            showAlert(error.message, 'danger');
         }
     });
 
@@ -702,6 +800,26 @@ function setupProfileEvents() {
             toggle: true
         });
     });
+}
+
+// Función auxiliar para mostrar alertas
+function showAlert(message, type) {
+    const alertEl = document.createElement('div');
+    alertEl.className = `alert alert-${type} fade show`;
+    alertEl.role = 'alert';
+    alertEl.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <div class="alert-content">
+            <p>${message}</p>
+        </div>
+    `;
+    
+    // Insertar alerta después del botón 2FA
+    const button2FA = document.getElementById('toggle2FABtn');
+    button2FA.parentNode.insertBefore(alertEl, button2FA.nextSibling);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => alertEl.remove(), 3000);
 }
 
 async function loadUserData() {
