@@ -315,9 +315,32 @@ export function UserProfileView() {
                         <h5 class="modal-title">
                             <i class="fas fa-qrcode me-2"></i>Tu código QR
                         </h5>
+                        <button type="button" class="btn btn-info btn-sm ms-2" id="qrHelpBtn">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body text-center">
+                        <!-- Contenedor de información colapsable -->
+                        <div class="collapse" id="qrInfoCollapse">
+                            <div class="modal-info-box mb-4">
+                                <div class="info-section">
+                                    <i class="fas fa-info-circle text-info"></i>
+                                    <div class="info-content">
+                                        <h6>¿Para qué sirve este código QR?</h6>
+                                        <p>Este código QR te permite iniciar sesión rápidamente desde otro dispositivo escaneándolo, sin necesidad de introducir tu usuario y contraseña.</p>
+                                    </div>
+                                </div>
+                                <div class="security-section">
+                                    <i class="fas fa-shield-alt text-warning"></i>
+                                    <div class="info-content">
+                                        <h6 class="text-warning">Recomendación de seguridad:</h6>
+                                        <p>Para proteger mejor tu cuenta, activa la autenticación de dos factores (2FA) si usas el inicio de sesión con QR.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="qrContainer" class="mb-3">
                             <div class="spinner-border text-primary"></div>
                         </div>
@@ -670,6 +693,14 @@ function setupProfileEvents() {
             link.href = canvas.toDataURL('image/png');
             link.click();
         }
+    });
+
+    // Añadir el event listener para el botón de ayuda
+    document.getElementById('qrHelpBtn')?.addEventListener('click', () => {
+        const collapseElement = document.getElementById('qrInfoCollapse');
+        const collapse = new bootstrap.Collapse(collapseElement, {
+            toggle: true
+        });
     });
 }
 

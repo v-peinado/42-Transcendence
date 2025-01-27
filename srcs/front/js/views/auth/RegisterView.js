@@ -51,6 +51,14 @@ export function RegisterView() {
                                     <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
                                         <i class="fas fa-user-plus me-2"></i>Registrarse
                                     </button>
+
+                                    <!-- Añadir botón de 42 -->
+                                    <button type="button" class="w-100 btn btn-lg btn-dark mb-3" 
+                                            onclick="handleFtAuth()">
+                                        <img src="/public/42_logo.png" alt="42 Logo" class="me-2" style="height: 40px;">
+                                        Login
+                                    </button>
+
                                     <div class="text-center">
                                         <a href="/login" data-link class="text-light">
                                             ¿Ya tienes cuenta? Inicia sesión
@@ -131,4 +139,19 @@ export function RegisterView() {
             `;
         }
     });
+
+    // Añadir la función handleFtAuth al objeto window
+    window.handleFtAuth = async () => {
+        try {
+            const authUrl = await AuthService.get42AuthUrl();
+            window.location.href = authUrl;
+        } catch (error) {
+            const alertDiv = document.getElementById('registerAlert');
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error al iniciar sesión con 42: ${error.message}</p>
+                </div>
+            `;
+        }
+    };
 }

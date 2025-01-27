@@ -1268,3 +1268,93 @@ main {
     gap: 0.5rem;
     padding: 0.5rem 1rem;
 }
+
+/* Estilos para modales informativos */
+.modal-info-box {
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.info-section, 
+.security-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.security-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.info-section i,
+.security-section i {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.info-content {
+    flex: 1;
+}
+
+.info-content h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.info-content p {
+    margin-bottom: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    opacity: 0.9;
+}
+
+/* Ajustes específicos para el contenedor QR */
+#qrContainer {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1.5rem 0;
+}
+
+#qrContainer img {
+    max-width: 256px;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para el botón de ayuda en el modal QR */
+#qrHelpBtn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+#qrHelpBtn:hover {
+    transform: scale(1.1);
+}
+
+/* Animación para el colapso */
+#qrInfoCollapse {
+    transition: all 0.3s ease-out;
+}
+
+#qrInfoCollapse.collapsing {
+    opacity: 0;
+}
+
+#qrInfoCollapse.show {
+    opacity: 1;
+}
