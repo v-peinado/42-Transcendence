@@ -184,7 +184,13 @@ CORS_ALLOWED_ORIGINS = [
     "https://localhost:8443",    # NGINX
     "http://localhost:3000"      # Frontend desarrollo
 ]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = [
+    "https://localhost:8445",    # WAF
+    "https://localhost:8443",    # NGINX
+    "http://localhost:8082",     # HTTP WAF
+    "ws://localhost:8000",       # WebSocket directo
+    "wss://localhost:8445",      # WebSocket seguro WAF
+]
 
 # Settings para el manejo de sesiones y cookies
 if DEBUG:
