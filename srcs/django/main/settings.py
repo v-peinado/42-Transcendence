@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'tournament',
     'corsheaders',
     'game',
+    'rest_framework',  # Añade esta línea
 ]
 
 # Configuración de Jazzmin (panel de administración personalizado basado en Django Admin)

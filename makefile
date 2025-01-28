@@ -206,9 +206,10 @@ help:
 	@echo ""
 	@echo "  http://localhost:3000      - Acceso a front directo"
 	@echo ""
-	@echo "  https://localhost:8200      - Panel acceso a Vault"
+	@echo "  https://localhost:8200     - Panel acceso a Vault"
 	@echo "                             * Ver waf/vault/init-vault.sh para más información"
 	@echo ""
+	@echo "  http://localhost:8000/game - Accede al juego (debes loguearte primero)"
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
 	

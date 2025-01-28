@@ -43,6 +43,9 @@ urlpatterns = [
     
     #chat
     path('chat/', views.chat, name='chat'),
+    
+    #game
+    path('game/', include('game.urls')),
 ]
 
 # Configuración de archivos media y estáticos

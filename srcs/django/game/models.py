@@ -1,7 +1,5 @@
 from django.db import models
 from django.conf import settings
-from django.urls import re_path
-from .consumers import GameConsumer, MatchmakingConsumer
 
 class Game(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

@@ -5,6 +5,6 @@ app_name = 'game'
 
 urlpatterns = [
     path('api/', include('game.api.urls')),  # Endpoints de API
-    path('play/<int:game_id>/', views.game_page, name='game_page'),
-    path('play/', views.game_page, name='game_home'),
+    path('', views.game_page, name='game_home'),  # URL raíz del juego
+    path('<int:game_id>/', views.game_page, name='game_page'),  # URL específica de una partida
 ]
