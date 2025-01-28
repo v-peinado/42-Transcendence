@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong - Transcendence</title>
+    <style>
+        #gameCanvas {
+            background: #000;
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #fff;
+        }
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            color: white;
+        }
+        .score {
+            font-size: 2em;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .status {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body style="background: #333; margin: 0; padding: 20px;">
+    <div class="game-container">
+        <div class="score">
+            <span id="player1Score">0</span> - <span id="player2Score">0</span>
+        </div>
+        <div class="status" id="gameStatus">Esperando oponente...</div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="controls">
+            <p>Controles: W/S (Jugador 1) - ↑/↓ (Jugador 2)</p>
+        </div>
+    </div>
+
+    <script>
+        // Conexión WebSocket
+        const gameId = '{{ game_id }}';
+        const userId = '{{ user_id }}';
+        const gameSocket = new WebSocket(
+            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/game/${gameId}/`
+        );
+
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameState = null;
+        let playerSide = null;
+
+        // Event Listeners
+        document.addEventListener('keydown', handleKeyPress);
+        document.addEventListener('keyup', handleKeyRelease);
+
+        // WebSocket handlers
+        gameSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'game_state') {
+                gameState = data.state;
+                updateDisplay();
+            } else if (data.type === 'game_start') {
+                document.getElementById('gameStatus').textContent = '¡Juego en curso!';
+                playerSide = data.player1_id === userId ? 'left' : 'right';
+            }
+        };
+
+        function handleKeyPress(e) {
+            if (!playerSide || !gameState) return;
+            
+            let direction = null;
+            if (playerSide === 'left') {
+                if (e.key === 'w') direction = -1;
+                if (e.key === 's') direction = 1;
+            } else {
+                if (e.key === 'ArrowUp') direction = -1;
+                if (e.key === 'ArrowDown') direction = 1;
+            }
+
+            if (direction !== null) {
+                gameSocket.send(JSON.stringify({
+                    type: 'move_paddle',
+                    side: playerSide,
+                    direction: direction
+                }));
+            }
+        }
+
+        function handleKeyRelease(e) {
+            if (!playerSide) return;
+            
+            if ((playerSide === 'left' && (e.key === 'w' || e.key === 's')) ||
+                (playerSide === 'right' && (e.key === 'ArrowUp' || e.key === 'ArrowDown'))) {
+                gameSocket.send(JSON.stringify({
+                    type: 'move_paddle',
+                    side: playerSide,
+                    direction: 0
+                }));
+            }
+        }
+
+        function updateDisplay() {
+            if (!gameState) return;
+
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw paddles
+            ctx.fillStyle = '#fff';
+            for (const [side, paddle] of Object.entries(gameState.paddles)) {
+                ctx.fillRect(
+                    paddle.x,
+                    paddle.y,
+                    gameState.paddle_width,
+                    gameState.paddle_height
+                );
+            }
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(
+                gameState.ball.x,
+                gameState.ball.y,
+                gameState.ball.radius,
+                0,
+                Math.PI * 2
+            );
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.closePath();
+
+            // Update score
+            document.getElementById('player1Score').textContent = gameState.paddles.left.score;
+            document.getElementById('player2Score').textContent = gameState.paddles.right.score;
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            gameSocket.close();
+        });
+    </script>
+</body>
+</html>
