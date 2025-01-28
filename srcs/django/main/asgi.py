@@ -17,12 +17,15 @@ django.setup()
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
-from chat.routing import websocket_urlpatterns
+from chat.routing import websocket_urlpatterns as chat_urlpatterns
+from game.routing import websocket_urlpatterns as game_urlpatterns
 
+# Combinamos las rutas de WebSocket de chat y juego
+combined_patterns = chat_urlpatterns + game_urlpatterns
 
 application = ProtocolTypeRouter(
     {
         "http": get_asgi_application(),
-        "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
+        "websocket": AuthMiddlewareStack(URLRouter(combined_patterns)),
     }
 )
