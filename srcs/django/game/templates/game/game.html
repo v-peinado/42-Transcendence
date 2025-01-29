@@ -29,17 +29,30 @@
             font-size: 1.2em;
             margin: 10px 0;
         }
+        .game-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .game-id {
+            color: #fff;
+            font-size: 18px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body style="background: #333; margin: 0; padding: 20px;">
     <div class="game-container">
-        <div class="score">
-            <span id="player1Score">0</span> - <span id="player2Score">0</span>
+        <div class="game-info">
+            <div class="score">
+                <span id="player1Score">0</span> - <span id="player2Score">0</span>
+            </div>
+            <div class="game-id">ID Partida: {{ game_id }}</div>
+            <div class="status" id="gameStatus">Esperando oponente...</div>
         </div>
-        <div class="status" id="gameStatus">Esperando oponente...</div>
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div class="controls">
             <p>Controles: W/S (Jugador 1) - ↑/↓ (Jugador 2)</p>
+            <p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
         </div>
     </div>
 

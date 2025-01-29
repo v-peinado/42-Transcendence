@@ -1,5 +1,10 @@
 from django.db import models
 from django.conf import settings
+from django.apps import AppConfig
+
+class GameConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'game'
 
 class Game(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -13,7 +18,8 @@ class Game(models.Model):
     player2 = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='games_as_player2'
+        related_name='games_as_player2',
+        null=True
     )
     score_player1 = models.IntegerField(default=0)
     score_player2 = models.IntegerField(default=0)
