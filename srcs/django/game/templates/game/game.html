@@ -48,6 +48,7 @@
             </div>
             <div class="game-id">ID Partida: {{ game_id }}</div>
             <div class="status" id="gameStatus">Esperando oponente...</div>
+			<div class="user-id" id="player">Eres el Jugador: {{ user_id }}</div>
         </div>
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div class="controls">
@@ -57,110 +58,153 @@
     </div>
 
     <script>
-        // Conexión WebSocket
-        const gameId = '{{ game_id }}';
-        const userId = '{{ user_id }}';
-        const gameSocket = new WebSocket(
-            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/game/${gameId}/`
-        );
-
-        // Canvas setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Game state
-        let gameState = null;
-        let playerSide = null;
-
-        // Event Listeners
-        document.addEventListener('keydown', handleKeyPress);
-        document.addEventListener('keyup', handleKeyRelease);
-
-        // WebSocket handlers
-        gameSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            if (data.type === 'game_state') {
-                gameState = data.state;
-                updateDisplay();
-            } else if (data.type === 'game_start') {
-                document.getElementById('gameStatus').textContent = '¡Juego en curso!';
-                playerSide = data.player1_id === userId ? 'left' : 'right';
-            }
-        };
-
-        function handleKeyPress(e) {
-            if (!playerSide || !gameState) return;
-            
-            let direction = null;
-            if (playerSide === 'left') {
-                if (e.key === 'w') direction = -1;
-                if (e.key === 's') direction = 1;
-            } else {
-                if (e.key === 'ArrowUp') direction = -1;
-                if (e.key === 'ArrowDown') direction = 1;
-            }
-
-            if (direction !== null) {
-                gameSocket.send(JSON.stringify({
-                    type: 'move_paddle',
-                    side: playerSide,
-                    direction: direction
-                }));
-            }
-        }
-
-        function handleKeyRelease(e) {
-            if (!playerSide) return;
-            
-            if ((playerSide === 'left' && (e.key === 'w' || e.key === 's')) ||
-                (playerSide === 'right' && (e.key === 'ArrowUp' || e.key === 'ArrowDown'))) {
-                gameSocket.send(JSON.stringify({
-                    type: 'move_paddle',
-                    side: playerSide,
-                    direction: 0
-                }));
-            }
-        }
-
-        function updateDisplay() {
-            if (!gameState) return;
-
-            // Clear canvas
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw paddles
-            ctx.fillStyle = '#fff';
-            for (const [side, paddle] of Object.entries(gameState.paddles)) {
-                ctx.fillRect(
-                    paddle.x,
-                    paddle.y,
-                    paddle.width,   // Usar los valores del objeto paddle
-                    paddle.height   // Usar los valores del objeto paddle
-                );
-            }
-
-            // Draw ball
-            ctx.beginPath();
-            ctx.arc(
-                gameState.ball.x,
-                gameState.ball.y,
-                gameState.ball.radius,
-                0,
-                Math.PI * 2
+        document.addEventListener('DOMContentLoaded', () => {
+            // Conexión WebSocket
+            const gameId = '{{ game_id }}';
+            const userId = '{{ user_id }}';
+            const gameSocket = new WebSocket(
+                `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/game/${gameId}/`
             );
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-            ctx.closePath();
 
-            // Update score
-            document.getElementById('player1Score').textContent = gameState.paddles.left.score;
-            document.getElementById('player2Score').textContent = gameState.paddles.right.score;
-        }
+            // Canvas setup
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Game state
+            let gameState = null;
+            let playerSide = null;
 
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            gameSocket.close();
+            // Debug info div
+            const debugDiv = document.createElement('div');
+            debugDiv.style.position = 'fixed';
+            debugDiv.style.bottom = '10px';
+            debugDiv.style.left = '10px';
+            debugDiv.style.color = 'white';
+            document.body.appendChild(debugDiv);
+
+            // WebSocket handlers
+            gameSocket.onopen = function() {
+                console.log('WebSocket conectado');
+                //debugDiv.textContent = 'Conectado al servidor';
+            };
+
+            gameSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log('Mensaje recibido:', data);
+                //debugDiv.textContent = `Último mensaje: ${JSON.stringify(data).slice(0, 100)}`;
+
+                if (data.type === 'game_state') {
+                    gameState = data.state;
+                    updateDisplay();
+                } else if (data.type === 'game_start') {
+                    document.getElementById('gameStatus').textContent = '¡Juego en curso!';
+                    playerSide = data.player1 === '{{ username }}' ? 'left' : 'right';
+                    console.log('Lado asignado:', playerSide);
+                    debugDiv.textContent += ` | Lado: ${playerSide}`;
+                }
+            };
+
+            // Improved key handling
+            const keysPressed = new Set();
+
+            function handleKeyPress(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                if (!playerSide || !gameState) return;
+                
+                const key = e.key.toLowerCase();
+                let direction = null;
+                
+                if (playerSide === 'left') {
+                    if (key === 'w') direction = -1;
+                    if (key === 's') direction = 1;
+                } else if (playerSide === 'right') {
+                    if (key === 'arrowup') direction = -1;
+                    if (key === 'arrowdown') direction = 1;
+                }
+
+                if (direction !== null) {
+                    // Solo mostramos el mensaje de movimiento
+                    debugDiv.textContent = `Moviendo ${playerSide} ${direction === -1 ? 'arriba' : 'abajo'}`;
+                    gameSocket.send(JSON.stringify({
+                        type: 'move_paddle',
+                        side: playerSide,
+                        direction: direction
+                    }));
+                }
+            }
+
+            function handleKeyRelease(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                const key = e.key.toLowerCase();
+                keysPressed.delete(key);
+                
+                if (!playerSide) return;
+                
+                // Solo enviamos el mensaje de detención cuando realmente soltamos una tecla de movimiento
+                if ((playerSide === 'left' && ['w', 's'].includes(key)) ||
+                    (playerSide === 'right' && ['arrowup', 'arrowdown'].includes(key))) {
+                    // El mensaje de detención solo se muestra cuando realmente soltamos la tecla
+                    debugDiv.textContent = `Paleta ${playerSide} detenida`;
+                    gameSocket.send(JSON.stringify({
+                        type: 'move_paddle',
+                        side: playerSide,
+                        direction: 0
+                    }));
+                }
+            }
+
+            function updateDisplay() {
+                if (!gameState) {
+                    console.log('No hay estado del juego');
+                    return;
+                }
+
+                // Clear canvas
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw paddles
+                ctx.fillStyle = '#fff';
+                for (const [side, paddle] of Object.entries(gameState.paddles)) {
+                    console.log(`Dibujando paleta ${side} en y=${paddle.y}`);  // Debug
+                    ctx.fillRect(
+                        paddle.x,
+                        paddle.y,
+                        paddle.width,
+                        paddle.height
+                    );
+                }
+
+                // Draw ball
+                ctx.beginPath();
+                ctx.arc(
+                    gameState.ball.x,
+                    gameState.ball.y,
+                    gameState.ball.radius,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.closePath();
+
+                // Update score
+                document.getElementById('player1Score').textContent = gameState.paddles.left.score;
+                document.getElementById('player2Score').textContent = gameState.paddles.right.score;
+            }
+
+            // Event Listeners with capture
+            document.addEventListener('keydown', handleKeyPress, { capture: true });
+            document.addEventListener('keyup', handleKeyRelease, { capture: true });
+
+            // Cleanup
+            window.addEventListener('beforeunload', () => {
+                gameSocket.close();
+            });
         });
     </script>
 </body>

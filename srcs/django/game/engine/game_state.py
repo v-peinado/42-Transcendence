@@ -29,11 +29,7 @@ class GameState:
             
         # Actualizar pelota
         self.ball.update(self.canvas_width, self.canvas_height)
-        
-        # Verificar colisiones con paletas
         self._check_paddle_collisions()
-        
-        # Verificar puntuación
         self._check_scoring()
         
     def _check_paddle_collisions(self):
@@ -70,9 +66,12 @@ class GameState:
         direction: -1 (arriba), 0 (parar), 1 (abajo)
         """
         if side in self.paddles:
-            new_y = self.paddles[side].y + (self.paddles[side].speed * direction)
-            # Mantener la paleta dentro del canvas
-            self.paddles[side].y = max(0, min(new_y, self.canvas_height - self.paddles[side].height))
+            paddle = self.paddles[side]
+            if direction != 0:
+                new_y = paddle.y + (paddle.speed * direction)
+                # Mantener la paleta dentro del canvas
+                paddle.y = max(0, min(new_y, self.canvas_height - paddle.height))
+                print(f"Paddle {side} moved to y={paddle.y}")  # Debug
 
     def serialize(self):
         return {

@@ -1,10 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import GameViewSet
+# from django.urls import path, include
+# from rest_framework.routers import DefaultRouter
+# from .views import GameViewSet
 
-router = DefaultRouter()
-router.register(r'games', GameViewSet, basename='game')
+# router = DefaultRouter()
+# router.register(r'games', GameViewSet, basename='game')
 
-urlpatterns = [
-    path('', include(router.urls)),
-]
+# urlpatterns = [
+#     path('', include(router.urls)),
+# ]

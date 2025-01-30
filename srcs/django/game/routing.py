@@ -2,11 +2,11 @@ from django.urls import re_path
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from .consumers.game_consumer import GameConsumer
-from .consumers.matchmaking_consumer import MatchmakingConsumer
+#from .consumers.matchmaking_consumer import MatchmakingConsumer
 
 websocket_urlpatterns = [
     re_path(r'ws/game/(?P<game_id>\w+)/$', GameConsumer.as_asgi()),
-    re_path(r'ws/matchmaking/$', MatchmakingConsumer.as_asgi()),
+    #re_path(r'ws/matchmaking/$', MatchmakingConsumer.as_asgi()),
 ]
 
 application = ProtocolTypeRouter({

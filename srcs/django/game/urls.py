@@ -4,7 +4,7 @@ from . import views
 app_name = 'game'
 
 urlpatterns = [
-    path('api/', include('game.api.urls')),  # Endpoints de API
+    #path('api/', include('game.api.urls')),  # Endpoints de API
     path('', views.game_page, name='game_home'),  # URL raíz del juego
     path('<int:game_id>/', views.game_page, name='game_page'),  # URL específica de una partida
 ]
