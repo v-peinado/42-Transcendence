@@ -156,23 +156,18 @@ async function loadGDPRSettings() {
         document.getElementById('showOnlineStatus').checked = data.personal_info?.show_online_status || false;
         document.getElementById('allowGameInvites').checked = data.personal_info?.allow_game_invites || false;
 
-        // Actualizar secciones de la política de privacidad
-        if (data.data_collection) {
-            document.getElementById('data-collection').innerHTML = 
-                data.data_collection.map(item => `<div class="mb-2">${item}</div>`).join('');
-        }
-        if (data.data_usage) {
-            document.getElementById('data-usage').innerHTML = 
-                data.data_usage.map(item => `<div class="mb-2">${item}</div>`).join('');
-        }
-        if (data.user_rights) {
-            document.getElementById('user-rights').innerHTML = 
-                data.user_rights.map(item => `<div class="mb-2">${item}</div>`).join('');
-        }
-        if (data.security_measures) {
-            document.getElementById('security-measures').innerHTML = 
-                data.security_measures.map(item => `<div class="mb-2">${item}</div>`).join('');
-        }
+        // Actualizar el contenido de GDPR directamente desde la API
+        document.getElementById('data-collection').innerHTML = data.gdpr_policy.data_collection
+            .map(item => `<div class="mb-2">${item}</div>`).join('');
+        
+        document.getElementById('data-usage').innerHTML = data.gdpr_policy.data_usage
+            .map(item => `<div class="mb-2">${item}</div>`).join('');
+        
+        document.getElementById('user-rights').innerHTML = data.gdpr_policy.user_rights
+            .map(item => `<div class="mb-2">${item}</div>`).join('');
+        
+        document.getElementById('security-measures').innerHTML = data.gdpr_policy.security_measures
+            .map(item => `<div class="mb-2">${item}</div>`).join('');
     } catch (error) {
         showMessage('Error al cargar las preferencias: ' + error.message, 'danger');
     }

@@ -45,7 +45,7 @@ export function RegisterView() {
                                     <div class="form-check mb-3">
                                         <input type="checkbox" class="form-check-input" id="privacy_policy" required>
                                         <label class="form-check-label text-light" for="privacy_policy">
-                                            Acepto la <a href="/privacy-policy" data-link class="text-primary">política de privacidad</a>
+                                            Acepto la <a href="#" id="showPrivacyPolicy" class="text-primary">política de privacidad</a>
                                         </label>
                                     </div>
                                     <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
@@ -67,6 +67,55 @@ export function RegisterView() {
                                 </form>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Añadir el modal de GDPR
+    app.innerHTML += `
+        <div class="modal fade" id="gdprModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content bg-dark">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-shield-alt me-2"></i>Política de Privacidad
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="privacy-content">
+                            <h4>Información General</h4>
+                            <p>Al registrarte en nuestra plataforma, recopilamos y procesamos cierta información personal tuya:</p>
+                            <ul>
+                                <li>Nombre de usuario</li>
+                                <li>Dirección de email</li>
+                                <li>Información de perfil (avatar, estados, etc.)</li>
+                                <li>Datos de juego y estadísticas</li>
+                            </ul>
+
+                            <h4>Uso de la Información</h4>
+                            <p>Utilizamos tu información para:</p>
+                            <ul>
+                                <li>Gestionar tu cuenta y proporcionar nuestros servicios</li>
+                                <li>Permitir la interacción con otros usuarios</li>
+                                <li>Mantener estadísticas de juego</li>
+                                <li>Mejorar la experiencia de usuario</li>
+                            </ul>
+
+                            <h4>Tus Derechos</h4>
+                            <p>Tienes derecho a:</p>
+                            <ul>
+                                <li>Acceder a tus datos personales</li>
+                                <li>Rectificar tus datos</li>
+                                <li>Solicitar la eliminación de tu cuenta</li>
+                                <li>Oponerte al procesamiento de tus datos</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendido</button>
                     </div>
                 </div>
             </div>
@@ -138,6 +187,13 @@ export function RegisterView() {
                 </div>
             `;
         }
+    });
+
+    // Añadir eventos después del código HTML existente
+    document.getElementById('showPrivacyPolicy').addEventListener('click', (e) => {
+        e.preventDefault();
+        const modal = new bootstrap.Modal(document.getElementById('gdprModal'));
+        modal.show();
     });
 
     // Añadir la función handleFtAuth al objeto window

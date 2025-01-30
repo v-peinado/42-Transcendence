@@ -118,14 +118,19 @@ export function UserProfileView() {
                                     <a href="/game" class="btn btn-lg btn-primary">
                                         <i class="fas fa-gamepad me-2"></i>Jugar
                                     </a>
-                                    <button id="editProfileBtn" class="btn btn-outline-light w-100">
-                                        <i class="fas fa-cog me-2"></i>Configuración
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button id="editProfileBtn" class="btn btn-outline-light flex-grow-1">
+                                            <i class="fas fa-cog me-2"></i>Configuración
+                                        </button>
+                                        <button class="btn btn-outline-info" id="gdprSettingsBtn">
+                                            <i class="fas fa-shield-alt me-2"></i>GDPR
+                                        </button>
+                                    </div>
                                     <button id="toggle2FABtn" class="btn btn-outline-info">
                                         <i class="fas fa-shield-alt me-2"></i>
                                         <span id="2faButtonText">Activar 2FA</span>
                                     </button>
-                                    <button id="showQRBtn" class="btn btn-outline-light w-100 mb-2">
+                                    <button id="showQRBtn" class="btn btn-outline-light w-100">
                                         <i class="fas fa-qrcode me-2"></i>Ver código QR
                                     </button>
                                 </div>
@@ -799,6 +804,11 @@ function setupProfileEvents() {
         const collapse = new bootstrap.Collapse(collapseElement, {
             toggle: true
         });
+    });
+
+    // Event listener para el botón de GDPR
+    document.getElementById('gdprSettingsBtn').addEventListener('click', () => {
+        window.location.href = '/gdpr-settings';
     });
 }
 

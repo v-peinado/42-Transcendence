@@ -1455,3 +1455,41 @@ main {
 #qrInfoCollapse.show {
     opacity: 1;
 }
+
+/* Estilos para el modal GDPR */
+.privacy-content {
+    color: #fff;
+}
+
+.privacy-content h4 {
+    color: #0d6efd;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.privacy-content ul {
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.privacy-content li {
+    margin-bottom: 0.5rem;
+}
+
+.privacy-content p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+/* Estilos para el botón GDPR */
+#gdprSettingsBtn {
+    background: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.5);
+    transition: all 0.3s ease;
+}
+
+#gdprSettingsBtn:hover {
+    background: rgba(13, 202, 240, 0.2);
+    border-color: rgba(13, 202, 240, 0.8);
+    transform: translateY(-2px);
+}
