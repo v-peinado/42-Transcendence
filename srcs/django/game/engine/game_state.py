@@ -81,5 +81,9 @@ class GameState:
                 side: paddle.serialize()
                 for side, paddle in self.paddles.items()
             },
-            'status': self.status
+            'status': self.status,
+            'canvas': {
+                'width': self.canvas_width,
+                'height': self.canvas_height
+            }
         }
