@@ -1,112 +1,126 @@
 import AuthService from '../../services/AuthService.js';
 
-// Vista ya implementada que maneja:
-// - Mostrar política de privacidad
-// - Mostrar y actualizar configuraciones GDPR
-// - Manejo de errores y mensajes
-
 export function GDPRSettingsView() {
     const app = document.getElementById('app');
     app.innerHTML = `
-        <div class="container py-4">
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h3 class="card-title mb-0">Política de Privacidad</h3>
-                                <a href="/profile" data-link class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-arrow-left me-2"></i>Volver
-                                </a>
-                            </div>
-                            
-                            <!-- Secciones de GDPR -->
-                            <div class="mb-4">
-                                <h5><i class="fas fa-database me-2"></i>Recopilación de Datos</h5>
-                                <div id="data-collection" class="ps-4 text-muted"></div>
-                            </div>
-
-                            <div class="mb-4">
-                                <h5><i class="fas fa-tasks me-2"></i>Uso de Datos</h5>
-                                <div id="data-usage" class="ps-4 text-muted"></div>
-                            </div>
-
-                            <div class="mb-4">
-                                <h5><i class="fas fa-user-shield me-2"></i>Tus Derechos</h5>
-                                <div id="user-rights" class="ps-4 text-muted"></div>
-                            </div>
-
-                            <div class="mb-4">
-                                <h5><i class="fas fa-lock me-2"></i>Medidas de Seguridad</h5>
-                                <div id="security-measures" class="ps-4 text-muted"></div>
-                            </div>
-
-                            <form id="gdprForm">
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <label class="form-check-label" for="profilePublic">
-                                            Perfil público
-                                        </label>
-                                        <small class="text-muted d-block">
-                                            Tu perfil y estadísticas serán visibles para otros usuarios
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <label class="form-check-label" for="showOnlineStatus">
-                                            Mostrar estado en línea
-                                        </label>
-                                        <small class="text-muted d-block">
-                                            Otros usuarios podrán ver cuando estás conectado
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <div class="form-check form-switch">
-                                        <label class="form-check-label" for="allowGameInvites">
-                                            Permitir invitaciones a partidas
-                                        </label>
-                                        <small class="text-muted d-block">
-                                            Otros jugadores podrán invitarte a jugar
-                                        </small>
-                                    </div>
-                                </div>
-                            </form>
-
-                            <div class="mt-4 border-top pt-4">
-                                <h4><i class="fas fa-download me-2"></i>Exportar Datos</h4>
-                                <p class="text-muted">Descarga todos tus datos personales en formato JSON</p>
-                                <button id="downloadData" class="btn btn-secondary">
-                                    <i class="fas fa-file-download me-2"></i>Descargar mis datos
-                                </button>
-                            </div>
-
-                            <div class="mt-4 border-top pt-4">
-                                <h4 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Eliminar Cuenta</h4>
-                                <p class="text-muted">Esta acción es irreversible. Todos tus datos serán eliminados permanentemente.</p>
-                                <button id="deleteAccount" class="btn btn-danger">
-                                    <i class="fas fa-user-times me-2"></i>Eliminar mi cuenta
-                                </button>
-                            </div>
-
-                            <!-- Modal de confirmación -->
-                            <div class="modal fade" id="deleteModal" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Confirmar eliminación</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <main class="profile-section">
+            <div class="container py-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card bg-dark text-light border-0 shadow">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-square bg-primary me-3">
+                                            <i class="fas fa-shield-alt fs-2"></i>
                                         </div>
-                                        <div class="modal-body">
-                                            <p>Por favor, ingresa tu contraseña para confirmar la eliminación de tu cuenta:</p>
-                                            <input type="password" id="deletePassword" class="form-control" placeholder="Contraseña">
+                                        <h3 class="card-title mb-0">Privacidad y Seguridad</h3>
+                                    </div>
+                                    <a href="/profile" data-link class="btn btn-outline-light btn-sm">
+                                        <i class="fas fa-arrow-left me-2"></i>Volver
+                                    </a>
+                                </div>
+                                
+                                <!-- Secciones de GDPR con iconos y efectos -->
+                                <div class="gdpr-section mb-4">
+                                    <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#dataCollectionContent">
+                                        <i class="fas fa-database text-primary me-2"></i>
+                                        <h5 class="mb-0">Recopilación de Datos</h5>
+                                        <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                                    </div>
+                                    <div class="collapse show" id="dataCollectionContent">
+                                        <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                            <p>Los siguientes datos son necesarios para proporcionar nuestros servicios:</p>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="button" class="btn btn-danger" id="confirmDelete">Eliminar</button>
+                                        <div id="data-collection" class="ps-4 text-muted section-content mt-3"></div>
+                                    </div>
+                                </div>
+
+                                <div class="gdpr-section mb-4">
+                                    <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#dataUsageContent">
+                                        <i class="fas fa-tasks text-info me-2"></i>
+                                        <h5 class="mb-0">Uso de Datos</h5>
+                                        <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                                    </div>
+                                    <div class="collapse" id="dataUsageContent">
+                                        <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                            <p>Utilizamos tus datos de las siguientes maneras:</p>
+                                        </div>
+                                        <div id="data-usage" class="ps-4 text-muted section-content mt-3"></div>
+                                    </div>
+                                </div>
+
+                                <div class="gdpr-section mb-4">
+                                    <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#userRightsContent">
+                                        <i class="fas fa-user-shield text-success me-2"></i>
+                                        <h5 class="mb-0">Tus Derechos</h5>
+                                        <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                                    </div>
+                                    <div class="collapse" id="userRightsContent">
+                                        <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                            <p>Como usuario, tienes los siguientes derechos sobre tus datos:</p>
+                                        </div>
+                                        <div id="user-rights" class="ps-4 text-muted section-content mt-3"></div>
+                                    </div>
+                                </div>
+
+                                <div class="gdpr-section mb-4">
+                                    <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#securityContent">
+                                        <i class="fas fa-lock text-warning me-2"></i>
+                                        <h5 class="mb-0">Medidas de Seguridad</h5>
+                                        <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                                    </div>
+                                    <div class="collapse" id="securityContent">
+                                        <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                            <p>Implementamos las siguientes medidas para proteger tus datos:</p>
+                                        </div>
+                                        <div id="security-measures" class="ps-4 text-muted section-content mt-3"></div>
+                                    </div>
+                                </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Acciones con botones más atractivos -->
+                                <div class="actions-section mt-5">
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <div class="action-card bg-info bg-opacity-10 p-4 rounded">
+                                                <h5><i class="fas fa-download text-info me-2"></i>Exportar Datos</h5>
+                                                <p class="text-muted mb-3">Descarga todos tus datos personales en formato JSON</p>
+                                                <button id="downloadData" class="btn btn-info">
+                                                    <i class="fas fa-file-download me-2"></i>Descargar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="action-card bg-danger bg-opacity-10 p-4 rounded">
+                                                <h5><i class="fas fa-exclamation-triangle text-danger me-2"></i>Zona de Peligro</h5>
+                                                <p class="text-muted mb-3">Esta acción eliminará permanentemente tu cuenta</p>
+                                                <button id="deleteAccount" class="btn btn-danger">
+                                                    <i class="fas fa-user-times me-2"></i>Eliminar Cuenta
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal de confirmación -->
+                                <div class="modal fade" id="deleteModal" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmar eliminación</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Por favor, ingresa tu contraseña para confirmar la eliminación de tu cuenta:</p>
+                                                <input type="password" id="deletePassword" class="form-control" placeholder="Contraseña">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="button" class="btn btn-danger" id="confirmDelete">Eliminar</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -115,7 +129,7 @@ export function GDPRSettingsView() {
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     `;
 
     loadGDPRSettings();
@@ -124,7 +138,20 @@ export function GDPRSettingsView() {
     // Agregar manejadores para nuevas funciones
     document.getElementById('downloadData').addEventListener('click', async () => {
         try {
-            await AuthService.downloadUserData();
+            const data = await AuthService.getGDPRSettings();
+            
+            // Crear archivo de descarga
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json'
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mis_datos_personales.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             showMessage('Error al descargar datos: ' + error.message, 'danger');
         }
@@ -150,7 +177,7 @@ export function GDPRSettingsView() {
 async function loadGDPRSettings() {
     try {
         const data = await AuthService.getGDPRSettings();
-        
+
         // Actualizar checkboxes usando los nombres correctos
         document.getElementById('profilePublic').checked = data.personal_info?.profile_public || false;
         document.getElementById('showOnlineStatus').checked = data.personal_info?.show_online_status || false;
@@ -159,13 +186,13 @@ async function loadGDPRSettings() {
         // Actualizar el contenido de GDPR directamente desde la API
         document.getElementById('data-collection').innerHTML = data.gdpr_policy.data_collection
             .map(item => `<div class="mb-2">${item}</div>`).join('');
-        
+
         document.getElementById('data-usage').innerHTML = data.gdpr_policy.data_usage
             .map(item => `<div class="mb-2">${item}</div>`).join('');
-        
+
         document.getElementById('user-rights').innerHTML = data.gdpr_policy.user_rights
             .map(item => `<div class="mb-2">${item}</div>`).join('');
-        
+
         document.getElementById('security-measures').innerHTML = data.gdpr_policy.security_measures
             .map(item => `<div class="mb-2">${item}</div>`).join('');
     } catch (error) {
