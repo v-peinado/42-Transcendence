@@ -209,8 +209,10 @@ help:
 	@echo "  https://localhost:8200     - Panel acceso a Vault"
 	@echo "                             * Ver waf/vault/init-vault.sh para más información"
 	@echo ""
-	@echo "  http://localhost:8000/game - Accede al juego (debes loguearte primero)"
-	@echo "  http://localhost:8000/api/ninja/docs - Apis"
+	@echo "  http://localhost:8000/game            - Crea una sala y accede al juego (debes loguearte primero)"
+	@echo "  http://localhost:8000/game/{id-sala } - Accede a la sala creada previamente (debes loguearte primero)"
+	@echo ""
+	@echo "  http://localhost:8000/api/ninja/docs  - Apis"
 	@echo ""
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
