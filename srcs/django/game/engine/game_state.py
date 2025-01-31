@@ -21,16 +21,16 @@ class GameState:
             )
         }
         
-        self.status = 'waiting'
+        self.status = 'playing'  # Cambiar estado inicial a playing
+        print("[GAME_STATE] Initialized with playing status")
         
     def update(self):
-        if self.status != 'playing':
-            return
-            
-        # Actualizar pelota
+        print(f"[UPDATE] Current status: {self.status}")
+        # Actualizar pelota independientemente del estado
         self.ball.update(self.canvas_width, self.canvas_height)
         self._check_paddle_collisions()
         self._check_scoring()
+        print(f"[UPDATE] Ball position: ({self.ball.x}, {self.ball.y})")
         
     def _check_paddle_collisions(self):
         # Colisión con paleta izquierda
@@ -60,18 +60,19 @@ class GameState:
         self.ball.reset(self.canvas_width/2, self.canvas_height/2)
         
     def move_paddle(self, side, direction):
-        """
-        Mueve una paleta en una dirección
-        side: 'left' o 'right'
-        direction: -1 (arriba), 0 (parar), 1 (abajo)
-        """
-        if side in self.paddles:
-            paddle = self.paddles[side]
-            if direction != 0:
-                new_y = paddle.y + (paddle.speed * direction)
-                # Mantener la paleta dentro del canvas
-                paddle.y = max(0, min(new_y, self.canvas_height - paddle.height))
-                print(f"Paddle {side} moved to y={paddle.y}")  # Debug
+        """Mover una paleta"""
+        if side not in self.paddles:
+            return
+            
+        paddle = self.paddles[side]
+        movement = paddle.speed * direction
+        new_y = paddle.y + movement
+        
+        # Aplicar límites
+        max_y = self.canvas_height - paddle.height
+        paddle.y = max(0, min(new_y, max_y))
+        
+        print(f"[PADDLE] {side} moved to y={paddle.y}")
 
     def serialize(self):
         return {

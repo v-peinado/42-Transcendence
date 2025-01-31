@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-#import asyncio
+import asyncio
 from datetime import datetime
 from .game_state import GameState
 
@@ -79,21 +79,3 @@ class MatchmakingSystem:
         # Enviar notificación a ambos jugadores
         await game.player1.ws_connection.send_json(match_data)
         await game.player2.ws_connection.send_json(match_data)
-        
-    # def remove_from_queue(self, player_id: int) -> None:
-    #     """Elimina un jugador de la cola"""
-    #     self.queue = [p for p in self.queue if p.id != player_id]
-        
-    # def get_game_by_player(self, player_id: int) -> Optional[GameSession]:
-    #     """Obtiene la partida actual de un jugador"""
-    #     for game in self.active_games.values():
-    #         if game.player1.id == player_id or game.player2.id == player_id:
-    #             return game
-    #     return None
-        
-    # def end_game(self, game_id: str) -> None:
-    #     """Finaliza una partida"""
-    #     if game_id in self.active_games:
-    #         game = self.active_games[game_id]
-    #         game.status = 'finished'
-    #         game.finished_at = datetime.now()

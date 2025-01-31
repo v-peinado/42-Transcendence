@@ -85,37 +85,52 @@
             // WebSocket handlers
             gameSocket.onopen = function() {
                 console.log('WebSocket conectado');
-                //debugDiv.textContent = 'Conectado al servidor';
+                // Enviar mensaje inicial para identificar al jugador
+                gameSocket.send(JSON.stringify({
+                    type: 'player_connect',
+                    user_id: '{{ user_id }}',
+                    username: '{{ username }}'
+                }));
             };
 
             gameSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
-                console.log('Mensaje recibido:', data);
-                //debugDiv.textContent = `Último mensaje: ${JSON.stringify(data).slice(0, 100)}`;
+                console.log('WebSocket mensaje recibido:', data);
 
                 if (data.type === 'game_state') {
+                    // Cancelar cualquier frame pendiente
+                    if (window.requestAnimationFrameId) {
+                        cancelAnimationFrame(window.requestAnimationFrameId);
+                    }
+                    
                     gameState = data.state;
-                    updateDisplay();
+                    window.requestAnimationFrameId = requestAnimationFrame(updateDisplay);
                 } else if (data.type === 'game_start') {
                     document.getElementById('gameStatus').textContent = '¡Juego en curso!';
-                    playerSide = data.player1 === '{{ username }}' ? 'left' : 'right';
+                    playerSide = data.player1_id === userId ? 'left' : 'right';  // Cambiado para usar userId
                     console.log('Lado asignado:', playerSide);
-                    debugDiv.textContent += ` | Lado: ${playerSide}`;
+                    debugDiv.textContent = `Lado asignado: ${playerSide}`;
                 }
             };
 
             // Improved key handling
             const keysPressed = new Set();
+            let lastDirection = 0;
 
             function handleKeyPress(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                
-                if (!playerSide || !gameState) return;
-                
                 const key = e.key.toLowerCase();
+                
+                // Debug para ver qué teclas se están detectando
+                console.log('Tecla detectada:', key);
+                
+                if (!playerSide || !gameState) {
+                    console.log('Estado actual:', { playerSide, gameState: !!gameState });
+                    return;
+                }
+
                 let direction = null;
                 
+                // Simplificar la lógica de dirección
                 if (playerSide === 'left') {
                     if (key === 'w') direction = -1;
                     if (key === 's') direction = 1;
@@ -125,30 +140,33 @@
                 }
 
                 if (direction !== null) {
-                    // Solo mostramos el mensaje de movimiento
-                    debugDiv.textContent = `Moviendo ${playerSide} ${direction === -1 ? 'arriba' : 'abajo'}`;
-                    gameSocket.send(JSON.stringify({
+                    const message = {
                         type: 'move_paddle',
                         side: playerSide,
-                        direction: direction
-                    }));
+                        direction: direction,
+                        timestamp: Date.now()  // Añadir timestamp para debug
+                    };
+                    console.log('Enviando movimiento:', message);
+                    gameSocket.send(JSON.stringify(message));
                 }
             }
 
             function handleKeyRelease(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                
                 const key = e.key.toLowerCase();
+                
+                if (!playerSide || !keysPressed.has(key)) return;
+                
                 keysPressed.delete(key);
+                console.log(`Key released: ${key}`);
                 
-                if (!playerSide) return;
-                
-                // Solo enviamos el mensaje de detención cuando realmente soltamos una tecla de movimiento
-                if ((playerSide === 'left' && ['w', 's'].includes(key)) ||
-                    (playerSide === 'right' && ['arrowup', 'arrowdown'].includes(key))) {
-                    // El mensaje de detención solo se muestra cuando realmente soltamos la tecla
-                    debugDiv.textContent = `Paleta ${playerSide} detenida`;
+                // Enviar comando de detención solo si no hay otras teclas de movimiento presionadas
+                const hasActiveMovementKeys = Array.from(keysPressed).some(k => 
+                    (playerSide === 'left' && ['w', 's'].includes(k)) ||
+                    (playerSide === 'right' && ['arrowup', 'arrowdown'].includes(k))
+                );
+
+                if (!hasActiveMovementKeys) {
+                    console.log('Stopping paddle movement');
                     gameSocket.send(JSON.stringify({
                         type: 'move_paddle',
                         side: playerSide,
@@ -158,43 +176,45 @@
             }
 
             function updateDisplay() {
-                if (!gameState) {
-                    console.log('No hay estado del juego');
-                    return;
-                }
+                if (!gameState) return;
 
-                // Clear canvas
+                // Limpiar canvas completamente
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Draw paddles
+                // Dibujar paletas
                 ctx.fillStyle = '#fff';
-                for (const [side, paddle] of Object.entries(gameState.paddles)) {
-                    console.log(`Dibujando paleta ${side} en y=${paddle.y}`);  // Debug
-                    ctx.fillRect(
-                        paddle.x,
-                        paddle.y,
-                        paddle.width,
-                        paddle.height
-                    );
+                if (gameState.paddles) {
+                    Object.entries(gameState.paddles).forEach(([side, paddle]) => {
+                        ctx.fillRect(
+                            Math.round(paddle.x),
+                            Math.round(paddle.y),
+                            paddle.width,
+                            paddle.height
+                        );
+                    });
                 }
 
-                // Draw ball
-                ctx.beginPath();
-                ctx.arc(
-                    gameState.ball.x,
-                    gameState.ball.y,
-                    gameState.ball.radius,
-                    0,
-                    Math.PI * 2
-                );
-                ctx.fillStyle = '#fff';
-                ctx.fill();
-                ctx.closePath();
+                // Dibujar pelota
+                if (gameState.ball) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        Math.round(gameState.ball.x),
+                        Math.round(gameState.ball.y),
+                        gameState.ball.radius,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fillStyle = '#fff';
+                    ctx.fill();
+                    ctx.closePath();
+                }
 
-                // Update score
-                document.getElementById('player1Score').textContent = gameState.paddles.left.score;
-                document.getElementById('player2Score').textContent = gameState.paddles.right.score;
+                // Solo solicitar nuevo frame cuando sea necesario
+                if (gameState.status === 'playing') {
+                    window.requestAnimationFrameId = requestAnimationFrame(updateDisplay);
+                }
             }
 
             // Event Listeners with capture
