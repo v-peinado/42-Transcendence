@@ -1,4 +1,6 @@
 import AuthService from '../../services/AuthService.js';
+import { messages } from '../../translations.js';
+import { getNavbarHTML } from '../../components/Navbar.js';
 
 export function RegisterView() {
     const app = document.getElementById('app');
@@ -171,12 +173,54 @@ export function RegisterView() {
                 privacy_policy: privacyAccepted
             });
 
-            alertDiv.innerHTML = `
-                <div class="alert alert-success">
-                    ${result.message}
-                    <div class="mt-3">
-                        <p>Por favor, revisa tu email para verificar tu cuenta.</p>
-                        <a href="/login" data-link class="btn btn-primary mt-2">Ir a Login</a>
+            app.innerHTML = `
+                ${getNavbarHTML(false)}
+                <div class="hero-section">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6 col-lg-5">
+                                <div class="card login-card verification-message">
+                                    <div class="card-body p-5 text-center">
+                                        <svg class="logo mb-4" width="64" height="64" viewBox="0 0 100 100">
+                                            <rect width="100" height="100" fill="none"/>
+                                            <circle cx="50" cy="50" r="40" fill="none" stroke="#0d6efd" stroke-width="8">
+                                                <!-- Animación de rotación infinita -->
+                                                <animateTransform
+                                                    attributeName="transform"
+                                                    type="rotate"
+                                                    from="0 50 50"
+                                                    to="360 50 50"
+                                                    dur="2s"
+                                                    repeatCount="indefinite"/>
+                                            </circle>
+                                            <!-- Pulso en el centro -->
+                                            <circle cx="50" cy="50" r="5" fill="#0d6efd">
+                                                <animate
+                                                    attributeName="r"
+                                                    values="5;8;5"
+                                                    dur="1s"
+                                                    repeatCount="indefinite"/>
+                                                <animate
+                                                    attributeName="fill-opacity"
+                                                    values="1;0.5;1"
+                                                    dur="1s"
+                                                    repeatCount="indefinite"/>
+                                            </circle>
+                                        </svg>
+                                        <h3 class="text-light mb-3">${messages.AUTH.EMAIL_VERIFICATION.TITLE}</h3>
+                                        <p class="text-white fs-6 mb-4">
+                                            ${messages.AUTH.EMAIL_VERIFICATION.MESSAGE}<br>
+                                            <small class="d-block mt-2 text-white-75">${messages.AUTH.EMAIL_VERIFICATION.SUBMESSAGE}</small>
+                                        </p>
+                                        <div class="d-grid">
+                                            <a href="/login" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-arrow-left me-2"></i>${messages.AUTH.EMAIL_VERIFICATION.BUTTON}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;

@@ -1,214 +1,118 @@
 import AuthService from '../../services/AuthService.js';
+import { getNavbarHTML } from '../../components/Navbar.js';  // Añadir esta importación
 
 export function UserProfileView() {
     const app = document.getElementById('app');
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    const username = localStorage.getItem('username');
     
     app.innerHTML = `
-        <!-- Navbar simplificado para perfil -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        ${getNavbarHTML(true)}
+        <!-- Input oculto para la imagen - IMPORTANTE: debe estar fuera del contenedor principal -->
+        <input type="file" id="imageInput" accept="image/*" style="display: none">
+        
+        <div class="profile-section">
             <div class="container">
-                <a class="navbar-brand d-flex align-items-center" href="/" data-link>
-                    <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
-                        <rect x="10" y="40" width="10" height="20" fill="#fff">
-                            <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
-                        </rect>
-                        <circle cx="50" cy="50" r="5" fill="#fff">
-                            <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
-                            <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
-                        </circle>
-                        <rect x="80" y="40" width="10" height="20" fill="#fff">
-                            <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
-                        </rect>
-                    </svg>
-                    <span class="brand-text">Transcendence</span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/game" data-link>
-                                <i class="fas fa-play me-1"></i>Jugar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/leaderboard" data-link>
-                                <i class="fas fa-trophy me-1"></i>Clasificación
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/chat" data-link>
-                                <i class="fas fa-comments me-1"></i>Chat
-                            </a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link text-danger-hover" id="navLogoutBtn" href="#" style="cursor: pointer;">
-                                <i class="fas fa-sign-out-alt me-2"></i>Salir
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+                <!-- Navegación por pestañas -->
+                <ul class="nav nav-tabs profile-tabs mb-4" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile">
+                            <i class="fas fa-user me-2"></i>Perfil
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats">
+                            <i class="fas fa-chart-line me-2"></i>Estadísticas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#matches">
+                            <i class="fas fa-trophy me-2"></i>Partidas
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings">
+                            <i class="fas fa-cog me-2"></i>Ajustes
+                        </button>
+                    </li>
+                </ul>
 
-        <!-- Contenedor principal con padding ajustado -->
-        <main class="profile-section">
-            <div class="container py-4">
-                <div class="row g-3">
-                    <!-- Perfil Card Principal -->
-                    <div class="col-lg-4">
-                        <div class="card profile-card bg-dark text-light border-0 shadow h-100">
-                            <div class="card-body p-4">
-                                <div id="userInfo" class="text-center">
-                                    <div class="placeholder-glow">
-                                        <span class="placeholder col-6"></span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Sección de imagen de perfil con nuevo estilo -->
-                                <div class="text-center mt-4">
-                                    <input type="file" 
-                                           class="form-control bg-dark text-light" 
-                                           id="imageInput" 
-                                           accept="image/*" 
-                                           style="display: none;">
-                                    <div class="btn-group w-100">
-                                        <button class="btn btn-primary" id="changeImageBtn">
-                                            <i class="fas fa-camera me-2"></i>Cambiar Imagen
-                                        </button>
-                                        <button class="btn btn-outline-light" id="restoreImageBtn">
-                                            <i class="fas fa-undo me-2"></i>Restaurar
-                                        </button>
-                                    </div>
-                                    <div class="alert mt-3" id="imageAlert" style="display: none;"></div>
-                                </div>
-                                
-                                <!-- Stats con nuevo diseño -->
-                                <div class="row g-3 mt-4">
-                                    <div class="col-4">
-                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
-                                            <i class="fas fa-trophy text-warning fs-4 mb-2"></i>
-                                            <h3 class="fs-4 mb-0">25</h3>
-                                            <small class="text-muted">Victorias</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
-                                            <i class="fas fa-gamepad text-primary fs-4 mb-2"></i>
-                                            <h3 class="fs-4 mb-0">42</h3>
-                                            <small class="text-muted">Partidas</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="bg-dark-subtle rounded p-3 text-center h-100">
-                                            <i class="fas fa-star text-info fs-4 mb-2"></i>
-                                            <h3 class="fs-4 mb-0">8</h3>
-                                            <small class="text-muted">Nivel</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Botones de acción con nuevo estilo -->
-                                <div class="d-grid gap-2 mt-4">
-                                    <a href="/game" class="btn btn-lg btn-primary">
-                                        <i class="fas fa-gamepad me-2"></i>Jugar
-                                    </a>
-                                    <div class="d-flex gap-2">
-                                        <button id="editProfileBtn" class="btn btn-outline-light flex-grow-1">
-                                            <i class="fas fa-cog me-2"></i>Configuración
-                                        </button>
-                                        <button class="btn btn-outline-info" id="gdprSettingsBtn">
-                                            <i class="fas fa-shield-alt me-2"></i>GDPR
-                                        </button>
-                                    </div>
-                                    <button id="toggle2FABtn" class="btn btn-outline-info">
-                                        <i class="fas fa-shield-alt me-2"></i>
-                                        <span id="2faButtonText">Activar 2FA</span>
-                                    </button>
-                                    <button id="showQRBtn" class="btn btn-outline-light w-100">
-                                        <i class="fas fa-qrcode me-2"></i>Ver código QR
-                                    </button>
+                <!-- Contenido de las pestañas -->
+                <div class="tab-content">
+                    <!-- Pestaña de Perfil -->
+                    <div class="tab-pane fade show active" id="profile">
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <div class="profile-card p-4" id="userInfo">
+                                    <!-- Este div se llena dinámicamente con loadUserData -->
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Panel derecho con información y estadísticas -->
-                    <div class="col-lg-8">
-                        <div class="row g-3">
-                            <!-- Info Card con nuevo estilo -->
-                            <div class="col-12">
-                                <div class="card bg-dark text-light border-0 shadow">
-                                    <div class="card-body p-4">
-                                        <h5 class="card-title mb-4">
-                                            <i class="fas fa-user me-2"></i>Información del Perfil
-                                        </h5>
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <small class="text-muted d-block">Username</small>
-                                                <div id="profileUsername" class="fs-5">Cargando...</div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="text-muted d-block">Email</small>
-                                                <div id="profileEmail" class="fs-5">Cargando...</div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <small class="text-muted d-block">Estado</small>
-                                                <div id="profileStatus">
-                                                    <span class="badge bg-secondary">Cargando...</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                    <!-- Pestaña de Estadísticas -->
+                    <div class="tab-pane fade" id="stats">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h5>Ranking Global</h5>
+                                    <div class="stat-value">#42</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h5>Victorias</h5>
+                                    <div class="stat-value">75%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stats-card">
+                                    <h5>Puntuación</h5>
+                                    <div class="stat-value">1842</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de Partidas -->
+                    <div class="tab-pane fade" id="matches">
+                        <div class="matches-list">
+                            <!-- Aquí irá el historial de partidas -->
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de Ajustes -->
+                    <div class="tab-pane fade" id="settings">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="settings-card">
+                                    <h5>Cuenta</h5>
+                                    <div class="settings-actions">
+                                        <button id="editProfileBtn" class="btn btn-outline-light d-flex align-items-center w-100 mb-3">
+                                            <i class="fas fa-edit me-2"></i>
+                                            <span>Editar Perfil</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </button>
+                                        <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
+                                            <i class="fas fa-shield-alt me-2"></i>
+                                            <span id="2faButtonText">2FA</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Historial de Partidas con nuevo estilo -->
-                            <div class="col-12">
-                                <div class="card bg-dark text-light border-0 shadow">
-                                    <div class="card-body p-4">
-                                        <h5 class="card-title mb-4">
-                                            <i class="fas fa-history me-2"></i>Historial de Partidas
-                                        </h5>
-                                        <div class="table-responsive">
-                                            <table class="table table-dark table-hover">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Oponente</th>
-                                                        <th>Resultado</th>
-                                                        <th>Puntos</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <td>2024-01-20</td>
-                                                        <td>
-                                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Player123" 
-                                                                 alt="Avatar" class="rounded-circle me-2" width="24" height="24">
-                                                            Player123
-                                                        </td>
-                                                        <td><span class="badge bg-success">Victoria</span></td>
-                                                        <td>10-8</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>2024-01-19</td>
-                                                        <td>
-                                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=GameMaster" 
-                                                                 alt="Avatar" class="rounded-circle me-2" width="24" height="24">
-                                                            GameMaster
-                                                        </td>
-                                                        <td><span class="badge bg-danger">Derrota</span></td>
-                                                        <td>5-10</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                            <div class="col-md-6">
+                                <div class="settings-card">
+                                    <h5>Seguridad</h5>
+                                    <div class="settings-actions">
+                                        <button id="showQRBtn" class="btn btn-outline-primary d-flex align-items-center w-100 mb-3">
+                                            <i class="fas fa-qrcode me-2"></i>
+                                            <span>Código QR</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </button>
+                                        <button id="gdprSettingsBtn" class="btn btn-outline-warning d-flex align-items-center w-100">
+                                            <i class="fas fa-user-shield me-2"></i>
+                                            <span>Privacidad</span>
+                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -216,7 +120,7 @@ export function UserProfileView() {
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     `;
 
     // Añadir el modal al body
@@ -842,55 +746,74 @@ async function loadUserData() {
         
         document.getElementById('userInfo').innerHTML = `
             <div class="text-center">
-                <img src="${profileImage}" 
-                     alt="avatar" 
-                     class="rounded-circle profile-avatar mb-3" 
-                     width="128"
-                     height="128"
-                     id="profileImage"
-                     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
-                <h5 class="mb-2">${userInfo.username}</h5>
-                <p class="text-muted mb-1">${userInfo.email}</p>
+                <div class="position-relative mb-4 avatar-container">
+                    <img src="${profileImage}" 
+                         alt="Profile" 
+                         class="profile-avatar rounded-circle"
+                         id="profileImage"
+                         onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
+                    <div class="avatar-buttons">
+                        <button class="btn btn-sm btn-primary rounded-circle" 
+                                id="changeImageBtn">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light rounded-circle" 
+                                id="restoreImageBtn">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                </div>
+                <h3 class="mb-2" id="profileUsername">${userInfo.username}</h3>
+                <p class="text-muted mb-3" id="profileEmail">${userInfo.email}</p>
+                <div class="status-badge mb-4" id="profileStatus">
+                    <span class="badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}">
+                        ${userInfo.is_active ? 'Activo' : 'Pendiente'}
+                    </span>
+                </div>
             </div>
         `;
 
-        // Si es usuario de 42, ocultar campo de contraseña
-        if (userInfo.is_fortytwo_user) {
-            document.getElementById('deleteAccountPassword').parentElement.style.display = 'none';
-        }
-
-        // Actualizar detalles del perfil
-        document.getElementById('profileUsername').textContent = userInfo.username;
-        document.getElementById('profileEmail').textContent = userInfo.email;
-        document.getElementById('profileStatus').innerHTML = `
-            <span class="badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}">
-                ${userInfo.is_active ? 'Activo' : 'Pendiente'}
-            </span>
-        `;
-
-        // Actualizar estado del botón 2FA basado en el estado del servidor y localStorage
-        const toggle2FABtn = document.getElementById('toggle2FABtn');
-        const buttonText = document.getElementById('2faButtonText');
-        const two_factor_enabled = localStorage.getItem('two_factor_enabled') === 'true';
-
-        console.log('Estado 2FA actual:', { 
-            from_server: userInfo.two_factor_enabled, 
-            from_storage: two_factor_enabled 
+        // Volver a añadir los event listeners después de cargar el contenido
+        document.getElementById('changeImageBtn')?.addEventListener('click', () => {
+            document.getElementById('imageInput').click();
         });
 
-        if (two_factor_enabled) {
-            console.log('2FA está activo, actualizando UI');
-            toggle2FABtn.dataset.enabled = 'true';
-            buttonText.textContent = 'Desactivar 2FA';
-            toggle2FABtn.classList.remove('btn-outline-info');
-            toggle2FABtn.classList.add('btn-outline-warning');
-        } else {
-            console.log('2FA está inactivo, actualizando UI');
-            toggle2FABtn.dataset.enabled = 'false';
-            buttonText.textContent = 'Activar 2FA';
-            toggle2FABtn.classList.remove('btn-outline-warning');
-            toggle2FABtn.classList.add('btn-outline-info');
-        }
+        document.getElementById('restoreImageBtn')?.addEventListener('click', async () => {
+            const alertEl = document.getElementById('imageAlert');
+        
+            try {
+                const userInfo = await AuthService.updateProfile({ restore_image: true });
+                
+                // Actualizar la imagen mostrada inmediatamente con la respuesta del backend
+                const profileImage = document.getElementById('profileImage');
+                const navbarAvatar = document.getElementById('navbarUserAvatar');
+                const dropdownAvatar = document.getElementById('dropdownUserAvatar');
+                
+                const imageUrl = userInfo.profile_image || // usar la imagen del perfil si existe
+                                userInfo.fortytwo_image || // o la imagen de 42 si es usuario de 42
+                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`; // o dicebear como último recurso
+                
+                const imageElements = [profileImage, navbarAvatar, dropdownAvatar];
+                imageElements.forEach(el => {
+                    if (el) {
+                        el.src = imageUrl;
+                        // Solo usar dicebear como fallback si la imagen principal falla
+                        el.onerror = function() {
+                            const username = localStorage.getItem('username');
+                            this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+                        };
+                    }
+                });
+
+                alertEl.className = 'alert alert-success';
+                alertEl.textContent = 'Imagen restaurada correctamente';
+                alertEl.style.display = 'block';
+            } catch (error) {
+                alertEl.className = 'alert alert-danger';
+                alertEl.textContent = error.message;
+                alertEl.style.display = 'block';
+            }
+        });
 
     } catch (error) {
         console.error('Error cargando datos:', error);

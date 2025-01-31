@@ -12,7 +12,7 @@ from authentication.models import PreviousPassword
 class AuthenticationService:
     MESSAGES = {
         'privacy_policy': 'Debes aceptar la política de privacidad',
-        'email_verification': 'Te hemos enviado un email para verificar tu cuenta',
+        'email_verification': 'email_verification_required',  # Cambiado a un código
         'form_validation': 'Error en la validación del formulario',
         'logout_success': 'Sesión cerrada correctamente',
         'no_session': 'No hay sesión activa'
