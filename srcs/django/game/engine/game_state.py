@@ -25,8 +25,18 @@ class GameState:
         }
         
         self.status = 'waiting'
+        self.countdown = 3  # Añadimos contador de 3 segundos
+        self.countdown_active = False
+        
+    def start_countdown(self):
+        self.countdown = 3
+        self.countdown_active = True
+        self.status = 'countdown'
         
     def update(self):
+        if self.countdown_active:
+            return  # No actualizar la pelota durante el countdown
+
         if self.status != 'playing':
             return
             
@@ -97,5 +107,9 @@ class GameState:
                 'height': self.canvas_height
             }
         }
+        
+        if self.countdown_active:
+            current_state['countdown'] = self.countdown
+            
         print(f"Serializing paddle positions - Left: {current_state['paddles']['left']['y']}, Right: {current_state['paddles']['right']['y']}")
         return current_state

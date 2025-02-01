@@ -50,6 +50,17 @@
             padding: 20px;
             background: #333;
         }
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +78,7 @@
             <p>Controles: W/S (Jugador 1) - ↑/↓ (Jugador 2)</p>
             <p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
         </div>
+        <div id="countdown" class="countdown" style="display: none;"></div>
     </div>
 
     <script>
@@ -137,6 +149,15 @@
             if (data.type === 'game_state') {
                 const oldState = gameState;
                 gameState = data.state;
+                
+                // Mostrar countdown si está activo
+                const countdownElement = document.getElementById('countdown');
+                if (gameState.countdown !== undefined) {
+                    countdownElement.style.display = 'block';
+                    countdownElement.textContent = gameState.countdown;
+                } else {
+                    countdownElement.style.display = 'none';
+                }
                 
                 // Debug: comparar posiciones de las palas
                 if (oldState) {
