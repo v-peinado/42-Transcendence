@@ -1,4 +1,5 @@
 import AuthService from '../../services/AuthService.js';
+import { Auth2FA } from '../../services/auth/Auth2FA.js';  // Añadir esta importación
 import { getNavbarHTML } from '../../components/Navbar.js';  // Añadir esta importación
 
 export function UserProfileView() {
@@ -760,6 +761,20 @@ async function loadUserData() {
         const profileImage = userInfo.profile_image || userInfo.fortytwo_image || 
                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
         
+        // Actualizar el estado del botón 2FA
+        const toggle2FABtn = document.getElementById('toggle2FABtn');
+        const buttonText = document.getElementById('2faButtonText');
+        
+        if (toggle2FABtn && buttonText) {
+            // Usar directamente Auth2FA.isEnabled
+            const is2FAEnabled = Auth2FA.isEnabled;
+            
+            toggle2FABtn.dataset.enabled = is2FAEnabled.toString();
+            buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
+            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
+            toggle2FABtn.classList.add(is2FAEnabled ? 'btn-outline-warning' : 'btn-outline-info');
+        }
+
         document.getElementById('userInfo').innerHTML = `
             <div class="text-center">
                 <div class="position-relative mb-4 avatar-container">
@@ -833,12 +848,16 @@ async function loadUserData() {
 
     } catch (error) {
         console.error('Error cargando datos:', error);
-        // Si hay error, mostrar estado por defecto
+        // Si hay error, mantener el estado actual del 2FA en lugar de resetearlo
         const toggle2FABtn = document.getElementById('toggle2FABtn');
         const buttonText = document.getElementById('2faButtonText');
-        toggle2FABtn.dataset.enabled = 'false';
-        buttonText.textContent = 'Activar 2FA';
-        toggle2FABtn.classList.replace('btn-outline-warning', 'btn-outline-info');
-        localStorage.removeItem('two_factor_enabled');
+        const is2FAEnabled = Auth2FA.isEnabled;
+        
+        if (toggle2FABtn && buttonText) {
+            toggle2FABtn.dataset.enabled = is2FAEnabled.toString();
+            buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
+            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
+            toggle2FABtn.classList.add(is2FAEnabled ? 'btn-outline-warning' : 'btn-outline-info');
+        }
     }
 }
