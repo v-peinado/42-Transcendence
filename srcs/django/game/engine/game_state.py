@@ -28,6 +28,8 @@ class GameState:
         self.is_single_player = is_single
         if is_single:
             self.ai_controller = AIController(self)
+            # Aplicar configuración inicial de dificultad
+            self.ai_controller.apply_difficulty_settings(self.difficulty)
         else:
             self.ai_controller = None
 
@@ -69,7 +71,12 @@ class GameState:
             self._reset_ball('left')
             
     def _reset_ball(self, scoring_side):
+        """Reset la bola con la velocidad correspondiente a la dificultad actual"""
         self.ball.reset(self.canvas_width/2, self.canvas_height/2)
+        if self.is_single_player and self.ai_controller:
+            settings = self.ai_controller.DIFFICULTY_SETTINGS[self.difficulty]
+            self.ball.speed_x = settings['BALL_SPEED'] * (-1 if scoring_side == 'right' else 1)
+            self.ball.speed_y = settings['BALL_SPEED']
         
     def move_paddle(self, side, direction):
         """

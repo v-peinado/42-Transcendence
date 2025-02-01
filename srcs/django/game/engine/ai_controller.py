@@ -8,25 +8,25 @@ class AIController:
             'RANDOMNESS': 60,
             'MISS_CHANCE': 0.3,
             'AI_REACTION_DELAY': 300,
-            'BALL_SPEED': 7
+            'BALL_SPEED': 3
         },
         'medium': {
             'RANDOMNESS': 40,
             'MISS_CHANCE': 0.1,
             'AI_REACTION_DELAY': 200,
-            'BALL_SPEED': 7
+            'BALL_SPEED': 4
         },
         'hard': {
             'RANDOMNESS': 20,
             'MISS_CHANCE': 0.05,
             'AI_REACTION_DELAY': 100,
-            'BALL_SPEED': 9
+            'BALL_SPEED': 7
         },
         'nightmare': {
             'RANDOMNESS': 10,
             'MISS_CHANCE': 0.01,
             'AI_REACTION_DELAY': 50,
-            'BALL_SPEED': 12
+            'BALL_SPEED': 10
         }
     }
 
@@ -44,19 +44,22 @@ class AIController:
         self.position_history = deque(maxlen=5)  # Mantener últimas 5 posiciones
         self.last_smooth_position = None
         self.smoothing_weight = 0.3  # Factor de suavizado (0-1)
+        self.apply_difficulty_settings('medium')  # Aplicar configuración inicial
 
     def update(self, current_time):
-        if current_time - self.last_movement >= self.movement_cooldown:
-            self.last_movement = current_time
-            # Actualizar predicción
-            if current_time - self.last_prediction_time >= self.prediction_interval:
-                self._update_prediction()
-                
-            # Mover la pala usando el mismo sistema que el jugador
-            paddle = self.game_state.paddles['right']
-            if self.current_target is not None:
-                paddle.target_y = self.current_target
-                paddle.update(self.game_state.canvas_height)
+        if current_time - self.last_update >= self.reaction_delay / 1000:  # Convertir a segundos
+            self.last_update = current_time
+            if current_time - self.last_movement >= self.movement_cooldown:
+                self.last_movement = current_time
+                # Actualizar predicción
+                if current_time - self.last_prediction_time >= self.prediction_interval:
+                    self._update_prediction()
+                    
+                # Mover la pala usando el mismo sistema que el jugador
+                paddle = self.game_state.paddles['right']
+                if self.current_target is not None:
+                    paddle.target_y = self.current_target
+                    paddle.update(self.game_state.canvas_height)
 
     def _update_prediction(self):
         paddle = self.game_state.paddles['right']
@@ -155,13 +158,23 @@ class AIController:
                   min(self.game_state.canvas_height - self.game_state.ball.radius, predicted_y))
 
     def set_difficulty(self, difficulty):
-        """Cambia la dificultad y actualiza la velocidad de la pelota"""
+        """Cambia la dificultad y actualiza todos los parámetros del juego"""
         self.game_state.difficulty = difficulty
+        self.apply_difficulty_settings(difficulty)
+
+    def apply_difficulty_settings(self, difficulty):
+        """Aplica los parámetros de dificultad al estado del juego"""
         settings = self.DIFFICULTY_SETTINGS[difficulty]
         
-        # Actualizar velocidad de la pelota manteniendo la dirección
+        # Aplicar velocidad de la bola manteniendo la dirección
         direction_x = 1 if self.game_state.ball.speed_x > 0 else -1
         direction_y = 1 if self.game_state.ball.speed_y > 0 else -1
         
+        # Actualizar velocidades de la bola
         self.game_state.ball.speed_x = direction_x * settings['BALL_SPEED']
         self.game_state.ball.speed_y = direction_y * settings['BALL_SPEED']
+        
+        # Actualizar parámetros de la IA
+        self.randomness = settings['RANDOMNESS']
+        self.miss_chance = settings['MISS_CHANCE']
+        self.reaction_delay = settings['AI_REACTION_DELAY']
