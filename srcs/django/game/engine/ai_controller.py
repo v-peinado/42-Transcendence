@@ -1,5 +1,6 @@
 import random
 import time
+from collections import deque
 
 class AIController:
     DIFFICULTY_SETTINGS = {
@@ -35,39 +36,81 @@ class AIController:
         self.last_prediction_time = 0
         self.prediction_interval = 1/30
         self.update_interval = 1.0
+        self.current_target = None  # Añadir target actual
+        self.last_decision_time = 0
+        self.decision_interval = 0.1  # Tomar decisiones cada 100ms
+        self.movement_cooldown = 1/60  # Sincronizar con el framerate del juego
+        self.last_movement = 0
+        self.position_history = deque(maxlen=5)  # Mantener últimas 5 posiciones
+        self.last_smooth_position = None
+        self.smoothing_weight = 0.3  # Factor de suavizado (0-1)
 
     def update(self, current_time):
-        """Actualiza la posición de la pala AI"""
-        if current_time - self.last_prediction_time >= self.prediction_interval:
-            self.last_prediction_time = current_time
-            self._update_paddle_position()
+        if current_time - self.last_movement >= self.movement_cooldown:
+            self.last_movement = current_time
+            # Actualizar predicción
+            if current_time - self.last_prediction_time >= self.prediction_interval:
+                self._update_prediction()
+                
+            # Mover la pala usando el mismo sistema que el jugador
+            paddle = self.game_state.paddles['right']
+            if self.current_target is not None:
+                paddle.target_y = self.current_target
+                paddle.update(self.game_state.canvas_height)
 
-    def _update_paddle_position(self):
-        """Actualiza la posición objetivo de la pala"""
+    def _update_prediction(self):
         paddle = self.game_state.paddles['right']
         settings = self.DIFFICULTY_SETTINGS[self.game_state.difficulty]
         
-        # Calcular posición objetivo
-        predicted_y = self._predict_ball_y()
-        
-        # Añadir aleatoriedad
-        randomness = (random.random() * settings['RANDOMNESS']) - (settings['RANDOMNESS'] / 2)
-        
-        # Simular errores humanos
-        if random.random() < settings['MISS_CHANCE']:
-            target_y = random.random() * self.game_state.canvas_height
+        # Actualizar predicción con menos frecuencia
+        if self.game_state.ball.speed_x > 0:  # Si la pelota va hacia la IA
+            predicted_y = self._predict_ball_y()
+            
+            if random.random() < settings['MISS_CHANCE']:
+                target_y = random.randint(0, self.game_state.canvas_height)
+            else:
+                randomness = (random.random() * settings['RANDOMNESS']) - (settings['RANDOMNESS'] / 2)
+                target_y = int(predicted_y + randomness)
+            
+            # Añadir nueva posición al historial
+            self.position_history.append(target_y)
+            
+            # Calcular posición suavizada
+            if len(self.position_history) >= 2:
+                # Media ponderada de las posiciones recientes
+                smooth_target = self._calculate_smooth_position()
+                
+                # Transición suave desde la última posición
+                if self.last_smooth_position is not None:
+                    smooth_target = int(
+                        self.last_smooth_position * (1 - self.smoothing_weight) +
+                        smooth_target * self.smoothing_weight
+                    )
+                
+                self.last_smooth_position = smooth_target
+                target_y = smooth_target
         else:
-            target_y = predicted_y + randomness
+            # Si la pelota va en dirección contraria, mover al centro suavemente
+            target_y = self.game_state.canvas_height // 2
+
+        # Ajustar posición final
+        paddle_height = paddle.height
+        target_y = max(0, min(target_y, self.game_state.canvas_height - paddle_height))
+        self.current_target = target_y
+
+    def _calculate_smooth_position(self):
+        """Calcula una media ponderada de las últimas posiciones"""
+        weights = [0.1, 0.15, 0.2, 0.25, 0.3]  # Más peso a las posiciones recientes
+        while len(weights) > len(self.position_history):
+            weights.pop(0)
+            
+        weights = [w/sum(weights) for w in weights]  # Normalizar pesos
         
-        # Ajustar target_y para el centro de la pala
-        target_y -= paddle.height / 2
-        
-        # Limitar al canvas
-        target_y = max(0, min(self.game_state.canvas_height - paddle.height, target_y))
-        
-        # Actualizar objetivo de la pala
-        paddle.target_y = target_y
-        paddle.update(self.game_state.canvas_height)
+        smooth_pos = 0
+        for pos, weight in zip(self.position_history, weights):
+            smooth_pos += pos * weight
+            
+        return int(smooth_pos)
 
     def _predict_ball_y(self):
         """Predice dónde intersectará la pelota"""
@@ -104,6 +147,9 @@ class AIController:
         error_margin = 15
         random_error = (random.random() * 2 * error_margin) - error_margin
         predicted_y = sim_ball['y'] + random_error
+        
+        # Al final de la predicción, redondear el resultado
+        predicted_y = int(sim_ball['y'])
         
         return max(self.game_state.ball.radius, 
                   min(self.game_state.canvas_height - self.game_state.ball.radius, predicted_y))

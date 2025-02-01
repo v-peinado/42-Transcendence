@@ -1,34 +1,59 @@
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
-        self.x = x
-        self.y = y
+        self.x = int(x)  # Redondear posición inicial
+        self.y = int(y)
         self.width = width
         self.height = height
-        self.speed = speed
+        self.speed = speed  # Velocidad constante para todas las palas
         self.score = 0
-        self.target_y = y  													# Para movimiento suave
-        self.moving = 0  													# -1: arriba, 0: parado, 1: abajo
+        self.target_y = int(y)  # Redondear target inicial
+        self.moving = 0
+        self.last_position = int(y)  # Añadir última posición para comparar
+        self.max_speed = speed  # Velocidad máxima constante para ambas palas
         
     def move(self, direction, canvas_height):
+        """
+        Movimiento directo con velocidad fija
+        """
         direction = int(direction)
-        
-        move_amount = self.speed * direction								# Movimiento de la pala
+        move_amount = self.speed * direction  # Usar siempre la misma velocidad base
         new_y = self.y + move_amount
         
-        self.y = max(0, min(new_y, canvas_height - self.height))			# Limitar rango de movimiento de la pala al terreno
+        # Redondear la nueva posición
+        self.y = int(max(0, min(new_y, canvas_height - self.height)))
 
     def update(self, canvas_height):
+        """
+        Actualización con velocidad controlada
+        """
         if self.target_y is not None:
-            # Movimiento suave hacia el objetivo
-            diff = self.target_y - (self.y + self.height/2)					# Diferencia entre la posición actual y el objetivo
-            if abs(diff) > 5: 												# Esta línea evita oscilaciones indeseadas de la pala : Si la diferencia es mayor a 5 pixeles
-                direction = 1 if diff > 0 else -1							# Mover hacia arriba o abajo
-                self.move(direction, canvas_height)							# Mover la pala
+            # Calcular el centro actual de la pala
+            current_center = self.y + (self.height / 2)
+            target_center = self.target_y + (self.height / 2)
             
-    def serialize(self):													# Serialización de la pala (para enviar al cliente)
+            # Calcular la diferencia y redondearla
+            diff = round(target_center - current_center)
+            
+            # Zona muerta más amplia para evitar micro-movimientos
+            dead_zone = 7  # Aumentado de 5 a 7
+            
+            if abs(diff) > dead_zone:
+                # Normalizar la velocidad de movimiento
+                direction = 1 if diff > 0 else -1
+                # Usar exactamente la misma velocidad que el jugador
+                self.move(direction, canvas_height)
+            else:
+                # Si estamos en la zona muerta, forzar la posición exacta
+                if self.y != self.last_position:
+                    self.y = int(self.target_y)
+            
+            # Guardar la última posición
+            self.last_position = self.y
+
+    def serialize(self):
         return {
             'x': self.x,
-            'y': self.y,
+            'y': int(self.y),  # Asegurar que la posición serializada es un entero
             'width': self.width,
             'height': self.height,
             'score': self.score
