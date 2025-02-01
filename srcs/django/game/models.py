@@ -38,6 +38,23 @@ class Game(models.Model):
         ],
         default='WAITING'
     )
+    game_mode = models.CharField(
+        max_length=20,
+        choices=[
+            ('SINGLE', 'Single Player'),
+            ('MULTI', 'Multiplayer')
+        ],
+        default='MULTI'
+    )
+    difficulty = models.CharField(
+        max_length=20,
+        choices=[
+            ('easy', 'Fácil'),
+            ('medium', 'Intermedio'),
+            ('hard', 'Difícil')
+        ],
+        default='medium'
+    )
 
     class Meta:
         ordering = ['-created_at']

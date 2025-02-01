@@ -72,6 +72,13 @@
             <div class="game-id">ID Partida: {{ game_id }}</div>
             <div class="status" id="gameStatus">Esperando oponente...</div>
             <div class="player-info" id="playerInfo">Esperando asignación...</div>
+            <div id="difficultySelector" style="display: none; margin: 10px 0;">
+                <select id="difficulty" class="difficulty-select">
+                    <option value="easy">Fácil</option>
+                    <option value="medium" selected>Intermedio</option>
+                    <option value="hard">Difícil</option>
+                </select>
+            </div>
         </div>
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div class="controls">
@@ -267,6 +274,29 @@
                 clearInterval(movementInterval);
             }
             gameSocket.close();
+        });
+
+        // Configuración de dificultad
+        const DIFFICULTY = {
+            easy: { BALL_SPEED: 5, AI_REACTION_TIME: 300 },
+            medium: { BALL_SPEED: 7, AI_REACTION_TIME: 200 },
+            hard: { BALL_SPEED: 9, AI_REACTION_TIME: 100 }
+        };
+
+        // Mostrar/ocultar selector de dificultad según el modo
+        const gameMode = new URLSearchParams(window.location.search).get('mode');
+        if (gameMode === 'single') {
+            document.getElementById('difficultySelector').style.display = 'block';
+        }
+
+        // Manejar cambios de dificultad
+        document.getElementById('difficulty').addEventListener('change', function(e) {
+            if (gameSocket.readyState === WebSocket.OPEN) {
+                gameSocket.send(JSON.stringify({
+                    type: 'change_difficulty',
+                    difficulty: e.target.value
+                }));
+            }
         });
     </script>
 </body>

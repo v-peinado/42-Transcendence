@@ -1,7 +1,14 @@
 from .entities.ball import Ball
 from .entities.paddle import Paddle
+import random
 
 class GameState:
+    DIFFICULTY_SETTINGS = {
+        'easy': {'BALL_SPEED': 5, 'AI_REACTION_TIME': 300, 'ERROR_MARGIN': 60},
+        'medium': {'BALL_SPEED': 7, 'AI_REACTION_TIME': 200, 'ERROR_MARGIN': 40},
+        'hard': {'BALL_SPEED': 9, 'AI_REACTION_TIME': 100, 'ERROR_MARGIN': 20}
+    }
+
     def __init__(self, canvas_width=800, canvas_height=400):
         self.canvas_width = canvas_width
         self.canvas_height = canvas_height
@@ -27,6 +34,8 @@ class GameState:
         self.status = 'waiting'
         self.countdown = 3  # Añadimos contador de 3 segundos
         self.countdown_active = False
+        self.is_single_player = False
+        self.difficulty = 'medium'
         
     def start_countdown(self):
         self.countdown = 3
@@ -43,6 +52,10 @@ class GameState:
         # Actualizar pelota
         self.ball.update(self.canvas_width, self.canvas_height)
         
+        # IA para modo single player
+        if self.is_single_player:
+            self._update_ai()
+            
         # Verificar colisiones con paletas
         self._check_paddle_collisions()
         
@@ -113,3 +126,67 @@ class GameState:
             
         print(f"Serializing paddle positions - Left: {current_state['paddles']['left']['y']}, Right: {current_state['paddles']['right']['y']}")
         return current_state
+
+    def _update_ai(self):
+        if self.status != 'playing':
+            return
+            
+        settings = self.DIFFICULTY_SETTINGS[self.difficulty]
+        paddle = self.paddles['right']
+        ball = self.ball
+        
+        # Predicción de posición de la pelota
+        predicted_y = self._predict_ball_y()
+        
+        # Añadir error según dificultad
+        error = (random.random() * 2 - 1) * settings['ERROR_MARGIN']
+        target_y = predicted_y + error
+        
+        # Mover la pala AI
+        if paddle.y + (paddle.height / 2) < target_y - 5:
+            self.move_paddle('right', 1)
+        elif paddle.y + (paddle.height / 2) > target_y + 5:
+            self.move_paddle('right', -1)
+            
+    def _predict_ball_y(self):
+        """
+        Predice la posición Y donde la pelota intersectará con la pala derecha
+        Retorna: posición Y predicha
+        """
+        # Si la pelota va hacia la izquierda, retornar posición actual
+        if self.ball.speed_x <= 0:
+            return self.ball.y
+
+        # Crear una copia de la pelota para simulación
+        sim_ball = {
+            'x': self.ball.x,
+            'y': self.ball.y,
+            'speed_x': self.ball.speed_x,
+            'speed_y': self.ball.speed_y,
+            'radius': self.ball.radius
+        }
+
+        # Simular el movimiento de la pelota hasta que alcance la pala derecha
+        max_iterations = 500  # Prevenir bucle infinito
+        iterations = 0
+        
+        while sim_ball['x'] < self.paddles['right'].x and iterations < max_iterations:
+            # Actualizar posición
+            sim_ball['x'] += sim_ball['speed_x']
+            sim_ball['y'] += sim_ball['speed_y']
+            
+            # Comprobar colisiones con bordes superior e inferior
+            if sim_ball['y'] + sim_ball['radius'] >= self.canvas_height:
+                sim_ball['y'] = self.canvas_height - sim_ball['radius']
+                sim_ball['speed_y'] *= -1
+            elif sim_ball['y'] - sim_ball['radius'] <= 0:
+                sim_ball['y'] = sim_ball['radius']
+                sim_ball['speed_y'] *= -1
+                
+            iterations += 1
+
+        if iterations == max_iterations:
+            print("Warning: _predict_ball_y reached maximum iterations")
+            return self.canvas_height / 2  # Retornar posición central si no se puede predecir
+
+        return sim_ball['y']

@@ -30,40 +30,49 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 self.game_states[self.game_id] = GameState()						# Crear un nuevo estado de juego (por ejemplo, un nuevo juego)
             self.game_state = self.game_states[self.game_id]						# Obtener el estado de juego actual
             
-            # Asignar rol al jugador actual
-            player1 = await self.get_player1(game)
-            player2 = await self.get_player2(game)
-            
-            print(f"Current user: {self.user.id}, Player1: {player1.id if player1 else None}")
-            
-            # Asignación del lado en el que jugará el usuario
-            if player1 and player1.id == self.user.id:								# Si el jugador 1 es el usuario actual...
-                self.player_side = 'left'
-                print(f"Assigned as left paddle to user {self.user.id}")
-            elif not player2:														# Si ya hay un jugador 1 y no hay un jugador 2...
-                self.player_side = 'right'
-                print(f"Assigned as right paddle to user {self.user.id}")
-            else:																	# Si el usuario no es jugador 1 ni jugador 2...
-                self.player_side = None
-                print(f"User {self.user.id} is a spectator")						# --> El usuario es un espectador
+            # Configurar modo single player
+            if game.game_mode == 'SINGLE':
+                self.game_state.is_single_player = True
+                self.game_state.difficulty = game.difficulty
+                self.player_side = 'left'  # El jugador humano siempre en la izquierda
+                
+                # Iniciar juego inmediatamente en modo single player
+                await self.start_single_player_game(game)
+            else:
+                # Lógica existente para modo multiplayer
+                player1 = await self.get_player1(game)
+                player2 = await self.get_player2(game)
+                
+                print(f"Current user: {self.user.id}, Player1: {player1.id if player1 else None}")
+                
+                # Asignación del lado en el que jugará el usuario
+                if player1 and player1.id == self.user.id:								# Si el jugador 1 es el usuario actual...
+                    self.player_side = 'left'
+                    print(f"Assigned as left paddle to user {self.user.id}")
+                elif not player2:														# Si ya hay un jugador 1 y no hay un jugador 2...
+                    self.player_side = 'right'
+                    print(f"Assigned as right paddle to user {self.user.id}")
+                else:																	# Si el usuario no es jugador 1 ni jugador 2...
+                    self.player_side = None
+                    print(f"User {self.user.id} is a spectator")						# --> El usuario es un espectador
 
-            if game.status == 'WAITING' and player1 != self.user and not player2:	# Si el juego está en espera y el jugador 1 no eres tú y no hay un jugador 2...
-                await self.update_game(game)										# Actualizar el juego con el jugador 2
-                await self.channel_layer.group_send(								# Enviar mensaje de inicio de juego
-                    self.room_group_name,
-                    {
-                        'type': 'game_start',	
-                        'player1': player1.username,
-                        'player2': self.user.username,
-                        'player1_id': player1.id,
-                        'player2_id': self.user.id
-                    }
-                )
+                if game.status == 'WAITING' and player1 != self.user and not player2:	# Si el juego está en espera y el jugador 1 no eres tú y no hay un jugador 2...
+                    await self.update_game(game)										# Actualizar el juego con el jugador 2
+                    await self.channel_layer.group_send(								# Enviar mensaje de inicio de juego
+                        self.room_group_name,
+                        {
+                            'type': 'game_start',	
+                            'player1': player1.username,
+                            'player2': self.user.username,
+                            'player1_id': player1.id,
+                            'player2_id': self.user.id
+                        }
+                    )
 
-            if game.status == 'PLAYING':											# Si el juego está en curso...
-                self.game_state.status = 'playing'
-                print(f"Game is PLAYING, starting loop for {self.player_side}")
-                asyncio.create_task(self.game_loop())								# Iniciar el loop del juego
+                if game.status == 'PLAYING':											# Si el juego está en curso...
+                    self.game_state.status = 'playing'
+                    print(f"Game is PLAYING, starting loop for {self.player_side}")
+                    asyncio.create_task(self.game_loop())								# Iniciar el loop del juego
 
 	# Métodos auxiliares para obtener información de la db (de forma asíncrona para no bloquear el hilo principal)
     
@@ -88,6 +97,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         game.status = 'PLAYING'
         game.save()
 
+    @database_sync_to_async
+    def update_game_status(self, game, status):
+        game.status = status
+        game.save()
+
 	# Métodos de WebSocket para manejar la conexión y los mensajes
     
     async def disconnect(self, close_code):											# Desconexión (al cerrar el socket)
@@ -106,7 +120,14 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content):											# Recibir mensaje de WebSocket (JSON)
         message_type = content.get('type')
         
-        if message_type == 'move_paddle':											# Si el mensaje es para mover una paleta...
+        if message_type == 'change_difficulty' and self.game_state.is_single_player:
+            self.game_state.difficulty = content.get('difficulty', 'medium')
+            # Actualizar velocidad de la pelota según dificultad
+            settings = self.game_state.DIFFICULTY_SETTINGS[self.game_state.difficulty]
+            self.game_state.ball.speed_x = settings['BALL_SPEED'] * (1 if self.game_state.ball.speed_x > 0 else -1)
+            self.game_state.ball.speed_y = settings['BALL_SPEED']
+            
+        elif message_type == 'move_paddle':											# Si el mensaje es para mover una paleta...
             side = content.get('side')
             try:
                 direction = int(content.get('direction', 0))
@@ -189,3 +210,23 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'type': 'game_state',
             'state': event['state']
         }))
+
+    async def start_single_player_game(self, game):
+        """Inicia una partida en modo single player"""
+        if game.status == 'WAITING':
+            await self.update_game_status(game, 'PLAYING')
+            
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'game_start',
+                'player1': self.user.username,
+                'player2': 'CPU',
+                'player1_id': self.user.id,
+                'player2_id': None
+            }
+        )
+        
+        # Iniciar el juego
+        self.game_state.status = 'playing'
+        asyncio.create_task(self.game_loop())
