@@ -3,13 +3,6 @@ from .entities.paddle import Paddle
 from .ai_controller import AIController
 
 class GameState:
-    # Mantener DIFFICULTY_SETTINGS aquí ya que es usado por otros componentes también
-    DIFFICULTY_SETTINGS = {
-        'easy': {'RANDOMNESS': 60, 'MISS_CHANCE': 0.3, 'AI_REACTION_DELAY': 300, 'BALL_SPEED': 7},
-        'medium': {'RANDOMNESS': 40, 'MISS_CHANCE': 0.1, 'AI_REACTION_DELAY': 200, 'BALL_SPEED': 7},
-        'hard': {'RANDOMNESS': 20, 'MISS_CHANCE': 0.05, 'AI_REACTION_DELAY': 100, 'BALL_SPEED': 9},
-        'nightmare': {'RANDOMNESS': 10, 'MISS_CHANCE': 0.01, 'AI_REACTION_DELAY': 50, 'BALL_SPEED': 12}
-    }
 
     def __init__(self, canvas_width=800, canvas_height=400):
         self.canvas_width = canvas_width

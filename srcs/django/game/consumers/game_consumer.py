@@ -120,12 +120,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content):												# Recibir mensaje de WebSocket (JSON)
         message_type = content.get('type')
         
-        if message_type == 'change_difficulty' and self.game_state.is_single_player:
-            self.game_state.difficulty = content.get('difficulty', 'medium')
-            # Actualizar velocidad de la pelota según dificultad
-            settings = self.game_state.DIFFICULTY_SETTINGS[self.game_state.difficulty]
-            self.game_state.ball.speed_x = settings['BALL_SPEED'] * (1 if self.game_state.ball.speed_x > 0 else -1)
-            self.game_state.ball.speed_y = settings['BALL_SPEED']
+        if message_type == 'change_difficulty' and self.game_state.is_single_player:	# Si el mensaje es para cambiar la dificultad...
+            if self.game_state.ai_controller:											# Si hay un controlador de IA...
+                self.game_state.ai_controller.set_difficulty(content.get('difficulty', 'medium'))	# Cambiar la dificultad de la IA
             
         elif message_type == 'move_paddle':												# Si el mensaje es para mover una paleta...
             side = content.get('side')

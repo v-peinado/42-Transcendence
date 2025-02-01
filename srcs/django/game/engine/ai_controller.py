@@ -107,3 +107,15 @@ class AIController:
         
         return max(self.game_state.ball.radius, 
                   min(self.game_state.canvas_height - self.game_state.ball.radius, predicted_y))
+
+    def set_difficulty(self, difficulty):
+        """Cambia la dificultad y actualiza la velocidad de la pelota"""
+        self.game_state.difficulty = difficulty
+        settings = self.DIFFICULTY_SETTINGS[difficulty]
+        
+        # Actualizar velocidad de la pelota manteniendo la dirección
+        direction_x = 1 if self.game_state.ball.speed_x > 0 else -1
+        direction_y = 1 if self.game_state.ball.speed_y > 0 else -1
+        
+        self.game_state.ball.speed_x = direction_x * settings['BALL_SPEED']
+        self.game_state.ball.speed_y = direction_y * settings['BALL_SPEED']
