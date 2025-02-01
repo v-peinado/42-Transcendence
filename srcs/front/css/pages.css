@@ -1,0 +1,311 @@
+/* Hero section */
+.hero-section,
+body #app .hero-section {
+    min-height: calc(100vh - var(--navbar-height));
+    margin-top: calc(-1 * var(--navbar-height));
+    padding-top: var(--navbar-height);
+    display: flex;
+    align-items: center;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.1) 0%, transparent 10%),
+        radial-gradient(circle at 80% 70%, rgba(41, 196, 255, 0.1) 0%, transparent 10%),
+        linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    position: relative;
+    color: white;
+}
+
+/* Hero background - puntos grandes */
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(white 2px, transparent 2px);  /* Aumentado de 1.5px a 2px */
+    background-size: 75px 75px;
+    opacity: 0.15;  /* Aumentado de 0.1 a 0.15 */
+    animation: backgroundPulse 8s ease infinite;
+}
+
+/* Star effect - puntos pequeños */
+.hero-section::after {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 10%),
+        radial-gradient(circle at 80% 70%, rgba(41, 196, 255, 0.15) 0%, transparent 10%),
+        linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    opacity: 0.25;  /* Aumentado de 0.2 a 0.25 */
+    pointer-events: none;
+}
+
+/* Hero content */
+.hero-content {
+    padding-top: 100px;
+    width: 100%;
+}
+
+.hero-section .display-4 {
+    font-size: 3.5rem;
+    margin-top: 2rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.hero-section .lead {
+    color: #a8c6ff;
+}
+
+/* Profile section */
+.profile-section {
+    min-height: calc(100vh - var(--navbar-height));
+    padding-top: 96px !important;
+    background: var(--background-gradient);
+    position: relative;
+    z-index: 1;
+}
+
+/* Profile tabs */
+.profile-tabs {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+}
+
+.profile-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    padding: 1rem 2rem;
+    border: none;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Profile stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+/* Activity timeline */
+.activity-timeline {
+    position: relative;
+    padding-left: 2px;
+}
+
+.activity-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.activity-item::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.activity-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.activity-content:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Achievements grid */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.achievement-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.achievement-item:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Stats cards */
+.stats-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stats-card h5 {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 1rem;
+}
+
+.stats-card .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+/* Settings cards */
+.settings-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+.settings-card h5 {
+    color: #fff;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.settings-actions .btn {
+    padding: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+/* Profile section additions */
+.avatar-container {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+/* Profile card additions */
+.profile-card {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-card .profile-avatar {
+    width: 200px !important;
+    height: 200px !important;
+    margin: auto;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+/* Tab content styles */
+.tab-content {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0 0 10px 10px;
+    padding: 2rem;
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Auth pages (login/register) */
+.auth-page {
+    min-height: calc(100vh - var(--navbar-height));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    background: var(--background-gradient);
+}
+
+.auth-card {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.auth-title {
+    color: #fff;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-separator {
+    text-align: center;
+    position: relative;
+    margin: 1.5rem 0;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.auth-separator::before,
+.auth-separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 30px);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-separator::before {
+    left: 0;
+}
+
+.auth-separator::after {
+    right: 0;
+}
+
+/* Profile container */
+.profile-container {
+    background: rgba(33, 37, 41, 0.98);
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+}

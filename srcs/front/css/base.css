@@ -1,0 +1,96 @@
+/* Variables globales */
+:root {
+    --navbar-height: 76px;
+    --background-gradient: linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    --overlay-light: rgba(255, 255, 255, 0.1);
+    --overlay-dark: rgba(33, 37, 41, 0.95);
+}
+
+/* Reset básico */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Estilos base */
+html body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Main layout */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--background-gradient);
+}
+
+/* Contenedor principal */
+#app, 
+body #app {
+    min-height: 100vh;
+    padding-top: var(--navbar-height) !important;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+}
+
+.main-content {
+    flex: 1 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Landing page specific styles */
+body[data-page="home"] {
+    padding-top: 0 !important;
+}
+
+/* Enlaces base */
+a {
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #C850C0;
+}
+
+@media (min-width: 992px) {
+    body {
+        padding-top: var(--navbar-height);
+    }
+}
+
+/* Layout principal */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+footer {
+    flex-shrink: 0;
+}
