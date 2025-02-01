@@ -8,15 +8,21 @@ def menu_page(request):
     return render(request, 'game/menu.html')
 
 @login_required
-def game_page(request, game_id=None):
+def difficulty_select(request):
+    return render(request, 'game/difficulty_select.html')
+
+@login_required
+def game_page(request, game_id=None, difficulty=None):
     mode = request.GET.get('mode', 'multi')
+    if difficulty:
+        mode = 'single'
     
     if game_id is None:
         game = Game.objects.create(
             player1=request.user,
-            status='PLAYING' if mode == 'single' else 'WAITING',  # Cambiar estado inicial según modo
+            status='PLAYING' if mode == 'single' else 'WAITING',
             game_mode=mode.upper(),
-            difficulty='medium'  # Dificultad por defecto para modo single
+            difficulty=difficulty or 'medium'
         )
         game_id = game.id
 

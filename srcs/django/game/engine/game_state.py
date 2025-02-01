@@ -4,7 +4,6 @@ import random
 import time
 
 class GameState:
-    # Modificar la configuración de dificultad para que coincida con la original
     DIFFICULTY_SETTINGS = {
         'easy': {
             'RANDOMNESS': 60,
@@ -23,6 +22,12 @@ class GameState:
             'MISS_CHANCE': 0.05,
             'AI_REACTION_DELAY': 100,
             'BALL_SPEED': 9
+        },
+        'nightmare': {
+            'RANDOMNESS': 10,
+            'MISS_CHANCE': 0.01,
+            'AI_REACTION_DELAY': 50,
+            'BALL_SPEED': 12
         }
     }
 
@@ -56,6 +61,8 @@ class GameState:
         self.last_ai_update = 0  # Añadir timestamp para controlar frecuencia de actualización
         self.ai_update_interval = 1.0  # 1000ms como en el original
         self.ai_target_y = None
+        self.last_prediction_time = 0
+        self.prediction_interval = 1/30  # Actualizar predicción 30 veces por segundo
         
     def start_countdown(self):
         self.countdown = 3
@@ -150,39 +157,37 @@ class GameState:
         return current_state
 
     def _update_ai(self):
-        """
-        Implementación de la IA basada en el código original de JavaScript
-        """
-        current_time = time.time() * 1000  # Convertir a milisegundos
+        current_time = time.time()
+        paddle = self.paddles['right']
+        settings = self.DIFFICULTY_SETTINGS[self.difficulty]
         
-        if current_time - self.last_ai_update >= self.ai_update_interval:
-            self.last_ai_update = current_time
-            settings = self.DIFFICULTY_SETTINGS[self.difficulty]
-            paddle = self.paddles['right']
+        # Actualizar predicción con menos frecuencia que el movimiento
+        if current_time - self.last_prediction_time >= self.prediction_interval:
+            self.last_prediction_time = current_time
             
-            # Predecir posición de la pelota
+            # Calcular posición objetivo
             predicted_y = self._predict_ball_y()
             
             # Añadir aleatoriedad como en el original
             randomness = (random.random() * settings['RANDOMNESS']) - (settings['RANDOMNESS'] / 2)
-            target_y = predicted_y + randomness
             
-            # Simular errores humanos con MISS_CHANCE
+            # Simular errores humanos
             if random.random() < settings['MISS_CHANCE']:
                 target_y = random.random() * self.canvas_height
-            
-            self.ai_target_y = target_y
-            
-            # Mover la pala (similar a paddleUpdate en el original)
-            paddle_center = paddle.y + (paddle.height / 2)
-            dead_zone = 5  # Zona muerta para evitar oscilaciones
-            
-            if paddle_center < target_y - dead_zone:
-                self.move_paddle('right', 1)
-            elif paddle_center > target_y + dead_zone:
-                self.move_paddle('right', -1)
             else:
-                self.move_paddle('right', 0)
+                target_y = predicted_y + randomness
+            
+            # Ajustar target_y para que la pelota golpee en el centro de la pala
+            target_y -= paddle.height / 2
+            
+            # Limitar el target_y al canvas
+            target_y = max(0, min(self.canvas_height - paddle.height, target_y))
+            
+            # Actualizar el objetivo de la pala
+            paddle.target_y = target_y
+
+        # Actualizar la posición de la pala
+        paddle.update(self.canvas_height)
 
     def _predict_ball_y(self):
         """

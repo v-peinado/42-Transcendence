@@ -1,0 +1,99 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong - Selección de Dificultad</title>
+    <style>
+        body {
+            background: #333;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .difficulty-container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .difficulty-button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            width: 300px;
+        }
+
+        .difficulty-button:hover {
+            transform: scale(1.05);
+        }
+
+        .easy { background: #4CAF50; color: white; }
+        .easy:hover { background: #45a049; }
+        
+        .medium { background: #FFA500; color: white; }
+        .medium:hover { background: #FF8C00; }
+        
+        .hard { background: #f44336; color: white; }
+        .hard:hover { background: #da190b; }
+        
+        .nightmare {
+            background: #800000;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+        .nightmare:hover {
+            background: #600000;
+            text-shadow: 0 0 20px #ff0000;
+        }
+
+        .back-button {
+            margin-top: 2rem;
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="difficulty-container">
+        <h1>Selecciona la Dificultad</h1>
+        <div class="difficulty-buttons">
+            <a href="{% url 'game:single_player' 'easy' %}" class="difficulty-button easy">Fácil</a>
+            <a href="{% url 'game:single_player' 'medium' %}" class="difficulty-button medium">Intermedio</a>
+            <a href="{% url 'game:single_player' 'hard' %}" class="difficulty-button hard">Difícil</a>
+            <a href="{% url 'game:single_player' 'nightmare' %}" class="difficulty-button nightmare">NIGHTMARE</a>
+        </div>
+        <a href="{% url 'game:menu' %}" class="back-button">Volver al Menú</a>
+    </div>
+</body>
+</html>
