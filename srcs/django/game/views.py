@@ -4,6 +4,10 @@ from django.http import JsonResponse
 from .models import Game
 
 @login_required
+def menu_page(request):
+    return render(request, 'game/menu.html')
+
+@login_required
 def game_page(request, game_id=None):
     if game_id is None:
         # Crear nueva partida

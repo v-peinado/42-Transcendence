@@ -210,7 +210,7 @@ help:
 	@echo "                             * Ver waf/vault/init-vault.sh para más información"
 	@echo ""
 	@echo "  http://localhost:8000/game            - Crea una sala y accede al juego (debes loguearte primero)"
-	@echo "  http://localhost:8000/game/{id-sala } - Accede a la sala creada previamente (debes loguearte primero)"
+	@echo "  http://localhost:8000/game/play/{id-sala } - Accede a la sala creada previamente (debes loguearte primero)"
 	@echo ""
 	@echo "  http://localhost:8000/api/ninja/docs  - Apis"
 	@echo ""
