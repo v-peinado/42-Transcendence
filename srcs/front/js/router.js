@@ -37,6 +37,25 @@ class Router {
                 this.navigateTo(e.target.href);
             }
         });
+
+        // Añadir event listener global para logout
+        document.addEventListener('click', async (e) => {
+            if (e.target && (e.target.classList.contains('logout-btn') || e.target.closest('.logout-btn'))) {
+                e.preventDefault();
+                try {
+                    await AuthService.logout();
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('/');
+                } catch (error) {
+                    console.error('Error en logout:', error);
+                    // Intentar cerrar sesión de todas formas
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('/');
+                }
+            }
+        });
     }
 
     routes = {
@@ -115,31 +134,31 @@ class Router {
                     <div class="features-section">
                         <div class="container">
                             <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-gamepad"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Juega Online</h3>
-                                        <p>Compite contra otros jugadores en tiempo real.</p>
-                                    </div>
-                                </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-trophy"></i>
-                                    </div>
-                                    <div>
-                                        <h3 class="fs-2">Clasificación</h3>
-                                        <p>Compite por los primeros puestos del ranking.</p>
+                                <div class="col">
+                                    <div class="feature-item">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                        <h3>Juega Online</h3>
+                                        <p>Compite contra otros jugadores en tiempo real con nuestro sistema de matchmaking avanzado.</p>
                                     </div>
                                 </div>
-                                <div class="col d-flex align-items-start">
-                                    <div class="icon-square text-body-emphasis bg-body-secondary d-inline-flex align-items-center justify-content-center fs-4 flex-shrink-0 me-3">
-                                        <i class="fas fa-users"></i>
+                                <div class="col">
+                                    <div class="feature-item">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                        <h3>Clasificación</h3>
+                                        <p>Escala posiciones en nuestro ranking competitivo y demuestra que eres el mejor jugador.</p>
                                     </div>
-                                    <div>
-                                        <h3 class="fs-2">Comunidad</h3>
-                                        <p>Únete a una comunidad activa de jugadores.</p>
+                                </div>
+                                <div class="col">
+                                    <div class="feature-item">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <h3>Comunidad</h3>
+                                        <p>Únete a una comunidad activa de jugadores, haz amigos y participa en torneos exclusivos.</p>
                                     </div>
                                 </div>
                             </div>
@@ -156,9 +175,20 @@ class Router {
                             <div class="col-lg-8 text-center">
                                 <h1 class="display-4 fw-bold">¡Hola, ${userInfo.username}!</h1>
                                 <div class="mt-4">
-                                    <a href="/game" data-link class="btn btn-primary btn-lg">
-                                        <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
-                                    </a>
+                                    ${window.location.pathname === '/profile' ? `
+                                        <div class="d-flex justify-content-center gap-3">
+                                            <a href="/game" data-link class="btn btn-primary btn-lg">
+                                                <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                            </a>
+                                            <button id="logoutBtn" class="btn btn-outline-danger btn-lg">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                            </button>
+                                        </div>
+                                    ` : `
+                                        <a href="/game" data-link class="btn btn-primary btn-lg">
+                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
+                                        </a>
+                                    `}
                                 </div>
                             </div>
                         </div>
@@ -166,19 +196,20 @@ class Router {
                 </div>
             `;
 
-            // Configurar el botón de logout
-            document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-                try {
-                    await AuthService.logout();
-                } catch (error) {
-                    console.error('Error en logout:', error);
-                } finally {
-                    // Siempre limpiar estado local y redirigir
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = '/';
-                }
-            });
+            // Configurar el botón de logout solo si estamos en la página de perfil
+            if (window.location.pathname === '/profile') {
+                document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+                    try {
+                        await AuthService.logout();
+                    } catch (error) {
+                        console.error('Error en logout:', error);
+                    } finally {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.href = '/';
+                    }
+                });
+            }
         }
     }
 
@@ -345,5 +376,3 @@ class Router {
 
 
 export default Router;
-
-

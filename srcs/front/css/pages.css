@@ -1,9 +1,10 @@
 /* Hero section */
 .hero-section,
 body #app .hero-section {
-    min-height: calc(100vh - var(--navbar-height));
+    min-height: 90vh; /* Aumentado de calc(100vh - var(--navbar-height)) */
     margin-top: calc(-1 * var(--navbar-height));
-    padding-top: var(--navbar-height);
+    padding-top: calc(var(--navbar-height) + 2rem); /* Añadido padding extra */
+    padding-bottom: 4rem; /* Añadido padding inferior */
     display: flex;
     align-items: center;
     background: 
@@ -12,9 +13,11 @@ body #app .hero-section {
         linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
     position: relative;
     color: white;
+    overflow: hidden;
+    z-index: 1; /* Aseguramos que el hero tiene un z-index bajo */
 }
 
-/* Hero background - puntos grandes */
+/* Hero background - primera serie de puntos */
 .hero-section::before {
     content: '';
     position: absolute;
@@ -22,48 +25,74 @@ body #app .hero-section {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: radial-gradient(white 2px, transparent 2px);  /* Aumentado de 1.5px a 2px */
-    background-size: 75px 75px;
-    opacity: 0.15;  /* Aumentado de 0.1 a 0.15 */
-    animation: backgroundPulse 8s ease infinite;
+    background-image: radial-gradient(white 1.5px, transparent 2px);
+    background-size: 60px 60px;
+    opacity: 0;
+    animation: backgroundPulse 8s ease-in-out infinite;
+    will-change: opacity, transform;
+    z-index: -2; /* Colocamos el primer fondo de puntos detrás */
 }
 
-/* Star effect - puntos pequeños */
+/* Segunda serie de puntos */
 .hero-section::after {
     content: '';
     position: absolute;
-    width: 200%;
-    height: 200%;
-    top: -50%;
-    left: -50%;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 10%),
-        radial-gradient(circle at 80% 70%, rgba(41, 196, 255, 0.15) 0%, transparent 10%),
-        linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
-    opacity: 0.25;  /* Aumentado de 0.2 a 0.25 */
-    pointer-events: none;
-}
-
-/* Hero content */
-.hero-content {
-    padding-top: 100px;
     width: 100%;
+    height: 100%;
+    background-image: radial-gradient(white 1.5px, transparent 2px);
+    background-size: 60px 60px;
+    background-position: 30px 30px;
+    opacity: 0;
+    animation: backgroundPulse2 8s ease-in-out infinite;
+    will-change: opacity, transform;
+    z-index: -1; /* Colocamos el segundo fondo de puntos detrás */
 }
 
+/* Hero content - Ajustado para mayor espacio vertical */
+.hero-content {
+    padding-top: 120px; /* Aumentado de 100px */
+    padding-bottom: 80px; /* Añadido padding inferior */
+    width: 100%;
+    position: relative;
+    z-index: 2; /* Aseguramos que el contenido está por encima de los fondos animados */
+}
+
+/* Hero text styles - Ajustado y responsive */
 .hero-section .display-4 {
-    font-size: 3.5rem;
-    margin-top: 2rem;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 
+        0 0 7px rgba(255, 255, 255, 0.7),
+        0 0 10px rgba(255, 255, 255, 0.5),
+        0 0 21px rgba(13, 110, 253, 0.7),
+        0 0 42px rgba(13, 110, 253, 0.4);
+    letter-spacing: -0.5px;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+    line-height: 1.2;
 }
 
 .hero-section .lead {
-    color: #a8c6ff;
+    font-size: clamp(1rem, 1.5vw, 1.3rem);  /* Reducido de 1.1rem, 2vw, 1.5rem */
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);  /* Reducido el efecto de sombra */
+    margin-top: 1rem;
+    letter-spacing: 0.3px;  /* Reducido de 0.5px */
+    position: relative;
+    z-index: 1;
+    opacity: 0.95;  /* Aumentado ligeramente para mejor legibilidad */
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Profile section */
 .profile-section {
     min-height: calc(100vh - var(--navbar-height));
-    padding-top: 96px !important;
+    padding-top: 2rem;
     background: var(--background-gradient);
     position: relative;
     z-index: 1;
@@ -215,9 +244,22 @@ body #app .hero-section {
 /* Profile section additions */
 .avatar-container {
     position: relative;
-    width: 150px;
-    height: 150px;
-    margin: 0 auto;
+    width: 180px;
+    height: 180px;
+    margin: -120px auto 20px;
+    z-index: 2;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(
+        45deg,
+        rgba(13, 110, 253, 0.9),  /* Color primario (bootstrap) */
+        rgba(102, 16, 242, 0.9)   /* Color violeta */
+    );
+    box-shadow: 
+        0 0 0 4px rgba(255, 255, 255, 0.1),
+        0 4px 20px rgba(13, 110, 253, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
 }
 
 /* Profile card additions */
@@ -225,15 +267,109 @@ body #app .hero-section {
     background: rgba(33, 37, 41, 0.95);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    position: relative;
+    margin-top: 100px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
 }
 
-.profile-card .profile-avatar {
-    width: 200px !important;
-    height: 200px !important;
-    margin: auto;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease;
+/* Profile text styles - Mejorados para mejor visibilidad */
+.profile-card h3 {
+    color: #ffffff;
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.profile-card p {
+    color: #ffffff !important; /* Forzar el color con !important */
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Avatar container y imagen */
+.profile-avatar {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(33, 37, 41, 0.95);
+    object-fit: cover;
+    box-shadow: 
+        inset 0 0 20px rgba(0, 0, 0, 0.2),
+        0 2px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.profile-avatar:hover {
+    transform: scale(1.02);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Status badge styles */
+.status-badge {
+    margin: 1rem 0;
+}
+
+.status-badge .badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Avatar buttons - Versión actualizada */
+.avatar-buttons {
+    position: absolute;
+    bottom: -15px;
+    right: -15px;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 3;
+}
+
+.avatar-buttons .btn {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(5px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        inset 0 0 10px rgba(13, 110, 253, 0.2);
+    transition: all 0.3s ease;
+}
+
+#changeImageBtn {
+    background: linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    color: #fff;
+    border: 2px solid rgba(13, 110, 253, 0.5);
+}
+
+#restoreImageBtn {
+    background: rgba(33, 37, 41, 0.95);
+    color: rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.avatar-buttons .btn:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.4),
+        inset 0 0 15px rgba(13, 110, 253, 0.3);
+    border-color: rgba(13, 110, 253, 0.7);
+}
+
+.avatar-buttons .btn:active {
+    transform: scale(0.95);
 }
 
 /* Tab content styles */
@@ -299,13 +435,41 @@ body #app .hero-section {
     right: 0;
 }
 
-/* Profile container */
-.profile-container {
-    background: rgba(33, 37, 41, 0.98);
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 2rem;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .avatar-container {
+        width: 150px;
+        height: 150px;
+        margin: -75px auto 20px;
+    }
+
+    .hero-content {
+        padding: 2rem 1rem;
+    }
+
+    .hero-section,
+    body #app .hero-section {
+        min-height: 80vh; /* Ajustado para móviles */
+        padding-top: calc(var(--navbar-height) + 1rem);
+        padding-bottom: 2rem;
+    }
+
+    .hero-content {
+        padding-top: 60px;
+        padding-bottom: 40px;
+    }
+
+    .hero-section .display-4 {
+        text-shadow: 
+            0 0 3px rgba(255, 255, 255, 0.5),
+            0 0 8px rgba(13, 110, 253, 0.4);
+    }
+}
+
+@media (max-width: 576px) {
+    .avatar-container {
+        width: 120px;
+        height: 120px;
+        margin: -60px auto 20px;
+    }
 }

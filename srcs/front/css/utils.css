@@ -24,8 +24,42 @@
 }
 
 @keyframes backgroundPulse {
-    0%, 100% { opacity: 0.1; }
-    50% { opacity: 0.15; }
+    0% { 
+        opacity: 0;
+        transform: translateY(0) scale(0.95);
+    }
+    45% { 
+        opacity: 0.35;
+        transform: translateY(-2px) scale(1);
+    }
+    55% {
+        opacity: 0.35;
+        transform: translateY(-2px) scale(1);
+    }
+    100% { 
+        opacity: 0;
+        transform: translateY(0) scale(0.95);
+    }
+}
+
+/* Añadimos una nueva animación para el segundo conjunto de puntos */
+@keyframes backgroundPulse2 {
+    0% { 
+        opacity: 0.35;
+        transform: translateY(-2px) scale(1);
+    }
+    45% { 
+        opacity: 0;
+        transform: translateY(0) scale(0.95);
+    }
+    55% {
+        opacity: 0;
+        transform: translateY(0) scale(0.95);
+    }
+    100% { 
+        opacity: 0.35;
+        transform: translateY(-2px) scale(1);
+    }
 }
 
 @keyframes iconPulse {

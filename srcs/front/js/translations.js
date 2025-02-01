@@ -15,7 +15,12 @@ export const messages = {
             BUTTON: "Verificar"
         },
         ERRORS: {
-            LOGIN_FAILED: '¡Vaya! No pudimos conectar con 42'
+            LOGIN_FAILED: '¡Vaya! No pudimos conectar con 42',
+            INVALID_CREDENTIALS: 'Usuario o contraseña incorrectos',
+            EMAIL_NOT_VERIFIED: 'Por favor verifica tu email para activar tu cuenta',
+            NO_SESSION: 'No hay sesión activa',
+            PRIVACY_POLICY: 'Debes aceptar la política de privacidad',
+            DEFAULT: 'Ha ocurrido un error inesperado'
         }
     }
 };

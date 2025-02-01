@@ -6,6 +6,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
     color: rgba(255, 255, 255, 0.9);
+    z-index: 1050; /* Aseguramos que los modales estén por encima del hero */
 }
 
 /* Modal signin */
@@ -220,6 +221,7 @@
 .modal-backdrop.show {
     opacity: 0.8;
     backdrop-filter: blur(4px);
+    z-index: 1040; /* Aseguramos que el backdrop esté por encima del hero pero detrás del modal */
 }
 
 @keyframes modalSlideIn {

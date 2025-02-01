@@ -2,10 +2,13 @@ import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';  // Añadir esta importación
 
 export function UserProfileView() {
+    // Añadir data-page attribute al body
+    document.body.setAttribute('data-page', 'profile');
+    
     const app = document.getElementById('app');
     
     app.innerHTML = `
-        ${getNavbarHTML(true)}
+        ${getNavbarHTML(true, null, true)}
         <!-- Input oculto para la imagen - IMPORTANTE: debe estar fuera del contenedor principal -->
         <input type="file" id="imageInput" accept="image/*" style="display: none">
         
@@ -93,7 +96,7 @@ export function UserProfileView() {
                                         </button>
                                         <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
                                             <i class="fas fa-shield-alt me-2"></i>
-                                            <span id="2faButtonText">2FA</span>
+                                            <span id="2faButtonText">Activar 2FA</span>
                                             <i class="fas fa-chevron-right ms-auto"></i>
                                         </button>
                                     </div>
@@ -279,17 +282,10 @@ export function UserProfileView() {
     loadUserData();
     setupProfileEvents();
 
-    // Añadir event listener para el botón de logout del navbar
-    document.getElementById('navLogoutBtn')?.addEventListener('click', async () => {
-        try {
-            await AuthService.logout();
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('username');
-            window.location.href = '/';
-        } catch (error) {
-            console.error('Error en logout:', error);
-        }
-    });
+    // Limpiar el data-page cuando se desmonte la vista
+    return () => {
+        document.body.removeAttribute('data-page');
+    };
 }
 
 function setupProfileEvents() {
@@ -714,6 +710,26 @@ function setupProfileEvents() {
     document.getElementById('gdprSettingsBtn').addEventListener('click', () => {
         window.location.href = '/gdpr-settings';
     });
+
+    // Actualizar el event listener del botón de logout
+    document.getElementById('navLogoutBtn')?.addEventListener('click', handleLogout);
+    document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+    // Agregar la función handleLogout
+    async function handleLogout() {
+        try {
+            await AuthService.logout();
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('username');
+            window.location.replace('/');
+        } catch (error) {
+            console.error('Error en logout:', error);
+            // Intentar cerrar sesión de todas formas
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.replace('/');
+        }
+    }
 }
 
 // Función auxiliar para mostrar alertas

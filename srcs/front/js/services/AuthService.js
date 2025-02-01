@@ -6,13 +6,14 @@ class AuthService {
 
     static async login(username, password, remember = false) {
         try {
-            // Asegurarse de que no hay sesión activa
+            // Limpiar completamente cualquier estado previo
             await this.clearSession();
+            localStorage.clear();
+            sessionStorage.clear();
+            this.clearAllCookies();
             
             // Esperar un momento para asegurar que todo está limpio
             await new Promise(resolve => setTimeout(resolve, 100));
-            
-            console.log('Enviando request de login...'); // Debug
             
             const response = await fetch(`${this.API_URL}/login/`, {
                 method: 'POST',
@@ -30,65 +31,71 @@ class AuthService {
             });
             
             const data = await response.json();
-            console.log('Respuesta login:', data);
             
             if (!response.ok) {
-                const errorData = this.mapBackendError(data.message);
-                throw new Error(errorData.html); // Ahora enviamos el HTML formateado
+                throw new Error(this.mapBackendError(data.message || 'default').html);
             }
 
-            // Si requiere 2FA, NO establecer autenticación todavía
             if (data.status === 'pending_2fa') {
-                console.log('Backend requiere 2FA');
                 return { 
                     status: 'pending_2fa',
                     message: data.message || 'Se requiere verificación en dos pasos'
                 };
             }
-
-            // Solo establecer autenticación si el login es exitoso y no requiere 2FA
+            
             if (data.status === 'success') {
                 return {
                     status: 'success',
-                    message: 'Login exitoso'
+                    message: 'Login exitoso',
+                    username: data.username
                 };
             }
 
-            throw new Error(data.message || 'Error desconocido en el login');
+            throw new Error(this.mapBackendError('default').html);
         } catch (error) {
-            console.error('Error en login service:', error);
+            if (!error.message.includes('alert')) {
+                throw new Error(this.mapBackendError('default').html);
+            }
             throw error;
         }
     }
 
-    // Nuevo método para mapear errores del backend
     static mapBackendError(backendMessage) {
+        // Manejar el caso cuando el mensaje viene como array desde Django
+        if (Array.isArray(backendMessage)) {
+            backendMessage = backendMessage[0]; // Tomar el primer mensaje
+        }
+
+        // Si el mensaje de Django es sobre credenciales inválidas
+        if (backendMessage.includes('Usuario o contraseña incorrectos')) {
+            return {
+                html: `
+                    <div class="alert alert-danger fade show">
+                        <i class="fas fa-user-lock fa-bounce"></i>
+                        <div class="ms-2">
+                            <h6 class="alert-heading mb-1">¡Acceso Denegado!</h6>
+                            <span>${messages.AUTH.ERRORS.INVALID_CREDENTIALS}</span>
+                        </div>
+                    </div>
+                `,
+                message: messages.AUTH.ERRORS.INVALID_CREDENTIALS
+            };
+        }
+
         const errorStyles = {
-            invalid_credentials: {
-                icon: 'fas fa-user-lock fa-bounce',
-                message: messages.AUTH.ERRORS.INVALID_CREDENTIALS,
-                type: 'danger',
-                title: '¡Acceso Denegado!'
-            },
-            email_not_verified: {
+            'Por favor verifica tu email': {
                 icon: 'fas fa-envelope-circle-check fa-beat',
                 message: messages.AUTH.ERRORS.EMAIL_NOT_VERIFIED,
                 type: 'warning',
                 title: '¡Falta un Paso!'
             },
-            no_session: {
+            'No hay sesión activa': {
                 icon: 'fas fa-hourglass-end fa-spin',
                 message: messages.AUTH.ERRORS.NO_SESSION,
                 type: 'warning',
                 title: '¡Sesión Expirada!'
             },
-            privacy_policy: {
-                icon: 'fas fa-shield-halved fa-flip',
-                message: messages.AUTH.ERRORS.PRIVACY_POLICY,
-                type: 'info',
-                title: '¡Un Momento!'
-            },
-            default: {
+            'default': {
                 icon: 'fas fa-triangle-exclamation fa-shake',
                 message: messages.AUTH.ERRORS.DEFAULT,
                 type: 'danger',
@@ -96,24 +103,8 @@ class AuthService {
             }
         };
 
-        // Mapear mensaje del backend al estilo correspondiente
-        let errorConfig;
-        switch(backendMessage) {
-            case 'Usuario o contraseña incorrectos':
-                errorConfig = errorStyles.invalid_credentials;
-                break;
-            case 'Por favor verifica tu email para activar tu cuenta':
-                errorConfig = errorStyles.email_not_verified;
-                break;
-            case 'No hay sesión activa':
-                errorConfig = errorStyles.no_session;
-                break;
-            case 'Debes aceptar la política de privacidad':
-                errorConfig = errorStyles.privacy_policy;
-                break;
-            default:
-                errorConfig = errorStyles.default;
-        }
+        // Buscar el error que coincida con el mensaje del backend o usar el default
+        const errorConfig = errorStyles[backendMessage] || errorStyles['default'];
 
         return {
             html: `
@@ -131,35 +122,12 @@ class AuthService {
 
     static async clearSession() {
         try {
-            // Mantener el estado 2FA temporalmente
-            const two_factor_enabled = localStorage.getItem('two_factor_enabled');
-            
             // Limpiar todo el estado local
             localStorage.clear();
             sessionStorage.clear();
             
-            // Restaurar estado 2FA si existía
-            if (two_factor_enabled) {
-                localStorage.setItem('two_factor_enabled', two_factor_enabled);
-            }
-            
-            // Limpiar todas las cookies relacionadas excepto las necesarias
+            // Limpiar cookies relacionadas con la sesión
             this.clearAllCookies();
-            
-            // Solo entonces intentar el logout en el backend
-            try {
-                await fetch(`${this.API_URL}/logout/`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': this.getCSRFToken()
-                    }
-                });
-            } catch (error) {
-                console.warn('Error en logout backend:', error);
-                // Continuar incluso si falla el logout del backend
-            }
         } catch (error) {
             console.error('Error limpiando sesión:', error);
         }
@@ -234,19 +202,26 @@ class AuthService {
         try {
             const response = await fetch(`${this.API_URL}/logout/`, {
                 method: 'POST',
-                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': this.getCSRFToken()
-                }
+                },
+                credentials: 'include'
             });
-            
-            // Esperar la respuesta antes de limpiar
-            await response.json();
-        } catch (error) {
-            console.error('Error durante logout:', error);
-        } finally {
+
+            if (!response.ok) {
+                throw new Error('Error en el logout');
+            }
+
+            // Limpiar estado local
             await this.clearSession();
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error en logout:', error);
+            // Aún si falla la API, limpiar estado local
+            await this.clearSession();
+            throw error;
         }
     }
 

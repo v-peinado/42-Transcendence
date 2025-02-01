@@ -384,44 +384,47 @@ export async function LoginView() {
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        // Limpiar cualquier estado previo
+        localStorage.clear();
+        sessionStorage.clear();
+        
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
         const alertDiv = document.getElementById('loginAlert');
         
         try {
-            alertDiv.innerHTML = '';
+            console.log('Iniciando intento de login...'); // Debug
+            alertDiv.innerHTML = ''; // Limpiar alertas previas
+            
+            // Asegurarse de que no hay residuos de sesiones anteriores
+            await AuthService.clearSession();
+            
             const result = await AuthService.login(username, password, remember);
-            console.log('Resultado login:', result);
+            console.log('Resultado login:', result); // Debug
             
             if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', username);
-                // Forzar recarga de la página al redirigir
-                window.location.replace('/');
+                localStorage.setItem('username', result.username || username);
+                window.location.replace('/profile');
                 return;
             }
             
             if (result.status === 'pending_2fa') {
-                // Guardar estado temporal y mostrar modal 2FA
                 sessionStorage.setItem('pendingAuth', 'true');
                 sessionStorage.setItem('pendingUsername', username);
                 const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
                 modal.show();
-                // Limpiar y enfocar campo de código
                 document.getElementById('code').value = '';
                 document.getElementById('code').focus();
                 return;
             }
-            
-            if (result.status === 'success') {
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', username);
-                window.location.replace('/profile');
-            }
+
+            // Si llegamos aquí, es un error no manejado
+            alertDiv.innerHTML = this.mapBackendError('default').html;
         } catch (error) {
-            console.error('Error en login:', error);
-            // Ahora podemos usar directamente el mensaje HTML formateado
+            console.error('Error en submit login:', error);
             alertDiv.innerHTML = error.message;
         }
     });

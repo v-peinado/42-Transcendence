@@ -1,4 +1,4 @@
-export function getNavbarHTML(isAuthenticated = false, userInfo = null) {
+export function getNavbarHTML(isAuthenticated = false, userInfo = null, isProfilePage = false) {
     const logoHTML = `
         <svg class="logo me-2" width="32" height="32" viewBox="0 0 100 100">
             <rect x="10" y="40" width="10" height="20" fill="#fff">
@@ -15,11 +15,60 @@ export function getNavbarHTML(isAuthenticated = false, userInfo = null) {
         <span class="brand-text">Transcendence</span>
     `;
 
+    // Modificar los botones de logout para que sean consistentes
+    const logoutButton = `
+        <a href="#" class="dropdown-item text-danger logout-btn" id="navLogoutBtn">
+            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+        </a>
+    `;
+
+    const profileLogoutButton = `
+        <a class="nav-link logout-btn" href="#" id="navLogoutBtn">
+            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+        </a>
+    `;
+
     if (isAuthenticated) {
-        // Determinar la imagen de perfil (foto de perfil > foto de 42 > dicebear)
+        // Determinar la imagen de perfil
         const profileImage = userInfo?.profile_image || 
                            userInfo?.fortytwo_image || 
                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+
+        if (isProfilePage) {
+            return `
+                <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+                    <div class="container">
+                        <a class="navbar-brand d-flex align-items-center" href="/" data-link>
+                            ${logoHTML}
+                        </a>
+                        <div class="navbar-collapse">
+                            <ul class="navbar-nav me-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/game" data-link>
+                                        <i class="fas fa-play me-1"></i>Jugar
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/leaderboard" data-link>
+                                        <i class="fas fa-trophy me-1"></i>Clasificación
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/chat" data-link>
+                                        <i class="fas fa-comments me-1"></i>Chat
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="navbar-nav">
+                                <li class="nav-item logout-item">
+                                    ${profileLogoutButton}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            `;
+        }
 
         return `
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
@@ -31,7 +80,7 @@ export function getNavbarHTML(isAuthenticated = false, userInfo = null) {
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav me-auto">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
                                 <a class="nav-link" href="/game" data-link>
                                     <i class="fas fa-play me-1"></i>Jugar
@@ -48,7 +97,16 @@ export function getNavbarHTML(isAuthenticated = false, userInfo = null) {
                                 </a>
                             </li>
                         </ul>
-                        <ul class="navbar-nav">
+                        <!-- Añadir aquí el botón de logout para pantallas pequeñas -->
+                        <ul class="navbar-nav d-lg-none">
+                            <li class="nav-item">
+                                <a href="#" class="nav-link text-danger logout-btn">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- Menú dropdown para pantallas grandes -->
+                        <ul class="navbar-nav d-none d-lg-flex">
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
                                    data-bs-toggle="dropdown" aria-expanded="false">
@@ -91,9 +149,7 @@ export function getNavbarHTML(isAuthenticated = false, userInfo = null) {
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <button class="dropdown-item text-danger" id="logoutBtn">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                        </button>
+                                        ${logoutButton}
                                     </li>
                                 </ul>
                             </li>
