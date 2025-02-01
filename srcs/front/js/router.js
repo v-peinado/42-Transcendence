@@ -7,6 +7,7 @@ import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Mantene
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
+import { NotFoundView } from '/js/views/NotFoundView.js';  // Añadir esta importación al inicio con las otras
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
 
@@ -91,15 +92,7 @@ class Router {
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
         '/gdpr-settings/': GDPRSettingsView,
-        '/404': () => {
-            const app = document.getElementById('app');
-            app.innerHTML = `
-                <div class="container mt-4">
-                    <h1>404 - Página no encontrada</h1>
-                    <a href="/" data-link class="btn btn-primary">Volver a Home</a>
-                </div>
-            `;
-        }
+        '/404': NotFoundView,  // Reemplazar la función anónima existente con NotFoundView
     };
 
     async renderHomePage(isAuthenticated, userInfo = null) {
