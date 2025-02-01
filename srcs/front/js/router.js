@@ -10,6 +10,7 @@ import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
 import { NotFoundView } from '/js/views/NotFoundView.js';  // Añadir esta importación al inicio con las otras
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
+import { loadHTML, replaceContent } from '/js/utils/htmlLoader.js';
 
 class Router {
     constructor() {
@@ -97,112 +98,74 @@ class Router {
 
     async renderHomePage(isAuthenticated, userInfo = null) {
         const app = document.getElementById('app');
+        app.textContent = ''; // Limpiar contenido actual
         
         if (!isAuthenticated) {
-            app.innerHTML = `
-                ${getNavbarHTML(false)}
-                <main>
-                    <div class="hero-section">
-                        <div class="hero-content">
-                            <div class="container">
-                                <div class="row justify-content-center">
-                                    <div class="col-lg-8 text-center">
-                                        <h1 class="display-4 fw-bold mb-4">¡Bienvenido a Transcendence!</h1>
-                                        <p class="lead mb-4">El clásico juego de Pong reinventado para la web moderna</p>
-                                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
-                                            <a href="/login" data-link class="btn btn-primary btn-lg px-4 me-sm-3">
-                                                <i class="fas fa-play me-2"></i>Empezar a Jugar
-                                            </a>
-                                            <a href="/register" data-link class="btn btn-outline-light btn-lg px-4">
-                                                <i class="fas fa-user-plus me-2"></i>Registrarse
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Features Section con nuevo fondo -->
-                    <div class="features-section">
-                        <div class="container">
-                            <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
-                                <div class="col">
-                                    <div class="feature-item">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-gamepad"></i>
-                                        </div>
-                                        <h3>Juega Online</h3>
-                                        <p>Compite contra otros jugadores en tiempo real con nuestro sistema de matchmaking avanzado.</p>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <div class="feature-item">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-trophy"></i>
-                                        </div>
-                                        <h3>Clasificación</h3>
-                                        <p>Escala posiciones en nuestro ranking competitivo y demuestra que eres el mejor jugador.</p>
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <div class="feature-item">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-users"></i>
-                                        </div>
-                                        <h3>Comunidad</h3>
-                                        <p>Únete a una comunidad activa de jugadores, haz amigos y participa en torneos exclusivos.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            `;
+            const homePageHtml = await loadHTML('/views/home/HomePage.html');
+            const navbarHtml = await loadHTML('/views/components/NavbarUnauthorized.html');
+            
+            const parser = new DOMParser();
+            const navDoc = parser.parseFromString(navbarHtml, 'text/html');
+            const mainDoc = parser.parseFromString(homePageHtml, 'text/html');
+            
+            app.appendChild(navDoc.body.firstElementChild);
+            app.appendChild(mainDoc.body.firstElementChild);
         } else {
-            app.innerHTML = `
-                ${getNavbarHTML(true, userInfo)}
-                <div class="hero-section">
-                    <div class="container">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8 text-center">
-                                <h1 class="display-4 fw-bold">¡Hola, ${userInfo.username}!</h1>
-                                <div class="mt-4">
-                                    ${window.location.pathname === '/profile' ? `
-                                        <div class="d-flex justify-content-center gap-3">
-                                            <a href="/game" data-link class="btn btn-primary btn-lg">
-                                                <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
-                                            </a>
-                                            <button id="logoutBtn" class="btn btn-outline-danger btn-lg">
-                                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-                                            </button>
-                                        </div>
-                                    ` : `
-                                        <a href="/game" data-link class="btn btn-primary btn-lg">
-                                            <i class="fas fa-gamepad me-2"></i>¡Jugar Ahora!
-                                        </a>
-                                    `}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Cambiar esta parte para que use el mismo patrón que el no autenticado
+            const [authenticatedHtml, navbarHtml] = await Promise.all([
+                loadHTML('/views/home/AuthenticatedHome.html'),
+                loadHTML('/views/components/NavbarAuthenticated.html')
+            ]);
+            
+            const parser = new DOMParser();
+            const navDoc = parser.parseFromString(navbarHtml, 'text/html');
+            const mainDoc = parser.parseFromString(authenticatedHtml, 'text/html');
+            
+            const navElement = navDoc.body.firstElementChild;
+            const mainElement = mainDoc.body.firstElementChild;
+            
+            // Actualizar la información del usuario en el navbar
+            if (userInfo) {
+                const profileImage = userInfo?.profile_image || 
+                                   userInfo?.fortytwo_image || 
+                                   `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
 
-            // Configurar el botón de logout solo si estamos en la página de perfil
-            if (window.location.pathname === '/profile') {
-                document.getElementById('logoutBtn')?.addEventListener('click', async () => {
-                    try {
-                        await AuthService.logout();
-                    } catch (error) {
-                        console.error('Error en logout:', error);
-                    } finally {
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        window.location.href = '/';
-                    }
+                navElement.querySelectorAll('#nav-profile-image, #nav-profile-image-large').forEach(img => {
+                    img.src = profileImage;
+                    img.onerror = () => img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+                });
+
+                navElement.querySelectorAll('#nav-username, #nav-username-large').forEach(el => {
+                    el.textContent = userInfo.username;
                 });
             }
+            
+            app.appendChild(navElement);
+            app.appendChild(mainElement);
+            
+            // Actualizar el nombre de usuario en el contenido principal
+            const usernameElement = mainElement.querySelector('#username-placeholder');
+            if (usernameElement) {
+                usernameElement.textContent = userInfo.username;
+            }
+            
+            // Configurar eventos
+            const logoutBtn = mainElement.querySelector('#logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', this.handleLogout.bind(this));
+            }
+        }
+    }
+
+    async handleLogout() {
+        try {
+            await AuthService.logout();
+        } catch (error) {
+            console.error('Error en logout:', error);
+        } finally {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
         }
     }
 
