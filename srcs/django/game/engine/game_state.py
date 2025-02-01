@@ -9,7 +9,7 @@ class GameState:
         self.canvas_height = canvas_height
         
         # Inicializar pelota y paletas
-        self.ball = Ball(canvas_width/2, canvas_height/2)
+        self.ball = Ball(canvas_width/2, canvas_height/2, speed_x=0, speed_y=0)  # Inicializar sin velocidad
         paddle_height = 100
         self.paddles = {
             'left': Paddle(x=10, y=(canvas_height - paddle_height) / 2, height=paddle_height),
@@ -21,17 +21,35 @@ class GameState:
         self.countdown = 3
         self.countdown_active = False
         self.is_single_player = False
-        self.difficulty = 'medium'
+        self.difficulty = None  # Inicializar sin dificultad por defecto
         self.ai_controller = None
 
-    def set_single_player(self, is_single):
+    def set_single_player(self, is_single, difficulty='medium'):
+        """
+        Configura el modo single player con una dificultad específica
+        """
         self.is_single_player = is_single
         if is_single:
+            self.difficulty = difficulty
             self.ai_controller = AIController(self)
             # Aplicar configuración inicial de dificultad
-            self.ai_controller.apply_difficulty_settings(self.difficulty)
+            self.ai_controller.apply_difficulty_settings(difficulty)
+            # Inicializar velocidad de la bola según dificultad
+            self._apply_difficulty_speed()
         else:
+            self.difficulty = None
             self.ai_controller = None
+            # Resetear velocidad de la bola a valores por defecto para multiplayer
+            self.ball.speed_x = 2
+            self.ball.speed_y = 2
+
+    def _apply_difficulty_speed(self):
+        """Aplica la velocidad de la bola según la dificultad actual"""
+        if self.is_single_player and self.ai_controller:
+            settings = self.ai_controller.DIFFICULTY_SETTINGS[self.difficulty]
+            direction = 1 if self.ball.speed_x >= 0 else -1
+            self.ball.speed_x = settings['BALL_SPEED'] * direction
+            self.ball.speed_y = settings['BALL_SPEED']
 
     def update(self, timestamp=None):
         if self.countdown_active or self.status != 'playing':

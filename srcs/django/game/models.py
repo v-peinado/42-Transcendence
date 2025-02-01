@@ -51,9 +51,11 @@ class Game(models.Model):
         choices=[
             ('easy', 'Fácil'),
             ('medium', 'Intermedio'),
-            ('hard', 'Difícil')
+            ('hard', 'Difícil'),
+            ('nightmare', 'Nightmare')
         ],
-        default='medium'
+        null=True,  # Permitir null para modo multiplayer
+        blank=True  # Permitir vacío en el formulario
     )
 
     class Meta:

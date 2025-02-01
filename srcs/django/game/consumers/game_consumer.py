@@ -32,13 +32,13 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             
             # Configurar modo single player
             if game.game_mode == 'SINGLE':
-                self.game_state.set_single_player(True)
-                self.game_state.difficulty = game.difficulty
+                self.game_state.set_single_player(True, game.difficulty)
                 self.player_side = 'left'  # El jugador humano siempre en la izquierda
                 
                 # Iniciar juego inmediatamente en modo single player
                 await self.start_single_player_game(game)
             else:
+                self.game_state.set_single_player(False)  # Asegurar modo multiplayer
                 # Lógica existente para modo multiplayer
                 player1 = await self.get_player1(game)
                 player2 = await self.get_player2(game)
@@ -114,7 +114,6 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive(self, text_data):													# Recibir mensaje de WebSocket (texto)
         data = json.loads(text_data)
-        print(f"Received raw data: {data}")  # Debug log
         await self.receive_json(data)
 
     async def receive_json(self, content):												# Recibir mensaje de WebSocket (JSON)
