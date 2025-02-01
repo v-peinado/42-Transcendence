@@ -69,21 +69,34 @@
             <div class="score">
                 <span id="player1Score">0</span> - <span id="player2Score">0</span>
             </div>
+            <!-- Solo mostrar ID de partida en modo multiplayer -->
+            {% if game_mode == 'multi' %}
             <div class="game-id">ID Partida: {{ game_id }}</div>
-            <div class="status" id="gameStatus">Esperando oponente...</div>
-            <div class="player-info" id="playerInfo">Esperando asignación...</div>
-            <div id="difficultySelector" style="display: none; margin: 10px 0;">
-                <select id="difficulty" class="difficulty-select">
-                    <option value="easy">Fácil</option>
-                    <option value="medium" selected>Intermedio</option>
-                    <option value="hard">Difícil</option>
-                </select>
+            {% endif %}
+            <div class="status" id="gameStatus">
+                {% if game_mode == 'single' %}
+                ¡Preparado!
+                {% else %}
+                Esperando oponente...
+                {% endif %}
             </div>
+            {% if game_mode == 'multi' %}
+            <div class="player-info" id="playerInfo">Esperando asignación...</div>
+            {% endif %}
         </div>
         <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div class="controls">
-            <p>Controles: W/S (Jugador 1) - ↑/↓ (Jugador 2)</p>
+            <!-- Controles contextuales según el modo de juego -->
+            {% if game_mode == 'single' %}
+            <p>Controles: W/S (Arriba/Abajo)</p>
+            {% else %}
+            <div id="controlsInfo">
+                <!-- Se actualizará dinámicamente con JavaScript -->
+            </div>
+            {% if game_mode == 'multi' %}
             <p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
+            {% endif %}
+            {% endif %}
         </div>
         <div id="countdown" class="countdown" style="display: none;"></div>
     </div>
@@ -180,11 +193,15 @@
                 requestAnimationFrame(updateDisplay);  // Usar requestAnimationFrame para la actualización
             } else if (data.type === 'game_start') {
                 document.getElementById('gameStatus').textContent = '¡Juego en curso!';
-                // Corregimos la asignación del lado
                 playerSide = data.player1_id === parseInt(userId) ? 'left' : 'right';
-                console.log(`Player ${userId} assigned side: ${playerSide}`);
-                document.getElementById('playerInfo').textContent = 
-                    `Tú eres el ${playerSide === 'left' ? 'Jugador 1 (Izquierda)' : 'Jugador 2 (Derecha)'}`;
+                
+                // Solo mostrar información del jugador en modo multiplayer
+                const playerInfo = document.getElementById('playerInfo');
+                if (playerInfo && '{{ game_mode }}' === 'multi') {
+                    playerInfo.textContent = `Tú eres el ${playerSide === 'left' ? 'Jugador 1 (Izquierda)' : 'Jugador 2 (Derecha)'}`;
+                }
+                
+                updateControlsInfo();
             }
         };
 
@@ -275,6 +292,18 @@
             }
             gameSocket.close();
         });
+
+        // Actualizar el texto de los controles según el lado asignado
+        function updateControlsInfo() {
+            const controlsInfo = document.getElementById('controlsInfo');
+            if (controlsInfo) {
+                if (playerSide === 'left') {
+                    controlsInfo.textContent = 'Controles: W/S (Arriba/Abajo)';
+                } else if (playerSide === 'right') {
+                    controlsInfo.textContent = 'Controles: ↑/↓ (Arriba/Abajo)';
+                }
+            }
+        }
     </script>
 </body>
 </html>
