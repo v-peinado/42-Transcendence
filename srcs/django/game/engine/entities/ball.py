@@ -1,5 +1,5 @@
 class Ball:
-    def __init__(self, x, y, radius=10, speed_x=3, speed_y=3):  # Reducida de 5 a 3
+    def __init__(self, x, y, radius=10, speed_x=2, speed_y=2):  # Reducido de 3 a 2
         self.x = x
         self.y = y
         self.radius = radius
@@ -18,8 +18,8 @@ class Ball:
     def reset(self, x, y):
         self.x = x
         self.y = y
-        self.speed_x = 3 * (-1 if self.speed_x > 0 else 1)
-        self.speed_y = 3
+        self.speed_x = 2 * (-1 if self.speed_x > 0 else 1)  # Reducido a 2
+        self.speed_y = 2  # Reducido a 2
         
     def serialize(self):
         return {

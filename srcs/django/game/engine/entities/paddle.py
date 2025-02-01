@@ -1,5 +1,5 @@
 class Paddle:
-    def __init__(self, x, y, width=10, height=100, speed=15):  # Aumentamos más la velocidad base
+    def __init__(self, x, y, width=10, height=100, speed=10):  # Reducido de 15 a 10
         self.x = x
         self.y = y
         self.width = width

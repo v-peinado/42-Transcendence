@@ -97,42 +97,41 @@
         let gameState = null;
         let playerSide = null;
         let activeKeys = new Set();
+        let isMoving = false;
+        let movementInterval = null;
 
         // Event Listeners
         document.addEventListener('keydown', (e) => {
-            e.preventDefault();  // Prevenir comportamiento por defecto
+            e.preventDefault();
             if (!playerSide || !gameState) return;
-            
-            let direction = null;
-            if (playerSide === 'left') {
-                if (e.key.toLowerCase() === 'w') direction = -1;
-                if (e.key.toLowerCase() === 's') direction = 1;
-            } else if (playerSide === 'right') {
-                if (e.key === 'ArrowUp') direction = -1;
-                if (e.key === 'ArrowDown') direction = 1;
-            }
 
-            if (direction !== null) {
-                console.log(`Sending move: ${direction} for player ${playerSide}`);
-                gameSocket.send(JSON.stringify({
-                    type: 'move_paddle',
-                    side: playerSide,
-                    direction: direction
-                }));
+            const key = e.key.toLowerCase();
+            activeKeys.add(key);
+
+            if (!isMoving) {
+                isMoving = true;
+                // Enviar movimiento inmediatamente al pulsar
+                sendPaddleMove();
+                // Establecer intervalo para movimiento continuo
+                movementInterval = setInterval(sendPaddleMove, 16); // ~60fps
             }
-        }, { passive: false });  // Asegura que preventDefault() funcione
+        });
 
         document.addEventListener('keyup', (e) => {
             if (!playerSide || !gameState) return;
-            
-            let shouldStop = false;
-            if ((playerSide === 'left' && (e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 's')) ||
-                (playerSide === 'right' && (e.key === 'ArrowUp' || e.key === 'ArrowDown'))) {
-                shouldStop = true;
-            }
 
-            if (shouldStop) {
-                console.log(`Stopping movement for player ${playerSide}`);
+            const key = e.key.toLowerCase();
+            activeKeys.delete(key);
+
+            // Si no hay teclas de movimiento presionadas, detener el movimiento
+            if (!(activeKeys.has('w') || activeKeys.has('s') || 
+                  activeKeys.has('arrowup') || activeKeys.has('arrowdown'))) {
+                isMoving = false;
+                if (movementInterval) {
+                    clearInterval(movementInterval);
+                    movementInterval = null;
+                }
+                // Enviar comando de parada
                 gameSocket.send(JSON.stringify({
                     type: 'move_paddle',
                     side: playerSide,
@@ -186,23 +185,19 @@
             let direction = 0;
             
             if (playerSide === 'left') {
-                if (activeKeys.has('w') || activeKeys.has('W')) direction = -1;
-                if (activeKeys.has('s') || activeKeys.has('S')) direction = 1;
-            } else {
-                if (activeKeys.has('ArrowUp')) direction = -1;
-                if (activeKeys.has('ArrowDown')) direction = 1;
+                if (activeKeys.has('w')) direction = -1;
+                if (activeKeys.has('s')) direction = 1;
+            } else if (playerSide === 'right') {
+                if (activeKeys.has('arrowup')) direction = -1;
+                if (activeKeys.has('arrowdown')) direction = 1;
             }
 
-            console.log('Sending move:', { side: playerSide, direction: direction });  // Debug log
-            
             if (gameSocket.readyState === WebSocket.OPEN) {
                 gameSocket.send(JSON.stringify({
                     type: 'move_paddle',
                     side: playerSide,
                     direction: direction
                 }));
-            } else {
-                console.error('WebSocket is not open');  // Debug log
             }
         }
 
@@ -268,6 +263,9 @@
 
         // Cleanup
         window.addEventListener('beforeunload', () => {
+            if (movementInterval) {
+                clearInterval(movementInterval);
+            }
             gameSocket.close();
         });
     </script>
