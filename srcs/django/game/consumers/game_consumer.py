@@ -32,7 +32,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             
             # Configurar modo single player
             if game.game_mode == 'SINGLE':
-                self.game_state.is_single_player = True
+                self.game_state.set_single_player(True)
                 self.game_state.difficulty = game.difficulty
                 self.player_side = 'left'  # El jugador humano siempre en la izquierda
                 
@@ -77,22 +77,22 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 	# Métodos auxiliares para obtener información de la db (de forma asíncrona para no bloquear el hilo principal)
     
     @database_sync_to_async
-    def get_game(self):																# Obtener el id del juego actual
+    def get_game(self):																	# Obtener el id del juego actual
         try:
             return Game.objects.get(id=self.game_id)
         except Game.DoesNotExist:
             return None
 
     @database_sync_to_async
-    def get_player1(self, game):													# Obtener el jugador 1 del juego
+    def get_player1(self, game):														# Obtener el jugador 1 del juego
         return game.player1
 
     @database_sync_to_async
-    def get_player2(self, game):													# Obtener el jugador 2 del juego
+    def get_player2(self, game):														# Obtener el jugador 2 del juego
         return game.player2
 
     @database_sync_to_async
-    def update_game(self, game):													# Actualizar el juego con el jugador 2
+    def update_game(self, game):														# Actualizar el juego con el jugador 2
         game.player2 = self.user
         game.status = 'PLAYING'
         game.save()
@@ -104,20 +104,20 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
 	# Métodos de WebSocket para manejar la conexión y los mensajes
     
-    async def disconnect(self, close_code):											# Desconexión (al cerrar el socket)
-        if hasattr(self, 'game_id') and self.game_id in self.game_states:			# Si hay un id de juego y un estado de juego para ese id...
-            del self.game_states[self.game_id]										# Eliminar el id del juego del diccionario de estados de juego
-        await self.channel_layer.group_discard(										# Eliminar al usuario del grupo del juego
+    async def disconnect(self, close_code):												# Desconexión (al cerrar el socket)
+        if hasattr(self, 'game_id') and self.game_id in self.game_states:				# Si hay un id de juego y un estado de juego para ese id...
+            del self.game_states[self.game_id]											# Eliminar el id del juego del diccionario de estados de juego
+        await self.channel_layer.group_discard(											# Eliminar al usuario del grupo del juego
             self.room_group_name,
             self.channel_name
         )
 
-    async def receive(self, text_data):												# Recibir mensaje de WebSocket (texto)
+    async def receive(self, text_data):													# Recibir mensaje de WebSocket (texto)
         data = json.loads(text_data)
         print(f"Received raw data: {data}")  # Debug log
         await self.receive_json(data)
 
-    async def receive_json(self, content):											# Recibir mensaje de WebSocket (JSON)
+    async def receive_json(self, content):												# Recibir mensaje de WebSocket (JSON)
         message_type = content.get('type')
         
         if message_type == 'change_difficulty' and self.game_state.is_single_player:
@@ -127,23 +127,23 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             self.game_state.ball.speed_x = settings['BALL_SPEED'] * (1 if self.game_state.ball.speed_x > 0 else -1)
             self.game_state.ball.speed_y = settings['BALL_SPEED']
             
-        elif message_type == 'move_paddle':											# Si el mensaje es para mover una paleta...
+        elif message_type == 'move_paddle':												# Si el mensaje es para mover una paleta...
             side = content.get('side')
             try:
                 direction = int(content.get('direction', 0))
-                if not -1 <= direction <= 1:  										# Si la dirección no es válida (puede ser -1, 0 o 1)...
+                if not -1 <= direction <= 1:  											# Si la dirección no es válida (puede ser -1, 0 o 1)...
                     print(f"Invalid direction value: {direction}")
                     return
                     
-                if side == self.player_side and self.game_state:					# Si el lado es el mismo que el del jugador actual y hay un estado de juego...
-                    current_y = self.game_state.paddles[side].y						# Guardar la posición actual de la paleta
+                if side == self.player_side and self.game_state:						# Si el lado es el mismo que el del jugador actual y hay un estado de juego...
+                    current_y = self.game_state.paddles[side].y							# Guardar la posición actual de la paleta
                     
-                    self.game_state.move_paddle(side, direction)					# Mover la paleta
-                    new_y = self.game_state.paddles[side].y							# Obtener la nueva posición de la paleta
+                    self.game_state.move_paddle(side, direction)						# Mover la paleta
+                    new_y = self.game_state.paddles[side].y								# Obtener la nueva posición de la paleta
                     
-                    state = self.game_state.serialize()								# Serializar el estado del juego (para enviarlo al resto de jugadores)
+                    state = self.game_state.serialize()									# Serializar el estado del juego (para enviarlo al resto de jugadores)
                     
-                    if current_y != new_y:  										# Solo enviar actualización si la posición cambió
+                    if current_y != new_y:  											# Solo enviar actualización si la posición cambió
                         await self.channel_layer.group_send(
                             self.room_group_name,
                             {
@@ -212,12 +212,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             'state': event['state']
         }))
 
-    async def start_single_player_game(self, game):
-        """Inicia una partida en modo single player"""
+    async def start_single_player_game(self, game):									# Iniciar una partida en modo single player
         if game.status == 'WAITING':
             await self.update_game_status(game, 'PLAYING')
             
-        await self.channel_layer.group_send(
+        await self.channel_layer.group_send(										# Enviar mensaje de inicio de juego
             self.room_group_name,
             {
                 'type': 'game_start',
@@ -228,6 +227,5 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             }
         )
         
-        # Iniciar el juego
-        self.game_state.status = 'playing'
+        self.game_state.status = 'playing'											# Iniciar el loop del juego
         asyncio.create_task(self.game_loop())
