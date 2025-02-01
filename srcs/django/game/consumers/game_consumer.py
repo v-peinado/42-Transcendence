@@ -195,7 +195,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def game_loop(self):														# Loop del juego
         while True:
             if hasattr(self, 'game_state') and self.game_state.status == 'playing':	# Si hay un estado de juego y el juego está en curso...
-                self.game_state.update()											# Actualizar el estado del juego
+                timestamp = asyncio.get_event_loop().time()  # Obtener timestamp actual
+                self.game_state.update(timestamp)  # Pasar el timestamp al método update
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {

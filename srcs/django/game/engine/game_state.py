@@ -1,12 +1,29 @@
 from .entities.ball import Ball
 from .entities.paddle import Paddle
 import random
+import time
 
 class GameState:
+    # Modificar la configuración de dificultad para que coincida con la original
     DIFFICULTY_SETTINGS = {
-        'easy': {'BALL_SPEED': 5, 'AI_REACTION_TIME': 300, 'ERROR_MARGIN': 60},
-        'medium': {'BALL_SPEED': 7, 'AI_REACTION_TIME': 200, 'ERROR_MARGIN': 40},
-        'hard': {'BALL_SPEED': 9, 'AI_REACTION_TIME': 100, 'ERROR_MARGIN': 20}
+        'easy': {
+            'RANDOMNESS': 60,
+            'MISS_CHANCE': 0.3,
+            'AI_REACTION_DELAY': 300,
+            'BALL_SPEED': 7
+        },
+        'medium': {
+            'RANDOMNESS': 40,
+            'MISS_CHANCE': 0.1,
+            'AI_REACTION_DELAY': 200,
+            'BALL_SPEED': 7
+        },
+        'hard': {
+            'RANDOMNESS': 20,
+            'MISS_CHANCE': 0.05,
+            'AI_REACTION_DELAY': 100,
+            'BALL_SPEED': 9
+        }
     }
 
     def __init__(self, canvas_width=800, canvas_height=400):
@@ -36,13 +53,16 @@ class GameState:
         self.countdown_active = False
         self.is_single_player = False
         self.difficulty = 'medium'
+        self.last_ai_update = 0  # Añadir timestamp para controlar frecuencia de actualización
+        self.ai_update_interval = 1.0  # 1000ms como en el original
+        self.ai_target_y = None
         
     def start_countdown(self):
         self.countdown = 3
         self.countdown_active = True
         self.status = 'countdown'
         
-    def update(self):
+    def update(self, timestamp=None):
         if self.countdown_active:
             return  # No actualizar la pelota durante el countdown
 
@@ -52,9 +72,11 @@ class GameState:
         # Actualizar pelota
         self.ball.update(self.canvas_width, self.canvas_height)
         
-        # IA para modo single player
-        if self.is_single_player:
-            self._update_ai()
+        # IA para modo single player con control de frecuencia
+        if self.is_single_player and timestamp:
+            if timestamp - self.last_ai_update >= self.ai_update_interval:
+                self._update_ai()
+                self.last_ai_update = timestamp
             
         # Verificar colisiones con paletas
         self._check_paddle_collisions()
@@ -128,35 +150,47 @@ class GameState:
         return current_state
 
     def _update_ai(self):
-        if self.status != 'playing':
-            return
+        """
+        Implementación de la IA basada en el código original de JavaScript
+        """
+        current_time = time.time() * 1000  # Convertir a milisegundos
+        
+        if current_time - self.last_ai_update >= self.ai_update_interval:
+            self.last_ai_update = current_time
+            settings = self.DIFFICULTY_SETTINGS[self.difficulty]
+            paddle = self.paddles['right']
             
-        settings = self.DIFFICULTY_SETTINGS[self.difficulty]
-        paddle = self.paddles['right']
-        ball = self.ball
-        
-        # Predicción de posición de la pelota
-        predicted_y = self._predict_ball_y()
-        
-        # Añadir error según dificultad
-        error = (random.random() * 2 - 1) * settings['ERROR_MARGIN']
-        target_y = predicted_y + error
-        
-        # Mover la pala AI
-        if paddle.y + (paddle.height / 2) < target_y - 5:
-            self.move_paddle('right', 1)
-        elif paddle.y + (paddle.height / 2) > target_y + 5:
-            self.move_paddle('right', -1)
+            # Predecir posición de la pelota
+            predicted_y = self._predict_ball_y()
             
+            # Añadir aleatoriedad como en el original
+            randomness = (random.random() * settings['RANDOMNESS']) - (settings['RANDOMNESS'] / 2)
+            target_y = predicted_y + randomness
+            
+            # Simular errores humanos con MISS_CHANCE
+            if random.random() < settings['MISS_CHANCE']:
+                target_y = random.random() * self.canvas_height
+            
+            self.ai_target_y = target_y
+            
+            # Mover la pala (similar a paddleUpdate en el original)
+            paddle_center = paddle.y + (paddle.height / 2)
+            dead_zone = 5  # Zona muerta para evitar oscilaciones
+            
+            if paddle_center < target_y - dead_zone:
+                self.move_paddle('right', 1)
+            elif paddle_center > target_y + dead_zone:
+                self.move_paddle('right', -1)
+            else:
+                self.move_paddle('right', 0)
+
     def _predict_ball_y(self):
         """
-        Predice la posición Y donde la pelota intersectará con la pala derecha
-        Retorna: posición Y predicha
+        Predicción de la posición Y de la pelota, siguiendo la lógica del original
         """
-        # Si la pelota va hacia la izquierda, retornar posición actual
         if self.ball.speed_x <= 0:
             return self.ball.y
-
+            
         # Crear una copia de la pelota para simulación
         sim_ball = {
             'x': self.ball.x,
@@ -165,9 +199,9 @@ class GameState:
             'speed_y': self.ball.speed_y,
             'radius': self.ball.radius
         }
-
-        # Simular el movimiento de la pelota hasta que alcance la pala derecha
-        max_iterations = 500  # Prevenir bucle infinito
+        
+        # Simular trayectoria
+        max_iterations = 500
         iterations = 0
         
         while sim_ball['x'] < self.paddles['right'].x and iterations < max_iterations:
@@ -175,18 +209,26 @@ class GameState:
             sim_ball['x'] += sim_ball['speed_x']
             sim_ball['y'] += sim_ball['speed_y']
             
-            # Comprobar colisiones con bordes superior e inferior
+            # Comprobar colisiones con bordes
             if sim_ball['y'] + sim_ball['radius'] >= self.canvas_height:
                 sim_ball['y'] = self.canvas_height - sim_ball['radius']
                 sim_ball['speed_y'] *= -1
             elif sim_ball['y'] - sim_ball['radius'] <= 0:
-                sim_ball['y'] = sim_ball['radius']
+                sim_ball['y'] = self.ball.radius
                 sim_ball['speed_y'] *= -1
                 
             iterations += 1
-
+            
         if iterations == max_iterations:
-            print("Warning: _predict_ball_y reached maximum iterations")
-            return self.canvas_height / 2  # Retornar posición central si no se puede predecir
-
-        return sim_ball['y']
+            print("Warning: predictBallY reached maximum iterations")
+            return self.canvas_height / 2
+            
+        # Añadir margen de error como en el original
+        error_margin = 15
+        random_error = (random.random() * 2 * error_margin) - error_margin
+        predicted_y = sim_ball['y'] + random_error
+        
+        # Asegurar que la predicción está dentro de los límites
+        predicted_y = max(self.ball.radius, min(self.canvas_height - self.ball.radius, predicted_y))
+        
+        return predicted_y
