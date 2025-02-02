@@ -5,9 +5,9 @@ class AIController:
     """Controlador de la IA para el jugador derecho"""
     DIFFICULTY_SETTINGS = {
         'easy': {
-            'RANDOMNESS': 60,
-            'MISS_CHANCE': 0.3,
-            'AI_REACTION_DELAY': 300,
+            'RANDOMNESS': 100,
+            'MISS_CHANCE': 0.80,
+            'AI_REACTION_DELAY': 400,
             'BALL_SPEED': 3
         },
         'medium': {
@@ -49,21 +49,21 @@ class AIController:
     def update(self, current_time):													# Actualización de la IA en cada frame
         if current_time - self.last_update >= self.reaction_delay / 1000:			# Convertir a segundos
             self.last_update = current_time
-            if current_time - self.last_movement >= self.movement_cooldown:
-                self.last_movement = current_time
-                # Actualizar predicción
+            if current_time - self.last_movement >= self.movement_cooldown:			# Añadir cooldown de movimiento (tiempo de espera entre movimientos)
+                self.last_movement = current_time									# Actualizar tiempo del último movimiento
+                # Actualizar predicción con menos frecuencia
                 if current_time - self.last_prediction_time >= self.prediction_interval:
-                    self._update_prediction()
+                    self._update_prediction()	
                     
                 # Mover la pala usando el mismo sistema que el jugador
-                paddle = self.game_state.paddles['right']
-                if self.current_target is not None:
-                    paddle.target_y = self.current_target
-                    paddle.update(self.game_state.canvas_height)
+                paddle = self.game_state.paddles['right']							# Obtener pala derecha
+                if self.current_target is not None:									# Si el target actual no es nulo (posición de la pala)
+                    paddle.target_y = self.current_target							# Actualizar target de la pala
+                    paddle.update(self.game_state.canvas_height)					# Actualizar posición de la pala
 
-    def _update_prediction(self):
+    def _update_prediction(self):													# Actualización de la predicción de la IA
         paddle = self.game_state.paddles['right']
-        settings = self.DIFFICULTY_SETTINGS[self.game_state.difficulty]
+        settings = self.DIFFICULTY_SETTINGS[self.game_state.difficulty]				# Obtener configuración de dificultad
         
         # Actualizar predicción con menos frecuencia
         if self.game_state.ball.speed_x > 0:  # Si la pelota va hacia la IA
@@ -93,8 +93,8 @@ class AIController:
                 self.last_smooth_position = smooth_target
                 target_y = smooth_target
         else:
-            # Si la pelota va en dirección contraria, mover al centro suavemente
-            target_y = self.game_state.canvas_height // 2
+             # Si la pelota va en dirección contraria, mover al centro suavemente
+             target_y = self.game_state.canvas_height // 2
 
         # Ajustar posición final
         paddle_height = paddle.height
@@ -103,11 +103,11 @@ class AIController:
 
     def _calculate_smooth_position(self):
         """Calcula una media ponderada de las últimas posiciones"""
-        weights = [0.1, 0.15, 0.2, 0.25, 0.3]  # Más peso a las posiciones recientes
+        weights = [0.1, 0.15, 0.2, 0.25, 0.3]  											# Más tendencia a las posiciones recientes
         while len(weights) > len(self.position_history):
             weights.pop(0)
             
-        weights = [w/sum(weights) for w in weights]  # Normalizar pesos
+        weights = [w/sum(weights) for w in weights]  									# Normalizar pesos
         
         smooth_pos = 0
         for pos, weight in zip(self.position_history, weights):
