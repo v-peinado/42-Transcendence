@@ -30,7 +30,8 @@ class AIController:
         }
     }
 
-    def __init__(self, game_state):													# Inicialización del controlador de la IA
+    def __init__(self, game_state):
+        """Inicialización del controlador de la IA"""
         self.game_state = game_state
         self.last_update = 0
         self.last_prediction_time = 0
@@ -46,7 +47,8 @@ class AIController:
         self.smoothing_weight = 0.3													# Factor de suavizado (0-1)
         self.apply_difficulty_settings('medium')									# Inicializar con dificultad media 
 
-    def update(self, current_time):													# Actualización de la IA en cada frame
+    def update(self, current_time):
+        """Actualiza el controlador de la IA en cada frame"""
         if current_time - self.last_update >= self.reaction_delay / 1000:			# Convertir a segundos
             self.last_update = current_time
             if current_time - self.last_movement >= self.movement_cooldown:			# Añadir cooldown de movimiento (tiempo de espera entre movimientos)
@@ -61,7 +63,8 @@ class AIController:
                     paddle.target_y = self.current_target							# Actualizar target de la pala
                     paddle.update(self.game_state.canvas_height)					# Actualizar posición de la pala
 
-    def _update_prediction(self):													# Actualización de la predicción de la IA
+    def _update_prediction(self):
+        """Actualiza la predicción de la IA"""
         paddle = self.game_state.paddles['right']
         settings = self.DIFFICULTY_SETTINGS[self.game_state.difficulty]				# Obtener configuración de dificultad
         

@@ -10,7 +10,8 @@ import asyncio
 class GameConsumer(AsyncJsonWebsocketConsumer):
     game_states = {}																# Diccionario de estados de juego compartidos
 
-    async def connect(self):														# Conexión inicial (al abrir el socket)
+    async def connect(self):
+        """Conexión inicial (al abrir el socket)"""
         self.game_id = self.scope['url_route']['kwargs']['game_id']					# Obtener el ID del juego desde la URL
         self.room_group_name = f'game_{self.game_id}'								# Nombre de grupo para el juego (enviar mensajes a todos los jugadores)
         self.user = self.scope['user']												# Usuario actual conectado
@@ -77,34 +78,40 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 	# Métodos auxiliares para obtener información de la db (de forma asíncrona para no bloquear el hilo principal)
     
     @database_sync_to_async
-    def get_game(self):																	# Obtener el id del juego actual
+    def get_game(self):
+        """Obtener la ID del juego actual"""
         try:
             return Game.objects.get(id=self.game_id)
         except Game.DoesNotExist:
             return None
 
     @database_sync_to_async
-    def get_player1(self, game):														# Obtener el jugador 1 del juego
+    def get_player1(self, game):
+        """getter jugador 1 del juego"""
         return game.player1
 
     @database_sync_to_async
-    def get_player2(self, game):														# Obtener el jugador 2 del juego
+    def get_player2(self, game):
+        """getter jugador 2 del juego"""
         return game.player2
 
     @database_sync_to_async
-    def update_game(self, game):														# Actualizar el juego con el jugador 2
+    def update_game(self, game):
+        """Iniciar el juego cuando se une el segundo jugador"""
         game.player2 = self.user
         game.status = 'PLAYING'
         game.save()
 
     @database_sync_to_async
     def update_game_status(self, game, status):
+        """Actualizar el estado del juego en la db"""
         game.status = status
         game.save()
 
 	# Métodos de WebSocket para manejar la conexión y los mensajes
     
-    async def disconnect(self, close_code):												# Desconexión (al cerrar el socket)
+    async def disconnect(self, close_code):
+        """Desconexión (al cerrar el socket)"""
         if hasattr(self, 'game_id') and self.game_id in self.game_states:				# Si hay un id de juego y un estado de juego para ese id...
             del self.game_states[self.game_id]											# Eliminar el id del juego del diccionario de estados de juego
         await self.channel_layer.group_discard(											# Eliminar al usuario del grupo del juego
@@ -112,11 +119,13 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             self.channel_name
         )
 
-    async def receive(self, text_data):													# Recibir mensaje de WebSocket (texto)
+    async def receive(self, text_data):
+        """Recibir mensaje de WebSocket"""
         data = json.loads(text_data)
         await self.receive_json(data)
 
-    async def receive_json(self, content):												# Recibir mensaje de WebSocket (JSON)
+    async def receive_json(self, content):
+        """Recibir mensaje JSON de WebSocket"""
         message_type = content.get('type')
         
         if message_type == 'change_difficulty' and self.game_state.is_single_player:	# Si el mensaje es para cambiar la dificultad...
@@ -155,13 +164,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         # elif message_type == 'pause_game':
         #     self.game_state.game_status = 'paused'
 
-    async def game_start(self, event):												# Iniciar el juego
+    async def game_start(self, event):
+        """Iniciar el juego desde el servidor"""
         if self.game_state:															# Si hay un estado de juego...
             self.game_state.start_countdown()										# Iniciar la cuenta regresiva
             asyncio.create_task(self.countdown_timer())								# Iniciar el temporizador de cuenta regresiva
         await self.send(text_data=json.dumps(event))								# Enviar mensaje de inicio de juego
 
-    async def countdown_timer(self):												# Temporizador de cuenta regresiva
+    async def countdown_timer(self):
+        """Temporizador de cuenta regresiva"""
         for count in range(3, 0, -1):												# Contar desde 3 hasta 1
             self.game_state.countdown = count
             
@@ -188,7 +199,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         
         asyncio.create_task(self.game_loop())										# Iniciar el loop del juego
 
-    async def game_loop(self):														# Loop del juego
+    async def game_loop(self):
+        """Loop principal del juego"""
         while True:
             if hasattr(self, 'game_state') and self.game_state.status == 'playing':	# Si hay un estado de juego y el juego está en curso...
                 timestamp = asyncio.get_event_loop().time()  # Obtener timestamp actual
@@ -202,13 +214,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 )
             await asyncio.sleep(1/60)  												# 60 FPS
 
-    async def game_state_update(self, event):										# Actualizar el estado del juego (enviado por otro jugador)
+    async def game_state_update(self, event):
+        """Enviar actualización del estado del juego a los jugadores"""
         await self.send(text_data=json.dumps({
             'type': 'game_state',
             'state': event['state']
         }))
 
-    async def start_single_player_game(self, game):									# Iniciar una partida en modo single player
+    async def start_single_player_game(self, game):
+        """Iniciar un juego de un solo jugador"""
         if game.status == 'WAITING':
             await self.update_game_status(game, 'PLAYING')
             

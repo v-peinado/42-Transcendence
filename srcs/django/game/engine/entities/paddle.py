@@ -1,5 +1,6 @@
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
+        """Setear valores iniciales de la pala"""
         self.x = int(x)  # Redondear posición inicial
         self.y = int(y)
         self.width = width
@@ -12,9 +13,7 @@ class Paddle:
         self.max_speed = speed  # Velocidad máxima constante para ambas palas
         
     def move(self, direction, canvas_height):
-        """
-        Movimiento directo con velocidad fija
-        """
+        """ Movimiento directo con velocidad fija """
         direction = int(direction)
         move_amount = self.speed * direction  # Usar siempre la misma velocidad base
         new_y = self.y + move_amount
@@ -23,9 +22,7 @@ class Paddle:
         self.y = int(max(0, min(new_y, canvas_height - self.height)))
 
     def update(self, canvas_height):
-        """
-        Actualización con velocidad controlada
-        """
+        """ Velocidad de movimiento constante """
         if self.target_y is not None:
             # Calcular el centro actual de la pala
             current_center = self.y + (self.height / 2)
@@ -51,6 +48,7 @@ class Paddle:
             self.last_position = self.y
 
     def serialize(self):
+        """Serializar la pala para enviarla a los clientes"""
         return {
             'x': self.x,
             'y': int(self.y),  # Asegurar que la posición serializada es un entero
