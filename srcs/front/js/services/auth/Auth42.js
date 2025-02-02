@@ -28,7 +28,6 @@ export class Auth42 {
         try {
             console.log('Auth42: Enviando código a backend:', code);
             
-            // Esta es la primera ruta de callback (authentication/42/api/callback/)
             const response = await fetch(`${AuthService.API_URL}/authentication/42/api/callback/`, {
                 method: 'POST',
                 headers: {
@@ -43,13 +42,15 @@ export class Auth42 {
             const data = await response.json();
             console.log('Auth42: Respuesta del servidor:', data);
 
-            if (data.needsEmailVerification) {
+            // Manejar el nuevo formato de respuesta
+            if (data.status === 'error' && data.message?.status === 'pending_verification') {
                 return {
                     status: 'pending_verification',
-                    message: messages.AUTH.EMAIL_VERIFICATION.MESSAGE
+                    message: data.message.message || messages.AUTH.EMAIL_VERIFICATION.MESSAGE
                 };
             }
 
+            // El resto de la lógica permanece igual
             if (data.require_2fa) {
                 sessionStorage.setItem('pendingAuth', 'true');
                 sessionStorage.setItem('fortytwo_user', 'true');
@@ -69,7 +70,7 @@ export class Auth42 {
                 };
             }
 
-            throw new Error(data.message || messages.AUTH.ERRORS.LOGIN_FAILED);
+            throw new Error(data.message?.message || data.message || messages.AUTH.ERRORS.LOGIN_FAILED);
         } catch (error) {
             console.error('Auth42: Error detallado:', error);
             throw error;

@@ -1,0 +1,278 @@
+<!-- Convertir el div principal en un template -->
+<template id="mainLoginTemplate">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card login-card">
+                        <div class="card-body p-5">
+                            <div class="text-center mb-4">
+                                <svg class="logo mb-3" width="64" height="64" viewBox="0 0 100 100" id="loginLogo">
+                                    <rect x="10" y="40" width="10" height="20" fill="#fff" class="paddle"/>
+                                    <circle cx="50" cy="50" r="5" fill="#fff" class="ball"/>
+                                    <rect x="80" y="40" width="10" height="20" fill="#fff" class="paddle"/>
+                                </svg>
+                                <h2 class="fw-bold">Iniciar Sesión</h2>
+                                <p class="text-muted">Accede a tu cuenta para jugar</p>
+                            </div>
+                            
+                            <div id="loginAlert"></div>
+                            
+                            <form id="loginForm">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control bg-dark text-light" 
+                                           id="username" placeholder="Username" required>
+                                    <label for="username">Username</label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="password" class="form-control bg-dark text-light" 
+                                           id="password" placeholder="Password" required>
+                                    <label for="password">Password</label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="remember">
+                                    <label class="form-check-label text-light" for="remember">
+                                        Recordarme
+                                    </label>
+                                </div>
+                                
+                                <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión de forma normal
+                                </button>
+                                
+                                <button type="button" class="w-100 btn btn-lg btn-dark mb-3" 
+                                        onclick="handleFtAuth()">
+                                    <img src="/public/42_logo.png" alt="42 Logo" class="me-2" style="height: 40px;">
+                                    Login con 42
+                                </button>
+                                
+                                <div class="text-center">
+                                    <a href="/register" data-link class="text-light">
+                                        ¿No tienes cuenta? Regístrate
+                                    </a>
+                                </div>
+                                
+                                <div class="text-center mt-3">
+                                    <button type="button" class="btn btn-outline-light w-100" id="scanQRBtn">
+                                        <i class="fas fa-qrcode me-2"></i>Escanear QR para iniciar sesión
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center mt-3">
+                                <a href="/reset_password" data-link class="text-light text-decoration-none">
+                                    <i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña?
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Templates -->
+<template id="loading42Template">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card login-card">
+                        <div class="card-body p-5 text-center">
+                            <div class="spinner-border text-primary mb-3"></div>
+                            <h4>Verificando autenticación...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="verificationMessageTemplate">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card login-card verification-message">
+                        <div class="card-body p-5 text-center">
+                            <svg class="logo mb-4" width="64" height="64" viewBox="0 0 100 100">
+                                <rect width="100" height="100" fill="none"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#0d6efd" stroke-width="8"/>
+                                <path d="M30 50 L45 65 L70 35" stroke="#0d6efd" stroke-width="8" fill="none"/>
+                            </svg>
+                            <h3 class="text-light mb-3">¡Verificación Exitosa!</h3>
+                            <p class="text-white fs-6 mb-4">
+                                Tu cuenta ha sido verificada correctamente.<br>
+                                <small class="d-block mt-2 text-white-75">Ya puedes iniciar sesión con tus credenciales.</small>
+                            </p>
+                            <div class="d-grid">
+                                <a href="/login" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-left me-2"></i>Volver al Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template para verificación de email de 42 -->
+<template id="verify42MessageTemplate">
+    <div class="hero-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5">
+                    <div class="card login-card verification-message">
+                        <div class="card-body p-5 text-center">
+                            <svg class="logo mb-4" width="64" height="64" viewBox="0 0 100 100">
+                                <rect width="100" height="100" fill="none"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#0d6efd" stroke-width="8">
+                                    <animate attributeName="stroke-dasharray" from="0,251.2" to="251.2,0" dur="2s" fill="freeze"/>
+                                </circle>
+                                <path d="M30 50 L45 65 L70 35" stroke="#0d6efd" stroke-width="8" fill="none">
+                                    <animate attributeName="stroke-dasharray" from="0,90" to="90,0" dur="1s" fill="freeze" begin="1s"/>
+                                </path>
+                            </svg>
+                            <h3 class="text-light fw-bold mb-3">¡Casi terminamos!</h3>
+                            <p class="text-white fs-6 mb-4">
+                                Hemos enviado un correo de verificación a tu cuenta de 42.<br>
+                                <small class="d-block mt-2 text-white-75">Por favor, revisa tu bandeja de entrada y sigue las instrucciones.</small>
+                            </p>
+                            <div class="d-grid">
+                                <a href="/login" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-left me-2"></i>Volver al Login
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template para el modal de verificación de email -->
+<template id="verifyEmailModalTemplate">
+    <div class="modal fade" id="verifyEmailModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope me-2"></i>
+                        Verificación de Email
+                    </h5>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="/public/42_logo.png" alt="42 Logo" class="mb-4" style="height: 60px;">
+                    <h4 class="mb-3">¡Casi terminamos!</h4>
+                    <p class="mb-4">
+                        Te hemos enviado un correo para verificar tu cuenta.<br>
+                        Por favor, revisa tu bandeja de entrada y sigue las instrucciones.
+                    </p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Revisa tu bandeja de entrada y sigue las instrucciones.
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <a href="/login" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="errorTemplate">
+    <div class="alert alert-danger">
+        <p>${message}</p>
+    </div>
+</template>
+
+<!-- Template para el modal 2FA -->
+<template id="twoFactorModalTemplate">
+    <div class="modal fade" id="twoFactorModal" data-bs-backdrop="static" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Verificación en dos pasos
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="status-message">
+                        <i class="fas fa-envelope icon"></i>
+                        <p class="mb-4">Por favor, introduce el código de verificación</p>
+                    </div>
+                    <div id="verify2FAAlert"></div>
+                    <form id="verify2FAForm">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" 
+                                   id="code" placeholder="Código" required
+                                   pattern="[0-9]{6}" maxlength="6"
+                                   autocomplete="off">
+                            <label for="code">Código de verificación</label>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg">
+                                <i class="fas fa-check me-2"></i>Verificar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template para el modal del escáner QR -->
+<template id="qrScannerModalTemplate">
+    <div class="modal fade" id="qrScannerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-qrcode me-2"></i>Iniciar sesión con QR
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-primary" id="scanQRWithCameraBtn">
+                            <i class="fas fa-camera me-2"></i>Escanear con cámara
+                        </button>
+                        <div class="text-center">
+                            <input type="file" id="qrFileInput" accept="image/*" style="display: none;">
+                            <button class="btn btn-outline-light" id="uploadQRBtn">
+                                <i class="fas fa-upload me-2"></i>Subir archivo QR
+                            </button>
+                        </div>
+                    </div>
+                    <div id="qrScannerContainer" style="display: none;" class="mt-3">
+                        <video id="qrVideo" playsinline style="width: 100%; max-width: 100%;"></video>
+                        <div class="scan-overlay"></div>
+                        <p class="text-muted mt-2 mb-0">
+                            <i class="fas fa-camera me-2"></i>Apunta con la cámara al código QR
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Template para alertas -->
+<template id="alertTemplate">
+    <div class="alert alert-danger">
+        <p></p>
+    </div>
+</template>
+
