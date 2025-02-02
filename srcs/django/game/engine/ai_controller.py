@@ -1,8 +1,8 @@
 import random
-import time
 from collections import deque
 
 class AIController:
+    """Controlador de la IA para el jugador derecho"""
     DIFFICULTY_SETTINGS = {
         'easy': {
             'RANDOMNESS': 60,
@@ -30,24 +30,24 @@ class AIController:
         }
     }
 
-    def __init__(self, game_state):
+    def __init__(self, game_state):													# Inicialización del controlador de la IA
         self.game_state = game_state
         self.last_update = 0
         self.last_prediction_time = 0
-        self.prediction_interval = 1/30
+        self.prediction_interval = 1/30												# Intervalo de predicción (30fps)
         self.update_interval = 1.0
-        self.current_target = None  # Añadir target actual
+        self.current_target = None													# Añadir target actual (posición de la pala)
         self.last_decision_time = 0
-        self.decision_interval = 0.1  # Tomar decisiones cada 100ms
-        self.movement_cooldown = 1/60  # Sincronizar con el framerate del juego
+        self.decision_interval = 0.1												# Tomar decisiones cada 100ms
+        self.movement_cooldown = 1/60												# Sincronizamos con el framerate del juego
         self.last_movement = 0
-        self.position_history = deque(maxlen=5)  # Mantener últimas 5 posiciones
+        self.position_history = deque(maxlen=5)										# Mantener últimas 5 posiciones (suavizado de movimientos)
         self.last_smooth_position = None
-        self.smoothing_weight = 0.3  # Factor de suavizado (0-1)
-        self.apply_difficulty_settings('medium')  # Aplicar configuración inicial
+        self.smoothing_weight = 0.3													# Factor de suavizado (0-1)
+        self.apply_difficulty_settings('medium')									# Inicializar con dificultad media 
 
-    def update(self, current_time):
-        if current_time - self.last_update >= self.reaction_delay / 1000:  # Convertir a segundos
+    def update(self, current_time):													# Actualización de la IA en cada frame
+        if current_time - self.last_update >= self.reaction_delay / 1000:			# Convertir a segundos
             self.last_update = current_time
             if current_time - self.last_movement >= self.movement_cooldown:
                 self.last_movement = current_time
