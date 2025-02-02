@@ -2,7 +2,10 @@ import random
 from collections import deque
 
 class AIController:
-    """Controlador de la IA para el jugador derecho"""
+    """
+    Controlador de la IA para el modo single player
+    Gestiona el comportamiento y la toma de decisiones de la pala derecha (CPU)
+    """
     DIFFICULTY_SETTINGS = {
         'easy': {
             'RANDOMNESS': 100,
@@ -48,7 +51,11 @@ class AIController:
         self.apply_difficulty_settings('medium')									# Inicializar con dificultad media 
 
     def update(self, current_time):
-        """Actualiza el controlador de la IA en cada frame"""
+        """
+        Actualiza la posición de la pala de la IA
+        Args:
+            current_time (float): Timestamp actual para controlar la frecuencia de actualización
+        """
         if current_time - self.last_update >= self.reaction_delay / 1000:			# Convertir a segundos
             self.last_update = current_time
             if current_time - self.last_movement >= self.movement_cooldown:			# Añadir cooldown de movimiento (tiempo de espera entre movimientos)
@@ -105,7 +112,11 @@ class AIController:
         self.current_target = target_y
 
     def _calculate_smooth_position(self):
-        """Calcula una media ponderada de las últimas posiciones"""
+        """
+        Calcula una posición suavizada basada en el historial de posiciones
+        Returns:
+            int: Nueva posición Y suavizada para la pala
+        """
         weights = [0.1, 0.15, 0.2, 0.25, 0.3]  											# Más tendencia a las posiciones recientes
         while len(weights) > len(self.position_history):
             weights.pop(0)
@@ -178,6 +189,4 @@ class AIController:
         self.game_state.ball.speed_y = direction_y * settings['BALL_SPEED']
         
         # Actualizar parámetros de la IA
-        self.randomness = settings['RANDOMNESS']
-        self.miss_chance = settings['MISS_CHANCE']
         self.reaction_delay = settings['AI_REACTION_DELAY']

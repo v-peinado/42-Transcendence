@@ -8,6 +8,8 @@ import asyncio
 # Clase de consumidor de WebSocket para el juego
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
+    """ Gestiona las conexiones WebSocket y la comunicación en tiempo real del juego
+    -->> Maneja tanto el modo single player como el multiplayer """
     game_states = {}																# Diccionario de estados de juego compartidos
 
     async def connect(self):
@@ -158,12 +160,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                         )
             except ValueError:														# Si la dirección no es un número...
                 print(f"Invalid direction format: {content.get('direction')}")
-        # elif message_type == 'start_game':
-        #     self.game_state.game_status = 'playing'
-            
-        # elif message_type == 'pause_game':
-        #     self.game_state.game_status = 'paused'
-
+                
     async def game_start(self, event):
         """Iniciar el juego desde el servidor"""
         if self.game_state:															# Si hay un estado de juego...
@@ -172,7 +169,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         await self.send(text_data=json.dumps(event))								# Enviar mensaje de inicio de juego
 
     async def countdown_timer(self):
-        """Temporizador de cuenta regresiva"""
+        """ Gestiona la cuenta regresiva antes de iniciar el juego """
         for count in range(3, 0, -1):												# Contar desde 3 hasta 1
             self.game_state.countdown = count
             
@@ -200,7 +197,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         asyncio.create_task(self.game_loop())										# Iniciar el loop del juego
 
     async def game_loop(self):
-        """Loop principal del juego"""
+        """ Loop principal del juego que mantiene sincronizados a todos los clientes """
         while True:
             if hasattr(self, 'game_state') and self.game_state.status == 'playing':	# Si hay un estado de juego y el juego está en curso...
                 timestamp = asyncio.get_event_loop().time()  # Obtener timestamp actual

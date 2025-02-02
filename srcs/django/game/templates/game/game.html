@@ -245,7 +245,6 @@
             // Draw paddles
             ctx.fillStyle = '#fff';
             for (const [side, paddle] of Object.entries(gameState.paddles)) {
-                console.log(`Drawing ${side} paddle at y=${paddle.y}`);  // Debug log
                 ctx.fillRect(
                     paddle.x,
                     paddle.y,

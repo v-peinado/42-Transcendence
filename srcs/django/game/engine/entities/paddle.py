@@ -22,7 +22,8 @@ class Paddle:
         self.y = int(max(0, min(new_y, canvas_height - self.height)))
 
     def update(self, canvas_height):
-        """ Velocidad de movimiento constante """
+        """ Actualiza la posición de la pala con movimiento suavizado
+        Args: canvas_height (int): Altura del canvas para limitar el movimiento """
         if self.target_y is not None:
             # Calcular el centro actual de la pala
             current_center = self.y + (self.height / 2)
