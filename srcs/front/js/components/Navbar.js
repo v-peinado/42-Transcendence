@@ -1,30 +1,47 @@
 import { loadHTML } from '/js/utils/htmlLoader.js';
 
 export async function getNavbarHTML(isAuthenticated = false, userInfo = null) {
-    const navbarHtml = await loadHTML(
-        isAuthenticated ? '/views/components/NavbarAuthenticated.html' : '/views/components/NavbarUnauthorized.html'
-    );
+    // Cargar el template HTML apropiado
+    const templatePath = isAuthenticated ? 
+        '/views/components/NavbarAuthenticated.html' : 
+        '/views/components/NavbarUnauthorized.html';
     
-    if (isAuthenticated && userInfo) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(navbarHtml, 'text/html');
-        
-        // Actualizar imagen y nombre de usuario
-        const profileImage = userInfo?.profile_image || 
-                           userInfo?.fortytwo_image || 
-                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
-
-        doc.querySelectorAll('#nav-profile-image, #nav-profile-image-large').forEach(img => {
-            img.src = profileImage;
-            img.onerror = () => img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
-        });
-
-        doc.querySelectorAll('#nav-username, #nav-username-large').forEach(el => {
-            el.textContent = userInfo.username;
-        });
-
-        return doc.body.firstElementChild.outerHTML;
+    const navbarHtml = await loadHTML(templatePath);
+    
+    if (!isAuthenticated) {
+        return navbarHtml;
     }
 
-    return navbarHtml;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(navbarHtml, 'text/html');
+    const navbar = doc.body.firstElementChild;
+
+    if (userInfo) {
+        const profileImage = userInfo?.profile_image || 
+            userInfo?.fortytwo_image || 
+            `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userInfo.username)}`;
+
+        // Actualizar imágenes de perfil
+        ['nav-profile-image', 'nav-profile-image-large'].forEach(id => {
+            const img = navbar.querySelector(`#${id}`);
+            if (img) {
+                img.setAttribute('src', profileImage);
+                img.onerror = () => {
+                    img.setAttribute('src', 
+                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(userInfo.username)}`
+                    );
+                };
+            }
+        });
+
+        // Actualizar nombres de usuario
+        ['nav-username', 'nav-username-large'].forEach(id => {
+            const el = navbar.querySelector(`#${id}`);
+            if (el) {
+                el.textContent = userInfo.username;
+            }
+        });
+    }
+
+    return navbar.outerHTML;
 }

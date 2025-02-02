@@ -1,0 +1,126 @@
+<main class="profile-section">
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-dark text-light border-0 shadow">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-square bg-primary me-3">
+                                    <i class="fas fa-shield-alt fs-2"></i>
+                                </div>
+                                <h3 class="card-title mb-0">Privacidad y Seguridad</h3>
+                            </div>
+                            <a href="/profile" data-link class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                        </div>
+
+                        <!-- Secciones GDPR -->
+                        <div id="messageArea" class="alert d-none mt-3"></div>
+
+                        <div class="gdpr-section mb-4">
+                            <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#dataCollectionContent">
+                                <i class="fas fa-database text-primary me-2"></i>
+                                <h5 class="mb-0">Recopilación de Datos</h5>
+                                <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                            </div>
+                            <div class="collapse show" id="dataCollectionContent">
+                                <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                    <p>Los siguientes datos son necesarios para proporcionar nuestros servicios:</p>
+                                </div>
+                                <div id="data-collection" class="ps-4 text-muted section-content mt-3"></div>
+                            </div>
+                        </div>
+
+                        <div class="gdpr-section mb-4">
+                            <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#dataUsageContent">
+                                <i class="fas fa-tasks text-info me-2"></i>
+                                <h5 class="mb-0">Uso de Datos</h5>
+                                <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                            </div>
+                            <div class="collapse" id="dataUsageContent">
+                                <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                    <p>Utilizamos tus datos de las siguientes maneras:</p>
+                                </div>
+                                <div id="data-usage" class="ps-4 text-muted section-content mt-3"></div>
+                            </div>
+                        </div>
+
+                        <div class="gdpr-section mb-4">
+                            <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#userRightsContent">
+                                <i class="fas fa-user-shield text-success me-2"></i>
+                                <h5 class="mb-0">Tus Derechos</h5>
+                                <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                            </div>
+                            <div class="collapse" id="userRightsContent">
+                                <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                    <p>Como usuario, tienes los siguientes derechos sobre tus datos:</p>
+                                </div>
+                                <div id="user-rights" class="ps-4 text-muted section-content mt-3"></div>
+                            </div>
+                        </div>
+
+                        <div class="gdpr-section mb-4">
+                            <div class="section-header" role="button" data-bs-toggle="collapse" data-bs-target="#securityContent">
+                                <i class="fas fa-lock text-warning me-2"></i>
+                                <h5 class="mb-0">Medidas de Seguridad</h5>
+                                <i class="fas fa-chevron-down ms-auto transition-transform"></i>
+                            </div>
+                            <div class="collapse" id="securityContent">
+                                <div class="p-3 mt-2 section-explanation bg-dark-subtle rounded">
+                                    <p>Implementamos las siguientes medidas para proteger tus datos:</p>
+                                </div>
+                                <div id="security-measures" class="ps-4 text-muted section-content mt-3"></div>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="actions-section mt-5">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="action-card bg-info bg-opacity-10 p-4 rounded">
+                                        <h5><i class="fas fa-download text-info me-2"></i>Exportar Datos</h5>
+                                        <p class="text-muted mb-3">Descarga todos tus datos personales en formato JSON</p>
+                                        <button id="downloadData" class="btn btn-info">
+                                            <i class="fas fa-file-download me-2"></i>Descargar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="action-card bg-danger bg-opacity-10 p-4 rounded">
+                                        <h5><i class="fas fa-exclamation-triangle text-danger me-2"></i>Zona de Peligro</h5>
+                                        <p class="text-muted mb-3">Esta acción eliminará permanentemente tu cuenta</p>
+                                        <button id="deleteAccount" class="btn btn-danger">
+                                            <i class="fas fa-user-times me-2"></i>Eliminar Cuenta
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de confirmación -->
+                        <div class="modal fade" id="deleteModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Confirmar eliminación</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Por favor, ingresa tu contraseña para confirmar la eliminación de tu cuenta:</p>
+                                        <input type="password" id="deletePassword" class="form-control" placeholder="Contraseña">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger" id="confirmDelete">Eliminar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
