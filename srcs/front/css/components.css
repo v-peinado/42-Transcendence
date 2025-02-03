@@ -743,3 +743,176 @@ body[data-page="profile"] .navbar .logout-item .nav-link:hover {
     border-radius: 8px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
 }
+
+/* Avatar components */
+.avatar-container {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin: -120px auto 20px;
+    z-index: 2;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(
+        45deg,
+        rgba(13, 110, 253, 0.9),
+        rgba(102, 16, 242, 0.9)
+    );
+    box-shadow: var(--avatar-shadow);
+    backdrop-filter: blur(5px);
+}
+
+.profile-avatar {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: var(--overlay-dark);
+    object-fit: cover;
+    box-shadow: var(--avatar-inner-shadow);
+    transition: all 0.3s ease;
+}
+
+.avatar-buttons {
+    position: absolute;
+    bottom: -15px;
+    right: -15px;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 3;
+}
+
+/* Stats card component */
+.stats-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+/* Tab content component - Updated */
+.tab-content {
+    background: rgba(255, 255, 255, 0.08); /* Más claro que antes */
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    border-radius: 0 0 1rem 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-out;
+    color: rgba(255, 255, 255, 0.9); /* Mejor contraste para el texto */
+}
+
+.tab-pane h3, 
+.tab-pane h4 {
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+.tab-pane p {
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+}
+
+/* Profile tabs styling - Updated */
+.profile-tabs {
+    position: relative;
+    z-index: 1;
+}
+
+.profile-tabs .nav-tabs {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    gap: 0.5rem;
+    position: relative;
+}
+
+.profile-tabs .nav-link {
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.profile-tabs .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(13, 110, 253, 0.1),
+        rgba(102, 16, 242, 0.1)
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.profile-tabs .nav-link:hover {
+    color: white;
+    transform: translateY(-2px);
+}
+
+.profile-tabs .nav-link:hover::before {
+    opacity: 1;
+}
+
+.profile-tabs .nav-link.active {
+    color: white;
+    background: rgba(13, 110, 253, 0.15);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+}
+
+.profile-tabs .nav-link.active::before {
+    opacity: 1;
+    background: linear-gradient(
+        45deg,
+        rgba(13, 110, 253, 0.2),
+        rgba(102, 16, 242, 0.2)
+    );
+}
+
+.profile-tabs .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        #0d6efd,
+        #6610f2
+    );
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.profile-tabs .nav-link.active::after {
+    width: 100%;
+}
+
+.tab-content {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: none;
+    border-radius: 0 0 1rem 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-out;
+}

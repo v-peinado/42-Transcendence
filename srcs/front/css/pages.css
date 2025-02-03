@@ -89,14 +89,11 @@ body #app .hero-section {
     margin-right: auto;
 }
 
-/* Profile section */
+/* Profile section - Limpiado de duplicados */
 .profile-section {
     min-height: calc(100vh - var(--navbar-height));
     padding-top: 2rem;
-    background: 
-        radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.1) 0%, transparent 10%),
-        radial-gradient(circle at 80% 70%, rgba(41, 196, 255, 0.1) 0%, transparent 10%),
-        linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
+    background: var(--background-gradient);
     position: relative;
     z-index: 1;
     overflow: hidden;
@@ -134,25 +131,55 @@ body #app .hero-section {
 
 /* Profile tabs */
 .profile-tabs {
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    border-bottom: none !important;
     margin-bottom: 2rem;
+    gap: 0.5rem;
+    position: relative;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
 }
 
 .profile-tabs .nav-link {
     color: rgba(255, 255, 255, 0.7);
     font-weight: 500;
-    padding: 1rem 2rem;
+    padding: 1rem 1.5rem;
     border: none;
-    position: relative;
+    border-radius: 8px;
     transition: all 0.3s ease;
+    background: transparent;
+}
+
+.profile-tabs .nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-tabs .nav-link.active {
+    color: white;
+    background: rgba(13, 110, 253, 0.15);
+    box-shadow: 
+        0 0 0 1px rgba(13, 110, 253, 0.2),
+        0 4px 12px rgba(13, 110, 253, 0.1);
+}
+
+.profile-tabs .nav-link i {
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+}
+
+.profile-tabs .nav-link:hover i,
+.profile-tabs .nav-link.active i {
+    color: #0d6efd;
 }
 
 /* Profile stats */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-top: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .stat-item {
@@ -225,87 +252,16 @@ body #app .hero-section {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Stats cards */
-.stats-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-}
-
-.stats-card:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.stats-card h5 {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 1rem;
-}
-
-.stats-card .stat-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #0d6efd;
-}
-
-/* Settings cards */
-.settings-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 1.5rem;
-    height: 100%;
-}
-
-.settings-card h5 {
-    color: #fff;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-}
-
-.settings-actions .btn {
-    padding: 1rem;
-    font-weight: 500;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-/* Profile section additions */
-.avatar-container {
-    position: relative;
-    width: 180px;
-    height: 180px;
-    margin: -120px auto 20px;
-    z-index: 2;
-    border-radius: 50%;
-    padding: 4px;
-    background: linear-gradient(
-        45deg,
-        rgba(13, 110, 253, 0.9),  /* Color primario (bootstrap) */
-        rgba(102, 16, 242, 0.9)   /* Color violeta */
-    );
-    box-shadow: 
-        0 0 0 4px rgba(255, 255, 255, 0.1),
-        0 4px 20px rgba(13, 110, 253, 0.5),
-        inset 0 0 20px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(5px);
-}
-
-/* Profile card additions */
+/* Profile card */
 .profile-card {
-    background: rgba(33, 37, 41, 0.95);
+    background: var(--overlay-dark);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 15px;
     padding: 2rem;
     position: relative;
     margin-top: 100px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    box-shadow: var(--card-shadow);
 }
 
 /* Profile text styles - Mejorados para mejor visibilidad */
@@ -324,23 +280,19 @@ body #app .hero-section {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Avatar container y imagen */
-.profile-avatar {
-    width: 100% !important;
-    height: 100% !important;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: rgba(33, 37, 41, 0.95);
-    object-fit: cover;
-    box-shadow: 
-        inset 0 0 20px rgba(0, 0, 0, 0.2),
-        0 2px 10px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+/* Profile edit form title - Updated for better visibility */
+.profile-card h4 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
+    margin-bottom: 2rem;
 }
 
-.profile-avatar:hover {
-    transform: scale(1.02);
-    border-color: rgba(255, 255, 255, 0.5);
+.profile-card h4 i {
+    color: #0d6efd;
+    text-shadow: 0 0 10px rgba(13, 110, 253, 0.4);
 }
 
 /* Status badge styles */
@@ -355,57 +307,6 @@ body #app .hero-section {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Avatar buttons - Versión actualizada */
-.avatar-buttons {
-    position: absolute;
-    bottom: -15px;
-    right: -15px;
-    display: flex;
-    gap: 0.5rem;
-    z-index: 3;
-}
-
-.avatar-buttons .btn {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: rgba(33, 37, 41, 0.95);
-    backdrop-filter: blur(5px);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 
-        0 4px 15px rgba(0, 0, 0, 0.3),
-        inset 0 0 10px rgba(13, 110, 253, 0.2);
-    transition: all 0.3s ease;
-}
-
-#changeImageBtn {
-    background: linear-gradient(135deg, #24243e 0%, #302b63 50%, #0f0c29 100%);
-    color: #fff;
-    border: 2px solid rgba(13, 110, 253, 0.5);
-}
-
-#restoreImageBtn {
-    background: rgba(33, 37, 41, 0.95);
-    color: rgba(255, 255, 255, 0.8);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-}
-
-.avatar-buttons .btn:hover {
-    transform: scale(1.05);
-    box-shadow: 
-        0 6px 20px rgba(0, 0, 0, 0.4),
-        inset 0 0 15px rgba(13, 110, 253, 0.3);
-    border-color: rgba(13, 110, 253, 0.7);
-}
-
-.avatar-buttons .btn:active {
-    transform: scale(0.95);
-}
-
 /* Tab content styles */
 .tab-content {
     background: rgba(255, 255, 255, 0.05);
@@ -415,6 +316,107 @@ body #app .hero-section {
 
 .tab-pane {
     animation: fadeIn 0.3s ease-out;
+}
+
+/* Profile tab panels - Consistent styles */
+.tab-pane {
+    background: rgba(33, 37, 41, 0.85); /* Fondo más sutil */
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 8px 32px rgba(31, 38, 135, 0.2),
+        inset 0 0 32px rgba(13, 110, 253, 0.05);
+}
+
+/* Matches list consistent style */
+.matches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.match-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.match-item:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Settings tab consistent style */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* GDPR tab consistent style */
+.gdpr-sections {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Common section headers */
+.section-header {
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-header i {
+    color: #0d6efd;
+    font-size: 1.5rem;
+}
+
+/* Common content containers */
+.content-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 20px rgba(13, 110, 253, 0.03);
+}
+
+.content-box:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(13, 110, 253, 0.2);
+    box-shadow: 
+        0 4px 20px rgba(13, 110, 253, 0.1),
+        inset 0 0 20px rgba(13, 110, 253, 0.05);
+}
+
+/* Common data display */
+.data-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.data-list li {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.data-list li:last-child {
+    border-bottom: none;
 }
 
 /* Auth pages (login/register) */
@@ -568,6 +570,294 @@ body #app .hero-section {
 .not-found-page::after {
     background-position: 30px 30px;
     animation: backgroundPulse2 8s ease-in-out infinite;
+}
+
+/* Profile edit form styles - Updated for better visibility */
+.profile-edit-form {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.profile-edit-form .form-control {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+    height: auto;
+    transition: all 0.3s ease;
+}
+
+.profile-edit-form .form-control:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(13, 110, 253, 0.7);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+}
+
+.profile-edit-form .form-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-edit-form .form-text {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.profile-edit-form .password-section {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.profile-edit-form .password-section h5 {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-edit-form input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.profile-edit-form .form-control:disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Edit Profile Styles */
+.edit-profile-container {
+    background: rgba(33, 37, 41, 0.95);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.edit-profile-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+}
+
+.edit-profile-avatar {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #0d6efd, #6610f2);
+    padding: 3px;
+}
+
+.profile-avatar-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    background: #1a1d20;
+}
+
+.avatar-edit-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.edit-profile-avatar:hover .avatar-edit-overlay {
+    opacity: 1;
+}
+
+.btn-change-avatar {
+    background: rgba(13, 110, 253, 0.9);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-change-avatar:hover {
+    background: #0d6efd;
+    transform: scale(1.1);
+}
+
+.form-section {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-title {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.section-title i {
+    color: #0d6efd;
+}
+
+.floating-input {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.floating-input input {
+    height: 54px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem 1rem 1rem 3rem;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.floating-input input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+}
+
+.floating-input label {
+    position: absolute;
+    left: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+.floating-input input:focus ~ label,
+.floating-input input:not(:placeholder-shown) ~ label {
+    top: 0;
+    left: 1rem;
+    font-size: 0.85rem;
+    padding: 0 0.5rem;
+    background: #1a1d20;
+    color: #0d6efd;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+.floating-input input:focus ~ .input-icon {
+    color: #0d6efd;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.save-btn {
+    padding: 0.75rem 2rem;
+    font-weight: 500;
+    border-radius: 12px;
+    background: linear-gradient(45deg, #0d6efd, #6610f2);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+}
+
+/* Profile edit title - Enhanced visibility */
+.profile-edit-title {
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 600;
+    text-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        0 0 10px rgba(13, 110, 253, 0.3);
+    letter-spacing: 0.5px;
+}
+
+.profile-edit-title i {
+    color: #0d6efd;
+    text-shadow: 0 0 15px rgba(13, 110, 253, 0.5);
+}
+
+.profile-edit-title .title-text {
+    background: linear-gradient(45deg, #ffffff, #e6e9ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* GDPR Accordion styles */
+#gdprAccordion .accordion-item {
+    border: none;
+    margin-bottom: 0.5rem;
+}
+
+#gdprAccordion .accordion-button {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    border-radius: 8px;
+}
+
+#gdprAccordion .accordion-button:not(.collapsed) {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+}
+
+#gdprAccordion .accordion-body {
+    padding: 1rem;
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0 0 8px 8px;
+}
+
+#gdprAccordion .accordion-button::after {
+    filter: invert(1);
+    width: 1rem;
+    height: 1rem;
+    background-size: 1rem;
 }
 
 /* Responsive adjustments */

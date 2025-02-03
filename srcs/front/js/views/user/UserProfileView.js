@@ -23,6 +23,11 @@ export function UserProfileView() {
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#edit-profile">
+                            <i class="fas fa-edit me-2"></i>Editar Perfil
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats">
                             <i class="fas fa-chart-line me-2"></i>Estadísticas
                         </button>
@@ -37,6 +42,11 @@ export function UserProfileView() {
                             <i class="fas fa-cog me-2"></i>Ajustes
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#gdpr">
+                            <i class="fas fa-user-shield me-2"></i>GDPR
+                        </button>
+                    </li>
                 </ul>
 
                 <!-- Contenido de las pestañas -->
@@ -47,6 +57,95 @@ export function UserProfileView() {
                             <div class="col-md-6">
                                 <div class="profile-card p-4" id="userInfo">
                                     <!-- Este div se llena dinámicamente con loadUserData -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nueva Pestaña de Editar Perfil -->
+                    <div class="tab-pane fade" id="edit-profile">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="profile-card">
+                                    <h4 class="text-center mb-4 profile-edit-title">
+                                        <i class="fas fa-user-edit me-2"></i>
+                                        <span class="title-text">Personaliza tu Perfil</span>
+                                    </h4>
+                                    <div id="editProfileMessage" class="alert d-none mb-4"></div>
+                                    
+                                    <form id="editProfileForm" class="profile-edit-form">
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-4">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-user me-2"></i>Username
+                                                    </label>
+                                                    <input type="text" 
+                                                           class="form-control form-control-lg" 
+                                                           id="editUsername" 
+                                                           required>
+                                                    <div class="form-text text-muted">
+                                                        Este es tu nombre público en el juego
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-4">
+                                                    <label la="form-label">
+                                                        <i class="fas fa-envelope me-2"></i>Email
+                                                    </label>
+                                                    <input type="email" 
+                                                           class="form-control form-control-lg" 
+                                                           id="editEmail" 
+                                                           required>
+                                                    <div class="form-text text-muted">
+                                                        Se enviará un email de verificación si lo cambias
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="password-section mt-4">
+                                            <h5 class="mb-3">
+                                                <i class="fas fa-lock me-2"></i>Cambiar Contraseña
+                                            </h5>
+                                            <div class="row g-4">
+                                                <div class="col-md-12">
+                                                    <div class="form-group mb-3">
+                                                        <label class="form-label">Contraseña Actual</label>
+                                                        <input type="password" 
+                                                               class="form-control" 
+                                                               id="currentPassword">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group mb-3">
+                                                        <label class="form-label">Nueva Contraseña</label>
+                                                        <input type="password" 
+                                                               class="form-control" 
+                                                               id="newPassword1">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group mb-3">
+                                                        <label class="form-label">Confirmar Nueva Contraseña</label>
+                                                        <input type="password" 
+                                                               class="form-control" 
+                                                               id="newPassword2">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                                            <button type="button" class="btn btn-danger" id="deleteAccountBtn">
+                                                <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
+                                            </button>
+                                            <button type="button" class="btn btn-primary btn-lg" id="saveProfileBtn">
+                                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -90,11 +189,6 @@ export function UserProfileView() {
                                 <div class="settings-card">
                                     <h5>Cuenta</h5>
                                     <div class="settings-actions">
-                                        <button id="editProfileBtn" class="btn btn-outline-light d-flex align-items-center w-100 mb-3">
-                                            <i class="fas fa-edit me-2"></i>
-                                            <span>Editar Perfil</span>
-                                            <i class="fas fa-chevron-right ms-auto"></i>
-                                        </button>
                                         <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
                                             <i class="fas fa-shield-alt me-2"></i>
                                             <span id="2faButtonText">Activar 2FA</span>
@@ -112,12 +206,92 @@ export function UserProfileView() {
                                             <span>Código QR</span>
                                             <i class="fas fa-chevron-right ms-auto"></i>
                                         </button>
-                                        <button id="gdprSettingsBtn" class="btn btn-outline-warning d-flex align-items-center w-100">
-                                            <i class="fas fa-user-shield me-2"></i>
-                                            <span>Privacidad</span>
-                                            <i class="fas fa-chevron-right ms-auto"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de GDPR -->
+                    <div class="tab-pane fade" id="gdpr">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="gdpr-card p-4">
+                                    <h4 class="mb-4">
+                                        <i class="fas fa-user-shield me-2"></i>
+                                        Privacidad y Protección de Datos
+                                    </h4>
+
+                                    <!-- Secciones GDPR más compactas -->
+                                    <div class="gdpr-sections mb-4">
+                                        <div class="accordion" id="gdprAccordion">
+                                            <div class="accordion-item bg-dark">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataCollectionContent">
+                                                        <i class="fas fa-database text-primary me-2"></i>Datos recopilados
+                                                    </button>
+                                                </h2>
+                                                <div id="dataCollectionContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
+                                                    <div class="accordion-body text-light" id="data-collection">
+                                                        <small>Información sobre los datos que recopilamos</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="accordion-item bg-dark">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataUsageContent">
+                                                        <i class="fas fa-tasks text-info me-2"></i>Uso de datos
+                                                    </button>
+                                                </h2>
+                                                <div id="dataUsageContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
+                                                    <div class="accordion-body text-light" id="data-usage">
+                                                        <small>Cómo utilizamos tus datos</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="accordion-item bg-dark">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#userRightsContent">
+                                                        <i class="fas fa-user-shield text-success me-2"></i>Tus derechos
+                                                    </button>
+                                                </h2>
+                                                <div id="userRightsContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
+                                                    <div class="accordion-body text-light" id="user-rights">
+                                                        <small>Derechos sobre tus datos personales</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="accordion-item bg-dark">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#securityContent">
+                                                        <i class="fas fa-lock text-warning me-2"></i>Seguridad
+                                                    </button>
+                                                </h2>
+                                                <div id="securityContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
+                                                    <div class="accordion-body text-light" id="security-measures">
+                                                        <small>Medidas de seguridad aplicadas</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botones de acción (estilo original) -->
+                                    <div class="d-flex justify-content-between mt-4">
+                                        <button id="downloadDataBtn" class="btn btn-outline-primary">
+                                            <i class="fas fa-download me-2"></i>
+                                            Descargar mis datos
+                                        </button>
+                                        <button id="requestDataDeletionBtn" class="btn btn-outline-danger">
+                                            <i class="fas fa-trash-alt me-2"></i>
+                                            Solicitar eliminación de datos
                                         </button>
                                     </div>
+
+                                    <div id="messageArea" class="alert d-none mt-3"></div>
                                 </div>
                             </div>
                         </div>
@@ -290,31 +464,12 @@ export function UserProfileView() {
 }
 
 function setupProfileEvents() {
-    // Event listener para el botón de editar
-    document.getElementById('editProfileBtn')?.addEventListener('click', () => {
-        const modalElement = document.getElementById('editProfileModal');
-        const modal = new bootstrap.Modal(modalElement);
-        
-        // Cargar datos actuales en el formulario
-        const username = document.getElementById('profileUsername').textContent;
-        const email = document.getElementById('profileEmail').textContent;
-        
-        document.getElementById('editUsername').value = username;
-        document.getElementById('editEmail').value = email;
-        
-        // Asegurarnos que el campo email es editable
-        document.getElementById('editEmail').removeAttribute('disabled');
-        
-        modal.show();
-    });
-
-    // Event listener para guardar cambios
+    // Eliminar el event listener del botón de editar ya que ahora usamos pestañas
+    // Actualizar el event listener para guardar cambios
     document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
         try {
             const updates = {};
-            const modalElement = document.getElementById('editProfileModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            const messageDiv = document.getElementById('modalMessage');
+            const messageDiv = document.getElementById('editProfileMessage');
             
             // Verificar cambios de email
             const newEmail = document.getElementById('editEmail').value;
@@ -348,9 +503,13 @@ function setupProfileEvents() {
             const result = await AuthService.updateProfile(updates);
             
             if (result.requiresVerification) {
-                modal.hide();
-                alert(`Se ha enviado un email de verificación a ${newEmail}. 
-                      Por favor, revisa tu bandeja de entrada.`);
+                messageDiv.classList.remove('d-none', 'alert-danger');
+                messageDiv.classList.add('alert-success');
+                messageDiv.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    Se ha enviado un email de verificación a ${newEmail}. 
+                    Por favor, revisa tu bandeja de entrada.
+                `;
             } else if (updates.current_password) {
                 messageDiv.classList.remove('d-none', 'alert-danger');
                 messageDiv.classList.add('alert-success');
@@ -367,12 +526,10 @@ function setupProfileEvents() {
                 // Ocultar el mensaje después de 3 segundos y cerrar el modal
                 setTimeout(() => {
                     messageDiv.classList.add('d-none');
-                    modal.hide();
                 }, 3000);
             }
         } catch (error) {
-            // Mostrar errores en el modal
-            const messageDiv = document.getElementById('modalMessage');
+            const messageDiv = document.getElementById('editProfileMessage');
             messageDiv.classList.remove('d-none', 'alert-success');
             messageDiv.classList.add('alert-danger');
             messageDiv.innerHTML = `
@@ -707,10 +864,10 @@ function setupProfileEvents() {
         });
     });
 
-    // Event listener para el botón de GDPR
-    document.getElementById('gdprSettingsBtn').addEventListener('click', () => {
-        window.location.href = '/gdpr-settings';
-    });
+    // Eliminar el event listener anterior del botón GDPR
+    // Añadir los nuevos event listeners para GDPR
+    document.getElementById('downloadDataBtn')?.addEventListener('click', handleDataDownload);
+    document.getElementById('requestDataDeletionBtn')?.addEventListener('click', handleDataDeletion);
 
     // Actualizar el event listener del botón de logout
     document.getElementById('navLogoutBtn')?.addEventListener('click', handleLogout);
@@ -755,8 +912,10 @@ function showAlert(message, type) {
 
 async function loadUserData() {
     try {
-        const userInfo = await AuthService.getUserProfile();
-        console.log('UserInfo recibido:', userInfo);
+        const [userInfo, gdprData] = await Promise.all([
+            AuthService.getUserProfile(),
+            AuthService.getGDPRSettings()
+        ]);
         
         const profileImage = userInfo.profile_image || userInfo.fortytwo_image || 
                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
@@ -846,6 +1005,15 @@ async function loadUserData() {
             }
         });
 
+        // Cargar datos en el formulario de edición
+        document.getElementById('editUsername').value = userInfo.username;
+        document.getElementById('editEmail').value = userInfo.email;
+
+        // Actualizar secciones GDPR
+        if (gdprData) {
+            updateGDPRContent(gdprData);
+        }
+
     } catch (error) {
         console.error('Error cargando datos:', error);
         // Si hay error, mantener el estado actual del 2FA en lugar de resetearlo
@@ -858,6 +1026,53 @@ async function loadUserData() {
             buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
             toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
             toggle2FABtn.classList.add(is2FAEnabled ? 'btn-outline-warning' : 'btn-outline-info');
+        }
+    }
+}
+
+// Añadir la función updateGDPRContent
+function updateGDPRContent(data) {
+    const sections = {
+        'data-collection': data.gdpr_policy?.data_collection || [],
+        'data-usage': data.gdpr_policy?.data_usage || [],
+        'user-rights': data.gdpr_policy?.user_rights || [],
+        'security-measures': data.gdpr_policy?.security_measures || []
+    };
+
+    Object.entries(sections).forEach(([id, items]) => {
+        const element = document.getElementById(id);
+        if (element && Array.isArray(items)) {
+            element.innerHTML = items
+                .map(item => `<div class="mb-2">${item}</div>`)
+                .join('');
+        }
+    });
+}
+
+// Añadir las nuevas funciones para manejar las acciones de GDPR
+async function handleDataDownload() {
+    try {
+        const response = await AuthService.downloadUserData();
+        // Crear un blob y descargarlo
+        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mis-datos.json';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        showAlert('Error al descargar los datos: ' + error.message, 'danger');
+    }
+}
+
+async function handleDataDeletion() {
+    if (confirm('¿Estás seguro de que quieres solicitar la eliminación de tus datos? Esta acción no se puede deshacer.')) {
+        try {
+            await AuthService.requestDataDeletion();
+            showAlert('Solicitud de eliminación enviada correctamente', 'success');
+        } catch (error) {
+            showAlert('Error al solicitar la eliminación: ' + error.message, 'danger');
         }
     }
 }
