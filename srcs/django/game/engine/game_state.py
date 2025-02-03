@@ -1,8 +1,13 @@
+import math
+import random
+from math import sin as angle_sin, cos as angle_cos
 from .entities.ball import Ball
 from .entities.paddle import Paddle
 from .ai_controller import AIController
 
 class GameState:
+    # Ajustar la velocidad multiplayer para que coincida con la dificultad media
+    MULTIPLAYER_SPEED = 4
 
     def __init__(self, canvas_width=800, canvas_height=400):
         """ Inicialización del estado del juego """
@@ -36,8 +41,9 @@ class GameState:
         else:																		# Configuración de partida multijugador
             self.difficulty = None
             self.ai_controller = None
-            self.ball.speed_x = 2
-            self.ball.speed_y = 2
+            # Inicializar con velocidad constante para multiplayer
+            self.ball.speed_x = self.MULTIPLAYER_SPEED
+            self.ball.speed_y = 0  # Comenzar con movimiento horizontal
 
     def _apply_difficulty_speed(self):
         """ Aplicar la velocidad de la bola según la dificultad actual """
@@ -61,26 +67,59 @@ class GameState:
         self._check_scoring()
 
     def _check_paddle_collisions(self):
-        """ Verificar colisiones con las paletas """
+        """
+        Verificar colisiones con las paletas manteniendo una velocidad total constante
+        según el nivel de dificultad seleccionado.
+        """
+        # Obtener la velocidad base según el modo de juego
+        base_speed = (
+            self.ai_controller.DIFFICULTY_SETTINGS[self.difficulty]['BALL_SPEED']
+            if self.is_single_player and self.ai_controller
+            else self.MULTIPLAYER_SPEED
+        )
+
         # Colisión con paleta izquierda
-        if (self.ball.x - self.ball.radius <= self.paddles['left'].x + self.paddles['left'].width and
-            self.paddles['left'].y <= self.ball.y <= self.paddles['left'].y + self.paddles['left'].height):
-            self.ball.x = self.paddles['left'].x + self.paddles['left'].width + self.ball.radius
-            self.ball.speed_x = abs(self.ball.speed_x)
+        left_paddle = self.paddles['left']
+        if (self.ball.x - self.ball.radius < left_paddle.x + left_paddle.width and 
+            self.ball.x + self.ball.radius > left_paddle.x and
+            self.ball.y > left_paddle.y and 
+            self.ball.y < left_paddle.y + left_paddle.height):
+            
+            self.ball.x = left_paddle.x + left_paddle.width + self.ball.radius
+            relative_intersect_y = (self.ball.y - (left_paddle.y + left_paddle.height/2)) / (left_paddle.height/2)
+            angle = relative_intersect_y * 0.785398  # π/4 radianes = 45 grados
+            
+            # Usar la velocidad según la dificultad
+            self.ball.speed_x = base_speed
+            self.ball.speed_y = base_speed * angle_sin(angle)
             
         # Colisión con paleta derecha
-        if (self.ball.x + self.ball.radius >= self.paddles['right'].x and
-            self.paddles['right'].y <= self.ball.y <= self.paddles['right'].y + self.paddles['right'].height):
-            self.ball.x = self.paddles['right'].x - self.ball.radius
-            self.ball.speed_x = -abs(self.ball.speed_x)
+        right_paddle = self.paddles['right']
+        if (self.ball.x + self.ball.radius > right_paddle.x and 
+            self.ball.x - self.ball.radius < right_paddle.x + right_paddle.width and
+            self.ball.y > right_paddle.y and 
+            self.ball.y < right_paddle.y + right_paddle.height):
             
+            self.ball.x = right_paddle.x - self.ball.radius
+            relative_intersect_y = (self.ball.y - (right_paddle.y + right_paddle.height/2)) / (right_paddle.height/2)
+            angle = relative_intersect_y * 0.785398
+            
+            # Usar la velocidad según la dificultad
+            self.ball.speed_x = -base_speed  # Negativo para rebotar
+            self.ball.speed_y = base_speed * angle_sin(angle)
+
     def _check_scoring(self):
-        """ Verificar si se ha anotado un punto """
-        if self.ball.x < 0:															# Punto para Player 2
+        """
+        Verificar si se ha anotado un punto.
+        El punto se cuenta cuando toda la pelota ha pasado la línea de la pala.
+        """
+        # Punto para jugador derecho (toda la pelota pasa la línea x=0)
+        if self.ball.x + self.ball.radius < 0:
             self.paddles['right'].score += 1
             self._reset_ball('right')
             
-        elif self.ball.x > self.canvas_width:										# Punto para Player 1
+        # Punto para jugador izquierdo (toda la pelota pasa la línea x=canvas_width)
+        elif self.ball.x - self.ball.radius > self.canvas_width:
             self.paddles['left'].score += 1
             self._reset_ball('left')
             
@@ -89,8 +128,19 @@ class GameState:
         self.ball.reset(self.canvas_width/2, self.canvas_height/2)
         if self.is_single_player and self.ai_controller:
             settings = self.ai_controller.DIFFICULTY_SETTINGS[self.difficulty]
-            self.ball.speed_x = settings['BALL_SPEED'] * (-1 if scoring_side == 'right' else 1)
-            self.ball.speed_y = settings['BALL_SPEED']
+            base_speed = settings['BALL_SPEED']
+            
+            # Usar un ángulo aleatorio entre -30 y 30 grados
+            angle = random.uniform(-0.523599, 0.523599)  # ±π/6 radianes = ±30 grados
+            
+            # Calcular componentes manteniendo velocidad total constante
+            self.ball.speed_x = base_speed * (-1 if scoring_side == 'right' else 1) * abs(math.cos(angle))
+            self.ball.speed_y = base_speed * math.sin(angle)
+        else:
+            # Reset para modo multiplayer
+            angle = random.uniform(-0.5, 0.5)  # Ángulo más suave para multiplayer
+            self.ball.speed_x = self.MULTIPLAYER_SPEED * (-1 if scoring_side == 'right' else 1)
+            self.ball.speed_y = self.MULTIPLAYER_SPEED * angle_sin(angle)
         
     def move_paddle(self, side, direction):
         """
