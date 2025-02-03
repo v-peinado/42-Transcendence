@@ -1,4 +1,5 @@
 import AuthService from '../../services/AuthService.js';
+import { AuthUtils } from '../../services/auth/AuthUtils.js';
 import { messages } from '../../translations.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 
@@ -45,22 +46,21 @@ export async function LoginView() {
             const result = await AuthService.handle42Callback(code);
             console.log('Resultado 42 callback:', result);
 
+            // Obtener los templates necesarios primero
+            const mainTemplate = document.getElementById('mainLoginTemplate');
+            const twoFactorModalTemplate = document.getElementById('twoFactorModalTemplate');
+
             // Limpiar vista
             app.innerHTML = getNavbarHTML(false);
 
-            if (result.status === 'pending_verification' || 
-                (result.status === 'error' && result.message?.includes('verification'))) {
-                const verify42MessageTemplate = document.getElementById('verify42MessageTemplate');
-                if (verify42MessageTemplate) {
-                    app.appendChild(verify42MessageTemplate.content.cloneNode(true));
-                }
-                return;
-            }
-
             if (result.status === 'pending_2fa' || result.require_2fa) {
-                // Mostrar formulario 2FA
-                const twoFactorModalTemplate = document.getElementById('twoFactorModalTemplate');
-                if (twoFactorModalTemplate) {
+                if (mainTemplate && twoFactorModalTemplate) {
+                    // Limpiar la URL del código 42
+                    window.history.replaceState({}, '', '/login');
+                    
+                    // Mostrar vista base y modal
+                    app.innerHTML = getNavbarHTML(false);
+                    app.appendChild(mainTemplate.content.cloneNode(true));
                     app.appendChild(twoFactorModalTemplate.content.cloneNode(true));
                     
                     // Configurar estado
@@ -75,7 +75,19 @@ export async function LoginView() {
                 return;
             }
 
+            if (result.status === 'pending_verification' || 
+                (result.status === 'error' && result.message?.includes('verification'))) {
+                const verify42MessageTemplate = document.getElementById('verify42MessageTemplate');
+                if (verify42MessageTemplate) {
+                    app.appendChild(verify42MessageTemplate.content.cloneNode(true));
+                }
+                return;
+            }
+
             if (result.status === 'success') {
+                console.log('Resultado 42 callback:', result);
+                console.log('Resultado verificación 2FA:', verifyResult);
+
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
                 window.location.replace('/profile');
@@ -122,10 +134,11 @@ export async function LoginView() {
 }
 
 function showError(message) {
-    const template = document.getElementById('alertTemplate');
-    const alert = template.content.cloneNode(true);
-    alert.querySelector('p').textContent = message;
-    document.getElementById('loginAlert').replaceChildren(alert);
+    const alertDiv = document.getElementById('loginAlert');
+    if (!alertDiv) return;
+    
+    const errorResult = AuthUtils.mapBackendError(message);
+    alertDiv.innerHTML = errorResult.html;
 }
 
 function handleSuccessfulLogin(username) {
@@ -214,10 +227,10 @@ async function handleFormSubmit(e) {
             return;
         }
 
-        throw new Error(result.message || 'Error en el inicio de sesión');
+        showError('Ha ocurrido un error inesperado');
     } catch (error) {
         console.error('Error en login:', error);
-        showError(error.message || 'Error en el inicio de sesión');
+        showError(error.message || 'Ha ocurrido un error inesperado');
     }
 }
 
@@ -241,20 +254,29 @@ async function handle2FASubmit(e) {
         const result = await AuthService.verify2FACode(code, isFortytwoUser);
         
         if (result.status === 'success') {
+            
             // Limpiar estado temporal
             sessionStorage.clear();
-            
             // Establecer autenticación
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('username', result.username || username);
             
-            // Ocultar modal y limpiar URL
+            // Ocultar modal
             const modalElement = document.getElementById('twoFactorModal');
             const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
+            if (modal) {
+                modal.hide();
+                await new Promise(resolve => setTimeout(resolve, 150));
+            }
 
-            // Limpiar la URL y redirigir
-            history.pushState({}, '', '/');
+            // Si es usuario de 42, primero limpiar parámetros de URL
+            if (isFortytwoUser) {
+                const currentPath = window.location.pathname;
+                window.history.replaceState({}, '', currentPath);
+            }
+
+            // Redirigir a profile
+            console.log('Resultado de la verificación 2FA:', result);
             window.location.replace('/profile');
             return;
         }
@@ -437,11 +459,7 @@ window.handleFtAuth = async () => {
         window.location.href = authUrl;
     } catch (error) {
         const alertDiv = document.getElementById('loginAlert');
-        alertDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <p>Error al iniciar sesión con 42: ${error.message}</p>
-            </div>
-        `;
+        showError('Error al iniciar sesión con 42: ' + error.message);
     }
 };
 
@@ -505,11 +523,5 @@ function createVerificationMessage() {
     message.appendChild(submessage);
     buttonContainer.appendChild(button);
     cardBody.append(svg, title, message, buttonContainer);
-    card.appendChild(cardBody);
-    col.appendChild(card);
-    row.appendChild(col);
-    contentDiv.appendChild(row);
-    container.appendChild(contentDiv);
-    
-    return container;
+    card.appendChild(cardBody);    col.appendChild(card);    row.appendChild(col);    contentDiv.appendChild(row);    container.appendChild(contentDiv);        return container;
 }

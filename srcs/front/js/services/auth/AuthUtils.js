@@ -46,59 +46,48 @@ export class AuthUtils {
     }
 
     static mapBackendError(backendMessage) {
+        // En lugar de generar HTML, usaremos el template
+        const template = document.getElementById('alertTemplate');
+        if (!template) return { message: backendMessage };
+        
+        const alert = template.content.cloneNode(true);
+        const message = this.getErrorConfig(backendMessage);
+        
+        alert.querySelector('.alert-heading').textContent = message.title;
+        alert.querySelector('i').className = message.icon;
+        alert.querySelector('span').textContent = message.message;
+        
+        return { html: alert.firstElementChild.outerHTML, message: message.message };
+    }
+
+    static getErrorConfig(backendMessage) {
         if (Array.isArray(backendMessage)) {
             backendMessage = backendMessage[0];
         }
 
-        if (backendMessage.includes('Usuario o contraseña incorrectos')) {
-            return {
-                html: `
-                    <div class="alert alert-danger fade show">
-                        <i class="fas fa-user-lock fa-bounce"></i>
-                        <div class="ms-2">
-                            <h6 class="alert-heading mb-1">¡Acceso Denegado!</h6>
-                            <span>${messages.AUTH.ERRORS.INVALID_CREDENTIALS}</span>
-                        </div>
-                    </div>
-                `,
+        const errorTypes = {
+            'Usuario o contraseña incorrectos': {
+                icon: 'fas fa-user-lock fa-bounce',
+                title: '¡Acceso Denegado!',
                 message: messages.AUTH.ERRORS.INVALID_CREDENTIALS
-            };
-        }
-
-        const errorStyles = {
+            },
             'Por favor verifica tu email': {
                 icon: 'fas fa-envelope-circle-check fa-beat',
-                message: messages.AUTH.ERRORS.EMAIL_NOT_VERIFIED,
-                type: 'warning',
-                title: '¡Falta un Paso!'
+                title: '¡Falta un Paso!',
+                message: messages.AUTH.ERRORS.EMAIL_NOT_VERIFIED
             },
             'No hay sesión activa': {
                 icon: 'fas fa-hourglass-end fa-spin',
-                message: messages.AUTH.ERRORS.NO_SESSION,
-                type: 'warning',
-                title: '¡Sesión Expirada!'
+                title: '¡Sesión Expirada!',
+                message: messages.AUTH.ERRORS.NO_SESSION
             },
             'default': {
                 icon: 'fas fa-triangle-exclamation fa-shake',
-                message: messages.AUTH.ERRORS.DEFAULT,
-                type: 'danger',
-                title: '¡Error!'
+                title: '¡Error!',
+                message: messages.AUTH.ERRORS.DEFAULT
             }
         };
 
-        const errorConfig = errorStyles[backendMessage] || errorStyles['default'];
-
-        return {
-            html: `
-                <div class="alert alert-${errorConfig.type} fade show">
-                    <i class="${errorConfig.icon}"></i>
-                    <div class="ms-2">
-                        <h6 class="alert-heading mb-1">${errorConfig.title}</h6>
-                        <span>${errorConfig.message}</span>
-                    </div>
-                </div>
-            `,
-            message: errorConfig.message
-        };
+        return errorTypes[backendMessage] || errorTypes['default'];
     }
 }
