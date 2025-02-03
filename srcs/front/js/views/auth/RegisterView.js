@@ -2,128 +2,38 @@ import AuthService from '../../services/AuthService.js';
 import { messages } from '../../translations.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 
-export function RegisterView() {
+export async function RegisterView() {
     const app = document.getElementById('app');
-    app.innerHTML = `
-        <div class="hero-section">
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-md-6 col-lg-5">
-                        <div class="card login-card">
-                            <div class="card-body p-5">
-                                <div class="text-center mb-4">
-                                    <svg class="logo mb-3" width="64" height="64" viewBox="0 0 100 100" id="registerLogo">
-                                        <rect x="10" y="40" width="10" height="20" fill="#fff" class="paddle"/>
-                                        <circle cx="50" cy="50" r="5" fill="#fff" class="ball"/>
-                                        <rect x="80" y="40" width="10" height="20" fill="#fff" class="paddle"/>
-                                    </svg>
-                                    <h2 class="fw-bold">Crear Cuenta</h2>
-                                    <p class="text-muted">Únete a la comunidad de Pong</p>
-                                </div>
-                                
-                                <div id="registerAlert"></div>
-                                
-                                <form id="registerForm">
-                                    <div class="form-floating mb-3">
-                                        <input type="text" class="form-control bg-dark text-light" 
-                                               id="username" placeholder="username" required>
-                                        <label for="username">Username</label>
-                                    </div>
-                                    <div class="form-floating mb-3">
-                                        <input type="email" class="form-control bg-dark text-light" 
-                                               id="email" placeholder="name@example.com" required>
-                                        <label for="email">Email</label>
-                                    </div>
-                                    <div class="form-floating mb-3">
-                                        <input type="password" class="form-control bg-dark text-light" 
-                                               id="password" placeholder="Password" required>
-                                        <label for="password">Password</label>
-                                    </div>
-                                    <div class="form-floating mb-3">
-                                        <input type="password" class="form-control bg-dark text-light" 
-                                               id="password2" placeholder="Confirm Password" required>
-                                        <label for="password2">Confirmar Password</label>
-                                    </div>
-                                    <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input" id="privacy_policy" required>
-                                        <label class="form-check-label text-light" for="privacy_policy">
-                                            Acepto la <a href="#" id="showPrivacyPolicy" class="text-primary">política de privacidad</a>
-                                        </label>
-                                    </div>
-                                    <button class="w-100 btn btn-lg btn-primary mb-3" type="submit">
-                                        <i class="fas fa-user-plus me-2"></i>Registrarse
-                                    </button>
+    
+    // Cargar templates
+    const response = await fetch('/views/components/RegisterView.html');
+    const html = await response.text();
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Agregar templates al documento
+    const templates = tempDiv.querySelectorAll('template');
+    templates.forEach(template => document.body.appendChild(template));
 
-                                    <!-- Añadir botón de 42 -->
-                                    <button type="button" class="w-100 btn btn-lg btn-dark mb-3" 
-                                            onclick="handleFtAuth()">
-                                        <img src="/public/42_logo.png" alt="42 Logo" class="me-2" style="height: 40px;">
-                                        Login
-                                    </button>
+    app.innerHTML = getNavbarHTML(false);
+    
+    const mainTemplate = document.getElementById('mainRegisterTemplate');
+    if (!mainTemplate) {
+        console.error('Template principal no encontrado');
+        return;
+    }
+    
+    app.appendChild(mainTemplate.content.cloneNode(true));
 
-                                    <div class="text-center">
-                                        <a href="/login" data-link class="text-light">
-                                            ¿Ya tienes cuenta? Inicia sesión
-                                        </a>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    const gdprTemplate = document.getElementById('gdprModalTemplate');
+    if (gdprTemplate) {
+        app.appendChild(gdprTemplate.content.cloneNode(true));
+    }
+    setupEventListeners();
+}
 
-    // Añadir el modal de GDPR
-    app.innerHTML += `
-        <div class="modal fade" id="gdprModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content bg-dark">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-shield-alt me-2"></i>Política de Privacidad
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="privacy-content">
-                            <h4>Información General</h4>
-                            <p>Al registrarte en nuestra plataforma, recopilamos y procesamos cierta información personal tuya:</p>
-                            <ul>
-                                <li>Nombre de usuario</li>
-                                <li>Dirección de email</li>
-                                <li>Información de perfil (avatar, estados, etc.)</li>
-                                <li>Datos de juego y estadísticas</li>
-                            </ul>
-
-                            <h4>Uso de la Información</h4>
-                            <p>Utilizamos tu información para:</p>
-                            <ul>
-                                <li>Gestionar tu cuenta y proporcionar nuestros servicios</li>
-                                <li>Permitir la interacción con otros usuarios</li>
-                                <li>Mantener estadísticas de juego</li>
-                                <li>Mejorar la experiencia de usuario</li>
-                            </ul>
-
-                            <h4>Tus Derechos</h4>
-                            <p>Tienes derecho a:</p>
-                            <ul>
-                                <li>Acceder a tus datos personales</li>
-                                <li>Rectificar tus datos</li>
-                                <li>Solicitar la eliminación de tu cuenta</li>
-                                <li>Oponerte al procesamiento de tus datos</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendido</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
+function setupEventListeners() {
     // Añadir evento para activar animación
     const form = document.getElementById('registerForm');
     const logo = document.getElementById('registerLogo');
@@ -168,8 +78,8 @@ export function RegisterView() {
             const result = await AuthService.register({
                 username: document.getElementById('username').value,
                 email: document.getElementById('email').value,
-                password: password,       // Se enviará como password1
-                password2: password2,     // Se enviará como password2
+                password: password,
+                password2: password2,
                 privacy_policy: privacyAccepted
             });
 
@@ -233,14 +143,12 @@ export function RegisterView() {
         }
     });
 
-    // Añadir eventos después del código HTML existente
     document.getElementById('showPrivacyPolicy').addEventListener('click', (e) => {
         e.preventDefault();
         const modal = new bootstrap.Modal(document.getElementById('gdprModal'));
         modal.show();
     });
 
-    // Añadir la función handleFtAuth al objeto window
     window.handleFtAuth = async () => {
         try {
             const authUrl = await AuthService.get42AuthUrl();
