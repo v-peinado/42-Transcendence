@@ -7,7 +7,7 @@ from .ai_controller import AIController
 
 class GameState:
     # Ajustar la velocidad multiplayer para que coincida con la dificultad media
-    MULTIPLAYER_SPEED = 0.4
+    MULTIPLAYER_SPEED = 4
 
     def __init__(self, canvas_width=800, canvas_height=400):
         """ Inicialización del estado del juego """

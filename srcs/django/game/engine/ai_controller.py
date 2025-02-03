@@ -10,25 +10,25 @@ class AIController:
         'easy': {
             'RANDOMNESS': 100,
             'MISS_CHANCE': 0.80,
-            'AI_REACTION_DELAY': 400,
+            'AI_REACTION_DELAY': 200,  # Reducido de 400 a 200
             'BALL_SPEED': 3
         },
         'medium': {
             'RANDOMNESS': 40,
             'MISS_CHANCE': 0.1,
-            'AI_REACTION_DELAY': 200,
+            'AI_REACTION_DELAY': 100,  # Reducido de 200 a 100
             'BALL_SPEED': 4
         },
         'hard': {
             'RANDOMNESS': 20,
             'MISS_CHANCE': 0.05,
-            'AI_REACTION_DELAY': 100,
+            'AI_REACTION_DELAY': 50,   # Reducido de 100 a 50
             'BALL_SPEED': 7
         },
         'nightmare': {
             'RANDOMNESS': 10,
             'MISS_CHANCE': 0.01,
-            'AI_REACTION_DELAY': 50,
+            'AI_REACTION_DELAY': 25,   # Reducido de 50 a 25
             'BALL_SPEED': 10
         }
     }
@@ -38,12 +38,12 @@ class AIController:
         self.game_state = game_state
         self.last_update = 0
         self.last_prediction_time = 0
-        self.prediction_interval = 1/30												# Intervalo de predicción (30fps)
+        self.prediction_interval = 1/60  # Aumentado de 1/30 a 1/60 para predicciones más frecuentes
         self.update_interval = 1.0
         self.current_target = None													# Añadir target actual (posición de la pala)
         self.last_decision_time = 0
         self.decision_interval = 0.1												# Tomar decisiones cada 100ms
-        self.movement_cooldown = 1/60												# Sincronizamos con el framerate del juego
+        self.movement_cooldown = 1/120  # Aumentado de 1/60 a 1/120 para movimientos más suaves
         self.last_movement = 0
         self.position_history = deque(maxlen=5)										# Mantener últimas 5 posiciones (suavizado de movimientos)
         self.last_smooth_position = None
@@ -79,10 +79,11 @@ class AIController:
         if self.game_state.ball.speed_x > 0:  # Si la pelota va hacia la IA
             predicted_y = self._predict_ball_y()
             
+            # Reducir el efecto de la aleatoriedad para mejorar la precisión
             if random.random() < settings['MISS_CHANCE']:
-                target_y = random.randint(0, self.game_state.canvas_height)
+                target_y = predicted_y + random.randint(-50, 50)  # Fallo más controlado
             else:
-                randomness = (random.random() * settings['RANDOMNESS']) - (settings['RANDOMNESS'] / 2)
+                randomness = (random.random() * settings['RANDOMNESS'] * 0.5) - (settings['RANDOMNESS'] * 0.25)
                 target_y = int(predicted_y + randomness)
             
             # Añadir nueva posición al historial
