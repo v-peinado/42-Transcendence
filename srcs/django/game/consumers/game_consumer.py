@@ -122,32 +122,60 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     
     async def disconnect(self, close_code):
         """
-        Desconexión del socket. En modo single player, finaliza la partida.
-        En modo multiplayer, elimina al jugador del grupo.
+        Desconexión del socket. Maneja tanto single player como multiplayer.
+        En multiplayer, da la victoria al jugador que permanece.
         """
         if hasattr(self, 'game_state'):
             game = await self.get_game()
             
-            if game and game.game_mode == 'SINGLE':
-                # Finalizar partida single player
-                self.game_state.status = 'finished'
-                await self.update_game_status(game, 'FINISHED')
-                # Actualizar puntuaciones finales
-                await self.update_game_winner(game, None)  # None indica partida abandonada
-                
-                # Notificar a todos los clientes (aunque en single player solo debería haber uno)
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'game_finished',
-                        'winner': 'abandoned',
-                        'final_score': {
-                            'left': self.game_state.paddles['left'].score,
-                            'right': self.game_state.paddles['right'].score
+            if game:
+                if game.game_mode == 'SINGLE':
+                    # Finalizar partida single player
+                    self.game_state.status = 'finished'
+                    await self.update_game_status(game, 'FINISHED')
+                    # Actualizar puntuaciones finales
+                    await self.update_game_winner(game, None)  # None indica partida abandonada
+                    
+                    # Notificar a todos los clientes (aunque en single player solo debería haber uno)
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'game_finished',
+                            'winner': 'abandoned',
+                            'final_score': {
+                                'left': self.game_state.paddles['left'].score,
+                                'right': self.game_state.paddles['right'].score
+                            }
                         }
-                    }
-                )
+                    )
                 
+                elif game.game_mode == 'MULTI' and self.player_side:  # Solo si es jugador (no espectador)
+                    # Dar victoria al oponente
+                    winner_side = 'right' if self.player_side == 'left' else 'left'
+                    self.game_state.status = 'finished'
+                    
+                    # Actualizar estado y ganador en la base de datos
+                    await self.update_game_status(game, 'FINISHED')
+                    
+                    # Determinar el ID del ganador (el jugador que no se desconectó)
+                    winner_id = (await self.get_player2(game)).id if self.player_side == 'left' else (await self.get_player1(game)).id
+                    await self.update_game_winner(game, winner_id)
+                    
+                    # Notificar a los clientes restantes
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'game_finished',
+                            'winner': winner_side,
+                            'reason': 'desertion',  # Añadir razón de victoria
+                            'deserter': self.player_side,  # Indicar quién desertó
+                            'final_score': {
+                                'left': self.game_state.paddles['left'].score,
+                                'right': self.game_state.paddles['right'].score
+                            }
+                        }
+                    )
+            
             # Limpiar el estado del juego
             if hasattr(self, 'game_id') and self.game_id in self.game_states:
                 del self.game_states[self.game_id]
@@ -315,5 +343,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'game_finished',
             'winner': event['winner'],
+            'reason': event.get('reason'),  # Añadir la razón
+            'deserter': event.get('deserter'),  # Añadir quién desertó
             'final_score': event['final_score']
         }))

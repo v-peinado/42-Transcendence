@@ -270,7 +270,16 @@
                 } else if ('{{ game_mode }}' === 'single') {
                     winnerText = data.winner === 'left' ? '¡Has ganado!' : '¡Ha ganado la CPU!';
                 } else {
-                    winnerText = data.winner === playerSide ? '¡Has ganado!' : '¡Ha ganado tu oponente!';
+                    if (data.reason === 'desertion') {
+                        if (data.winner === playerSide) {
+                            winnerText = '¡Victoria! Tu oponente ha abandonado la partida';
+                        } else {
+                            winnerText = 'Has abandonado la partida';
+                        }
+                    } else {
+                        // Victoria normal por puntos
+                        winnerText = data.winner === playerSide ? '¡Has ganado la partida!' : 'Tu oponente ha ganado la partida';
+                    }
                 }
                 
                 winnerMessage.textContent = winnerText;
