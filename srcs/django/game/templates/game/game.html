@@ -265,7 +265,9 @@
                 const finalScore = document.getElementById('finalScore');
                 
                 let winnerText;
-                if ('{{ game_mode }}' === 'single') {
+                if (data.winner === 'abandoned') {
+                    winnerText = 'Partida abandonada';
+                } else if ('{{ game_mode }}' === 'single') {
                     winnerText = data.winner === 'left' ? '¡Has ganado!' : '¡Ha ganado la CPU!';
                 } else {
                     winnerText = data.winner === playerSide ? '¡Has ganado!' : '¡Ha ganado tu oponente!';

@@ -121,10 +121,39 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 	# Métodos de WebSocket para manejar la conexión y los mensajes
     
     async def disconnect(self, close_code):
-        """Desconexión (al cerrar el socket)"""
-        if hasattr(self, 'game_id') and self.game_id in self.game_states:				# Si hay un id de juego y un estado de juego para ese id...
-            del self.game_states[self.game_id]											# Eliminar el id del juego del diccionario de estados de juego
-        await self.channel_layer.group_discard(											# Eliminar al usuario del grupo del juego
+        """
+        Desconexión del socket. En modo single player, finaliza la partida.
+        En modo multiplayer, elimina al jugador del grupo.
+        """
+        if hasattr(self, 'game_state'):
+            game = await self.get_game()
+            
+            if game and game.game_mode == 'SINGLE':
+                # Finalizar partida single player
+                self.game_state.status = 'finished'
+                await self.update_game_status(game, 'FINISHED')
+                # Actualizar puntuaciones finales
+                await self.update_game_winner(game, None)  # None indica partida abandonada
+                
+                # Notificar a todos los clientes (aunque en single player solo debería haber uno)
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'game_finished',
+                        'winner': 'abandoned',
+                        'final_score': {
+                            'left': self.game_state.paddles['left'].score,
+                            'right': self.game_state.paddles['right'].score
+                        }
+                    }
+                )
+                
+            # Limpiar el estado del juego
+            if hasattr(self, 'game_id') and self.game_id in self.game_states:
+                del self.game_states[self.game_id]
+
+        # Eliminar del grupo de WebSocket
+        await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
@@ -207,7 +236,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def game_loop(self):
         """ Loop principal del juego que mantiene sincronizados a todos los clientes """
         while True:
-            if hasattr(self, 'game_state') and self.game_state.status == 'playing':	# Si hay un estado de juego y el juego está en curso...
+            if (hasattr(self, 'game_state') and 
+                self.game_state.status == 'playing' and 
+                self.game_state in self.game_states.values()):  # Verificar que el juego sigue activo
+                
                 timestamp = asyncio.get_event_loop().time()  # Obtener timestamp actual
                 winner = self.game_state.update(timestamp)  # Obtener el ganador si existe
                 
@@ -247,6 +279,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                     }
                 )
             await asyncio.sleep(1/60)  												# 60 FPS
+
+            # Salir del loop si el juego ya no está activo
+            if not hasattr(self, 'game_state') or self.game_state.status != 'playing':
+                break
 
     async def game_state_update(self, event):
         """Enviar actualización del estado del juego a los jugadores"""
