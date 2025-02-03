@@ -59,7 +59,6 @@ export async function LoginView() {
                     window.history.replaceState({}, '', '/login');
                     
                     // Mostrar vista base y modal
-                    app.innerHTML = getNavbarHTML(false);
                     app.appendChild(mainTemplate.content.cloneNode(true));
                     app.appendChild(twoFactorModalTemplate.content.cloneNode(true));
                     
@@ -68,9 +67,16 @@ export async function LoginView() {
                     sessionStorage.setItem('fortytwo_user', 'true');
                     sessionStorage.setItem('pendingUsername', result.username);
 
+                    // IMPORTANTE: Configurar los event listeners antes de mostrar el modal
+                    setupEventListeners();
+
                     // Mostrar modal
                     const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
                     modal.show();
+
+                    // Enfocar el input del código
+                    document.getElementById('code').value = '';
+                    document.getElementById('code').focus();
                 }
                 return;
             }
@@ -85,9 +91,6 @@ export async function LoginView() {
             }
 
             if (result.status === 'success') {
-                console.log('Resultado 42 callback:', result);
-                console.log('Resultado verificación 2FA:', verifyResult);
-
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
                 window.location.replace('/profile');
@@ -251,42 +254,42 @@ async function handle2FASubmit(e) {
     const username = sessionStorage.getItem('pendingUsername');
     
     try {
+        // Añadir logs para debugging
+        console.log('Enviando verificación 2FA:', { code, isFortytwoUser, username });
+        
         const result = await AuthService.verify2FACode(code, isFortytwoUser);
+        console.log('Resultado verificación 2FA:', result);
         
         if (result.status === 'success') {
+            // Limpiar estado temporal solo después de una verificación exitosa
+            sessionStorage.clear(); // Limpiar todo el sessionStorage
             
-            // Limpiar estado temporal
-            sessionStorage.clear();
-            // Establecer autenticación
+            // Asegurarse de establecer la autenticación
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('username', result.username || username);
+            localStorage.setItem('two_factor_enabled', 'true'); // Añadir esta línea
             
-            // Ocultar modal
+            // Ocultar modal y esperar a que se complete la transición
             const modalElement = document.getElementById('twoFactorModal');
             const modal = bootstrap.Modal.getInstance(modalElement);
             if (modal) {
                 modal.hide();
-                await new Promise(resolve => setTimeout(resolve, 150));
+                await new Promise(resolve => setTimeout(resolve, 500)); // Aumentar el tiempo de espera
             }
 
-            // Si es usuario de 42, primero limpiar parámetros de URL
-            if (isFortytwoUser) {
-                const currentPath = window.location.pathname;
-                window.history.replaceState({}, '', currentPath);
-            }
-
-            // Redirigir a profile
-            console.log('Resultado de la verificación 2FA:', result);
+            // Redirigir después de que todo esté listo
+            console.log('Redirigiendo a profile después de 2FA exitoso');
             window.location.replace('/profile');
             return;
         }
 
+        // Si llegamos aquí, hubo un error
         throw new Error(result.message || 'Error en la verificación');
     } catch (error) {
         console.error('Error en verificación 2FA:', error);
         alertDiv.innerHTML = `
             <div class="alert alert-danger">
-                <p>${error.message || 'Error en la verificación del código'}</p>
+                ${error.message || 'Error en la verificación del código'}
             </div>
         `;
     }
