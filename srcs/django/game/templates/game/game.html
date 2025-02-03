@@ -61,6 +61,55 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             z-index: 1000;
         }
+        /* Añadir estilos para el mensaje de fin de juego */
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: #333;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .game-over h2 {
+            color: #fff;
+            font-size: 2em;
+            margin-bottom: 1rem;
+        }
+
+        .final-score {
+            color: #fff;
+            font-size: 1.5em;
+            margin: 1rem 0;
+        }
+
+        .menu-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .menu-button:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -99,6 +148,13 @@
             {% endif %}
         </div>
         <div id="countdown" class="countdown" style="display: none;"></div>
+    </div>
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2 id="winnerMessage"></h2>
+            <div class="final-score" id="finalScore"></div>
+            <a href="{% url 'game:menu' %}" class="menu-button">Volver al Menú</a>
+        </div>
     </div>
 
     <script>
@@ -202,6 +258,23 @@
                 }
                 
                 updateControlsInfo();
+            } else if (data.type === 'game_finished') {
+                // Mostrar mensaje de fin de juego
+                const gameOver = document.getElementById('gameOver');
+                const winnerMessage = document.getElementById('winnerMessage');
+                const finalScore = document.getElementById('finalScore');
+                
+                let winnerText;
+                if ('{{ game_mode }}' === 'single') {
+                    winnerText = data.winner === 'left' ? '¡Has ganado!' : '¡Ha ganado la CPU!';
+                } else {
+                    winnerText = data.winner === playerSide ? '¡Has ganado!' : '¡Ha ganado tu oponente!';
+                }
+                
+                winnerMessage.textContent = winnerText;
+                finalScore.textContent = `Puntuación final: ${data.final_score.left} - ${data.final_score.right}`;
+                gameOver.style.display = 'flex';
+                
             }
         };
 

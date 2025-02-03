@@ -110,6 +110,14 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         game.status = status
         game.save()
 
+    @database_sync_to_async
+    def update_game_winner(self, game, winner_id):
+        """Actualizar el ganador en la base de datos"""
+        game.winner_id = winner_id
+        game.score_player1 = self.game_state.paddles['left'].score
+        game.score_player2 = self.game_state.paddles['right'].score
+        game.save()
+
 	# Métodos de WebSocket para manejar la conexión y los mensajes
     
     async def disconnect(self, close_code):
@@ -201,7 +209,36 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         while True:
             if hasattr(self, 'game_state') and self.game_state.status == 'playing':	# Si hay un estado de juego y el juego está en curso...
                 timestamp = asyncio.get_event_loop().time()  # Obtener timestamp actual
-                self.game_state.update(timestamp)  # Pasar el timestamp al método update
+                winner = self.game_state.update(timestamp)  # Obtener el ganador si existe
+                
+                if winner:
+                    # Actualizar estado en la base de datos
+                    game = await self.get_game()
+                    if game:
+                        await self.update_game_status(game, 'FINISHED')
+                        # Actualizar ganador en la base de datos
+                        if self.game_state.is_single_player:
+                            winner_id = self.user.id if winner == 'left' else None  # CPU no tiene ID
+                        else:
+                            winner_id = (await self.get_player1(game)).id if winner == 'left' else (await self.get_player2(game)).id
+                        
+                        await self.update_game_winner(game, winner_id)
+                    
+                    # Notificar a los clientes
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'game_finished',
+                            'winner': winner,
+                            'final_score': {
+                                'left': self.game_state.paddles['left'].score,
+                                'right': self.game_state.paddles['right'].score
+                            }
+                        }
+                    )
+                    break  # Terminar el loop del juego
+
+                # Enviar actualización normal del estado
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
@@ -236,3 +273,11 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         
         self.game_state.status = 'playing'											# Iniciar el loop del juego
         asyncio.create_task(self.game_loop())
+
+    async def game_finished(self, event):
+        """Enviar mensaje de fin de juego a los clientes"""
+        await self.send(text_data=json.dumps({
+            'type': 'game_finished',
+            'winner': event['winner'],
+            'final_score': event['final_score']
+        }))

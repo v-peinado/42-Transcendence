@@ -6,6 +6,7 @@ from .entities.paddle import Paddle
 from .ai_controller import AIController
 
 class GameState:
+    WINNING_SCORE = 10  # Puntuación necesaria para ganar
     # Ajustar la velocidad multiplayer para que coincida con la dificultad media
     MULTIPLAYER_SPEED = 4
 
@@ -56,7 +57,7 @@ class GameState:
     def update(self, timestamp=None):
         """ Actualización del estado del juego """
         if self.countdown_active or self.status != 'playing':
-            return
+            return None
 
         self.ball.update(self.canvas_width, self.canvas_height)
         
@@ -64,7 +65,7 @@ class GameState:
             self.ai_controller.update(timestamp)
             
         self._check_paddle_collisions()
-        self._check_scoring()
+        return self._check_scoring()  # Retornar el ganador si existe
 
     def _check_paddle_collisions(self):
         """
@@ -119,19 +120,28 @@ class GameState:
 
     def _check_scoring(self):
         """
-        Verificar si se ha anotado un punto.
-        El punto se cuenta cuando toda la pelota ha pasado la línea de la pala.
+        Verificar si se ha anotado un punto y si alguien ha ganado.
         """
-        # Punto para jugador derecho (toda la pelota pasa la línea x=0)
+        winner = None
+
+        # Punto para jugador derecho
         if self.ball.x + self.ball.radius < 0:
             self.paddles['right'].score += 1
+            if self.paddles['right'].score >= self.WINNING_SCORE:
+                self.status = 'finished'
+                winner = 'right'
             self._reset_ball('right')
             
-        # Punto para jugador izquierdo (toda la pelota pasa la línea x=canvas_width)
+        # Punto para jugador izquierdo
         elif self.ball.x - self.ball.radius > self.canvas_width:
             self.paddles['left'].score += 1
+            if self.paddles['left'].score >= self.WINNING_SCORE:
+                self.status = 'finished'
+                winner = 'left'
             self._reset_ball('left')
-            
+
+        return winner
+
     def _reset_ball(self, scoring_side):
         """Reset la bola con la velocidad correspondiente a la dificultad actual"""
         self.ball.reset(self.canvas_width/2, self.canvas_height/2)
