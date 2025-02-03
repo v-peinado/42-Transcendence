@@ -7,7 +7,7 @@ from .ai_controller import AIController
 
 class GameState:
     # Ajustar la velocidad multiplayer para que coincida con la dificultad media
-    MULTIPLAYER_SPEED = 4
+    MULTIPLAYER_SPEED = 0.4
 
     def __init__(self, canvas_width=800, canvas_height=400):
         """ Inicialización del estado del juego """
@@ -68,10 +68,9 @@ class GameState:
 
     def _check_paddle_collisions(self):
         """
-        Verificar colisiones con las paletas manteniendo una velocidad total constante
-        según el nivel de dificultad seleccionado.
+        Verificar colisiones con las paletas usando el borde de la pelota en lugar del centro.
+        La colisión solo ocurre si el borde de la pelota no ha sobrepasado la línea de la pala.
         """
-        # Obtener la velocidad base según el modo de juego
         base_speed = (
             self.ai_controller.DIFFICULTY_SETTINGS[self.difficulty]['BALL_SPEED']
             if self.is_single_player and self.ai_controller
@@ -80,32 +79,42 @@ class GameState:
 
         # Colisión con paleta izquierda
         left_paddle = self.paddles['left']
-        if (self.ball.x - self.ball.radius < left_paddle.x + left_paddle.width and 
-            self.ball.x + self.ball.radius > left_paddle.x and
+        ball_left_edge = self.ball.x - self.ball.radius
+        ball_right_edge = self.ball.x + self.ball.radius
+        paddle_right_edge = left_paddle.x + left_paddle.width
+
+        if (ball_left_edge <= paddle_right_edge and                     # El borde izquierdo de la pelota toca o cruza el borde derecho de la pala
+            ball_right_edge > left_paddle.x and                         # El borde derecho de la pelota no ha pasado completamente la pala
+            self.ball.speed_x < 0 and                                  # La pelota va hacia la izquierda
             self.ball.y > left_paddle.y and 
-            self.ball.y < left_paddle.y + left_paddle.height):
+            self.ball.y < left_paddle.y + left_paddle.height and
+            ball_left_edge > left_paddle.x):                           # El borde izquierdo de la pelota no ha pasado el borde izquierdo de la pala
             
-            self.ball.x = left_paddle.x + left_paddle.width + self.ball.radius
+            # Colocar la pelota justo en el punto de colisión
+            self.ball.x = paddle_right_edge + self.ball.radius
             relative_intersect_y = (self.ball.y - (left_paddle.y + left_paddle.height/2)) / (left_paddle.height/2)
-            angle = relative_intersect_y * 0.785398  # π/4 radianes = 45 grados
+            angle = relative_intersect_y * 0.785398
             
-            # Usar la velocidad según la dificultad
             self.ball.speed_x = base_speed
             self.ball.speed_y = base_speed * angle_sin(angle)
             
         # Colisión con paleta derecha
         right_paddle = self.paddles['right']
-        if (self.ball.x + self.ball.radius > right_paddle.x and 
-            self.ball.x - self.ball.radius < right_paddle.x + right_paddle.width and
+        paddle_left_edge = right_paddle.x
+
+        if (ball_right_edge >= paddle_left_edge and                    # El borde derecho de la pelota toca o cruza el borde izquierdo de la pala
+            ball_left_edge < right_paddle.x + right_paddle.width and   # El borde izquierdo de la pelota no ha pasado completamente la pala
+            self.ball.speed_x > 0 and                                  # La pelota va hacia la derecha
             self.ball.y > right_paddle.y and 
-            self.ball.y < right_paddle.y + right_paddle.height):
+            self.ball.y < right_paddle.y + right_paddle.height and
+            ball_right_edge < right_paddle.x + right_paddle.width):    # El borde derecho de la pelota no ha pasado el borde derecho de la pala
             
-            self.ball.x = right_paddle.x - self.ball.radius
+            # Colocar la pelota justo en el punto de colisión
+            self.ball.x = paddle_left_edge - self.ball.radius
             relative_intersect_y = (self.ball.y - (right_paddle.y + right_paddle.height/2)) / (right_paddle.height/2)
             angle = relative_intersect_y * 0.785398
             
-            # Usar la velocidad según la dificultad
-            self.ball.speed_x = -base_speed  # Negativo para rebotar
+            self.ball.speed_x = -base_speed
             self.ball.speed_y = base_speed * angle_sin(angle)
 
     def _check_scoring(self):
