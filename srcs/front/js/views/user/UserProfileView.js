@@ -13,17 +13,21 @@ export async function UserProfileView() {
     const app = document.getElementById('app');
     
     try {
+        // Obtener la información del usuario antes de cargar el navbar
+        const userInfo = await AuthService.getUserProfile();
+        
         const viewPath = '/views/user/UserProfile.html';
         if (!VALID_VIEWS.includes(viewPath)) {
             throw new Error('Invalid view path');
         }
+        
         // Cargar el contenido HTML desde el archivo
         const response = await fetch(viewPath);
         const html = await response.text();
         
-        // Insertar el HTML y el navbar
+        // Insertar el HTML y el navbar con los parámetros correctos
         app.innerHTML = `
-            ${getNavbarHTML(true, null, true)}
+            ${await getNavbarHTML(true, userInfo, true)}
             ${html}
         `;
 

@@ -1,10 +1,14 @@
 import { loadHTML } from '/js/utils/htmlLoader.js';
 
-export async function getNavbarHTML(isAuthenticated = false, userInfo = null) {
+export async function getNavbarHTML(isAuthenticated = false, userInfo = null, isProfile = false) {
+    console.log('getNavbarHTML params:', { isAuthenticated, userInfo, isProfile }); // Debug log
+    
     // Cargar el template HTML apropiado
     const templatePath = isAuthenticated ? 
-        '/views/components/NavbarAuthenticated.html' : 
+        (isProfile ? '/views/components/NavbarProfile.html' : '/views/components/NavbarAuthenticated.html') : 
         '/views/components/NavbarUnauthorized.html';
+
+    console.log('Loading template from:', templatePath); // Debug log
     
     const navbarHtml = await loadHTML(templatePath);
     
