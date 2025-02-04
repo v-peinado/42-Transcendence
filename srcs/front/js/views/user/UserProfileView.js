@@ -1,463 +1,67 @@
 import AuthService from '../../services/AuthService.js';
-import { Auth2FA } from '../../services/auth/Auth2FA.js';  // Añadir esta importación
-import { getNavbarHTML } from '../../components/Navbar.js';  // Añadir esta importación
+import { Auth2FA } from '../../services/auth/Auth2FA.js';
+import { getNavbarHTML } from '../../components/Navbar.js';
 
-export function UserProfileView() {
-    // Añadir data-page attribute al body
+const VALID_VIEWS = [
+    '/views/user/UserProfile.html',
+    // ...other valid views
+];
+
+export async function UserProfileView() {
     document.body.setAttribute('data-page', 'profile');
     
     const app = document.getElementById('app');
     
-    app.innerHTML = `
-        ${getNavbarHTML(true, null, true)}
-        <!-- Input oculto para la imagen - IMPORTANTE: debe estar fuera del contenedor principal -->
-        <input type="file" id="imageInput" accept="image/*" style="display: none">
+    try {
+        const viewPath = '/views/user/UserProfile.html';
+        if (!VALID_VIEWS.includes(viewPath)) {
+            throw new Error('Invalid view path');
+        }
+        // Cargar el contenido HTML desde el archivo
+        const response = await fetch(viewPath);
+        const html = await response.text();
         
-        <div class="profile-section">
-            <div class="container">
-                <!-- Navegación por pestañas -->
-                <ul class="nav nav-tabs profile-tabs mb-4" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile">
-                            <i class="fas fa-user me-2"></i>Perfil
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#edit-profile">
-                            <i class="fas fa-edit me-2"></i>Editar Perfil
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stats">
-                            <i class="fas fa-chart-line me-2"></i>Estadísticas
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#matches">
-                            <i class="fas fa-trophy me-2"></i>Partidas
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#settings">
-                            <i class="fas fa-cog me-2"></i>Ajustes
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#gdpr">
-                            <i class="fas fa-user-shield me-2"></i>GDPR
-                        </button>
-                    </li>
-                </ul>
+        // Insertar el HTML y el navbar
+        app.innerHTML = `
+            ${getNavbarHTML(true, null, true)}
+            ${html}
+        `;
 
-                <!-- Contenido de las pestañas -->
-                <div class="tab-content">
-                    <!-- Pestaña de Perfil -->
-                    <div class="tab-pane fade show active" id="profile">
-                        <div class="row justify-content-center">
-                            <div class="col-md-6">
-                                <div class="profile-card p-4" id="userInfo">
-                                    <!-- Este div se llena dinámicamente con loadUserData -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        // Inicializar las pestañas de Bootstrap después de cargar el contenido
+        const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+        tabElements.forEach(tab => {
+            const tabTrigger = new bootstrap.Tab(tab);
+            
+            // Eliminar las transiciones por defecto de Bootstrap
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = tab.dataset.bsTarget;
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('active', 'show');
+                });
+                document.querySelector(targetId).classList.add('active', 'show');
+                
+                // Actualizar estado activo de las pestañas
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                tab.classList.add('active');
+            });
+        });
 
-                    <!-- Nueva Pestaña de Editar Perfil -->
-                    <div class="tab-pane fade" id="edit-profile">
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="profile-card">
-                                    <h4 class="text-center mb-4 profile-edit-title">
-                                        <i class="fas fa-user-edit me-2"></i>
-                                        <span class="title-text">Personaliza tu Perfil</span>
-                                    </h4>
-                                    <div id="editProfileMessage" class="alert d-none mb-4"></div>
-                                    
-                                    <form id="editProfileForm" class="profile-edit-form">
-                                        <div class="row g-4">
-                                            <div class="col-md-6">
-                                                <div class="form-group mb-4">
-                                                    <label class="form-label">
-                                                        <i class="fas fa-user me-2"></i>Username
-                                                    </label>
-                                                    <input type="text" 
-                                                           class="form-control form-control-lg" 
-                                                           id="editUsername" 
-                                                           required>
-                                                    <div class="form-text text-muted">
-                                                        Este es tu nombre público en el juego
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group mb-4">
-                                                    <label la="form-label">
-                                                        <i class="fas fa-envelope me-2"></i>Email
-                                                    </label>
-                                                    <input type="email" 
-                                                           class="form-control form-control-lg" 
-                                                           id="editEmail" 
-                                                           required>
-                                                    <div class="form-text text-muted">
-                                                        Se enviará un email de verificación si lo cambias
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+        // Cargar los modales desde el template
+        const modalsTemplate = document.getElementById('profileModals');
+        if (modalsTemplate) {
+            document.body.appendChild(modalsTemplate.content.cloneNode(true));
+        }
 
-                                        <div class="password-section mt-4">
-                                            <h5 class="mb-3">
-                                                <i class="fas fa-lock me-2"></i>Cambiar Contraseña
-                                            </h5>
-                                            <div class="row g-4">
-                                                <div class="col-md-12">
-                                                    <div class="form-group mb-3">
-                                                        <label class="form-label">Contraseña Actual</label>
-                                                        <input type="password" 
-                                                               class="form-control" 
-                                                               id="currentPassword">
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group mb-3">
-                                                        <label class="form-label">Nueva Contraseña</label>
-                                                        <input type="password" 
-                                                               class="form-control" 
-                                                               id="newPassword1">
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group mb-3">
-                                                        <label class="form-label">Confirmar Nueva Contraseña</label>
-                                                        <input type="password" 
-                                                               class="form-control" 
-                                                               id="newPassword2">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                                            <button type="button" class="btn btn-danger" id="deleteAccountBtn">
-                                                <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
-                                            </button>
-                                            <button type="button" class="btn btn-primary btn-lg" id="saveProfileBtn">
-                                                <i class="fas fa-save me-2"></i>Guardar Cambios
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pestaña de Estadísticas -->
-                    <div class="tab-pane fade" id="stats">
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <h5>Ranking Global</h5>
-                                    <div class="stat-value">#42</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <h5>Victorias</h5>
-                                    <div class="stat-value">75%</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="stats-card">
-                                    <h5>Puntuación</h5>
-                                    <div class="stat-value">1842</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pestaña de Partidas -->
-                    <div class="tab-pane fade" id="matches">
-                        <div class="matches-list">
-                            <!-- Aquí irá el historial de partidas -->
-                        </div>
-                    </div>
-
-                    <!-- Pestaña de Ajustes -->
-                    <div class="tab-pane fade" id="settings">
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <div class="settings-card">
-                                    <h5>Cuenta</h5>
-                                    <div class="settings-actions">
-                                        <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
-                                            <i class="fas fa-shield-alt me-2"></i>
-                                            <span id="2faButtonText">Activar 2FA</span>
-                                            <i class="fas fa-chevron-right ms-auto"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="settings-card">
-                                    <h5>Seguridad</h5>
-                                    <div class="settings-actions">
-                                        <button id="showQRBtn" class="btn btn-outline-primary d-flex align-items-center w-100 mb-3">
-                                            <i class="fas fa-qrcode me-2"></i>
-                                            <span>Código QR</span>
-                                            <i class="fas fa-chevron-right ms-auto"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pestaña de GDPR -->
-                    <div class="tab-pane fade" id="gdpr">
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="gdpr-card p-4">
-                                    <h4 class="mb-4">
-                                        <i class="fas fa-user-shield me-2"></i>
-                                        Privacidad y Protección de Datos
-                                    </h4>
-
-                                    <!-- Secciones GDPR más compactas -->
-                                    <div class="gdpr-sections mb-4">
-                                        <div class="accordion" id="gdprAccordion">
-                                            <div class="accordion-item bg-dark">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataCollectionContent">
-                                                        <i class="fas fa-database text-primary me-2"></i>Datos recopilados
-                                                    </button>
-                                                </h2>
-                                                <div id="dataCollectionContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                                    <div class="accordion-body text-light" id="data-collection">
-                                                        <small>Información sobre los datos que recopilamos</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="accordion-item bg-dark">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataUsageContent">
-                                                        <i class="fas fa-tasks text-info me-2"></i>Uso de datos
-                                                    </button>
-                                                </h2>
-                                                <div id="dataUsageContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                                    <div class="accordion-body text-light" id="data-usage">
-                                                        <small>Cómo utilizamos tus datos</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="accordion-item bg-dark">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#userRightsContent">
-                                                        <i class="fas fa-user-shield text-success me-2"></i>Tus derechos
-                                                    </button>
-                                                </h2>
-                                                <div id="userRightsContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                                    <div class="accordion-body text-light" id="user-rights">
-                                                        <small>Derechos sobre tus datos personales</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="accordion-item bg-dark">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#securityContent">
-                                                        <i class="fas fa-lock text-warning me-2"></i>Seguridad
-                                                    </button>
-                                                </h2>
-                                                <div id="securityContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                                    <div class="accordion-body text-light" id="security-measures">
-                                                        <small>Medidas de seguridad aplicadas</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Botones de acción (estilo original) -->
-                                    <div class="d-flex justify-content-between mt-4">
-                                        <button id="downloadDataBtn" class="btn btn-outline-primary">
-                                            <i class="fas fa-download me-2"></i>
-                                            Descargar mis datos
-                                        </button>
-                                        <button id="requestDataDeletionBtn" class="btn btn-outline-danger">
-                                            <i class="fas fa-trash-alt me-2"></i>
-                                            Solicitar eliminación de datos
-                                        </button>
-                                    </div>
-
-                                    <div id="messageArea" class="alert d-none mt-3"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Añadir el modal al body
-    const modalHTML = `
-        <div class="modal fade" id="editProfileModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content bg-dark">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Editar Perfil</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Añadir div para mensajes -->
-                        <div id="modalMessage" class="alert d-none mb-3"></div>
-                        <form id="editProfileForm">
-                            <div class="mb-3">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-control" id="editUsername" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="editEmail" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Contraseña Actual</label>
-                                <input type="password" class="form-control" id="currentPassword">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Nueva Contraseña</label>
-                                <input type="password" class="form-control" id="newPassword1">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Confirmar Nueva Contraseña</label>
-                                <input type="password" class="form-control" id="newPassword2">
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-danger me-auto" id="deleteAccountBtn">
-                            <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
-                        </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" id="saveProfileBtn">Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-    // Modificar el modal de eliminación de cuenta
-    const deleteAccountModal = `
-        <div class="modal fade" id="deleteAccountModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content bg-dark">
-                    <div class="modal-header">
-                        <h5 class="modal-title text-danger">Eliminar Cuenta</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>¡ATENCIÓN!</strong> Esta acción eliminará permanentemente:
-                            <ul class="mt-2 mb-0">
-                                <li>Tu cuenta y perfil</li>
-                                <li>Todo tu historial de partidas</li>
-                                <li>Tus estadísticas y logros</li>
-                            </ul>
-                        </div>
-                        <form id="deleteAccountForm">
-                            <div class="mb-3">
-                                <label class="form-label">Confirma tu contraseña</label>
-                                <input type="password" class="form-control" id="deleteAccountPassword" required>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input type="checkbox" class="form-check-input" id="confirmDelete" required>
-                                <label class="form-check-label" for="confirmDelete">
-                                    Entiendo que esta acción no se puede deshacer
-                                </label>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
-                            <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', deleteAccountModal);
-
-    // Añadir el modal de QR después del contenido existente
-    const qrModalHTML = `
-        <div class="modal fade" id="qrModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content bg-dark">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-qrcode me-2"></i>Tu código QR
-                        </h5>
-                        <button type="button" class="btn btn-info btn-sm ms-2" id="qrHelpBtn">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                        <!-- Contenedor de información colapsable -->
-                        <div class="collapse" id="qrInfoCollapse">
-                            <div class="modal-info-box mb-4">
-                                <div class="info-section">
-                                    <i class="fas fa-info-circle text-info"></i>
-                                    <div class="info-content">
-                                        <h6>¿Para qué sirve este código QR?</h6>
-                                        <p>Este código QR te permite iniciar sesión rápidamente desde otro dispositivo escaneándolo, sin necesidad de introducir tu usuario y contraseña.</p>
-                                    </div>
-                                </div>
-                                <div class="security-section">
-                                    <i class="fas fa-shield-alt text-warning"></i>
-                                    <div class="info-content">
-                                        <h6 class="text-warning">Recomendación de seguridad:</h6>
-                                        <p>Para proteger mejor tu cuenta, activa la autenticación de dos factores (2FA) si usas el inicio de sesión con QR.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="qrContainer" class="mb-3">
-                            <div class="spinner-border text-primary"></div>
-                        </div>
-                        <p class="text-muted mb-3">
-                            Usa este código QR para iniciar sesión rápidamente desde tu móvil
-                        </p>
-                        <button class="btn btn-primary" id="downloadQRBtn">
-                            <i class="fas fa-download me-2"></i>Descargar QR
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', qrModalHTML);
-
-    // Añadir verificación de URL para email
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('email_verified') === 'true') {
-        setTimeout(() => {
-            loadUserData();
-            // Limpiar el parámetro de la URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }, 1000); // Pequeño delay para asegurar que el backend está actualizado
+        loadUserData();
+        setupProfileEvents();
+    } catch (error) {
+        console.error('Error loading profile view:', error);
+        app.innerHTML = '<div class="alert alert-danger">Error loading profile</div>';
     }
 
-    loadUserData();
-    setupProfileEvents();
-
-    // Limpiar el data-page cuando se desmonte la vista
     return () => {
         document.body.removeAttribute('data-page');
     };
@@ -925,9 +529,7 @@ async function loadUserData() {
         const buttonText = document.getElementById('2faButtonText');
         
         if (toggle2FABtn && buttonText) {
-            // Usar directamente Auth2FA.isEnabled
             const is2FAEnabled = Auth2FA.isEnabled;
-            
             toggle2FABtn.dataset.enabled = is2FAEnabled.toString();
             buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
             toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
@@ -1016,7 +618,6 @@ async function loadUserData() {
 
     } catch (error) {
         console.error('Error cargando datos:', error);
-        // Si hay error, mantener el estado actual del 2FA en lugar de resetearlo
         const toggle2FABtn = document.getElementById('toggle2FABtn');
         const buttonText = document.getElementById('2faButtonText');
         const is2FAEnabled = Auth2FA.isEnabled;
