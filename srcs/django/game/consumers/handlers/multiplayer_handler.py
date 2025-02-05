@@ -6,11 +6,8 @@ class MultiplayerHandler:
 
     @staticmethod
     async def handle_player_join(consumer, game):
-        """Maneja la unión de un nuevo jugador"""
-        if consumer.game_id not in consumer.game_states:                	# Si no existe el estado del juego
-            consumer.game_states[consumer.game_id] = consumer.game_state	# Crear nuevo estado
-        consumer.game_state = consumer.game_states[consumer.game_id]   		# Obtener el estado actual
-        consumer.game_state.set_single_player(False)                    	# Configurar modo multiplayer
+        await consumer.initialize_game_state()
+        consumer.game_state.set_single_player(False)
 
         player1 = await DatabaseOperations.get_player1(game)            	# Obtener jugador 1
         player2 = await DatabaseOperations.get_player2(game)           		# Obtener jugador 2

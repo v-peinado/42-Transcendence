@@ -13,12 +13,10 @@ class GameConsumer(BaseGameConsumer):
 
     async def connect(self):
         await super().connect()
-        game = await DatabaseOperations.get_game(self.game_id)      # Obtener el juego actual
+        game = await DatabaseOperations.get_game(self.game_id)
         
         if game:
-            if self.game_id not in self.game_states:                # Si no hay un estado de juego para este juego
-                self.game_states[self.game_id] = GameState()        # Crear un nuevo estado de juego
-            self.game_state = self.game_states[self.game_id]        # Obtener el estado de juego actual
+            await self.initialize_game_state()
             
             if game.game_mode == 'SINGLE':
                 await SinglePlayerHandler.handle_game_start(self, game)

@@ -1,4 +1,5 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from ..engine.game_state import GameState
 
 class BaseGameConsumer(AsyncJsonWebsocketConsumer):
     game_states = {}
@@ -26,3 +27,10 @@ class BaseGameConsumer(AsyncJsonWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+
+    async def initialize_game_state(self):
+        """Centraliza la inicialización del estado del juego"""
+        if self.game_id not in self.game_states:
+            self.game_states[self.game_id] = GameState()
+        self.game_state = self.game_states[self.game_id]
+        return self.game_state

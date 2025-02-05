@@ -49,4 +49,3 @@ class DatabaseOperations:
         game.score_player2 = game_state.paddles['right'].score
         game.status = 'FINISHED'
         game.save()
-
