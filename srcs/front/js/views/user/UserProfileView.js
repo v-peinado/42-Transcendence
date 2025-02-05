@@ -13,7 +13,10 @@ export async function UserProfileView() {
     
     try {
         // 1. Obtener datos necesarios
-        const userInfo = await AuthService.getUserProfile();
+        const [userInfo, twoFactorStatus] = await Promise.all([
+            AuthService.getUserProfile(),
+            Auth2FA.get2FAStatus()
+        ]);
         const viewHtml = await fetch('/views/user/UserProfile.html').then(r => r.text());
         const navbar = await getNavbarHTML(true, userInfo, true);
 
@@ -93,6 +96,16 @@ export async function UserProfileView() {
             container.appendChild(statusContainer);
 
             userInfoContainer.appendChild(container);
+        }
+
+        // Actualizar estado del botón 2FA
+        const toggle2FABtn = document.getElementById('toggle2FABtn');
+        const buttonText = document.getElementById('2faButtonText');
+        if (toggle2FABtn && buttonText) {
+            toggle2FABtn.dataset.enabled = twoFactorStatus.toString();
+            buttonText.textContent = twoFactorStatus ? 'Desactivar 2FA' : 'Activar 2FA';
+            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
+            toggle2FABtn.classList.add(twoFactorStatus ? 'btn-outline-warning' : 'btn-outline-info');
         }
 
         // 5. Inicializar funcionalidad
@@ -354,48 +367,79 @@ function setupProfileEvents() {
         }
     });
 
-    // Event listener para el botón de 2FA
+    // Actualizar el event listener para el botón de 2FA
     document.getElementById('toggle2FABtn')?.addEventListener('click', async () => {
         try {
             const button = document.getElementById('toggle2FABtn');
-            const buttonText = document.getElementById('2faButtonText');
             const is2FAEnabled = button.dataset.enabled === 'true';
 
             if (!is2FAEnabled) {
+                // Obtener y clonar el template
                 const template = document.getElementById('modal2FATemplate');
-                if (!template) {
-                    throw new Error('Template 2FA no encontrado');
-                }
-                
-                // Clonar y añadir el modal al DOM
                 const modalElement = template.content.cloneNode(true);
                 document.body.appendChild(modalElement);
-                
+
                 // Inicializar y mostrar el modal
                 const modal = new bootstrap.Modal(document.getElementById('confirm2FAModal'));
                 modal.show();
-                
-                // ... resto del código igual ...
+
+                // Configurar el event listener para el botón de confirmación
+                document.getElementById('confirm2FABtn').addEventListener('click', async () => {
+                    try {
+                        const result = await Auth2FA.enable2FA();
+                        if (result.success) {
+                            button.dataset.enabled = 'true';
+                            document.getElementById('2faButtonText').textContent = 'Desactivar 2FA';
+                            button.classList.replace('btn-outline-info', 'btn-outline-warning');
+                            modal.hide();
+                            showAlert('2FA activado correctamente', 'success');
+                        }
+                    } catch (error) {
+                        showAlert(error.message, 'danger');
+                    }
+                });
+
+                // Limpiar el modal cuando se cierre
+                document.getElementById('confirm2FAModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
             } else {
+                // Obtener y clonar el template de desactivación
                 const template = document.getElementById('modalDisable2FATemplate');
-                if (!template) {
-                    throw new Error('Template disable 2FA no encontrado');
-                }
-                
-                // Clonar y añadir el modal al DOM
                 const modalElement = template.content.cloneNode(true);
                 document.body.appendChild(modalElement);
-                
+
                 // Inicializar y mostrar el modal
                 const modal = new bootstrap.Modal(document.getElementById('disable2FAModal'));
                 modal.show();
-                
-                // Añadir event listener para el checkbox
-                document.getElementById('confirm2FADisable')?.addEventListener('change', (e) => {
-                    document.getElementById('confirm2FADisableBtn').disabled = !e.target.checked;
+
+                // Configurar el checkbox
+                const checkbox = document.getElementById('confirm2FADisable');
+                const confirmBtn = document.getElementById('confirm2FADisableBtn');
+                checkbox.addEventListener('change', (e) => {
+                    confirmBtn.disabled = !e.target.checked;
                 });
-                
-                // ... resto del código igual ...
+
+                // Configurar el botón de confirmación
+                confirmBtn.addEventListener('click', async () => {
+                    try {
+                        const result = await Auth2FA.disable2FA();
+                        if (result.success) {
+                            button.dataset.enabled = 'false';
+                            document.getElementById('2faButtonText').textContent = 'Activar 2FA';
+                            button.classList.replace('btn-outline-warning', 'btn-outline-info');
+                            modal.hide();
+                            showAlert('2FA desactivado correctamente', 'success');
+                        }
+                    } catch (error) {
+                        showAlert(error.message, 'danger');
+                    }
+                });
+
+                // Limpiar el modal cuando se cierre
+                document.getElementById('disable2FAModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
             }
         } catch (error) {
             showAlert(error.message, 'danger');
@@ -518,9 +562,13 @@ function showAlert(message, type) {
 
 async function loadUserData(existingUserInfo = null) {
     try {
-        // Ya tenemos userInfo, solo necesitamos GDPR
-        const gdprData = await AuthService.getGDPRSettings();
-        
+        // Obtener el estado del 2FA cuando cargamos los datos del usuario
+        const [userInfo, gdprData, twoFactorStatus] = await Promise.all([
+            AuthService.getUserProfile(),
+            AuthService.getGDPRSettings(),
+            Auth2FA.get2FAStatus()
+        ]);
+
         // Esperar a que el DOM esté actualizado
         await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -536,13 +584,30 @@ async function loadUserData(existingUserInfo = null) {
         }
 
         // Crear y añadir la información del usuario
-        const userInfoElement = createUserInfoElement(existingUserInfo);
+        const userInfoElement = createUserInfoElement(userInfo);
         userInfoContainer.appendChild(userInfoElement);
 
         // Actualizar el resto de elementos
-        updateFormFields(existingUserInfo);
+        updateFormFields(userInfo);
         if (gdprData) {
             updateGDPRContent(gdprData);
+        }
+
+        // Actualizar el estado del botón 2FA
+        const toggle2FABtn = document.getElementById('toggle2FABtn');
+        const buttonText = document.getElementById('2faButtonText');
+        if (toggle2FABtn && buttonText) {
+            toggle2FABtn.dataset.enabled = twoFactorStatus.toString();
+            buttonText.textContent = twoFactorStatus ? 'Desactivar 2FA' : 'Activar 2FA';
+            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
+            toggle2FABtn.classList.add(twoFactorStatus ? 'btn-outline-warning' : 'btn-outline-info');
+            
+            // Guardar el estado en localStorage
+            if (twoFactorStatus) {
+                localStorage.setItem('two_factor_enabled', 'true');
+            } else {
+                localStorage.removeItem('two_factor_enabled');
+            }
         }
 
     } catch (error) {

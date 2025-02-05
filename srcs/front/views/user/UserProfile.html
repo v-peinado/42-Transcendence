@@ -182,7 +182,7 @@
                         <div class="settings-card">
                             <h5>Cuenta</h5>
                             <div class="settings-actions">
-                                <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
+                                <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3" data-enabled="false">
                                     <i class="fas fa-shield-alt me-2"></i>
                                     <span id="2faButtonText">Activar 2FA</span>
                                     <i class="fas fa-chevron-right ms-auto"></i>
@@ -419,28 +419,35 @@
 
 <template id="modal2FATemplate">
     <div class="modal fade" id="confirm2FAModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
                 <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title d-flex align-items-center">
                         <i class="fas fa-shield-alt text-primary me-2"></i>
-                        Activar 2FA
+                        <span>Activar 2FA</span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        La autenticación en dos pasos mejorará la seguridad de tu cuenta
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle fs-4 me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-2">Autenticación en dos pasos</h6>
+                                <p class="mb-0">
+                                    Al activar esta función, necesitarás un código de verificación
+                                    cada vez que inicies sesión. El código será enviado a tu email.
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <p class="mt-3">
-                        Al activar 2FA, necesitarás confirmar tu identidad cada vez que inicies sesión desde un nuevo dispositivo.
-                    </p>
                 </div>
                 <div class="modal-footer border-top border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
                     <button type="button" class="btn btn-primary" id="confirm2FABtn">
-                        <i class="fas fa-shield-alt me-2"></i>Activar 2FA
+                        <i class="fas fa-check me-2"></i>Activar
                     </button>
                 </div>
             </div>
@@ -450,19 +457,27 @@
 
 <template id="modalDisable2FATemplate">
     <div class="modal fade" id="disable2FAModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
                 <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title d-flex align-items-center">
                         <i class="fas fa-shield-alt text-warning me-2"></i>
-                        Desactivar 2FA
+                        <span>Desactivar 2FA</span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Tu cuenta será menos segura sin autenticación en dos pasos
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-exclamation-triangle fs-4 me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-2">Advertencia de seguridad</h6>
+                                <p class="mb-0">
+                                    Desactivar la autenticación en dos pasos hará tu cuenta menos segura.
+                                    ¿Estás seguro de que quieres continuar?
+                                </p>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-check mt-4">
                         <input type="checkbox" class="form-check-input" id="confirm2FADisable">
@@ -472,7 +487,9 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
                     <button type="button" class="btn btn-warning" id="confirm2FADisableBtn" disabled>
                         <i class="fas fa-shield-alt me-2"></i>Desactivar 2FA
                     </button>
@@ -489,7 +506,7 @@
                 <div class="modal-header border-bottom border-secondary">
                     <h5 class="modal-title">
                         <i class="fas fa-qrcode text-primary me-2"></i>
-                        Código QR de Acceso
+                        Código QR 
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
