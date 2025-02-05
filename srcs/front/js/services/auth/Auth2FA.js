@@ -184,26 +184,8 @@ export class Auth2FA {
     }
 
     static async get2FAStatus() {
-        try {
-            const response = await fetch(`${AuthService.API_URL}/2fa-status/`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error('Error al obtener estado 2FA');
-            }
-
-            const data = await response.json();
-            this.isEnabled = data.enabled; // Esto actualiza localStorage y la UI
-            return data.enabled;
-        } catch (error) {
-            console.error('Error al obtener estado 2FA:', error);
-            return this.isEnabled;
-        }
+        // Por ahora, simplemente devolver el estado almacenado en localStorage
+        // hasta que implementemos el endpoint correcto
+        return this.isEnabled;
     }
 }
