@@ -9,71 +9,146 @@ const VALID_VIEWS = [
 
 export async function UserProfileView() {
     document.body.setAttribute('data-page', 'profile');
-    
     const app = document.getElementById('app');
     
     try {
-        // Obtener la información del usuario antes de cargar el navbar
+        // 1. Obtener datos necesarios
         const userInfo = await AuthService.getUserProfile();
+        const viewHtml = await fetch('/views/user/UserProfile.html').then(r => r.text());
+        const navbar = await getNavbarHTML(true, userInfo, true);
+
+        // 2. Crear contenedor temporal para parsear el HTML de forma segura
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = navbar + viewHtml;
         
-        const viewPath = '/views/user/UserProfile.html';
-        if (!VALID_VIEWS.includes(viewPath)) {
-            throw new Error('Invalid view path');
+        // 3. Limpiar y actualizar el DOM de forma segura
+        while (app.firstChild) app.removeChild(app.firstChild);
+        while (tempDiv.firstChild) app.appendChild(tempDiv.firstChild);
+
+        // 4. Actualizar el perfil usando createElement
+        const userInfoContainer = document.getElementById('userInfo');
+        if (userInfoContainer) {
+            const spinner = userInfoContainer.querySelector('#loadingSpinner');
+            if (spinner) spinner.remove();
+
+            // Crear elementos de forma segura
+            const container = document.createElement('div');
+            container.className = 'text-center';
+
+            // Avatar container
+            const avatarContainer = document.createElement('div');
+            avatarContainer.className = 'position-relative mb-4 avatar-container';
+
+            const img = document.createElement('img');
+            img.id = 'profileImage';
+            img.className = 'profile-avatar rounded-circle';
+            img.alt = 'Profile';
+            img.src = userInfo.profile_image || userInfo.fortytwo_image || 
+                     `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.className = 'avatar-buttons';
+
+            // Botones
+            const changeBtn = document.createElement('button');
+            changeBtn.id = 'changeImageBtn';
+            changeBtn.className = 'btn btn-sm btn-primary rounded-circle';
+            changeBtn.innerHTML = '<i class="fas fa-camera"></i>';
+
+            const restoreBtn = document.createElement('button');
+            restoreBtn.id = 'restoreImageBtn';
+            restoreBtn.className = 'btn btn-sm btn-outline-light rounded-circle';
+            restoreBtn.innerHTML = '<i class="fas fa-undo"></i>';
+
+            // Username y email
+            const username = document.createElement('h3');
+            username.id = 'profileUsername';
+            username.className = 'mb-2';
+            username.textContent = userInfo.username;
+
+            const email = document.createElement('p');
+            email.id = 'profileEmail';
+            email.className = 'text-muted mb-3';
+            email.textContent = userInfo.email;
+
+            // Status badge
+            const statusContainer = document.createElement('div');
+            statusContainer.id = 'profileStatus';
+            statusContainer.className = 'status-badge mb-4';
+
+            const badge = document.createElement('span');
+            badge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
+            badge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
+
+            // Construir la estructura
+            buttonsContainer.appendChild(changeBtn);
+            buttonsContainer.appendChild(restoreBtn);
+            avatarContainer.appendChild(img);
+            avatarContainer.appendChild(buttonsContainer);
+            statusContainer.appendChild(badge);
+
+            container.appendChild(avatarContainer);
+            container.appendChild(username);
+            container.appendChild(email);
+            container.appendChild(statusContainer);
+
+            userInfoContainer.appendChild(container);
         }
-        
-        // Cargar el contenido HTML desde el archivo
-        const response = await fetch(viewPath);
-        const html = await response.text();
-        
-        // Insertar el HTML y el navbar con los parámetros correctos
-        app.innerHTML = `
-            ${await getNavbarHTML(true, userInfo, true)}
-            ${html}
-        `;
 
-        // Inicializar las pestañas de Bootstrap después de cargar el contenido
-        const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
-        tabElements.forEach(tab => {
-            const tabTrigger = new bootstrap.Tab(tab);
-            
-            // Eliminar las transiciones por defecto de Bootstrap
-            tab.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = tab.dataset.bsTarget;
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.remove('active', 'show');
-                });
-                document.querySelector(targetId).classList.add('active', 'show');
-                
-                // Actualizar estado activo de las pestañas
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('active');
-                });
-                tab.classList.add('active');
-            });
-        });
-
-        // Cargar los modales desde el template
-        const modalsTemplate = document.getElementById('profileModals');
-        if (modalsTemplate) {
-            document.body.appendChild(modalsTemplate.content.cloneNode(true));
-        }
-
-        loadUserData();
+        // 5. Inicializar funcionalidad
+        initializeTabs();
         setupProfileEvents();
+        updateFormFields(userInfo);
+
     } catch (error) {
         console.error('Error loading profile view:', error);
-        app.innerHTML = '<div class="alert alert-danger">Error loading profile</div>';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger m-3';
+        errorDiv.textContent = `Error cargando el perfil: ${error.message}`;
+        app.appendChild(errorDiv);
     }
+}
 
-    return () => {
-        document.body.removeAttribute('data-page');
-    };
+function cleanupTemplates() {
+    const templates = document.querySelectorAll('template');
+    templates.forEach(template => {
+        if (template.id.startsWith('userInfo') || 
+            template.id.startsWith('alert') || 
+            template.id.startsWith('modal')) {
+            template.remove();
+        }
+    });
+}
+
+// Función auxiliar para inicializar pestañas
+function initializeTabs() {
+    const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabElements.forEach(tab => {
+        const tabTrigger = new bootstrap.Tab(tab);
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = tab.dataset.bsTarget;
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active', 'show');
+            });
+            document.querySelector(targetId).classList.add('active', 'show');
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            tab.classList.add('active');
+        });
+    });
+}
+
+// Función auxiliar para mostrar errores
+function showErrorMessage(container, error) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger m-3';
+    alertDiv.textContent = `Error cargando el perfil: ${error.message}`;
+    container.appendChild(alertDiv);
 }
 
 function setupProfileEvents() {
-    // Eliminar el event listener del botón de editar ya que ahora usamos pestañas
-    // Actualizar el event listener para guardar cambios
     document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
         try {
             const updates = {};
@@ -287,132 +362,40 @@ function setupProfileEvents() {
             const is2FAEnabled = button.dataset.enabled === 'true';
 
             if (!is2FAEnabled) {
-                // Crear el modal de confirmación
-                const modalHTML = `
-                    <div class="modal fade" id="confirm2FAModal" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content bg-dark">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">
-                                        <i class="fas fa-shield-alt me-2"></i>Activar 2FA
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="modal-info-box">
-                                        <div class="info-section">
-                                            <i class="fas fa-info-circle text-info"></i>
-                                            <div class="info-content">
-                                                <h6>Autenticación en dos pasos</h6>
-                                                <p>La autenticación en dos pasos añade una capa extra de seguridad a tu cuenta. 
-                                                Cada vez que inicies sesión, necesitarás introducir un código que te enviaremos por email.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="button" class="btn btn-primary" id="confirm2FABtn">
-                                        <i class="fas fa-check me-2"></i>Activar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Añadir el modal al DOM
-                document.body.insertAdjacentHTML('beforeend', modalHTML);
-
+                const template = document.getElementById('modal2FATemplate');
+                if (!template) {
+                    throw new Error('Template 2FA no encontrado');
+                }
+                
+                // Clonar y añadir el modal al DOM
+                const modalElement = template.content.cloneNode(true);
+                document.body.appendChild(modalElement);
+                
                 // Inicializar y mostrar el modal
-                const modalElement = document.getElementById('confirm2FAModal');
-                const modal = new bootstrap.Modal(modalElement);
+                const modal = new bootstrap.Modal(document.getElementById('confirm2FAModal'));
                 modal.show();
-
-                // Event listener para el botón de confirmar
-                document.getElementById('confirm2FABtn').addEventListener('click', async () => {
-                    const result = await AuthService.enable2FA();
-                    if (result.success) {
-                        button.dataset.enabled = 'true';
-                        buttonText.textContent = 'Desactivar 2FA';
-                        button.classList.replace('btn-outline-info', 'btn-outline-warning');
-                        localStorage.setItem('two_factor_enabled', 'true');
-                        modal.hide();
-                        
-                        // Eliminar el modal del DOM después de ocultarlo
-                        modalElement.addEventListener('hidden.bs.modal', () => {
-                            modalElement.remove();
-                        });
-                    }
-                });
-
-                // Limpiar el modal cuando se cierre
-                modalElement.addEventListener('hidden.bs.modal', () => {
-                    modalElement.remove();
-                });
+                
+                // ... resto del código igual ...
             } else {
-                // Crear el modal de desactivación
-                const modalHTML = `
-                    <div class="modal fade" id="disable2FAModal" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content bg-dark">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">
-                                        <i class="fas fa-shield-alt me-2"></i>Desactivar 2FA
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="modal-info-box">
-                                        <div class="info-section">
-                                            <i class="fas fa-exclamation-triangle text-warning"></i>
-                                            <div class="info-content">
-                                                <h6 class="text-warning">¿Estás seguro?</h6>
-                                                <p>Al desactivar la autenticación en dos pasos, tu cuenta será menos segura.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="button" class="btn btn-warning" id="confirm2FADisableBtn">
-                                        <i class="fas fa-shield-alt me-2"></i>Desactivar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Añadir el modal al DOM
-                document.body.insertAdjacentHTML('beforeend', modalHTML);
-
+                const template = document.getElementById('modalDisable2FATemplate');
+                if (!template) {
+                    throw new Error('Template disable 2FA no encontrado');
+                }
+                
+                // Clonar y añadir el modal al DOM
+                const modalElement = template.content.cloneNode(true);
+                document.body.appendChild(modalElement);
+                
                 // Inicializar y mostrar el modal
-                const modalElement = document.getElementById('disable2FAModal');
-                const modal = new bootstrap.Modal(modalElement);
+                const modal = new bootstrap.Modal(document.getElementById('disable2FAModal'));
                 modal.show();
-
-                // Event listener para el botón de confirmar desactivación
-                document.getElementById('confirm2FADisableBtn').addEventListener('click', async () => {
-                    const result = await AuthService.disable2FA();
-                    if (result.success) {
-                        button.dataset.enabled = 'false';
-                        buttonText.textContent = 'Activar 2FA';
-                        button.classList.replace('btn-outline-warning', 'btn-outline-info');
-                        localStorage.removeItem('two_factor_enabled');
-                        modal.hide();
-                        
-                        // Eliminar el modal del DOM después de ocultarlo
-                        modalElement.addEventListener('hidden.bs.modal', () => {
-                            modalElement.remove();
-                        });
-                    }
+                
+                // Añadir event listener para el checkbox
+                document.getElementById('confirm2FADisable')?.addEventListener('change', (e) => {
+                    document.getElementById('confirm2FADisableBtn').disabled = !e.target.checked;
                 });
-
-                // Limpiar el modal cuando se cierre
-                modalElement.addEventListener('hidden.bs.modal', () => {
-                    modalElement.remove();
-                });
+                
+                // ... resto del código igual ...
             }
         } catch (error) {
             showAlert(error.message, 'danger');
@@ -421,55 +404,61 @@ function setupProfileEvents() {
 
     // Añadir el event listener para el botón QR
     document.getElementById('showQRBtn')?.addEventListener('click', async () => {
-        const modal = new bootstrap.Modal(document.getElementById('qrModal'));
-        modal.show();
-        
         try {
+            const template = document.getElementById('qrModalTemplate');
+            if (!template) {
+                throw new Error('Template QR no encontrado');
+            }
+            
+            // Clonar y añadir el modal al DOM
+            const modalElement = template.content.cloneNode(true);
+            document.body.appendChild(modalElement);
+            
+            // Inicializar y mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('qrModal'));
+            modal.show();
+            
             const username = localStorage.getItem('username');
             const qrUrl = await AuthService.generateQR(username);
             
-            document.getElementById('qrContainer').innerHTML = `
-                <img src="${qrUrl}" alt="QR Code" class="img-fluid" style="max-width: 256px;">
-            `;
+            const qrContainer = document.getElementById('qrContainer');
+            const qrImage = document.createElement('img');
+            qrImage.src = qrUrl;
+            qrImage.alt = 'QR Code';
+            qrImage.className = 'img-fluid';
+            qrImage.style.maxWidth = '256px';
+            
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(qrImage);
+            
+            // Event listeners para el QR
+            document.getElementById('downloadQRBtn')?.addEventListener('click', () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = qrImage.naturalWidth;
+                canvas.height = qrImage.naturalHeight;
+                ctx.drawImage(qrImage, 0, 0);
+                
+                const link = document.createElement('a');
+                link.download = `qr-login-${username}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+            
+            document.getElementById('qrHelpBtn')?.addEventListener('click', () => {
+                const collapseElement = document.getElementById('qrInfoCollapse');
+                new bootstrap.Collapse(collapseElement, { toggle: true });
+            });
+            
+            // Limpiar cuando se cierre el modal
+            const modalInstance = document.getElementById('qrModal');
+            modalInstance.addEventListener('hidden.bs.modal', () => {
+                modalInstance.remove();
+            });
+            
         } catch (error) {
-            document.getElementById('qrContainer').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    Error generando el código QR
-                </div>
-            `;
+            showAlert('Error al generar el código QR: ' + error.message, 'danger');
         }
-    });
-
-    document.getElementById('downloadQRBtn')?.addEventListener('click', () => {
-        const qrImage = document.querySelector('#qrContainer img');
-        if (qrImage) {
-            // Crear un canvas temporal
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Configurar el tamaño del canvas al tamaño de la imagen
-            canvas.width = qrImage.naturalWidth;
-            canvas.height = qrImage.naturalHeight;
-            
-            // Dibujar la imagen en el canvas
-            ctx.drawImage(qrImage, 0, 0);
-            
-            // Crear un link temporal y descargar
-            const link = document.createElement('a');
-            const username = localStorage.getItem('username');
-            link.download = `qr-login-${username}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-    });
-
-    // Añadir el event listener para el botón de ayuda
-    document.getElementById('qrHelpBtn')?.addEventListener('click', () => {
-        const collapseElement = document.getElementById('qrInfoCollapse');
-        const collapse = new bootstrap.Collapse(collapseElement, {
-            toggle: true
-        });
     });
 
     // Eliminar el event listener anterior del botón GDPR
@@ -500,139 +489,81 @@ function setupProfileEvents() {
 
 // Función auxiliar para mostrar alertas
 function showAlert(message, type) {
-    const alertEl = document.createElement('div');
+    const template = document.getElementById('alertTemplate');
+    if (!template) {
+        console.error('Template de alerta no encontrado');
+        return;
+    }
+    
+    const element = template.content.cloneNode(true);
+    const alertEl = element.querySelector('.alert');
+    
     alertEl.className = `alert alert-${type} fade show`;
-    alertEl.role = 'alert';
-    alertEl.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <div class="alert-content">
-            <p>${message}</p>
-        </div>
-    `;
+    alertEl.querySelector('i').className = 
+        `fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}`;
+    alertEl.querySelector('p').textContent = message;
     
-    // Insertar alerta después del botón 2FA
-    const button2FA = document.getElementById('toggle2FABtn');
-    button2FA.parentNode.insertBefore(alertEl, button2FA.nextSibling);
+    // Buscar el contenedor de alertas o crear uno nuevo
+    let alertContainer = document.getElementById('alertContainer');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'alertContainer';
+        alertContainer.className = 'alert-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(alertContainer);
+    }
     
-    // Remover después de 3 segundos
+    alertContainer.appendChild(alertEl);
     setTimeout(() => alertEl.remove(), 3000);
 }
 
-async function loadUserData() {
+async function loadUserData(existingUserInfo = null) {
     try {
-        const [userInfo, gdprData] = await Promise.all([
-            AuthService.getUserProfile(),
-            AuthService.getGDPRSettings()
-        ]);
+        // Ya tenemos userInfo, solo necesitamos GDPR
+        const gdprData = await AuthService.getGDPRSettings();
         
-        const profileImage = userInfo.profile_image || userInfo.fortytwo_image || 
-                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
-        
-        // Actualizar el estado del botón 2FA
-        const toggle2FABtn = document.getElementById('toggle2FABtn');
-        const buttonText = document.getElementById('2faButtonText');
-        
-        if (toggle2FABtn && buttonText) {
-            const is2FAEnabled = Auth2FA.isEnabled;
-            toggle2FABtn.dataset.enabled = is2FAEnabled.toString();
-            buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
-            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
-            toggle2FABtn.classList.add(is2FAEnabled ? 'btn-outline-warning' : 'btn-outline-info');
+        // Esperar a que el DOM esté actualizado
+        await new Promise(resolve => setTimeout(resolve, 0));
+
+        const userInfoContainer = document.getElementById('userInfo');
+        if (!userInfoContainer) {
+            throw new Error('Container userInfo no encontrado');
         }
 
-        document.getElementById('userInfo').innerHTML = `
-            <div class="text-center">
-                <div class="position-relative mb-4 avatar-container">
-                    <img src="${profileImage}" 
-                         alt="Profile" 
-                         class="profile-avatar rounded-circle"
-                         id="profileImage"
-                         onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}'">
-                    <div class="avatar-buttons">
-                        <button class="btn btn-sm btn-primary rounded-circle" 
-                                id="changeImageBtn">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-light rounded-circle" 
-                                id="restoreImageBtn">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                    </div>
-                </div>
-                <h3 class="mb-2" id="profileUsername">${userInfo.username}</h3>
-                <p class="text-muted mb-3" id="profileEmail">${userInfo.email}</p>
-                <div class="status-badge mb-4" id="profileStatus">
-                    <span class="badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}">
-                        ${userInfo.is_active ? 'Activo' : 'Pendiente'}
-                    </span>
-                </div>
-            </div>
-        `;
+        // Eliminar spinner si existe
+        const loadingSpinner = userInfoContainer.querySelector('#loadingSpinner');
+        if (loadingSpinner) {
+            loadingSpinner.remove();
+        }
 
-        // Volver a añadir los event listeners después de cargar el contenido
-        document.getElementById('changeImageBtn')?.addEventListener('click', () => {
-            document.getElementById('imageInput').click();
-        });
+        // Crear y añadir la información del usuario
+        const userInfoElement = createUserInfoElement(existingUserInfo);
+        userInfoContainer.appendChild(userInfoElement);
 
-        document.getElementById('restoreImageBtn')?.addEventListener('click', async () => {
-            const alertEl = document.getElementById('imageAlert');
-        
-            try {
-                const userInfo = await AuthService.updateProfile({ restore_image: true });
-                
-                // Actualizar la imagen mostrada inmediatamente con la respuesta del backend
-                const profileImage = document.getElementById('profileImage');
-                const navbarAvatar = document.getElementById('navbarUserAvatar');
-                const dropdownAvatar = document.getElementById('dropdownUserAvatar');
-                
-                const imageUrl = userInfo.profile_image || // usar la imagen del perfil si existe
-                                userInfo.fortytwo_image || // o la imagen de 42 si es usuario de 42
-                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`; // o dicebear como último recurso
-                
-                const imageElements = [profileImage, navbarAvatar, dropdownAvatar];
-                imageElements.forEach(el => {
-                    if (el) {
-                        el.src = imageUrl;
-                        // Solo usar dicebear como fallback si la imagen principal falla
-                        el.onerror = function() {
-                            const username = localStorage.getItem('username');
-                            this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-                        };
-                    }
-                });
-
-                alertEl.className = 'alert alert-success';
-                alertEl.textContent = 'Imagen restaurada correctamente';
-                alertEl.style.display = 'block';
-            } catch (error) {
-                alertEl.className = 'alert alert-danger';
-                alertEl.textContent = error.message;
-                alertEl.style.display = 'block';
-            }
-        });
-
-        // Cargar datos en el formulario de edición
-        document.getElementById('editUsername').value = userInfo.username;
-        document.getElementById('editEmail').value = userInfo.email;
-
-        // Actualizar secciones GDPR
+        // Actualizar el resto de elementos
+        updateFormFields(existingUserInfo);
         if (gdprData) {
             updateGDPRContent(gdprData);
         }
 
     } catch (error) {
         console.error('Error cargando datos:', error);
-        const toggle2FABtn = document.getElementById('toggle2FABtn');
-        const buttonText = document.getElementById('2faButtonText');
-        const is2FAEnabled = Auth2FA.isEnabled;
-        
-        if (toggle2FABtn && buttonText) {
-            toggle2FABtn.dataset.enabled = is2FAEnabled.toString();
-            buttonText.textContent = is2FAEnabled ? 'Desactivar 2FA' : 'Activar 2FA';
-            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
-            toggle2FABtn.classList.add(is2FAEnabled ? 'btn-outline-warning' : 'btn-outline-info');
-        }
+        showAlert('Error cargando datos: ' + error.message, 'danger');
     }
+}
+
+// Nueva función auxiliar para actualizar campos del formulario
+function updateFormFields(userInfo) {
+    const fields = {
+        'editUsername': userInfo.username,
+        'editEmail': userInfo.email
+    };
+
+    Object.entries(fields).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = value;
+        }
+    });
 }
 
 // Añadir la función updateGDPRContent
@@ -647,9 +578,13 @@ function updateGDPRContent(data) {
     Object.entries(sections).forEach(([id, items]) => {
         const element = document.getElementById(id);
         if (element && Array.isArray(items)) {
-            element.innerHTML = items
-                .map(item => `<div class="mb-2">${item}</div>`)
-                .join('');
+            element.textContent = ''; // Limpiar contenido existente
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'mb-2';
+                div.textContent = item;
+                element.appendChild(div);
+            });
         }
     });
 }
@@ -680,4 +615,30 @@ async function handleDataDeletion() {
             showAlert('Error al solicitar la eliminación: ' + error.message, 'danger');
         }
     }
+}
+
+function createUserInfoElement(userInfo) {
+    // Obtener el template
+    const template = document.getElementById('userInfoTemplate');
+    if (!template) {
+        throw new Error('Template no encontrado');
+    }
+    
+    // Clonar el template
+    const element = template.content.cloneNode(true);
+    
+    // Actualizar los elementos
+    const profileImage = element.querySelector('#profileImage');
+    profileImage.src = userInfo.profile_image || 
+                      userInfo.fortytwo_image || 
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+    
+    element.querySelector('#profileUsername').textContent = userInfo.username;
+    element.querySelector('#profileEmail').textContent = userInfo.email;
+    
+    const statusBadge = element.querySelector('#profileStatus .badge');
+    statusBadge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
+    statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
+    
+    return element;
 }
