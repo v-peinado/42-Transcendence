@@ -1,21 +1,21 @@
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
         """Setear valores iniciales de la pala"""
-        self.x = int(x)  # Redondear posición inicial
+        self.x = int(x) 														# Redondear posición inicial
         self.y = int(y)
         self.width = width
         self.height = height
-        self.speed = speed  # Velocidad constante para todas las palas
+        self.speed = speed  													# Velocidad constante para todas las palas
         self.score = 0
-        self.target_y = int(y)  # Redondear target inicial
+        self.target_y = int(y)  												# Redondear target inicial
         self.moving = 0
-        self.last_position = int(y)  # Añadir última posición para comparar
-        self.max_speed = speed  # Velocidad máxima constante para ambas palas
+        self.last_position = int(y)  											# Añadir última posición para comparar
+        self.max_speed = speed  												# Velocidad máxima constante para ambas palas
         
     def move(self, direction, canvas_height):
         """ Movimiento directo con velocidad fija """
         direction = int(direction)
-        move_amount = self.speed * direction  # Usar siempre la misma velocidad base
+        move_amount = self.speed * direction  									# Usar siempre la misma velocidad base
         new_y = self.y + move_amount
         
         # Redondear la nueva posición
@@ -52,7 +52,7 @@ class Paddle:
         """Serializar la pala para enviarla a los clientes"""
         return {
             'x': self.x,
-            'y': int(self.y),  # Asegurar que la posición serializada es un entero
+            'y': int(self.y),  														# Asegurar que la posición serializada es un entero (para evitar errores de redondeo)
             'width': self.width,
             'height': self.height,
             'score': self.score

@@ -1,6 +1,6 @@
 import math
 import random
-from math import sin as angle_sin, cos as angle_cos
+from math import sin as angle_sin
 from .entities.ball import Ball
 from .entities.paddle import Paddle
 from .ai_controller import AIController
@@ -84,12 +84,12 @@ class GameState:
         ball_right_edge = self.ball.x + self.ball.radius
         paddle_right_edge = left_paddle.x + left_paddle.width
 
-        if (ball_left_edge <= paddle_right_edge and                     # El borde izquierdo de la pelota toca o cruza el borde derecho de la pala
-            ball_right_edge > left_paddle.x and                         # El borde derecho de la pelota no ha pasado completamente la pala
-            self.ball.speed_x < 0 and                                  # La pelota va hacia la izquierda
+        if (ball_left_edge <= paddle_right_edge and                     			# El borde izquierdo de la pelota toca o cruza el borde derecho de la pala
+            ball_right_edge > left_paddle.x and                         			# El borde derecho de la pelota no ha pasado completamente la pala
+            self.ball.speed_x < 0 and                                 				# La pelota va hacia la izquierda
             self.ball.y > left_paddle.y and 
             self.ball.y < left_paddle.y + left_paddle.height and
-            ball_left_edge > left_paddle.x):                           # El borde izquierdo de la pelota no ha pasado el borde izquierdo de la pala
+            ball_left_edge > left_paddle.x):                           				# El borde izquierdo de la pelota no ha pasado el borde izquierdo de la pala
             
             # Colocar la pelota justo en el punto de colisión
             self.ball.x = paddle_right_edge + self.ball.radius
@@ -103,12 +103,12 @@ class GameState:
         right_paddle = self.paddles['right']
         paddle_left_edge = right_paddle.x
 
-        if (ball_right_edge >= paddle_left_edge and                    # El borde derecho de la pelota toca o cruza el borde izquierdo de la pala
-            ball_left_edge < right_paddle.x + right_paddle.width and   # El borde izquierdo de la pelota no ha pasado completamente la pala
-            self.ball.speed_x > 0 and                                  # La pelota va hacia la derecha
+        if (ball_right_edge >= paddle_left_edge and                    				# El borde derecho de la pelota toca o cruza el borde izquierdo de la pala
+            ball_left_edge < right_paddle.x + right_paddle.width and   				# El borde izquierdo de la pelota no ha pasado completamente la pala
+            self.ball.speed_x > 0 and                                  				# La pelota va hacia la derecha
             self.ball.y > right_paddle.y and 
             self.ball.y < right_paddle.y + right_paddle.height and
-            ball_right_edge < right_paddle.x + right_paddle.width):    # El borde derecho de la pelota no ha pasado el borde derecho de la pala
+            ball_right_edge < right_paddle.x + right_paddle.width):   				# El borde derecho de la pelota no ha pasado el borde derecho de la pala
             
             # Colocar la pelota justo en el punto de colisión
             self.ball.x = paddle_left_edge - self.ball.radius
