@@ -57,84 +57,107 @@
 
             <!-- Pestaña de Editar Perfil -->
             <div class="tab-pane fade" id="edit-profile">
-                <div class="row justify-content-center">
+                <div class="row justify-content-center g-0"> <!-- Eliminado el gap y añadido g-0 -->
                     <div class="col-md-8">
-                        <div class="profile-card">
-                            <h4 class="text-center mb-4 profile-edit-title">
-                                <i class="fas fa-user-edit me-2"></i>
-                                <span class="title-text">Personaliza tu Perfil</span>
-                            </h4>
+                        <div class="profile-card mt-0"> <!-- Añadido mt-0 para eliminar margen superior -->
+                            <div class="edit-profile-header text-center mb-4">
+                                <h4 class="profile-edit-title">
+                                    <i class="fas fa-user-edit me-2 text-primary"></i>
+                                    <span class="title-text">Editar Perfil</span>
+                                </h4>
+                            </div>
+                            
                             <div id="editProfileMessage" class="alert d-none mb-4"></div>
                             
                             <form id="editProfileForm" class="profile-edit-form">
-                                <div class="row g-4">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label class="form-label">
-                                                <i class="fas fa-user me-2"></i>Username
-                                            </label>
-                                            <input type="text" 
-                                                   class="form-control form-control-lg" 
-                                                   id="editUsername" 
-                                                   required>
-                                            <div class="form-text text-muted">
-                                                Este es tu nombre público en el juego
-                                            </div>
-                                        </div>
+                                <!-- Sección de información básica -->
+                                <div class="edit-section mb-4">
+                                    <div class="edit-section-header">
+                                        <i class="fas fa-user-circle text-primary me-2"></i>
+                                        <span>Información básica</span>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-4">
-                                            <label class="form-label">
-                                                <i class="fas fa-envelope me-2"></i>Email
-                                            </label>
-                                            <input type="email" 
-                                                   class="form-control form-control-lg" 
-                                                   id="editEmail" 
-                                                   required>
-                                            <div class="form-text text-muted">
-                                                Se enviará un email de verificación si lo cambias
+                                    <div class="edit-section-content">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="form-label text-muted">
+                                                        <i class="fas fa-user me-2"></i>Username
+                                                    </label>
+                                                    <input type="text" 
+                                                           class="form-control bg-dark text-light border-secondary" 
+                                                           id="editUsername"
+                                                           disabled
+                                                           readonly>
+                                                    <small class="form-text text-muted">
+                                                        El username no se puede modificar
+                                                    </small>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="password-section mt-4">
-                                    <h5 class="mb-3">
-                                        <i class="fas fa-lock me-2"></i>Cambiar Contraseña
-                                    </h5>
-                                    <div class="row g-4">
-                                        <div class="col-md-12">
-                                            <div class="form-group mb-3">
-                                                <label class="form-label">Contraseña Actual</label>
-                                                <input type="password" 
-                                                       class="form-control" 
-                                                       id="currentPassword">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label class="form-label">Nueva Contraseña</label>
-                                                <input type="password" 
-                                                       class="form-control" 
-                                                       id="newPassword1">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group mb-3">
-                                                <label class="form-label">Confirmar Nueva Contraseña</label>
-                                                <input type="password" 
-                                                       class="form-control" 
-                                                       id="newPassword2">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-envelope me-2"></i>Email
+                                                    </label>
+                                                    <input type="email" 
+                                                           class="form-control" 
+                                                           id="editEmail" 
+                                                           required>
+                                                    <small class="form-text text-muted">
+                                                        Se enviará un email de verificación si lo cambias
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                                    <button type="button" class="btn btn-danger" id="deleteAccountBtn">
+                                <!-- Sección de seguridad -->
+                                <div class="edit-section">
+                                    <div class="edit-section-header">
+                                        <i class="fas fa-shield-alt text-primary me-2"></i>
+                                        <span>Seguridad</span>
+                                    </div>
+                                    <div class="edit-section-content">
+                                        <div class="row g-4">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-key me-2"></i>Contraseña Actual
+                                                    </label>
+                                                    <input type="password" 
+                                                           class="form-control" 
+                                                           id="currentPassword">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-lock me-2"></i>Nueva Contraseña
+                                                    </label>
+                                                    <input type="password" 
+                                                           class="form-control" 
+                                                           id="newPassword1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="form-label">
+                                                        <i class="fas fa-lock me-2"></i>Confirmar Nueva Contraseña
+                                                    </label>
+                                                    <input type="password" 
+                                                           class="form-control" 
+                                                           id="newPassword2">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-4 pt-4 border-top border-secondary">
+                                    <button type="button" class="btn btn-outline-danger" id="deleteAccountBtn">
                                         <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
                                     </button>
-                                    <button type="button" class="btn btn-primary btn-lg" id="saveProfileBtn">
+                                    <button type="button" class="btn btn-primary px-4" id="saveProfileBtn">
                                         <i class="fas fa-save me-2"></i>Guardar Cambios
                                     </button>
                                 </div>
@@ -180,7 +203,10 @@
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="settings-card">
-                            <h5>Cuenta</h5>
+                            <h5 class="settings-title">
+                                <i class="fas fa-user-shield text-info me-2"></i>
+                                Autenticación y Seguridad
+                            </h5>
                             <div class="settings-actions">
                                 <button id="toggle2FABtn" class="btn btn-outline-info d-flex align-items-center w-100 mb-3" data-enabled="false">
                                     <i class="fas fa-shield-alt me-2"></i>
@@ -192,7 +218,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="settings-card">
-                            <h5>Seguridad</h5>
+                            <h5 class="settings-title">
+                                <i class="fas fa-key text-info me-2"></i>
+                                Acceso Rápido
+                            </h5>
                             <div class="settings-actions">
                                 <button id="showQRBtn" class="btn btn-outline-primary d-flex align-items-center w-100 mb-3">
                                     <i class="fas fa-qrcode me-2"></i>
@@ -501,30 +530,50 @@
 
 <template id="qrModalTemplate">
     <div class="modal fade" id="qrModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark">
-                <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title">
-                        <i class="fas fa-qrcode text-primary me-2"></i>
-                        Código QR 
+                <div class="modal-header border-bottom border-info">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="fas fa-qrcode text-info me-2"></i>
+                        <span>Acceso Rápido</span>
+                        <button type="button" 
+                                class="btn btn-link text-info ms-2 p-0"
+                                id="qrHelpBtn"
+                                style="line-height: 1;">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center">
-                    <div class="alert alert-info mb-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Escanea este código QR para iniciar sesión rápidamente
+                    <div class="collapse mb-3" id="qrInfoCollapse">
+                        <div class="modal-info-box">
+                            <div class="info-section">
+                                <i class="fas fa-magic text-info"></i>
+                                <div class="info-content">
+                                    <h6>Login sin contraseña</h6>
+                                    <p>Escanea este código QR desde otro dispositivo para iniciar sesión al instante.</p>
+                                </div>
+                            </div>
+                            <div class="security-section">
+                                <i class="fas fa-shield-alt text-warning"></i>
+                                <div class="info-content">
+                                    <h6>Recomendación de seguridad</h6>
+                                    <p>Activa la autenticación en dos pasos (2FA) para una capa extra de seguridad.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="qrContainer" class="qr-box p-4 bg-light rounded">
-                        <!-- El QR se generará aquí -->
+                    <div class="qr-wrapper p-4 mb-4 bg-white rounded-3 shadow-sm">
+                        <div id="qrContainer">
+                            <!-- El QR se generará aquí -->
+                        </div>
                     </div>
-                    <div class="mt-4">
-                        <button class="btn btn-outline-primary" id="downloadQRBtn">
-                            <i class="fas fa-download me-2"></i>Descargar QR
-                        </button>
-                    </div>
+                    <button class="btn btn-info">
+                        <i class="fas fa-download me-2"></i>Guardar código
+                    </button>
                 </div>
-                <div class="modal-footer border-top border-secondary">
+                <div class="modal-footer border-top border-info">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>

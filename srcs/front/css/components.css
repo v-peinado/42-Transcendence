@@ -1041,3 +1041,114 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
 .tab-pane {
     animation: fadeIn 0.3s ease-out;
 }
+
+/* Settings card titles */
+.settings-title {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.settings-title i {
+    font-size: 1.4rem;
+    text-shadow: 0 0 10px rgba(13, 202, 240, 0.5);
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+/* Edit Profile Styles */
+.edit-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.edit-section:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(13, 110, 253, 0.2);
+}
+
+.edit-section-header {
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.edit-section-content .form-control {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.edit-section-content .form-control:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.edit-section-content .form-control:disabled {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.floating-input {
+    position: relative;
+}
+
+.floating-input label {
+    color: rgba(255, 255, 255, 0.6); /* Color base del label */
+    transition: all 0.3s ease;
+}
+
+.floating-input input:focus ~ label {
+    color: rgba(255, 255, 255, 0.9); /* Color del label cuando el input está en foco */
+    background: rgba(33, 37, 41, 0.95); /* Fondo oscuro para mejor legibilidad */
+    padding: 0 0.5rem;
+}
+
+.floating-input input:not(:placeholder-shown) ~ label {
+    color: rgba(255, 255, 255, 0.7); /* Color del label cuando hay texto */
+    background: rgba(33, 37, 41, 0.95);
+    padding: 0 0.5rem;
+}
+
+/* Form floating overrides */
+.form-floating > label,
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label,
+.form-floating > .form-control:-webkit-autofill ~ label {
+    color: rgba(255, 255, 255, 0.7) !important;
+    background-color: transparent !important;
+}
+
+.form-floating > .form-control:focus {
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+    border-color: rgba(13, 110, 253, 0.5);
+}
+
+.form-floating > .form-control:focus ~ label::after,
+.form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+    background-color: transparent !important;
+}

@@ -16,25 +16,28 @@
             <span class="brand-text">Transcendence</span>
         </a>
 
-        <div class="d-flex align-items-center">
-            <!-- Enlaces de navegación -->
-            <ul class="navbar-nav me-auto d-flex flex-row">
-                <li class="nav-item me-3">
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Enlaces de navegación a la izquierda -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
                     <a class="nav-link" href="/game" data-link>
                         <i class="fas fa-play me-1"></i>Jugar
                     </a>
                 </li>
-                <li class="nav-item me-3">
+                <li class="nav-item">
                     <a class="nav-link" href="/chat" data-link>
                         <i class="fas fa-comments me-1"></i>Chat
                     </a>
                 </li>
             </ul>
-            
-            <!-- Botón de logout -->
-            <button class="btn btn-outline-danger ms-3" id="navLogoutBtn">
-                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
-            </button>
+            <!-- Botón de logout a la derecha -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link text-danger" href="#" id="navLogoutBtn">
+                        <i class="fas fa-sign-out-alt me-1"></i>Cerrar Sesión
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 </nav>
