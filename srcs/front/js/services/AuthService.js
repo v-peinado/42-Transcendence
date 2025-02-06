@@ -43,7 +43,6 @@ class AuthService {
     static generateQR = Auth2FA.generateQR;
     static validateQR = Auth2FA.validateQR;
 
-    // 
     static verifyEmail = AuthEmail.verifyEmail;
     static verifyEmailChange = AuthEmail.verifyEmailChange;
     

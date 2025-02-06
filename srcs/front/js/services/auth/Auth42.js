@@ -64,6 +64,7 @@ export class Auth42 {
             if (data.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', data.username);
+                window.location.replace('/');
                 return { 
                     status: 'success',
                     username: data.username
@@ -99,6 +100,7 @@ export class Auth42 {
             if (data.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', data.username);
+                window.location.replace('/'); // Cambiado de '/profile' a '/'
                 return { success: true };
             }
 

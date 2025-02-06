@@ -48,7 +48,7 @@ export class AuthCore {
                     status: 'success',
                     message: 'Login exitoso',
                     username: data.username,
-                    redirect: data.require_2fa ? '/verify-2fa' : '/profile',
+                    redirect: '/',
                     require_2fa: data.require_2fa
                 };
             }

@@ -93,7 +93,7 @@ export async function LoginView() {
             if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);
-                window.location.replace('/profile');
+                window.location.replace('/'); // Cambiado de '/profile' a '/'
                 return;
             }
 
@@ -216,7 +216,7 @@ async function handleFormSubmit(e) {
         if (result.status === 'success') {
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('username', result.username || username);
-            window.location.replace('/profile');
+            window.location.replace('/'); // Cambiado de '/profile' a '/'
             return;
         }
         
@@ -279,7 +279,7 @@ async function handle2FASubmit(e) {
 
             // Redirigir después de que todo esté listo
             console.log('Redirigiendo a profile después de 2FA exitoso');
-            window.location.replace('/profile');
+            window.location.replace('/'); // Cambiado de '/profile' a '/'
             return;
         }
 
@@ -363,7 +363,7 @@ async function handleScanQRWithCamera() {
                                 } else {
                                     localStorage.setItem('isAuthenticated', 'true');
                                     localStorage.setItem('username', username);
-                                    window.location.replace('/profile');
+                                    window.location.replace('/'); // Cambiado de '/profile' a '/'
                                 }
                             } else {
                                 throw new Error(result.error || 'Error validando el QR');
@@ -434,7 +434,7 @@ async function handleQRFileUpload(e) {
                                 // Login directo
                                 localStorage.setItem('isAuthenticated', 'true');
                                 localStorage.setItem('username', username);
-                                window.location.href = '/profile';
+                                window.location.replace('/'); // Cambiado de '/profile' a '/'
                             }
                         } else {
                             throw new Error(result.error || 'Error validando el QR');
