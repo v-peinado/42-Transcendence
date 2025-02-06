@@ -105,4 +105,41 @@ export class AuthGDPR {
             throw error;
         }
     }
+
+    static async deleteAccount(password = null) {
+        try {
+            console.log('Iniciando eliminación de cuenta...');
+            
+            // El cuerpo de la petición será diferente según el tipo de usuario
+            const requestBody = password ? { confirm_password: password } : {};
+
+            const response = await fetch(`${AuthService.API_URL}/profile/delete-account/`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': AuthService.getCSRFToken()
+                },
+                body: JSON.stringify(requestBody),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            console.log('Respuesta del servidor:', data);
+
+            // Verificar tanto response.ok como data.status
+            if (!response.ok || data.status === 'error') {
+                throw new Error(data.message || 'Error al eliminar la cuenta');
+            }
+
+            // Asegurarnos de que devolvemos un objeto con la estructura esperada
+            return {
+                success: true,
+                message: data.message || 'Cuenta eliminada correctamente'
+            };
+        } catch (error) {
+            console.error('Error detallado en deleteAccount:', error);
+            throw error;
+        }
+    }
 }

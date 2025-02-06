@@ -1,10 +1,10 @@
 import AuthService from '../../services/AuthService.js';
 import { Auth2FA } from '../../services/auth/Auth2FA.js';
+import { AuthGDPR } from '../../services/auth/AuthGDPR.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 
 const VALID_VIEWS = [
     '/views/user/UserProfile.html',
-    // ...other valid views
 ];
 
 export async function UserProfileView() {
@@ -249,39 +249,75 @@ function setupProfileEvents() {
     });
 
     // Event listener para mostrar modal de eliminar cuenta
-    document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
-        const editModal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
-        editModal.hide();
-        const deleteModal = new bootstrap.Modal(document.getElementById('deleteAccountModal'));
-        deleteModal.show();
-    });
-
-    // Event listener para confirmar eliminación
-    document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
         try {
-            const password = document.getElementById('deleteAccountPassword').value;
-            if (!password) {
-                throw new Error('Debes introducir tu contraseña');
+            // 1. Obtener información del usuario
+            const userInfo = await AuthService.getUserProfile();
+            
+            // 2. Obtener y clonar el template
+            const template = document.getElementById('profileModals');
+            if (!template) {
+                throw new Error('Template de modales no encontrado');
             }
 
-            const result = await AuthService.deleteAccount(password);
-            if (result.success) {
-                window.location.href = '/';
+            // 3. Verificar si el modal ya existe en el DOM
+            let modalElement = document.getElementById('deleteAccountModal');
+            if (!modalElement) {
+                const modalContent = template.content.cloneNode(true);
+                document.body.appendChild(modalContent);
+                modalElement = document.getElementById('deleteAccountModal');
+
+                // 4. Si es usuario de 42, ocultar el campo de contraseña
+                if (userInfo.is_fortytwo_user) {
+                    const passwordGroup = modalElement.querySelector('.form-group');
+                    if (passwordGroup) {
+                        passwordGroup.style.display = 'none';
+                    }
+                }
+
+                // 5. Añadir event listener al botón de confirmar
+                document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
+                    try {
+                        const password = userInfo.is_fortytwo_user ? null : 
+                                       document.getElementById('deleteAccountPassword')?.value;
+                        
+                        // Solo verificar contraseña para usuarios no-42
+                        if (!userInfo.is_fortytwo_user && !password) {
+                            throw new Error('Debes introducir tu contraseña para eliminar tu cuenta');
+                        }
+
+                        const result = await AuthGDPR.deleteAccount(password);
+                        console.log('Resultado de deleteAccount:', result);
+
+                        if (result.success) {
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            modal.hide();
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            window.location.href = '/';
+                        }
+                    } catch (error) {
+                        const messageDiv = document.getElementById('modalMessage');
+                        if (messageDiv) {
+                            messageDiv.classList.remove('d-none');
+                            messageDiv.classList.add('alert', 'alert-danger');
+                            messageDiv.innerHTML = `
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                ${error.message || 'Error al eliminar la cuenta'}
+                            `;
+                        }
+                    }
+                });
             }
+
+            // 6. Mostrar el modal
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+
         } catch (error) {
-            const messageDiv = document.getElementById('modalMessage');
-            messageDiv.classList.remove('d-none', 'alert-success');
-            messageDiv.classList.add('alert-danger');
-            messageDiv.innerHTML = `
-                <i class="fas fa-exclamation-circle me-2"></i>
-                ${error.message || 'Error al eliminar la cuenta'}
-            `;
+            console.error('Error al mostrar el modal:', error);
+            showAlert('Error al mostrar el modal de eliminación', 'danger');
         }
-    });
-
-    // Event listener para el checkbox de confirmación
-    document.getElementById('confirmDelete')?.addEventListener('change', (e) => {
-        document.getElementById('confirmDeleteBtn').disabled = !e.target.checked;
     });
 
     // Añade estos event listeners después de renderizar el template
@@ -741,12 +777,6 @@ function createUserInfoElement(userInfo) {
     profileImage.src = userInfo.profile_image || 
                       userInfo.fortytwo_image || 
                       `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
-    
-    // Formatear el nombre de usuario para usuarios de 42
-    const displayUsername = userInfo.fortytwo_id ? `42_${userInfo.username}` : userInfo.username;
-    element.querySelector('#profileUsername').textContent = displayUsername;
-    element.querySelector('#profileEmail').textContent = userInfo.email;
-    
     const statusBadge = element.querySelector('#profileStatus .badge');
     statusBadge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
     statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';

@@ -184,7 +184,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="stats-card">
-                            <h5>Puntuación</h5>
+                            <h5>Puntuación</hhe>
                             <div class="stat-value">1842</div>
                         </div>
                     </div>
@@ -368,15 +368,26 @@
         <div class="modal-dialog">
             <div class="modal-content bg-dark">
                 <div class="modal-header">
-                    <h5 class="modal-title">Eliminar Cuenta</h5>
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Eliminar Cuenta
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.</p>
+                    <div class="alert alert-danger">
+                        <p>Esta acción es irreversible. Todos tus datos serán eliminados permanentemente.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="deleteAccountPassword" class="form-label">Introduce tu contraseña para confirmar:</label>
+                        <input type="password" class="form-control" id="deleteAccountPassword" required>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteAccountBtn">Eliminar Cuenta</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta
+                    </button>
                 </div>
             </div>
         </div>
