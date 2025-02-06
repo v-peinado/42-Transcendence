@@ -164,14 +164,27 @@ function showErrorMessage(container, error) {
 function setupProfileEvents() {
     document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
         try {
+            const userInfo = await AuthService.getUserProfile();
+            
+            // Bloquear cualquier intento de cambio para usuarios de 42
+            if (userInfo.username.startsWith('42_')) {
+                throw new Error('Los usuarios de 42 no pueden modificar su email');
+            }
+
             const updates = {};
             const messageDiv = document.getElementById('editProfileMessage');
             
-            // Verificar cambios de email
-            const newEmail = document.getElementById('editEmail').value;
-            const currentEmail = document.getElementById('profileEmail').textContent;
-            if (newEmail !== currentEmail) {
-                updates.email = newEmail;
+            // Verificación para usuarios de 42
+            if (userInfo.fortytwo_id) {
+                // Simplemente ignorar cualquier intento de cambio de email
+                // y continuar con otros cambios si los hay
+            } else {
+                // Procesar cambios de email para usuarios normales
+                const newEmail = document.getElementById('editEmail').value;
+                const currentEmail = document.getElementById('profileEmail').textContent;
+                if (newEmail !== currentEmail) {
+                    updates.email = newEmail;
+                }
             }
 
             // Verificar cambios de contraseña
@@ -618,16 +631,47 @@ async function loadUserData(existingUserInfo = null) {
 
 // Nueva función auxiliar para actualizar campos del formulario
 function updateFormFields(userInfo) {
-    const fields = {
-        'editUsername': userInfo.username,
-        'editEmail': userInfo.email
-    };
+    // Configurar campos
+    const emailElement = document.getElementById('editEmail');
+    const usernameElement = document.getElementById('editUsername');
 
-    Object.entries(fields).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.value = value;
+    // Configurar username
+    if (usernameElement) {
+        usernameElement.value = userInfo.username;
+        usernameElement.disabled = true;
+        usernameElement.classList.add('form-control-disabled');
+    }
+
+    // Configurar email
+    if (emailElement) {
+        emailElement.value = userInfo.email;
+        
+        if (userInfo.is_fortytwo_user) {
+            emailElement.disabled = true;
+            emailElement.readOnly = true;
+            emailElement.classList.add('form-control-disabled');
+            
+            // Mensaje informativo
+            const helpText = emailElement.parentNode.querySelector('.form-text') || 
+                           document.createElement('small');
+            helpText.className = 'form-text text-muted mt-1';
+            helpText.textContent = 'El email no se puede modificar para usuarios de 42';
+            if (!emailElement.parentNode.querySelector('.form-text')) {
+                emailElement.parentNode.appendChild(helpText);
+            }
+
+            // Ocultar sección de contraseña y botón guardar
+            const securitySection = document.querySelector('.edit-section:has(.fa-shield-alt)');
+            if (securitySection) securitySection.style.display = 'none';
+            
+            const saveButton = document.getElementById('saveProfileBtn');
+            if (saveButton) saveButton.style.display = 'none';
         }
+    }
+
+    // Actualizar los colores de los labels
+    document.querySelectorAll('.form-label').forEach(label => {
+        label.classList.remove('text-muted');
     });
 }
 
@@ -698,7 +742,9 @@ function createUserInfoElement(userInfo) {
                       userInfo.fortytwo_image || 
                       `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
     
-    element.querySelector('#profileUsername').textContent = userInfo.username;
+    // Formatear el nombre de usuario para usuarios de 42
+    const displayUsername = userInfo.fortytwo_id ? `42_${userInfo.username}` : userInfo.username;
+    element.querySelector('#profileUsername').textContent = displayUsername;
     element.querySelector('#profileEmail').textContent = userInfo.email;
     
     const statusBadge = element.querySelector('#profileStatus .badge');

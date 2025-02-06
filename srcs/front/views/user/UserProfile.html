@@ -57,9 +57,9 @@
 
             <!-- Pestaña de Editar Perfil -->
             <div class="tab-pane fade" id="edit-profile">
-                <div class="row justify-content-center g-0"> <!-- Eliminado el gap y añadido g-0 -->
+                <div class="row justify-content-center g-0">
                     <div class="col-md-8">
-                        <div class="profile-card mt-0"> <!-- Añadido mt-0 para eliminar margen superior -->
+                        <div class="profile-card mt-0">
                             <div class="edit-profile-header text-center mb-4">
                                 <h4 class="profile-edit-title">
                                     <i class="fas fa-user-edit me-2 text-primary"></i>
@@ -100,11 +100,11 @@
                                                     </label>
                                                     <input type="email" 
                                                            class="form-control" 
-                                                           id="editEmail" 
+                                                           id="editEmail"
+                                                           aria-label="Email"
+                                                           style="background-color: #343a40 !important; /* Forzar color oscuro */"
                                                            required>
-                                                    <small class="form-text text-muted">
-                                                        Se enviará un email de verificación si lo cambias
-                                                    </small>
+                                                    <small class="form-text text-muted"></small>
                                                 </div>
                                             </div>
                                         </div>
