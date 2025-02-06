@@ -1173,3 +1173,93 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
 .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
     background-color: transparent !important;
 }
+
+/* GDPR Section Styles */
+.gdpr-card {
+    background: rgba(33, 37, 41, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+}
+
+.custom-accordion .accordion-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.custom-accordion .accordion-button {
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    padding: 1.25rem;
+    font-weight: 500;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.custom-accordion .accordion-button:not(.collapsed) {
+    background: rgba(13, 110, 253, 0.1);
+    color: #fff;
+}
+
+.custom-accordion .accordion-button:hover {
+    background: rgba(13, 110, 253, 0.15);
+    transform: translateX(5px);
+}
+
+.custom-accordion .accordion-body {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.custom-accordion .accordion-button::after {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Placeholder animation */
+.placeholder-glow .placeholder {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(255, 255, 255, 0.05) 75%
+    );
+    background-size: 200% 100%;
+    animation: placeholder-wave 2s linear infinite;
+}
+
+@keyframes placeholder-wave {
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Footer styles */
+.site-footer {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+.site-footer .footer-content {
+    text-align: center;
+}
+
+.site-footer .separator {
+    margin: 0 0.5rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.site-footer .authors {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}

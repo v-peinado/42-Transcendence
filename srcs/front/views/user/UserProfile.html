@@ -240,78 +240,61 @@
                     <div class="col-md-8">
                         <div class="gdpr-card p-4">
                             <h4 class="mb-4">
-                                <i class="fas fa-user-shield me-2"></i>
+                                <i class="fas fa-user-shield text-primary me-2"></i>
                                 Privacidad y Protección de Datos
                             </h4>
 
                             <div class="gdpr-sections mb-4">
-                                <div class="accordion" id="gdprAccordion">
-                                    <div class="accordion-item bg-dark">
+                                <div class="accordion custom-accordion" id="gdprAccordion">
+                                    <!-- Datos recopilados -->
+                                    <div class="accordion-item bg-dark border-primary">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataCollectionContent">
-                                                <i class="fas fa-database text-primary me-2"></i>Datos recopilados
+                                                <i class="fas fa-database text-primary me-2"></i>Datos que almacenamos
                                             </button>
                                         </h2>
                                         <div id="dataCollectionContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
                                             <div class="accordion-body text-light" id="data-collection">
-                                                <small>Información sobre los datos que recopilamos</small>
+                                                <div class="placeholder-glow">
+                                                    <span class="placeholder col-12"></span>
+                                                    <span class="placeholder col-12"></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="accordion-item bg-dark">
+                                    <!-- Uso de datos -->
+                                    <div class="accordion-item bg-dark border-info">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataUsageContent">
-                                                <i class="fas fa-tasks text-info me-2"></i>Uso de datos
+                                                <i class="fas fa-tasks text-info me-2"></i>Cómo usamos tus datos
                                             </button>
                                         </h2>
                                         <div id="dataUsageContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                            <div class="accordion-body text-light" id="data-usage">
-                                                <small>Cómo utilizamos tus datos</small>
-                                            </div>
+                                            <div class="accordion-body text-light" id="data-usage"></div>
                                         </div>
                                     </div>
 
-                                    <div class="accordion-item bg-dark">
+                                    <!-- Tus derechos -->
+                                    <div class="accordion-item bg-dark border-success">
                                         <h2 class="accordion-header">
                                             <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#userRightsContent">
                                                 <i class="fas fa-user-shield text-success me-2"></i>Tus derechos
                                             </button>
                                         </h2>
                                         <div id="userRightsContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                            <div class="accordion-body text-light" id="user-rights">
-                                                <small>Derechos sobre tus datos personales</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="accordion-item bg-dark">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button bg-dark text-light collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#securityContent">
-                                                <i class="fas fa-lock text-warning me-2"></i>Seguridad
-                                            </button>
-                                        </h2>
-                                        <div id="securityContent" class="accordion-collapse collapse" data-bs-parent="#gdprAccordion">
-                                            <div class="accordion-body text-light" id="security-measures">
-                                                <small>Medidas de seguridad aplicadas</small>
-                                            </div>
+                                            <div class="accordion-body text-light" id="user-rights"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="d-flex justify-content-between mt-4">
-                                <button id="downloadDataBtn" class="btn btn-outline-primary">
+                            <div class="text-center mt-4">
+                                <button id="downloadDataBtn" class="btn btn-outline-primary btn-lg">
                                     <i class="fas fa-download me-2"></i>
                                     Descargar mis datos
                                 </button>
-                                <button id="requestDataDeletionBtn" class="btn btn-outline-danger">
-                                    <i class="fas fa-trash-alt me-2"></i>
-                                    Solicitar eliminación de datos
-                                </button>
                             </div>
-
-                            <div id="messageArea" class="alert d-none mt-3"></div>
                         </div>
                     </div>
                 </div>

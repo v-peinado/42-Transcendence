@@ -98,63 +98,47 @@ class Router {
 
     async renderHomePage(isAuthenticated, userInfo = null) {
         const app = document.getElementById('app');
-        app.textContent = ''; // Limpiar contenido actual
+        app.textContent = '';
         
-        if (!isAuthenticated) {
-            const homePageHtml = await loadHTML('/views/home/HomePage.html');
-            const navbarHtml = await loadHTML('/views/components/NavbarUnauthorized.html');
-            
-            const parser = new DOMParser();
-            const navDoc = parser.parseFromString(navbarHtml, 'text/html');
-            const mainDoc = parser.parseFromString(homePageHtml, 'text/html');
-            
-            app.appendChild(navDoc.body.firstElementChild);
-            app.appendChild(mainDoc.body.firstElementChild);
-        } else {
-            // Cambiar esta parte para que use el mismo patrón que el no autenticado
-            const [authenticatedHtml, navbarHtml] = await Promise.all([
-                loadHTML('/views/home/AuthenticatedHome.html'),
-                loadHTML('/views/components/NavbarAuthenticated.html')
-            ]);
-            
-            const parser = new DOMParser();
-            const navDoc = parser.parseFromString(navbarHtml, 'text/html');
-            const mainDoc = parser.parseFromString(authenticatedHtml, 'text/html');
-            
+        const [pageHtml, navbarHtml, footerHtml] = await Promise.all([
+            loadHTML(isAuthenticated ? '/views/home/AuthenticatedHome.html' : '/views/home/HomePage.html'),
+            loadHTML(isAuthenticated ? '/views/components/NavbarAuthenticated.html' : '/views/components/NavbarUnauthorized.html'),
+            loadHTML('/views/components/Footer.html')
+        ]);
+        
+        const parser = new DOMParser();
+        const navDoc = parser.parseFromString(navbarHtml, 'text/html');
+        const mainDoc = parser.parseFromString(pageHtml, 'text/html');
+        const footerDoc = parser.parseFromString(footerHtml, 'text/html');
+        
+        // Actualizar información del usuario si es necesario
+        if (isAuthenticated && userInfo) {
             const navElement = navDoc.body.firstElementChild;
             const mainElement = mainDoc.body.firstElementChild;
             
-            // Actualizar la información del usuario en el navbar
-            if (userInfo) {
-                const profileImage = userInfo?.profile_image || 
-                                   userInfo?.fortytwo_image || 
-                                   `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+            const profileImage = userInfo?.profile_image || 
+                               userInfo?.fortytwo_image || 
+                               `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
 
-                navElement.querySelectorAll('#nav-profile-image, #nav-profile-image-large').forEach(img => {
-                    img.src = profileImage;
-                    img.onerror = () => img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
-                });
+            navElement.querySelectorAll('#nav-profile-image, #nav-profile-image-large').forEach(img => {
+                img.src = profileImage;
+                img.onerror = () => img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+            });
 
-                navElement.querySelectorAll('#nav-username, #nav-username-large').forEach(el => {
-                    el.textContent = userInfo.username;
-                });
-            }
+            navElement.querySelectorAll('#nav-username, #nav-username-large').forEach(el => {
+                el.textContent = userInfo.username;
+            });
             
-            app.appendChild(navElement);
-            app.appendChild(mainElement);
-            
-            // Actualizar el nombre de usuario en el contenido principal
             const usernameElement = mainElement.querySelector('#username-placeholder');
             if (usernameElement) {
                 usernameElement.textContent = userInfo.username;
             }
-            
-            // Configurar eventos
-            const logoutBtn = mainElement.querySelector('#logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', this.handleLogout.bind(this));
-            }
         }
+        
+        // Renderizar todo en orden
+        app.appendChild(navDoc.body.firstElementChild);
+        app.appendChild(mainDoc.body.firstElementChild);
+        app.appendChild(footerDoc.body.firstElementChild);
     }
 
     async handleLogout() {
