@@ -74,7 +74,8 @@ start_vault() {
 initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
         export VAULT_ADDR='https://127.0.0.1:8200'
-		export VAULT_SKIP_VERIFY=true
+		#export VAULT_SKIP_VERIFY=true
+		unset VAULT_TOKEN	# Limpiar token de acceso anterior antes de inicializar
         log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
 
         # Verificar si necesita inicialización
@@ -93,7 +94,7 @@ initialize_vault() {
             vault operator unseal "$UNSEAL_KEY"
             
             # Configurar token root
-            export VAULT_TOKEN="$ROOT_TOKEN"
+            #export VAULT_TOKEN="$ROOT_TOKEN"
             vault login "$ROOT_TOKEN"
         fi
     fi
@@ -219,4 +220,6 @@ start_vault
 initialize_vault
 configure_vault
 store_secrets
+unset VAULT_TOKEN
+trap 'unset VAULT_TOKEN' EXIT	# Limpiar token antes de iniciar nginx
 start_nginx
