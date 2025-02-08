@@ -3,6 +3,7 @@ import { loadHTML } from '/js/utils/htmlLoader.js';
 export async function getNavbarHTML(isAuthenticated = false, userInfo = null, isProfile = false) {
     // Determinar qué navbar cargar
     const templatePath = isProfile ? '/views/components/NavbarProfile.html' :
+                        window.location.pathname === '/chat' ? '/views/components/NavbarChat.html' :
                         isAuthenticated ? '/views/components/NavbarAuthenticated.html' :
                         '/views/components/NavbarUnauthorized.html';
     

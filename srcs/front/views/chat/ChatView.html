@@ -1,0 +1,55 @@
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <!-- Chat General -->
+                <div class="col-md-8">
+                    <div class="chat-column">
+                        <div class="chat-header" id="chatHeader">
+                            <h2 class="section-title">
+                                <i class="fas fa-comments me-2"></i>Chat General
+                                <i class="fas fa-chevron-down collapse-indicator"></i>
+                            </h2>
+                        </div>
+                        <div id="messages" class="chat-log"></div>
+                        <div class="form-group">
+                            <div class="input-group">
+                                <input type="text" id="message-input" class="form-control" 
+                                    placeholder="Escribe un mensaje..." autocomplete="off">
+                                <button type="submit" id="send-button" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Usuarios -->
+                <div class="col-md-4">
+                    <div class="user-column">
+                        <div class="chat-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-users me-2"></i>Usuarios
+                            </h3>
+                        </div>
+                        <div id="users-list" class="list-group mb-4"></div>
+                        
+                        <div class="chat-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-star me-2"></i>Amigos
+                            </h3>
+                        </div>
+                        <div id="friends-list" class="list-group mb-4"></div>
+                        
+                        <div class="chat-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-layer-group me-2"></i>Grupos
+                            </h3>
+                        </div>
+                        <div id="groups-list" class="list-group"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
