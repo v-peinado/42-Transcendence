@@ -59,15 +59,26 @@ class WebSocketService {
     send(message) {
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             const formattedMessage = {
-                type: message.type || 'chat_message',
+                type: message.type,
                 message: message.content || '',
-                channel_name: `chat_${message.room}`,
-                user_id: localStorage.getItem('user_id'),
+                user_id: parseInt(localStorage.getItem('user_id')),
                 username: localStorage.getItem('username')
             };
+
+            // Si es un mensaje de chat, usar el channel_name proporcionado o construirlo
+            if (message.type === 'chat_message') {
+                formattedMessage.channel_name = message.channel_name || `chat_${message.room}`;
+            } 
+            // Si es para crear un canal privado, añadir IDs de usuarios
+            else if (message.type === 'create_private_channel') {
+                formattedMessage.user1_id = message.user1_id;
+                formattedMessage.user2_id = message.user2_id;
+            }
+            
+            console.log('Enviando mensaje formateado:', formattedMessage);
             this.socket.send(JSON.stringify(formattedMessage));
         } else {
-            console.error('Socket is not connected.');
+            console.error('Socket no conectado');
         }
     }
 

@@ -2,23 +2,64 @@
     <div class="hero-content">
         <div class="container-fluid mt-4">
             <div class="row">
-                <!-- Chat General -->
+                <!-- Chat General y Chats Privados -->
                 <div class="col-md-8">
-                    <div class="chat-column">
-                        <div class="chat-header" id="chatHeader">
-                            <h2 class="section-title">
-                                <i class="fas fa-comments me-2"></i>Chat General
-                                <i class="fas fa-chevron-down collapse-indicator"></i>
-                            </h2>
+                    <div id="chat-tabs" class="mb-3">
+                        <button class="btn btn-primary active" data-tab="general">
+                            <i class="fas fa-comments me-2"></i>General
+                        </button>
+                        <button class="btn btn-primary" data-tab="private">
+                            <i class="fas fa-user-friends me-2"></i>Privados
+                        </button>
+                    </div>
+                    
+                    <!-- Contenedor de chats -->
+                    <div id="chat-containers">
+                        <!-- Chat General -->
+                        <div id="general-chat" class="chat-column active">
+                            <div class="chat-header" id="chatHeader">
+                                <h2 class="section-title">
+                                    <i class="fas fa-comments me-2"></i>Chat General
+                                    <i class="fas fa-chevron-down collapse-indicator"></i>
+                                </h2>
+                            </div>
+                            <div id="messages" class="chat-log"></div>
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <input type="text" id="message-input" class="form-control" 
+                                        placeholder="Escribe un mensaje..." autocomplete="off">
+                                    <button type="submit" id="send-button" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div id="messages" class="chat-log"></div>
-                        <div class="form-group">
-                            <div class="input-group">
-                                <input type="text" id="message-input" class="form-control" 
-                                    placeholder="Escribe un mensaje..." autocomplete="off">
-                                <button type="submit" id="send-button" class="btn btn-primary">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
+                        
+                        <!-- Chats Privados -->
+                        <div id="private-chats" class="chat-column">
+                            <!-- Igual que el chat general pero con sus propios IDs -->
+                            <div class="chat-header">
+                                <h2 class="section-title">
+                                    <i class="fas fa-comments me-2"></i>
+                                    Chat con <span id="private-chat-username"></span>
+                                </h2>
+                            </div>
+                            <!-- Mismo layout que el chat general -->
+                            <div id="private-messages" class="chat-log"></div>
+                            <div class="form-group mt-3">
+                                <div class="input-group">
+                                    <input type="text" id="private-message-input" class="form-control" 
+                                        placeholder="Escribe un mensaje privado..." autocomplete="off">
+                                    <button id="private-send-button" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Lista de conversaciones privadas debajo -->
+                            <div class="mt-4">
+                                <h3 class="section-title mb-3">Conversaciones activas</h3>
+                                <div class="private-chats-list"></div>
                             </div>
                         </div>
                     </div>
