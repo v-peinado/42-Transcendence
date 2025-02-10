@@ -6,7 +6,6 @@ import random
 import math
 
 class GameState:
-    # Alinear constantes exactamente con el frontend
     CANVAS_WIDTH = 1000
     CANVAS_HEIGHT = 600
     WINNING_SCORE = 10

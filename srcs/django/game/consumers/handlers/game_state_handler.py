@@ -1,9 +1,6 @@
 import asyncio
 from channels.db import database_sync_to_async
 from django.db import transaction
-from ..utils.database_operations import DatabaseOperations
-import random
-import math
 
 class GameStateHandler:
     """Maneja las actualizaciones del estado del juego"""

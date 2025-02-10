@@ -1,12 +1,12 @@
-from ..engine.game_state import GameState
+from channels.db import database_sync_to_async
 import json
 import asyncio
 from .base import BaseGameConsumer
 from .handlers.game_state_handler import GameStateHandler
 from .handlers.multiplayer_handler import MultiplayerHandler
 from .utils.database_operations import DatabaseOperations
-from channels.db import database_sync_to_async
 from ..models import Game
+from ..engine.game_state import GameState
 
 class GameConsumer(BaseGameConsumer):
     """Consumidor principal del juego que coordina los diferentes handlers"""

@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .models import Game
-from django.utils import timezone
 
 @login_required
 def create_game(request):
