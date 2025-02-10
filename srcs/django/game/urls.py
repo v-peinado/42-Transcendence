@@ -1,10 +1,9 @@
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 app_name = 'game'
 
 urlpatterns = [
-    path('', views.menu_page, name='menu'),
-    path('play/', views.game_page, name='game_home'),
-    path('play/<int:game_id>/', views.game_page, name='game_page'),
+    path('', views.create_game, name='create_game'),  # Ruta principal crea nuevo juego
+    path('<int:game_id>/', views.join_game, name='join_game'),  # Ruta con ID une a juego existente
 ]

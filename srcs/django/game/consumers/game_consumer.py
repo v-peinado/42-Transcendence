@@ -21,7 +21,7 @@ class GameConsumer(BaseGameConsumer):
             return Game.objects.select_related('player1', 'player2').get(id=self.game_id)
 
         game = await get_game()
-        self.scope["game"] = game  # Guardar el juego en el scope
+        self.scope["game"] = game
         
         if game:
             await self.initialize_game_state()
@@ -55,7 +55,7 @@ class GameConsumer(BaseGameConsumer):
     async def game_start(self, event):
         """Iniciar el juego desde el servidor"""
         if self.game_state:
-            await self.game_state.start_countdown()  # Añadir await aquí
+            await self.game_state.start_countdown()
             asyncio.create_task(GameStateHandler.countdown_timer(self))
         await self.send(text_data=json.dumps(event))
 

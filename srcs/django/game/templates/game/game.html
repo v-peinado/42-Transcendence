@@ -7,58 +7,63 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Pong - Transcendence</title>
 	<style>
-		#gameCanvas {
-			background: #000;
-			display: block;
-			margin: 0 auto;
-			border: 2px solid #fff;
-		}
-
-		.game-container {
-			text-align: center;
-			padding: 20px;
-			color: white;
-		}
-
-		.score {
-			font-size: 2em;
-			margin: 20px 0;
-			font-family: monospace;
-		}
-
-		.controls {
-			margin: 20px 0;
-		}
-
-		.status {
-			font-size: 1.2em;
-			margin: 10px 0;
-		}
-
-		.game-info {
-			text-align: center;
-			margin-bottom: 20px;
-		}
-
-		.game-id {
-			color: #fff;
-			font-size: 18px;
-			margin: 10px 0;
-		}
-
-		.player-info {
-			background-color: rgba(255, 255, 255, 0.1);
-			padding: 10px;
-			border-radius: 5px;
-			margin: 10px 0;
+		* {
+			margin: 0;
+			padding: 0;
 		}
 
 		body {
-			overflow: hidden;
-			/* Previene el scroll */
-			margin: 0;
-			padding: 20px;
 			background: #333;
+			overflow: hidden;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			flex-direction: column;
+			background-color: #000;
+		}
+
+		.game-container {
+			position: relative;
+			width: 1000px;
+			/* Ajustado para mantener proporción */
+			height: 600px;
+			margin: 0 auto;
+		}
+
+		#gameCanvas {
+			background: rgb(85, 5, 45);
+			border: 1px solid #000;
+			display: block;
+			width: 1000px;
+			/* Dimensión fija */
+			height: 600px;
+			/* Dimensión fija */
+		}
+
+		.score {
+			position: absolute;
+			color: rgb(28, 42, 236);
+			font-size: 3rem;
+			font-family: 'roboto';
+			top: 50%;
+			transform: translateY(-50%);
+		}
+
+		#player1Score {
+			left: 35%;
+		}
+
+		#player2Score {
+			right: 35%;
+		}
+
+		.game-info {
+			position: absolute;
+			width: 100%;
+			text-align: center;
+			color: white;
+			z-index: 10;
 		}
 
 		.countdown {
@@ -70,10 +75,8 @@
 			color: white;
 			font-weight: bold;
 			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-			z-index: 1000;
 		}
 
-		/* Añadir estilos para el mensaje de fin de juego */
 		.game-over {
 			position: fixed;
 			top: 0;
@@ -84,11 +87,10 @@
 			display: none;
 			justify-content: center;
 			align-items: center;
-			z-index: 1000;
 		}
 
 		.game-over-content {
-			background: #333;
+			background: rgb(85, 5, 45);
 			padding: 2rem;
 			border-radius: 10px;
 			text-align: center;
@@ -97,58 +99,65 @@
 		}
 
 		.game-over h2 {
-			color: #fff;
+			color: rgb(28, 42, 236);
 			font-size: 2em;
 			margin-bottom: 1rem;
+			font-family: 'roboto';
 		}
 
 		.final-score {
-			color: #fff;
+			color: rgb(28, 42, 236);
 			font-size: 1.5em;
 			margin: 1rem 0;
+			font-family: 'roboto';
 		}
 
 		.menu-button {
 			display: inline-block;
 			padding: 10px 20px;
 			margin-top: 20px;
-			background: #4CAF50;
+			background: rgb(28, 42, 236);
 			color: white;
 			text-decoration: none;
 			border-radius: 5px;
 			transition: background 0.3s;
+			font-family: 'roboto';
 		}
 
 		.menu-button:hover {
-			background: #45a049;
+			background: rgb(20, 30, 180);
+		}
+
+		#gameStatus,
+		#playerInfo,
+		#controlsInfo {
+			color: rgb(28, 42, 236);
+			font-family: 'roboto';
+			margin: 5px 0;
 		}
 	</style>
 </head>
 
 <body>
 	<div class="game-container">
-		<div class="game-info">
-			<div class="score">
-				<span id="player1Score">0</span> - <span id="player2Score">0</span>
-			</div>
-			<div class="game-id">ID Partida: {{ game_id }}</div>
-			<div class="status" id="gameStatus">Esperando oponente...</div>
-			<div class="player-info" id="playerInfo">Esperando asignación...</div>
-		</div>
-		<canvas id="gameCanvas" width="800" height="400"></canvas>
-		<div class="controls">
-			<div id="controlsInfo">
-				<!-- Se actualizará dinámicamente con JavaScript -->
-			</div>
-			<p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
-		</div>
+		<canvas id="gameCanvas"></canvas>
+		<div class="score" id="player1Score">0</div>
+		<div class="score" id="player2Score">0</div>
+		<div id="gameMessages" class="game-info"></div>
 		<div id="countdown" class="countdown" style="display: none;"></div>
+
+		<div class="game-info">
+			<div class="game-id">ID Partida: {{ game_id }}</div>
+			<div id="gameStatus">Esperando oponente...</div>
+			<div id="playerInfo"></div>
+			<div id="controlsInfo"></div>
+		</div>
 	</div>
 	<div class="game-over" id="gameOver">
 		<div class="game-over-content">
 			<h2 id="winnerMessage"></h2>
 			<div class="final-score" id="finalScore"></div>
-			<a href="{% url 'game:menu' %}" class="menu-button">Volver al Menú</a>
+			<a href="{% url 'game:create_game' %}" class="menu-button">Volver a Jugar</a>
 		</div>
 	</div>
 
@@ -163,6 +172,10 @@
 		// Canvas setup
 		const canvas = document.getElementById('gameCanvas');
 		const ctx = canvas.getContext('2d');
+
+		// Establecer dimensiones correctas del canvas
+		canvas.width = 1000;
+		canvas.height = 600;
 
 		// Game state
 		let gameState = null;
@@ -320,12 +333,16 @@
 		function updateDisplay() {
 			if (!gameState) return;
 
-			// Clear canvas
-			ctx.fillStyle = '#000';
+			// Limpiar el canvas
+			ctx.fillStyle = 'rgb(85, 5, 45)';
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-			// Draw paddles
-			ctx.fillStyle = '#fff';
+			// Debug de dimensiones
+			console.log('Canvas dimensions:', canvas.width, canvas.height);
+			console.log('Game state dimensions:', gameState.canvas.width, gameState.canvas.height);
+
+			// Dibujar paletas
+			ctx.fillStyle = 'gray';
 			for (const [side, paddle] of Object.entries(gameState.paddles)) {
 				ctx.fillRect(
 					paddle.x,
@@ -335,7 +352,8 @@
 				);
 			}
 
-			// Draw ball
+			// Dibujar pelota
+			ctx.fillStyle = 'green';
 			ctx.beginPath();
 			ctx.arc(
 				gameState.ball.x,
@@ -344,19 +362,21 @@
 				0,
 				Math.PI * 2
 			);
-			ctx.fillStyle = '#fff';
 			ctx.fill();
-			ctx.closePath();
 
-			// Update score
+			// Actualizar marcador
 			document.getElementById('player1Score').textContent = gameState.paddles.left.score;
 			document.getElementById('player2Score').textContent = gameState.paddles.right.score;
+
+			// Debug
+			console.log('Ball position:', gameState.ball.x, gameState.ball.y);
+			console.log('Ball speed:', gameState.ball.speed_x, gameState.ball.speed_y);
 		}
 
 		// Asegurarnos de que el canvas tiene el tamaño correcto
 		function resizeCanvas() {
-			canvas.width = 800;  // Forzar el ancho
-			canvas.height = 400; // Forzar el alto
+			canvas.width = 1000;  // Dimensión correcta
+			canvas.height = 600;  // Dimensión correcta
 			if (gameState) {
 				updateDisplay();  // Redibujar después de redimensionar
 			}

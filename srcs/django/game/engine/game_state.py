@@ -2,21 +2,39 @@ from .components.collision_manager import CollisionManager
 from .components.score_manager import ScoreManager
 from .entities.ball import Ball
 from .entities.paddle import Paddle
+import random
+import math
 
 class GameState:
+    # Alinear constantes exactamente con el frontend
+    CANVAS_WIDTH = 1000
+    CANVAS_HEIGHT = 600
     WINNING_SCORE = 10
-    GAME_SPEED = 4
+    PLAYER_SPEED = 7
+    BALL_SPEED = 7
+    PADDLE_WIDTH = 10
+    PADDLE_HEIGHT = 160
+    GAME_SPEED = BALL_SPEED
 
-    def __init__(self, canvas_width=800, canvas_height=400):
+    def __init__(self):
         """Inicialización del estado del juego"""
-        self.canvas_width = canvas_width
-        self.canvas_height = canvas_height
+        self.ball = Ball(self.CANVAS_WIDTH/2, self.CANVAS_HEIGHT/2)
         
-        self.ball = Ball(canvas_width/2, canvas_height/2, speed_x=0, speed_y=0)
-        paddle_height = 100
+        # Ajustar posiciones iniciales de las paletas
+        paddle_y = (self.CANVAS_HEIGHT - self.PADDLE_HEIGHT) / 2
         self.paddles = {
-            'left': Paddle(x=10, y=(canvas_height - paddle_height) / 2, height=paddle_height),
-            'right': Paddle(x=canvas_width - 20, y=(canvas_height - paddle_height) / 2, height=paddle_height)
+            'left': Paddle(
+                x=10, 
+                y=paddle_y,
+                width=self.PADDLE_WIDTH,
+                height=self.PADDLE_HEIGHT
+            ),
+            'right': Paddle(
+                x=self.CANVAS_WIDTH - 20,  # Ajustado para estar visible
+                y=paddle_y,
+                width=self.PADDLE_WIDTH,
+                height=self.PADDLE_HEIGHT
+            )
         }
         
         self.status = 'waiting'
@@ -31,46 +49,43 @@ class GameState:
         if self.status != 'playing':
             return None
 
-        # Actualizar posición de la pelota
-        self.ball.x += self.ball.speed_x
-        self.ball.y += self.ball.speed_y
-
-        # Comprobar colisiones con paredes superior e inferior
-        if self.ball.y + self.ball.radius > self.canvas_height:
-            self.ball.y = self.canvas_height - self.ball.radius
-            self.ball.speed_y *= -1
-        elif self.ball.y - self.ball.radius < 0:
-            self.ball.y = self.ball.radius
-            self.ball.speed_y *= -1
-
-        # Comprobar colisiones con paletas
+        # Actualizar posición
+        self.ball.update(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)
+        
+        # Comprobar colisiones
         self.collision_manager.check_collisions()
-        return self.score_manager.check_scoring()
+        
+        # Comprobar puntuación y ganador
+        winner = self.score_manager.check_scoring()
+        if winner:
+            print(f"Winner detected: {winner} - Scores: {self.paddles['left'].score}-{self.paddles['right'].score}")
+            self.status = 'finished'
+            return winner
+        
+        return None
 
     def move_paddle(self, side, direction):
-        """
-        Mueve una paleta en una dirección
-        side: 'left' o 'right'
-        direction: -1 (arriba), 0 (parar), 1 (abajo)
-        """
+        """Movimiento con límites corregidos"""
         if side in self.paddles:
             paddle = self.paddles[side]
-            paddle_speed = 5  # Velocidad de movimiento de las palas
-            paddle.y += direction * paddle_speed
+            move_amount = self.PLAYER_SPEED * direction
+            new_y = paddle.y + move_amount
             
-            # Limitar el movimiento al canvas
-            paddle.y = max(0, min(paddle.y, self.canvas_height - paddle.height))
+            # Asegurar que la pala no se sale de los límites
+            paddle.y = max(0, min(new_y, self.CANVAS_HEIGHT - self.PADDLE_HEIGHT))
 
     async def start_countdown(self):
         """Inicia la cuenta atrás para el inicio del juego"""
         self.countdown = 3
         self.countdown_active = True
         self.status = 'countdown'
-        # Resetear posición y velocidad de la pelota
-        self.ball.x = self.canvas_width / 2
-        self.ball.y = self.canvas_height / 2
-        self.ball.speed_x = self.GAME_SPEED
-        self.ball.speed_y = 0
+        
+        # Asegurar que la pelota comienza con velocidad
+        self.ball.reset(
+            x=self.CANVAS_WIDTH / 2,
+            y=self.CANVAS_HEIGHT / 2,
+        )
+        print(f"Ball position reset to: ({self.ball.x}, {self.ball.y})")  # Debug
 
     def serialize(self):
         """Serialización del estado del juego"""
@@ -93,8 +108,8 @@ class GameState:
             },
             'status': self.status,
             'canvas': {
-                'width': self.canvas_width,
-                'height': self.canvas_height
+                'width': self.CANVAS_WIDTH,
+                'height': self.CANVAS_HEIGHT
             }
         }
         

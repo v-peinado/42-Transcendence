@@ -2,6 +2,8 @@ import asyncio
 from channels.db import database_sync_to_async
 from django.db import transaction
 from ..utils.database_operations import DatabaseOperations
+import random
+import math
 
 class GameStateHandler:
     """Maneja las actualizaciones del estado del juego"""
@@ -26,11 +28,13 @@ class GameStateHandler:
     @staticmethod
     async def game_loop(consumer):
         """Loop principal del juego"""
+        print("Starting game loop")
+        
         while consumer.game_state.status == 'playing':
             winner = consumer.game_state.update(asyncio.get_event_loop().time())
             
             if winner:
-                print(f"Winner detected: {winner}")  # Debug log
+                print(f"Winner detected in game loop: {winner}")
                 
                 @database_sync_to_async
                 def update_game_winner():
@@ -47,26 +51,25 @@ class GameStateHandler:
                             game.score_player1 = consumer.game_state.paddles['left'].score
                             game.score_player2 = consumer.game_state.paddles['right'].score
                         game.save()
-
+                
                 await update_game_winner()
                 
-                # Enviar mensaje de fin de juego inmediatamente
-                message = {
-                    'type': 'game_finished',
-                    'winner': winner,
-                    'reason': 'victory',
-                    'final_score': {
-                        'left': consumer.game_state.paddles['left'].score,
-                        'right': consumer.game_state.paddles['right'].score
+                # Enviar mensaje de fin de juego
+                await consumer.channel_layer.group_send(
+                    consumer.room_group_name,
+                    {
+                        'type': 'game_finished',
+                        'winner': winner,
+                        'reason': 'victory',
+                        'final_score': {
+                            'left': consumer.game_state.paddles['left'].score,
+                            'right': consumer.game_state.paddles['right'].score
+                        }
                     }
-                }
-                
-                print(f"Sending game finished message: {message}")  # Debug log
-                await consumer.channel_layer.group_send(consumer.room_group_name, message)
-                consumer.game_state.status = 'finished'  # Asegurarse de que el estado se actualiza
+                )
                 break
 
-            # Enviar actualización del estado del juego
+            # Enviar actualización del estado
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {
@@ -74,7 +77,7 @@ class GameStateHandler:
                     'state': consumer.game_state.serialize()
                 }
             )
-            await asyncio.sleep(1/60)  # 60 FPS
+            await asyncio.sleep(1/60)
 
     @staticmethod
     async def countdown_timer(consumer):
@@ -96,12 +99,21 @@ class GameStateHandler:
             await asyncio.sleep(1)
             countdown_value -= 1
         
-        # Configurar el estado de juego después de la cuenta atrás
+        # Iniciar el juego después de la cuenta atrás
         consumer.game_state.countdown_active = False
         consumer.game_state.countdown = 0
         consumer.game_state.status = 'playing'
-        consumer.game_state.ball.speed_x = consumer.game_state.GAME_SPEED
-        consumer.game_state.ball.speed_y = 0
+        
+        # Forzar reset de la pelota con velocidad
+        consumer.game_state.ball.reset(
+            consumer.game_state.CANVAS_WIDTH / 2,
+            consumer.game_state.CANVAS_HEIGHT / 2
+        )
+        
+        print("Game started with ball:", {
+            'position': (consumer.game_state.ball.x, consumer.game_state.ball.y),
+            'speed': (consumer.game_state.ball.speed_x, consumer.game_state.ball.speed_y)
+        })  # Debug
         
         # Enviar estado final
         await consumer.channel_layer.group_send(

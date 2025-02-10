@@ -1,25 +1,44 @@
+import random
+import math
+
 class Ball:
-    def __init__(self, x, y, speed_x=0, speed_y=0, radius=10):
+    def __init__(self, x, y, radius=10):
         self.x = x
         self.y = y
-        self.speed_x = speed_x
-        self.speed_y = speed_y
         self.radius = radius
+        self.speed_x = 0
+        self.speed_y = 0
+        self.base_speed = 7  # Velocidad base constante
 
     def update(self, canvas_width, canvas_height):
-        """ Actualizar la posición de la bola en cada frame """
+        """Actualización con físicas corregidas"""
+        # Actualizar posición
         self.x += self.speed_x
         self.y += self.speed_y
         
-        if self.y - self.radius <= 0 or self.y + self.radius >= canvas_height:		# Colisión con paredes superior e inferior
+        # Solo verificar colisiones verticales aquí
+        if self.y + self.radius > canvas_height:
+            self.y = canvas_height - self.radius
+            self.speed_y *= -1
+        elif self.y - self.radius < 0:
+            self.y = self.radius
             self.speed_y *= -1
             
+        # Las colisiones horizontales (puntuación) se manejan en ScoreManager
+        print(f"Ball updated - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")
+            
     def reset(self, x, y):
-        """Resetea la posición de la pelota"""
+        """Resetea la posición y velocidad de la pelota"""
         self.x = x
         self.y = y
-        self.speed_x = 0
-        self.speed_y = 0
+        
+        # Asegurar que siempre hay una velocidad inicial significativa
+        while abs(self.speed_y) < 2:  # Mínimo componente vertical
+            angle = random.uniform(-0.5, 0.5)
+            self.speed_x = self.base_speed * (1 if random.random() > 0.5 else -1)
+            self.speed_y = self.base_speed * math.sin(angle)
+        
+        print(f"Ball reset - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")  # Debug
 
     def serialize(self):
         """Serializa el estado de la pelota"""
