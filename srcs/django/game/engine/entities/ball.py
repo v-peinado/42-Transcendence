@@ -12,9 +12,20 @@ class Ball:
 
     def update(self, canvas_width, canvas_height):
         """Actualización con físicas corregidas"""
+        # Guardar posición anterior para cálculos de colisión
+        prev_x = self.x
+        prev_y = self.y
+        
         # Actualizar posición
         self.x += self.speed_x
         self.y += self.speed_y
+
+        # Mantener velocidad constante
+        total_speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
+        if abs(total_speed - self.base_speed) > 0.1:
+            scale = self.base_speed / total_speed
+            self.speed_x *= scale
+            self.speed_y *= scale
         
         # Solo verificar colisiones verticales aquí
         if self.y + self.radius > canvas_height:
@@ -25,7 +36,7 @@ class Ball:
             self.speed_y *= -1
             
         # Las colisiones horizontales (puntuación) se manejan en ScoreManager
-        print(f"Ball updated - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")
+        print(f"Ball update - pos:({self.x}, {self.y}), prev:({prev_x}, {prev_y}), speed:({self.speed_x}, {self.speed_y})")
             
     def reset(self, x, y):
         """Resetea la posición y velocidad de la pelota"""
