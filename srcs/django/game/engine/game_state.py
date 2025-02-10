@@ -13,7 +13,6 @@ class GameState:
     BALL_SPEED = 7
     PADDLE_WIDTH = 10
     PADDLE_HEIGHT = 160
-    GAME_SPEED = BALL_SPEED
 
     def __init__(self):
         """Inicialización del estado del juego"""
