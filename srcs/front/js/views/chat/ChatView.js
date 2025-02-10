@@ -225,13 +225,14 @@ export async function ChatView() {
         data.users.forEach(user => {
             const userDiv = document.createElement('div');
             userDiv.classList.add('list-group-item', 'user-item');
-            userDiv.setAttribute('data-user-id', user.id); // Añadir el ID como atributo
+            userDiv.setAttribute('data-user-id', user.id);
+            
+            // El estado online/offline viene directamente de Django
             userDiv.innerHTML = `
                 <span class="user-status user-online"></span>
                 ${user.username}
             `;
             
-            // No añadir click al propio usuario
             if (user.id !== parseInt(localStorage.getItem('user_id'))) {
                 userDiv.addEventListener('click', () => {
                     const dot = userDiv.querySelector('.notification-dot');

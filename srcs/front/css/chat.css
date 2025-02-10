@@ -287,3 +287,28 @@
     background-color: #dc3545;
     border-radius: 50%;
 }
+
+/* Estilos específicos para fullscreen */
+.chat-fullscreen {
+    max-width: 100% !important;
+    height: calc(100vh - 60px); /* 60px es el alto de la navbar */
+    margin: 0 !important;
+    border-radius: 0;
+    padding: 0;
+}
+
+.chat-fullscreen .chat-column {
+    height: 100%;
+}
+
+.chat-fullscreen .chat-log {
+    height: calc(100vh - 180px); /* Ajustar según la altura de los otros elementos */
+}
+
+.chat-fullscreen #chat-containers {
+    height: 100%;
+}
+
+.chat-fullscreen .private-chats-list {
+    max-height: calc(100vh - 600px);
+}
