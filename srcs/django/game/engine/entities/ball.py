@@ -1,12 +1,11 @@
 class Ball:
-    def __init__(self, x, y, radius=10, speed_x=2, speed_y=2):
-        """ Setear valores iniciales de la bola """
+    def __init__(self, x, y, speed_x=0, speed_y=0, radius=10):
         self.x = x
         self.y = y
-        self.radius = radius
         self.speed_x = speed_x
         self.speed_y = speed_y
-        
+        self.radius = radius
+
     def update(self, canvas_width, canvas_height):
         """ Actualizar la posición de la bola en cada frame """
         self.x += self.speed_x
@@ -16,14 +15,14 @@ class Ball:
             self.speed_y *= -1
             
     def reset(self, x, y):
-        """ Resetear la posición de la bola después de que un jugador anote """
+        """Resetea la posición de la pelota"""
         self.x = x
         self.y = y
-        self.speed_x = 2 * (-1 if self.speed_x > 0 else 1)
-        self.speed_y = 2 
-        
+        self.speed_x = 0
+        self.speed_y = 0
+
     def serialize(self):
-        """ Serializar la bola para enviarla a los clientes """
+        """Serializa el estado de la pelota"""
         return {
             'x': self.x,
             'y': self.y,

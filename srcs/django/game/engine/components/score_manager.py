@@ -7,25 +7,28 @@ class ScoreManager:
         self.game_state = game_state
 
     def check_scoring(self):
-        winner = None
-
-        # Punto para jugador derecho
+        """Comprueba si algún jugador ha marcado punto y determina el ganador"""
         if self._check_right_score():
             self.game_state.paddles['right'].score += 1
+            print(f"Right scored: {self.game_state.paddles['right'].score}")  # Debug log
+            
             if self.game_state.paddles['right'].score >= self.game_state.WINNING_SCORE:
                 self.game_state.status = 'finished'
-                winner = 'right'
+                return 'right'
+                
             self.reset_ball('right')
             
-        # Punto para jugador izquierdo
         elif self._check_left_score():
             self.game_state.paddles['left'].score += 1
+            print(f"Left scored: {self.game_state.paddles['left'].score}")  # Debug log
+            
             if self.game_state.paddles['left'].score >= self.game_state.WINNING_SCORE:
                 self.game_state.status = 'finished'
-                winner = 'left'
+                return 'left'
+                
             self.reset_ball('left')
 
-        return winner
+        return None
 
     def _check_left_score(self):
         return self.game_state.ball.x - self.game_state.ball.radius > self.game_state.canvas_width
@@ -35,10 +38,9 @@ class ScoreManager:
 
     def reset_ball(self, scoring_side):
         self.game_state.ball.reset(self.game_state.canvas_width/2, self.game_state.canvas_height/2)
-        if self.game_state.is_single_player:
-            self._reset_single_player(scoring_side)
-        else:
-            self._reset_multiplayer(scoring_side)
+        angle = random.uniform(-0.5, 0.5)
+        self.game_state.ball.speed_x = self.game_state.GAME_SPEED * (-1 if scoring_side == 'right' else 1)
+        self.game_state.ball.speed_y = self.game_state.GAME_SPEED * angle_sin(angle)
 
     def _reset_single_player(self, scoring_side):
         settings = self.game_state.ai_controller.DIFFICULTY_SETTINGS[self.game_state.difficulty]

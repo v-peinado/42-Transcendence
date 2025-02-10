@@ -1,392 +1,391 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong - Transcendence</title>
-    <style>
-        #gameCanvas {
-            background: #000;
-            display: block;
-            margin: 0 auto;
-            border: 2px solid #fff;
-        }
-        .game-container {
-            text-align: center;
-            padding: 20px;
-            color: white;
-        }
-        .score {
-            font-size: 2em;
-            margin: 20px 0;
-            font-family: monospace;
-        }
-        .controls {
-            margin: 20px 0;
-        }
-        .status {
-            font-size: 1.2em;
-            margin: 10px 0;
-        }
-        .game-info {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .game-id {
-            color: #fff;
-            font-size: 18px;
-            margin: 10px 0;
-        }
-        .player-info {
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        body {
-            overflow: hidden;  /* Previene el scroll */
-            margin: 0;
-            padding: 20px;
-            background: #333;
-        }
-        .countdown {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 100px;
-            color: white;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        /* Añadir estilos para el mensaje de fin de juego */
-        .game-over {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pong - Transcendence</title>
+	<style>
+		#gameCanvas {
+			background: #000;
+			display: block;
+			margin: 0 auto;
+			border: 2px solid #fff;
+		}
 
-        .game-over-content {
-            background: #333;
-            padding: 2rem;
-            border-radius: 10px;
-            text-align: center;
-            border: 2px solid #fff;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
+		.game-container {
+			text-align: center;
+			padding: 20px;
+			color: white;
+		}
 
-        .game-over h2 {
-            color: #fff;
-            font-size: 2em;
-            margin-bottom: 1rem;
-        }
+		.score {
+			font-size: 2em;
+			margin: 20px 0;
+			font-family: monospace;
+		}
 
-        .final-score {
-            color: #fff;
-            font-size: 1.5em;
-            margin: 1rem 0;
-        }
+		.controls {
+			margin: 20px 0;
+		}
 
-        .menu-button {
-            display: inline-block;
-            padding: 10px 20px;
-            margin-top: 20px;
-            background: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
+		.status {
+			font-size: 1.2em;
+			margin: 10px 0;
+		}
 
-        .menu-button:hover {
-            background: #45a049;
-        }
-    </style>
+		.game-info {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+
+		.game-id {
+			color: #fff;
+			font-size: 18px;
+			margin: 10px 0;
+		}
+
+		.player-info {
+			background-color: rgba(255, 255, 255, 0.1);
+			padding: 10px;
+			border-radius: 5px;
+			margin: 10px 0;
+		}
+
+		body {
+			overflow: hidden;
+			/* Previene el scroll */
+			margin: 0;
+			padding: 20px;
+			background: #333;
+		}
+
+		.countdown {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 100px;
+			color: white;
+			font-weight: bold;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+		}
+
+		/* Añadir estilos para el mensaje de fin de juego */
+		.game-over {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.8);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.game-over-content {
+			background: #333;
+			padding: 2rem;
+			border-radius: 10px;
+			text-align: center;
+			border: 2px solid #fff;
+			box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+		}
+
+		.game-over h2 {
+			color: #fff;
+			font-size: 2em;
+			margin-bottom: 1rem;
+		}
+
+		.final-score {
+			color: #fff;
+			font-size: 1.5em;
+			margin: 1rem 0;
+		}
+
+		.menu-button {
+			display: inline-block;
+			padding: 10px 20px;
+			margin-top: 20px;
+			background: #4CAF50;
+			color: white;
+			text-decoration: none;
+			border-radius: 5px;
+			transition: background 0.3s;
+		}
+
+		.menu-button:hover {
+			background: #45a049;
+		}
+	</style>
 </head>
+
 <body>
-    <div class="game-container">
-        <div class="game-info">
-            <div class="score">
-                <span id="player1Score">0</span> - <span id="player2Score">0</span>
-            </div>
-            <!-- Solo mostrar ID de partida en modo multiplayer -->
-            {% if game_mode == 'multi' %}
-            <div class="game-id">ID Partida: {{ game_id }}</div>
-            {% endif %}
-            <div class="status" id="gameStatus">
-                {% if game_mode == 'single' %}
-                ¡Preparado!
-                {% else %}
-                Esperando oponente...
-                {% endif %}
-            </div>
-            {% if game_mode == 'multi' %}
-            <div class="player-info" id="playerInfo">Esperando asignación...</div>
-            {% endif %}
-        </div>
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
-        <div class="controls">
-            <!-- Controles contextuales según el modo de juego -->
-            {% if game_mode == 'single' %}
-            <p>Controles: W/S (Arriba/Abajo)</p>
-            {% else %}
-            <div id="controlsInfo">
-                <!-- Se actualizará dinámicamente con JavaScript -->
-            </div>
-            {% if game_mode == 'multi' %}
-            <p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
-            {% endif %}
-            {% endif %}
-        </div>
-        <div id="countdown" class="countdown" style="display: none;"></div>
-    </div>
-    <div class="game-over" id="gameOver">
-        <div class="game-over-content">
-            <h2 id="winnerMessage"></h2>
-            <div class="final-score" id="finalScore"></div>
-            <a href="{% url 'game:menu' %}" class="menu-button">Volver al Menú</a>
-        </div>
-    </div>
+	<div class="game-container">
+		<div class="game-info">
+			<div class="score">
+				<span id="player1Score">0</span> - <span id="player2Score">0</span>
+			</div>
+			<div class="game-id">ID Partida: {{ game_id }}</div>
+			<div class="status" id="gameStatus">Esperando oponente...</div>
+			<div class="player-info" id="playerInfo">Esperando asignación...</div>
+		</div>
+		<canvas id="gameCanvas" width="800" height="400"></canvas>
+		<div class="controls">
+			<div id="controlsInfo">
+				<!-- Se actualizará dinámicamente con JavaScript -->
+			</div>
+			<p>Comparte este ID con tu oponente para que se una: <strong>{{ game_id }}</strong></p>
+		</div>
+		<div id="countdown" class="countdown" style="display: none;"></div>
+	</div>
+	<div class="game-over" id="gameOver">
+		<div class="game-over-content">
+			<h2 id="winnerMessage"></h2>
+			<div class="final-score" id="finalScore"></div>
+			<a href="{% url 'game:menu' %}" class="menu-button">Volver al Menú</a>
+		</div>
+	</div>
 
-    <script>
-        // Conexión WebSocket
-        const gameId = '{{ game_id }}';
-        const userId = '{{ user_id }}';
-        const gameSocket = new WebSocket(
-            `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/game/${gameId}/`
-        );
+	<script>
+		// Conexión WebSocket
+		const gameId = '{{ game_id }}';
+		const userId = '{{ user_id }}';
+		const gameSocket = new WebSocket(
+			`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/game/${gameId}/`
+		);
 
-        // Canvas setup
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Game state
-        let gameState = null;
-        let playerSide = null;
-        let activeKeys = new Set();
-        let isMoving = false;
-        let movementInterval = null;
+		// Canvas setup
+		const canvas = document.getElementById('gameCanvas');
+		const ctx = canvas.getContext('2d');
 
-        // Event Listeners
-        document.addEventListener('keydown', (e) => {
-            e.preventDefault();
-            if (!playerSide || !gameState) return;
+		// Game state
+		let gameState = null;
+		let playerSide = null;
+		let activeKeys = new Set();
+		let isMoving = false;
+		let movementInterval = null;
 
-            const key = e.key.toLowerCase();
-            activeKeys.add(key);
+		// Event Listeners
+		document.addEventListener('keydown', (e) => {
+			e.preventDefault();
+			if (!playerSide || !gameState) return;
 
-            if (!isMoving) {
-                isMoving = true;
-                // Enviar movimiento inmediatamente al pulsar
-                sendPaddleMove();
-                // Establecer intervalo para movimiento continuo
-                movementInterval = setInterval(sendPaddleMove, 16); // ~60fps
-            }
-        });
+			const key = e.key.toLowerCase();
+			activeKeys.add(key);
 
-        document.addEventListener('keyup', (e) => {
-            if (!playerSide || !gameState) return;
+			if (!isMoving) {
+				isMoving = true;
+				// Enviar movimiento inmediatamente al pulsar
+				sendPaddleMove();
+				// Establecer intervalo para movimiento continuo
+				movementInterval = setInterval(sendPaddleMove, 16); // ~60fps
+			}
+		});
 
-            const key = e.key.toLowerCase();
-            activeKeys.delete(key);
+		document.addEventListener('keyup', (e) => {
+			if (!playerSide || !gameState) return;
 
-            // Si no hay teclas de movimiento presionadas, detener el movimiento
-            if (!(activeKeys.has('w') || activeKeys.has('s') || 
-                  activeKeys.has('arrowup') || activeKeys.has('arrowdown'))) {
-                isMoving = false;
-                if (movementInterval) {
-                    clearInterval(movementInterval);
-                    movementInterval = null;
-                }
-                // Enviar comando de parada
-                gameSocket.send(JSON.stringify({
-                    type: 'move_paddle',
-                    side: playerSide,
-                    direction: 0
-                }));
-            }
-        });
+			const key = e.key.toLowerCase();
+			activeKeys.delete(key);
 
-        // WebSocket handlers
-        gameSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            console.log('WebSocket message received:', data);
-            
-            if (data.type === 'game_state') {
-                const oldState = gameState;
-                gameState = data.state;
-                
-                // Mostrar countdown si está activo
-                const countdownElement = document.getElementById('countdown');
-                if (gameState.countdown !== undefined) {
-                    countdownElement.style.display = 'block';
-                    countdownElement.textContent = gameState.countdown;
-                } else {
-                    countdownElement.style.display = 'none';
-                }
-                
-                // Debug: comparar posiciones de las palas
-                if (oldState) {
-                    console.log('Left paddle:', {
-                        old: oldState.paddles.left.y,
-                        new: gameState.paddles.left.y
-                    });
-                    console.log('Right paddle:', {
-                        old: oldState.paddles.right.y,
-                        new: gameState.paddles.right.y
-                    });
-                }
-                
-                requestAnimationFrame(updateDisplay);  // Usar requestAnimationFrame para la actualización
-            } else if (data.type === 'game_start') {
-                document.getElementById('gameStatus').textContent = '¡Juego en curso!';
-                playerSide = data.player1_id === parseInt(userId) ? 'left' : 'right';
-                
-                // Solo mostrar información del jugador en modo multiplayer
-                const playerInfo = document.getElementById('playerInfo');
-                if (playerInfo && '{{ game_mode }}' === 'multi') {
-                    playerInfo.textContent = `Tú eres el ${playerSide === 'left' ? 'Jugador 1 (Izquierda)' : 'Jugador 2 (Derecha)'}`;
-                }
-                
-                updateControlsInfo();
-            } else if (data.type === 'game_finished') {
-                // Mostrar mensaje de fin de juego
-                const gameOver = document.getElementById('gameOver');
-                const winnerMessage = document.getElementById('winnerMessage');
-                const finalScore = document.getElementById('finalScore');
-                
-                let winnerText;
-                if (data.winner === 'abandoned') {
-                    winnerText = 'Partida abandonada';
-                } else if ('{{ game_mode }}' === 'single') {
-                    winnerText = data.winner === 'left' ? '¡Has ganado!' : '¡Ha ganado la CPU!';
-                } else {
-                    if (data.reason === 'desertion') {
-                        if (data.winner === playerSide) {
-                            winnerText = '¡Victoria! Tu oponente ha abandonado la partida';
-                        } else {
-                            winnerText = 'Has abandonado la partida';
-                        }
-                    } else {
-                        // Victoria normal por puntos
-                        winnerText = data.winner === playerSide ? '¡Has ganado la partida!' : 'Tu oponente ha ganado la partida';
-                    }
-                }
-                
-                winnerMessage.textContent = winnerText;
-                finalScore.textContent = `Puntuación final: ${data.final_score.left} - ${data.final_score.right}`;
-                gameOver.style.display = 'flex';
-                
-            }
-        };
+			// Si no hay teclas de movimiento presionadas, detener el movimiento
+			if (!(activeKeys.has('w') || activeKeys.has('s') ||
+				activeKeys.has('arrowup') || activeKeys.has('arrowdown'))) {
+				isMoving = false;
+				if (movementInterval) {
+					clearInterval(movementInterval);
+					movementInterval = null;
+				}
+				// Enviar comando de parada
+				gameSocket.send(JSON.stringify({
+					type: 'move_paddle',
+					side: playerSide,
+					direction: 0
+				}));
+			}
+		});
 
-        function sendPaddleMove() {
-            let direction = 0;
-            
-            if (playerSide === 'left') {
-                if (activeKeys.has('w')) direction = -1;
-                if (activeKeys.has('s')) direction = 1;
-            } else if (playerSide === 'right') {
-                if (activeKeys.has('arrowup')) direction = -1;
-                if (activeKeys.has('arrowdown')) direction = 1;
-            }
+		// WebSocket handlers
+		gameSocket.onmessage = function (e) {
+			const data = JSON.parse(e.data);
+			console.log('WebSocket message received:', data);
 
-            if (gameSocket.readyState === WebSocket.OPEN) {
-                gameSocket.send(JSON.stringify({
-                    type: 'move_paddle',
-                    side: playerSide,
-                    direction: direction
-                }));
-            }
-        }
+			if (data.type === 'game_state') {
+				const oldState = gameState;
+				gameState = data.state;
 
-        // Agregar este manejador de eventos para depuración
-        gameSocket.onopen = function(e) {
-            console.log('WebSocket connection established');
-        };
+				// Mostrar countdown si está activo
+				const countdownElement = document.getElementById('countdown');
+				if (gameState.countdown !== undefined) {
+					countdownElement.style.display = 'block';
+					countdownElement.textContent = gameState.countdown;
+				} else {
+					countdownElement.style.display = 'none';
+				}
 
-        gameSocket.onerror = function(e) {
-            console.error('WebSocket error:', e);
-        };
+				// Debug: comparar posiciones de las palas
+				if (oldState) {
+					console.log('Left paddle:', {
+						old: oldState.paddles.left.y,
+						new: gameState.paddles.left.y
+					});
+					console.log('Right paddle:', {
+						old: oldState.paddles.right.y,
+						new: gameState.paddles.right.y
+					});
+				}
 
-        // Modificar la función updateDisplay para añadir logs
-        function updateDisplay() {
-            if (!gameState) return;
+				requestAnimationFrame(updateDisplay);  // Usar requestAnimationFrame para la actualización
+			} else if (data.type === 'game_start') {
+				document.getElementById('gameStatus').textContent = '¡Juego en curso!';
+				playerSide = data.player1_id === parseInt(userId) ? 'left' : 'right';
 
-            // Clear canvas
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+				// Solo mostrar información del jugador en modo multiplayer
+				const playerInfo = document.getElementById('playerInfo');
+				if (playerInfo && '{{ game_mode }}' === 'multi') {
+					playerInfo.textContent = `Tú eres el ${playerSide === 'left' ? 'Jugador 1 (Izquierda)' : 'Jugador 2 (Derecha)'}`;
+				}
 
-            // Draw paddles
-            ctx.fillStyle = '#fff';
-            for (const [side, paddle] of Object.entries(gameState.paddles)) {
-                ctx.fillRect(
-                    paddle.x,
-                    paddle.y,
-                    paddle.width,
-                    paddle.height
-                );
-            }
+				updateControlsInfo();
+			} else if (data.type === 'game_finished') {
+				console.log('Game finished event received:', data);  // Debug log
+				const gameOver = document.getElementById('gameOver');
+				const winnerMessage = document.getElementById('winnerMessage');
+				const finalScore = document.getElementById('finalScore');
+				const status = document.getElementById('gameStatus');
 
-            // Draw ball
-            ctx.beginPath();
-            ctx.arc(
-                gameState.ball.x,
-                gameState.ball.y,
-                gameState.ball.radius,
-                0,
-                Math.PI * 2
-            );
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-            ctx.closePath();
+				let winnerText;
+				if (data.reason === 'victory') {
+					winnerText = data.winner === playerSide ?
+						'¡Has ganado la partida!' :
+						'Tu oponente ha ganado la partida';
+					status.textContent = winnerText;
+				} else if (data.reason === 'desertion') {
+					winnerText = data.winner === playerSide ?
+						'¡Victoria! Tu oponente ha abandonado la partida' :
+						'Has abandonado la partida';
+				}
 
-            // Update score
-            document.getElementById('player1Score').textContent = gameState.paddles.left.score;
-            document.getElementById('player2Score').textContent = gameState.paddles.right.score;
-        }
+				winnerMessage.textContent = winnerText;
+				finalScore.textContent = `Puntuación final: ${data.final_score.left} - ${data.final_score.right}`;
+				gameOver.style.display = 'flex';
 
-        // Asegurarnos de que el canvas tiene el tamaño correcto
-        function resizeCanvas() {
-            canvas.width = 800;  // Forzar el ancho
-            canvas.height = 400; // Forzar el alto
-            if (gameState) {
-                updateDisplay();  // Redibujar después de redimensionar
-            }
-        }
+				// Detener el juego
+				if (gameState) {
+					gameState.status = 'finished';
+				}
+				if (movementInterval) {
+					clearInterval(movementInterval);
+					movementInterval = null;
+				}
+			}
+		};
 
-        // Llamar a resizeCanvas al inicio y en cambios de ventana
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+		function sendPaddleMove() {
+			let direction = 0;
 
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (movementInterval) {
-                clearInterval(movementInterval);
-            }
-            gameSocket.close();
-        });
+			if (playerSide === 'left') {
+				if (activeKeys.has('w')) direction = -1;
+				if (activeKeys.has('s')) direction = 1;
+			} else if (playerSide === 'right') {
+				if (activeKeys.has('arrowup')) direction = -1;
+				if (activeKeys.has('arrowdown')) direction = 1;
+			}
 
-        // Actualizar el texto de los controles según el lado asignado
-        function updateControlsInfo() {
-            const controlsInfo = document.getElementById('controlsInfo');
-            if (controlsInfo) {
-                if (playerSide === 'left') {
-                    controlsInfo.textContent = 'Controles: W/S (Arriba/Abajo)';
-                } else if (playerSide === 'right') {
-                    controlsInfo.textContent = 'Controles: ↑/↓ (Arriba/Abajo)';
-                }
-            }
-        }
-    </script>
+			if (gameSocket.readyState === WebSocket.OPEN) {
+				gameSocket.send(JSON.stringify({
+					type: 'move_paddle',
+					side: playerSide,
+					direction: direction
+				}));
+			}
+		}
+
+		// Agregar este manejador de eventos para depuración
+		gameSocket.onopen = function (e) {
+			console.log('WebSocket connection established');
+		};
+
+		gameSocket.onerror = function (e) {
+			console.error('WebSocket error:', e);
+		};
+
+		// Modificar la función updateDisplay para añadir logs
+		function updateDisplay() {
+			if (!gameState) return;
+
+			// Clear canvas
+			ctx.fillStyle = '#000';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+			// Draw paddles
+			ctx.fillStyle = '#fff';
+			for (const [side, paddle] of Object.entries(gameState.paddles)) {
+				ctx.fillRect(
+					paddle.x,
+					paddle.y,
+					paddle.width,
+					paddle.height
+				);
+			}
+
+			// Draw ball
+			ctx.beginPath();
+			ctx.arc(
+				gameState.ball.x,
+				gameState.ball.y,
+				gameState.ball.radius,
+				0,
+				Math.PI * 2
+			);
+			ctx.fillStyle = '#fff';
+			ctx.fill();
+			ctx.closePath();
+
+			// Update score
+			document.getElementById('player1Score').textContent = gameState.paddles.left.score;
+			document.getElementById('player2Score').textContent = gameState.paddles.right.score;
+		}
+
+		// Asegurarnos de que el canvas tiene el tamaño correcto
+		function resizeCanvas() {
+			canvas.width = 800;  // Forzar el ancho
+			canvas.height = 400; // Forzar el alto
+			if (gameState) {
+				updateDisplay();  // Redibujar después de redimensionar
+			}
+		}
+
+		// Llamar a resizeCanvas al inicio y en cambios de ventana
+		resizeCanvas();
+		window.addEventListener('resize', resizeCanvas);
+
+		// Cleanup
+		window.addEventListener('beforeunload', () => {
+			if (movementInterval) {
+				clearInterval(movementInterval);
+			}
+			gameSocket.close();
+		});
+
+		// Actualizar el texto de los controles según el lado asignado
+		function updateControlsInfo() {
+			const controlsInfo = document.getElementById('controlsInfo');
+			if (controlsInfo) {
+				if (playerSide === 'left') {
+					controlsInfo.textContent = 'Controles: W/S (Arriba/Abajo)';
+				} else if (playerSide === 'right') {
+					controlsInfo.textContent = 'Controles: ↑/↓ (Arriba/Abajo)';
+				}
+			}
+		}
+	</script>
 </body>
+
 </html>

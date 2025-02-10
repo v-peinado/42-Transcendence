@@ -1,65 +1,86 @@
 import asyncio
-from ..utils.database_operations import DatabaseOperations
+from channels.db import database_sync_to_async
+from django.db import transaction
 
 class MultiplayerHandler:
     """Maneja la lógica específica del modo multijugador"""
 
     @staticmethod
     async def handle_player_join(consumer, game):
-        await consumer.initialize_game_state()
-        consumer.game_state.set_single_player(False)
-
-        player1 = await DatabaseOperations.get_player1(game)            	# Obtener jugador 1
-        player2 = await DatabaseOperations.get_player2(game)           		# Obtener jugador 2
+        """Iniciar o unirse a juego multijugador"""
         
-        # Asignación del lado en el que jugará el usuario
-        if player1 and player1.id == consumer.user.id:                  	# Si el jugador 1 es el usuario actual...
-            consumer.player_side = 'left'
-        elif not player2:                                               	# Si ya hay un jugador 1 y no hay un jugador 2...
-            consumer.player_side = 'right'
-        else:                                                           	# Si el usuario no es jugador 1 ni jugador 2...
-            consumer.player_side = None                                 	# --> El usuario es un espectador
+        if game.status == 'WAITING':
+            # Obtener player1 de forma asíncrona
+            player1 = await database_sync_to_async(getattr)(game, 'player1')
+            
+            if player1 == consumer.user:
+                consumer.side = 'left'
+            else:
+                consumer.side = 'right'
+                
+                @database_sync_to_async
+                def update_game():
+                    with transaction.atomic():
+                        game.refresh_from_db()
+                        game.player2 = consumer.user
+                        game.status = 'PLAYING'
+                        game.save()
+                    return game
 
-        if game.status == 'WAITING' and player1 != consumer.user and not player2:
-            await DatabaseOperations.update_game(game, consumer.user)
-            await consumer.channel_layer.group_send(
-                consumer.room_group_name,
-                {
-                    'type': 'game_start',
-                    'player1': player1.username,
-                    'player2': consumer.user.username,
-                    'player1_id': player1.id,
-                    'player2_id': consumer.user.id
-                }
-            )
-
-        if game.status == 'PLAYING':
-            consumer.game_state.status = 'playing'
-            asyncio.create_task(consumer.game_loop())
+                await update_game()
+                
+                # Notificar inicio del juego a todos los jugadores
+                await consumer.channel_layer.group_send(
+                    consumer.room_group_name,
+                    {
+                        'type': 'game_start',
+                        'player1': player1.username,
+                        'player2': consumer.user.username,
+                        'player1_id': player1.id,
+                        'player2_id': consumer.user.id
+                    }
+                )
+                
+                consumer.game_state.status = 'countdown'
+                await consumer.game_state.start_countdown()
+                asyncio.create_task(consumer.game_loop())
+        else:
+            # Obtener player2 de forma asíncrona
+            player2 = await database_sync_to_async(getattr)(game, 'player2')
+            consumer.side = 'right' if player2 and player2 == consumer.user else 'left'
 
     @staticmethod
     async def handle_player_disconnect(consumer):
         """Maneja la desconexión de un jugador"""
-        if consumer.player_side:
-            winner_side = 'right' if consumer.player_side == 'left' else 'left'
+        if hasattr(consumer, 'side'):
+            winner_side = 'right' if consumer.side == 'left' else 'left'
             consumer.game_state.status = 'finished'
             
-            game = await DatabaseOperations.get_game(consumer.game_id)
-            if game:
-                await DatabaseOperations.update_game_status(game, 'FINISHED')
-                winner_id = (await DatabaseOperations.get_player2(game)).id if consumer.player_side == 'left' else (await DatabaseOperations.get_player1(game)).id
-                await DatabaseOperations.update_game_winner(game, winner_id, consumer.game_state)
-                
-                await consumer.channel_layer.group_send(
-                    consumer.room_group_name,
-                    {
-                        'type': 'game_finished',
-                        'winner': winner_side,
-                        'reason': 'desertion',
-                        'deserter': consumer.player_side,
-                        'final_score': {
-                            'left': consumer.game_state.paddles['left'].score,
-                            'right': consumer.game_state.paddles['right'].score
-                        }
+            @database_sync_to_async
+            def update_game_on_disconnect():
+                with transaction.atomic():
+                    game = consumer.scope["game"]
+                    game.refresh_from_db()
+                    game.status = 'FINISHED'
+                    if consumer.side == 'left':
+                        game.winner = game.player2
+                    else:
+                        game.winner = game.player1
+                    game.save()
+                return game
+
+            await update_game_on_disconnect()
+            
+            await consumer.channel_layer.group_send(
+                consumer.room_group_name,
+                {
+                    'type': 'game_finished',
+                    'winner': winner_side,
+                    'reason': 'desertion',
+                    'deserter': consumer.side,
+                    'final_score': {
+                        'left': consumer.game_state.paddles['left'].score,
+                        'right': consumer.game_state.paddles['right'].score
                     }
-                )
+                }
+            )

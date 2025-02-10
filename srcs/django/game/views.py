@@ -8,23 +8,13 @@ def menu_page(request):
     return render(request, 'game/menu.html')
 
 @login_required
-def difficulty_select(request):
-    """Render página de selección de dificultad"""
-    return render(request, 'game/difficulty_select.html')
-
-@login_required
-def game_page(request, game_id=None, difficulty=None):
+def game_page(request, game_id=None):
     """Render página de juego"""
-    mode = request.GET.get('mode', 'multi')
-    if difficulty:
-        mode = 'single'
-    
     if game_id is None:
         game = Game.objects.create(
             player1=request.user,
-            status='PLAYING' if mode == 'single' else 'WAITING',
-            game_mode=mode.upper(),
-            difficulty=difficulty or 'medium'
+            status='WAITING',
+            game_mode='MULTI'
         )
         game_id = game.id
 
@@ -32,6 +22,5 @@ def game_page(request, game_id=None, difficulty=None):
         'user_id': request.user.id,
         'username': request.user.username,
         'game_id': game_id,
-        'game_mode': mode
     }
     return render(request, 'game/game.html', context)

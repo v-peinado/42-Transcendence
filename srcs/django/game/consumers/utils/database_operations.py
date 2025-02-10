@@ -1,4 +1,6 @@
 from channels.db import database_sync_to_async
+from django.utils import timezone
+from django.db import transaction
 from ...models import Game
 
 class DatabaseOperations:
@@ -9,7 +11,7 @@ class DatabaseOperations:
     def get_game(game_id):
         """Obtener juego por ID"""
         try:
-            return Game.objects.get(id=game_id)
+            return Game.objects.select_related('player1', 'player2').get(id=game_id)
         except Game.DoesNotExist:
             return None
 
@@ -37,15 +39,20 @@ class DatabaseOperations:
     @database_sync_to_async
     def update_game_status(game, status):
         """Actualizar estado del juego"""
-        game.status = status
-        game.save()
+        with transaction.atomic():
+            game.refresh_from_db()
+            game.status = status
+            if status == 'FINISHED':
+                game.finished_at = timezone.now()
+            game.save()
 
     @staticmethod
     @database_sync_to_async
     def update_game_winner(game, winner_id, game_state):
         """Actualizar ganador del juego"""
-        game.winner_id = winner_id
-        game.score_player1 = game_state.paddles['left'].score
-        game.score_player2 = game_state.paddles['right'].score
-        game.status = 'FINISHED'
-        game.save()
+        with transaction.atomic():
+            game.refresh_from_db()
+            game.winner_id = winner_id
+            game.score_player1 = game_state.paddles['left'].score
+            game.score_player2 = game_state.paddles['right'].score
+            game.save()

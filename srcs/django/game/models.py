@@ -40,22 +40,8 @@ class Game(models.Model):									# Modelo para la base de datos:
     )
     game_mode = models.CharField(							# Modo de juego
         max_length=20,
-        choices=[
-            ('SINGLE', 'Single Player'),
-            ('MULTI', 'Multiplayer')
-        ],
+        choices=[('MULTI', 'Multiplayer')],
         default='MULTI'
-    )
-    difficulty = models.CharField(							# Dificultad
-        max_length=20,
-        choices=[
-            ('easy', 'Fácil'),
-            ('medium', 'Intermedio'),
-            ('hard', 'Difícil'),
-            ('nightmare', 'Nightmare')
-        ],
-        null=True,											# Permitir null para modo multiplayer (no se necesita dificultad en modo multiplayer)
-        blank=True											# Permitir vacío en el formulario (no se necesita dificultad en modo multiplayer)
     )
 
     class Meta:												# Metaclase
