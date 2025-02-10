@@ -111,6 +111,8 @@
 .user-item {
     cursor: pointer;
     transition: background-color 0.3s;
+    position: relative;
+    padding-right: 25px; /* Espacio para el punto de notificación */
 }
 
 .user-item:hover {
@@ -273,4 +275,15 @@
     background: rgba(255, 255, 255, 0.05);
     padding: 10px;
     border-radius: 0 0 8px 8px;
+}
+
+.notification-dot {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: #dc3545;
+    border-radius: 50%;
 }

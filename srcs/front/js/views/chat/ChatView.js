@@ -86,33 +86,61 @@ export async function ChatView() {
     const privateSendButton = container.querySelector('#private-send-button');
 
     let currentPrivateChat = null; // Para mantener el canal actual
+    let messageHistory = new Map(); // Añadir al inicio con las otras variables
 
     // Función para añadir mensaje al chat
     function addMessage(data) {
-        const targetContainer = data.channel_name.startsWith('dm_') ? 
-            privateMessages : messagesContainer;
-
-        console.log('Mensaje recibido:', {
-            tipo: data.type,
-            usuario_id: data.user_id,
-            usuario_nombre: data.username,
-            mensaje: data.message,
-            canal: data.channel_name
-        });
-
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('msg');
-        messageDiv.classList.add(data.user_id === parseInt(localStorage.getItem('user_id')) ? 'my-msg' : 'other-msg');
+        const isPrivateMessage = data.channel_name?.startsWith('dm_');
         
-        const username = data.username;
-        const message = data.message;
-        messageDiv.innerHTML = `
-            <small class="d-block mb-1 text-muted">${username}</small>
-            <span>${message}</span>
-        `;
+        // Almacenar el mensaje en el historial
+        if (isPrivateMessage) {
+            if (!messageHistory.has(data.channel_name)) {
+                messageHistory.set(data.channel_name, []);
+            }
+            messageHistory.get(data.channel_name).push(data);
+        }
 
-        targetContainer.appendChild(messageDiv);
-        targetContainer.scrollTop = targetContainer.scrollHeight;
+        const isForCurrentChat = isPrivateMessage ? 
+            data.channel_name === currentPrivateChat : 
+            !data.channel_name?.startsWith('dm_');
+
+        // Si es un mensaje privado y no es para el chat actual
+        if (isPrivateMessage && !isForCurrentChat) {
+            // Buscar el elemento del usuario en la lista
+            const userItem = usersList.querySelector(`.user-item[data-user-id="${data.user_id}"]`);
+            if (userItem && !userItem.querySelector('.notification-dot')) {
+                const dot = document.createElement('span');
+                dot.className = 'notification-dot';
+                userItem.appendChild(dot);
+            }
+        }
+
+        // Solo mostrar el mensaje si es para el chat actual
+        if (isForCurrentChat) {
+            const targetContainer = isPrivateMessage ? privateMessages : messagesContainer;
+            
+            console.log('Mensaje recibido:', {
+                tipo: data.type,
+                usuario_id: data.user_id,
+                usuario_nombre: data.username,
+                mensaje: data.message,
+                canal: data.channel_name
+            });
+
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('msg');
+            messageDiv.classList.add(data.user_id === parseInt(localStorage.getItem('user_id')) ? 'my-msg' : 'other-msg');
+            
+            const username = data.username;
+            const message = data.message;
+            messageDiv.innerHTML = `
+                <small class="d-block mb-1 text-muted">${username}</small>
+                <span>${message}</span>
+            `;
+
+            targetContainer.appendChild(messageDiv);
+            targetContainer.scrollTop = targetContainer.scrollHeight;
+        }
     }
 
     // Función para abrir chat privado
@@ -165,8 +193,8 @@ export async function ChatView() {
         usersList.innerHTML = '';
         data.users.forEach(user => {
             const userDiv = document.createElement('div');
-            userDiv.classList.add('list-group-item');
-            userDiv.classList.add('user-item');
+            userDiv.classList.add('list-group-item', 'user-item');
+            userDiv.setAttribute('data-user-id', user.id); // Añadir el ID como atributo
             userDiv.innerHTML = `
                 <span class="user-status user-online"></span>
                 ${user.username}
@@ -174,7 +202,11 @@ export async function ChatView() {
             
             // No añadir click al propio usuario
             if (user.id !== parseInt(localStorage.getItem('user_id'))) {
-                userDiv.addEventListener('click', () => openPrivateChat(user.id, user.username));
+                userDiv.addEventListener('click', () => {
+                    const dot = userDiv.querySelector('.notification-dot');
+                    if (dot) dot.remove();
+                    openPrivateChat(user.id, user.username);
+                });
             }
             
             usersList.appendChild(userDiv);
@@ -234,15 +266,25 @@ export async function ChatView() {
     function showPrivateChat(channelName, username) {
         currentPrivateChat = channelName;
         
-        console.log('Activando chat privado:', {
-            channelName,
-            username,
-            currentPrivateChat // verificar que se guarda correctamente
-        });
-        
         // Actualizar interfaz
         privateChatUsername.textContent = username;
         privateMessages.innerHTML = '';
+        
+        // Mostrar mensajes históricos
+        const history = messageHistory.get(channelName) || [];
+        history.forEach(msg => {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('msg');
+            messageDiv.classList.add(msg.user_id === parseInt(localStorage.getItem('user_id')) ? 'my-msg' : 'other-msg');
+            
+            messageDiv.innerHTML = `
+                <small class="d-block mb-1 text-muted">${msg.username}</small>
+                <span>${msg.message}</span>
+            `;
+            privateMessages.appendChild(messageDiv);
+        });
+        
+        privateMessages.scrollTop = privateMessages.scrollHeight;
         privateMessageInput.value = '';
         
         // Asegurarnos de que el contenedor esté visible
