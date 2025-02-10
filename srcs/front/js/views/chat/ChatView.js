@@ -91,27 +91,29 @@ export async function ChatView() {
     // Función para añadir mensaje al chat
     function addMessage(data) {
         const isPrivateMessage = data.channel_name?.startsWith('dm_');
-        
-        // Almacenar el mensaje en el historial
-        if (isPrivateMessage) {
-            if (!messageHistory.has(data.channel_name)) {
-                messageHistory.set(data.channel_name, []);
-            }
-            messageHistory.get(data.channel_name).push(data);
-        }
-
         const isForCurrentChat = isPrivateMessage ? 
             data.channel_name === currentPrivateChat : 
             !data.channel_name?.startsWith('dm_');
 
-        // Si es un mensaje privado y no es para el chat actual
-        if (isPrivateMessage && !isForCurrentChat) {
-            // Buscar el elemento del usuario en la lista
-            const userItem = usersList.querySelector(`.user-item[data-user-id="${data.user_id}"]`);
-            if (userItem && !userItem.querySelector('.notification-dot')) {
-                const dot = document.createElement('span');
-                dot.className = 'notification-dot';
-                userItem.appendChild(dot);
+        // Si es un mensaje privado y no es del chat actual ni es nuestro propio mensaje
+        if (isPrivateMessage && !isForCurrentChat && data.user_id !== parseInt(localStorage.getItem('user_id'))) {
+            console.log('Intentando mostrar notificación para mensaje de:', {
+                userId: data.user_id,
+                username: data.username,
+                channelName: data.channel_name
+            });
+
+            // Buscar el elemento del usuario usando el atributo data-user-id
+            const userItem = document.querySelector(`.user-item[data-user-id="${data.user_id}"]`);
+            if (userItem) {
+                console.log('Usuario encontrado en la lista, añadiendo notificación');
+                if (!userItem.querySelector('.notification-dot')) {
+                    const dot = document.createElement('span');
+                    dot.className = 'notification-dot';
+                    userItem.appendChild(dot);
+                }
+            } else {
+                console.log('Usuario no encontrado en la lista');
             }
         }
 
@@ -140,6 +142,28 @@ export async function ChatView() {
 
             targetContainer.appendChild(messageDiv);
             targetContainer.scrollTop = targetContainer.scrollHeight;
+        }
+    }
+
+    // Función para manejar mensajes históricos
+    function handleHistoricalMessages(data) {
+        const isPrivateMessage = data.channel_name?.startsWith('dm_');
+        
+        // Almacenar mensaje en el historial
+        if (isPrivateMessage) {
+            if (!messageHistory.has(data.channel_name)) {
+                messageHistory.set(data.channel_name, []);
+            }
+            // Insertar en orden por timestamp
+            const messages = messageHistory.get(data.channel_name);
+            const timestamp = new Date(data.timestamp);
+            messages.push({...data, timestamp});
+            messages.sort((a, b) => a.timestamp - b.timestamp);
+        }
+
+        // Si es el chat actual, mostrar el mensaje
+        if (data.channel_name === currentPrivateChat || (!isPrivateMessage && data.channel_name === 'chat_general')) {
+            addMessage(data);
         }
     }
 
@@ -180,6 +204,13 @@ export async function ChatView() {
 
             // Mostrar el chat privado con el usuario seleccionado
             showPrivateChat(`dm_${minId}_${maxId}`, username);
+        }
+
+        // Eliminar la notificación al abrir el chat
+        const userItem = document.querySelector(`.user-item[data-user-id="${userId}"]`);
+        if (userItem) {
+            const dot = userItem.querySelector('.notification-dot');
+            if (dot) dot.remove();
         }
     }
 
@@ -349,7 +380,7 @@ export async function ChatView() {
 
     // Iniciar conexión WebSocket
     webSocketService.connect('general');
-    webSocketService.on('chat_message', addMessage);
+    webSocketService.on('chat_message', handleHistoricalMessages); // Cambiar esto
     webSocketService.on('user_list', updateUsersList);
     webSocketService.on('private_channels', handlePrivateChannels);
 
