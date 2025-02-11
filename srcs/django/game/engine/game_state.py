@@ -2,8 +2,6 @@ from .components.collision_manager import CollisionManager
 from .components.score_manager import ScoreManager
 from .entities.ball import Ball
 from .entities.paddle import Paddle
-import random
-import math
 
 class GameState:
     CANVAS_WIDTH = 1000
