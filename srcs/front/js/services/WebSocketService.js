@@ -3,44 +3,77 @@ class WebSocketService {
         this.socket = null;
         this.listeners = new Map();
         this.keepAliveInterval = null;
+        this.messageQueue = [];
+        this.isConnecting = false;
     }
 
     async connect(roomName = 'general') {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/ws/chat/${roomName}/`;
+        if (this.isConnecting) return;
+        this.isConnecting = true;
 
-        try {
-            this.socket = new WebSocket(wsUrl);
-            
-            this.socket.onopen = () => {
-                //aqui podemos añadir un mensaje de bienvenida o algo
-            };
+        return new Promise((resolve, reject) => {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            const wsUrl = `${protocol}//${host}/ws/chat/${roomName}/`;
 
-            this.socket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    const listeners = this.listeners.get(data.type) || [];
-                    listeners.forEach(callback => callback(data));
-                } catch (error) {
-                    console.error('Error parsing message:', error);
-                }
-            };
+            try {
+                // Añadir opciones para el WebSocket
+                const options = {
+                    rejectUnauthorized: false
+                };
 
-            this.socket.onclose = (event) => {
-                if (this.keepAliveInterval) {
-                    clearInterval(this.keepAliveInterval);
-                }
-            };
+                this.socket = new WebSocket(wsUrl);
+                
+                this.socket.addEventListener('error', (error) => {
+                    console.error('WebSocket SSL Error:', error);
+                    // Intentar reconectar con un retraso
+                    setTimeout(() => {
+                        if (!this.socket || this.socket.readyState === WebSocket.CLOSED) {
+                            console.log('Intentando reconectar...');
+                            this.connect(roomName);
+                        }
+                    }, 3000);
+                });
 
-            this.socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-        } catch (error) {
-            console.error('Error al crear WebSocket:', error);
-        }
+                this.socket.onopen = () => {
+                    console.log('WebSocket conectado');
+                    this.isConnecting = false;
+                    // Procesar mensajes en cola
+                    while (this.messageQueue.length > 0) {
+                        const message = this.messageQueue.shift();
+                        this.send(message);
+                    }
+                    resolve(this.socket);
+                };
 
-        return this.socket;
+                this.socket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('WebSocket mensaje recibido:', data); // Añadir este log
+                        const listeners = this.listeners.get(data.type) || [];
+                        console.log('Listeners para tipo', data.type, ':', listeners.length); // Añadir este log
+                        listeners.forEach(callback => callback(data));
+                    } catch (error) {
+                        console.error('Error parsing message:', error);
+                    }
+                };
+
+                this.socket.onclose = (event) => {
+                    if (this.keepAliveInterval) {
+                        clearInterval(this.keepAliveInterval);
+                    }
+                };
+
+                this.socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    reject(error);
+                };
+            } catch (error) {
+                console.error('Error al crear WebSocket:', error);
+                this.isConnecting = false;
+                reject(error);
+            }
+        });
     }
 
     disconnect() {
@@ -57,29 +90,40 @@ class WebSocketService {
     }
 
     send(message) {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-            const formattedMessage = {
-                type: message.type,
-                message: message.content || '',
-                user_id: parseInt(localStorage.getItem('user_id')),
-                username: localStorage.getItem('username')
-            };
-
-            // Si es un mensaje de chat, usar el channel_name proporcionado o construirlo
-            if (message.type === 'chat_message') {
-                formattedMessage.channel_name = message.channel_name || `chat_${message.room}`;
-            } 
-            // Si es para crear un canal privado, añadir IDs de usuarios
-            else if (message.type === 'create_private_channel') {
-                formattedMessage.user1_id = message.user1_id;
-                formattedMessage.user2_id = message.user2_id;
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.log('Socket no conectado, encolando mensaje:', message); // Añadir este log
+            this.messageQueue.push(message);
+            if (!this.isConnecting) {
+                this.connect();
             }
-            
-            console.log('Enviando mensaje formateado:', formattedMessage);
-            this.socket.send(JSON.stringify(formattedMessage));
-        } else {
-            console.error('Socket no conectado');
+            return;
         }
+
+        let formattedMessage = {};  // Cambiado para ser más simple
+
+        switch (message.type) {
+            case 'send_friend_request':
+                formattedMessage = {
+                    type: 'send_friend_request',
+                    from_user_id: parseInt(localStorage.getItem('user_id')),
+                    to_user_id: parseInt(message.to_user_id)
+                };
+                break;
+            case 'chat_message':
+                formattedMessage = {
+                    type: message.type,
+                    message: message.content || '',
+                    channel_name: message.channel_name || `chat_${message.room}`,
+                    user_id: parseInt(localStorage.getItem('user_id')),
+                    username: localStorage.getItem('username')
+                };
+                break;
+            default:
+                formattedMessage = { ...message };
+        }
+        
+        console.log('Enviando mensaje WebSocket:', formattedMessage); // Mejorado el mensaje de log
+        this.socket.send(JSON.stringify(formattedMessage));
     }
 
     startKeepAlive() {
