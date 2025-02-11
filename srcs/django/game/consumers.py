@@ -3,15 +3,18 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        """Conectar al websocket"""
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = f'game_{self.room_name}'
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
+        """Desconectar del websocket"""
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
+        """Recibir mensaje"""
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
 
@@ -25,6 +28,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
+        """Enviar mensaje al websocket (para ser recibido por el cliente)"""
         message = event['message']
 
         # Send message to WebSocket
@@ -34,6 +38,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
     async def game_finished(self, event):
+        """Enviar mensaje de fin de juego al websocket"""
         await self.send(text_data=json.dumps({
             'type': 'game_finished',
             'winner': event['winner'],

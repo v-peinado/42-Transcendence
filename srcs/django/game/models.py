@@ -38,11 +38,6 @@ class Game(models.Model):									# Modelo para la base de datos:
         ],
         default='WAITING'
     )
-    game_mode = models.CharField(							# Modo de juego
-        max_length=20,
-        choices=[('MULTI', 'Multiplayer')],
-        default='MULTI'
-    )
 
     class Meta:												# Metaclase
         ordering = ['-created_at']							# Ordenar por fecha de creación

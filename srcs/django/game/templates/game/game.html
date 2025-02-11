@@ -259,9 +259,8 @@
 				document.getElementById('gameStatus').textContent = '¡Juego en curso!';
 				playerSide = data.player1_id === parseInt(userId) ? 'left' : 'right';
 
-				// Solo mostrar información del jugador en modo multiplayer
 				const playerInfo = document.getElementById('playerInfo');
-				if (playerInfo && '{{ game_mode }}' === 'multi') {
+				if (playerInfo) {
 					playerInfo.textContent = `Tú eres el ${playerSide === 'left' ? 'Jugador 1 (Izquierda)' : 'Jugador 2 (Derecha)'}`;
 				}
 
