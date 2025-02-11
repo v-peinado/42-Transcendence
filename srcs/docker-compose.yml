@@ -83,10 +83,6 @@ services:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
       - vault_data:/etc/vault.d/data
-    environment:
-      - VAULT_ADDR=https://127.0.0.1:8200
-      #- VAULT_SKIP_VERIFY=true
-      - VAULT_MODE=production
     env_file:
       - .env
     depends_on:
