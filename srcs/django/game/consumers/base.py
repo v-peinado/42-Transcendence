@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from ..engine.game_state import GameState
+import json
 
 class BaseGameConsumer(AsyncJsonWebsocketConsumer):
     game_states = {}
@@ -9,8 +10,7 @@ class BaseGameConsumer(AsyncJsonWebsocketConsumer):
         self.game_id = self.scope['url_route']['kwargs']['game_id']
         self.room_group_name = f'game_{self.game_id}'
         self.user = self.scope['user']
-        self.game_state = None
-        self.player_side = None
+        self.game_state = await self.initialize_game_state()
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -32,5 +32,8 @@ class BaseGameConsumer(AsyncJsonWebsocketConsumer):
         """Centraliza la inicialización del estado del juego"""
         if self.game_id not in self.game_states:
             self.game_states[self.game_id] = GameState()
-        self.game_state = self.game_states[self.game_id]
-        return self.game_state
+        return self.game_states[self.game_id]
+
+    async def game_finished(self, event):
+        """Enviar mensaje de fin de juego"""
+        await self.send(text_data=json.dumps(event))

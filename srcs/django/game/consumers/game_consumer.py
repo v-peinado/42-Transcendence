@@ -6,15 +6,12 @@ from .handlers.game_state_handler import GameStateHandler
 from .handlers.multiplayer_handler import MultiplayerHandler
 from .utils.database_operations import DatabaseOperations
 from ..models import Game
-from ..engine.game_state import GameState
 
 class GameConsumer(BaseGameConsumer):
     """Consumidor principal del juego que coordina los diferentes handlers"""
-    game_states = {}                                                 # Diccionario de estados de juego compartidos
 
     async def connect(self):
         await super().connect()
-        self.game_id = self.scope['url_route']['kwargs']['game_id']
         
         @database_sync_to_async
         def get_game():
@@ -24,14 +21,7 @@ class GameConsumer(BaseGameConsumer):
         self.scope["game"] = game
         
         if game:
-            await self.initialize_game_state()
             await MultiplayerHandler.handle_player_join(self, game)
-
-    async def initialize_game_state(self):
-        """Inicializa el estado del juego si no existe"""
-        if self.game_id not in self.game_states:
-            self.game_states[self.game_id] = GameState()
-        self.game_state = self.game_states[self.game_id]
 
     async def disconnect(self, close_code):
         if self.game_state:
@@ -69,7 +59,3 @@ class GameConsumer(BaseGameConsumer):
             'type': 'game_state',
             'state': event['state']
         }))
-
-    async def game_finished(self, event):
-        """Enviar mensaje de fin de juego"""
-        await self.send(text_data=json.dumps(event))
