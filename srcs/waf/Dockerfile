@@ -46,9 +46,13 @@ RUN apt-get update && \
 	chmod 640 /var/log/vault/audit.log && \
 	chown -R nginxuser:nginxuser /var/log/vault/audit.log
 
-# Copiar archivos de configuración (mantener COPY separado ya que cambia más frecuentemente)
+# Copiar archivos de configuración (actualizar esta sección)
 COPY waf/vault/config.conf /etc/vault.d/config.hcl
-COPY waf/vault/init-vault.sh /usr/local/bin/
+COPY waf/vault/scripts/vault-setup.sh /usr/local/bin/
+COPY waf/vault/scripts/vault-config.sh /usr/local/bin/
+COPY waf/vault/scripts/vault-init.sh /usr/local/bin/
+COPY waf/vault/scripts/vault-secrets.sh /usr/local/bin/
+COPY waf/vault/scripts/logger.sh /usr/local/bin/
 COPY waf/custom-nginx.conf /etc/nginx/nginx.conf
 COPY ssl/generate-ssl.sh /usr/local/bin/
 COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
@@ -56,10 +60,14 @@ COPY waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
 COPY waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
 COPY waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
 
-# Configurar permisos de archivos copiados y generar SSL en una sola capa
+# Configurar permisos (actualizar esta sección)
 RUN chmod +x \
+	/usr/local/bin/vault-setup.sh \
+	/usr/local/bin/vault-config.sh \
+	/usr/local/bin/vault-init.sh \
+	/usr/local/bin/vault-secrets.sh \
+	/usr/local/bin/logger.sh \
 	/usr/local/bin/generate-ssl.sh \
-	/usr/local/bin/init-vault.sh \
 	/docker-entrypoint.d/20-generate-ssl.sh && \
 	ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf && \
 	chmod 644 /etc/nginx/modsecurity.d/* \
@@ -80,5 +88,5 @@ EXPOSE 8081 8200 8445
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 	CMD curl -f -k https://localhost:8444/health || exit 1
 
-# Comando de inicio
-CMD ["sh", "-c", "/usr/local/bin/init-vault.sh && nginx -g 'daemon off;'"]
+# Actualizar el comando de inicio
+CMD ["sh", "-c", "/usr/local/bin/vault-setup.sh"]
