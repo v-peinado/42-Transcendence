@@ -227,10 +227,8 @@
 		// WebSocket handlers
 		gameSocket.onmessage = function (e) {
 			const data = JSON.parse(e.data);
-			console.log('WebSocket message received:', data);
 
 			if (data.type === 'game_state') {
-				const oldState = gameState;
 				gameState = data.state;
 
 				// Mostrar countdown si está activo
@@ -242,19 +240,7 @@
 					countdownElement.style.display = 'none';
 				}
 
-				// Debug: comparar posiciones de las palas
-				if (oldState) {
-					console.log('Left paddle:', {
-						old: oldState.paddles.left.y,
-						new: gameState.paddles.left.y
-					});
-					console.log('Right paddle:', {
-						old: oldState.paddles.right.y,
-						new: gameState.paddles.right.y
-					});
-				}
-
-				requestAnimationFrame(updateDisplay);  // Usar requestAnimationFrame para la actualización
+				requestAnimationFrame(updateDisplay);
 			} else if (data.type === 'game_start') {
 				document.getElementById('gameStatus').textContent = '¡Juego en curso!';
 				playerSide = data.player1_id === parseInt(userId) ? 'left' : 'right';
@@ -266,7 +252,6 @@
 
 				updateControlsInfo();
 			} else if (data.type === 'game_finished') {
-				console.log('Game finished event received:', data);  // Debug log
 				const gameOver = document.getElementById('gameOver');
 				const winnerMessage = document.getElementById('winnerMessage');
 				const finalScore = document.getElementById('finalScore');
@@ -289,9 +274,7 @@
 				gameOver.style.display = 'flex';
 
 				// Detener el juego
-				if (gameState) {
-					gameState.status = 'finished';
-				}
+				gameState.status = 'finished';
 				if (movementInterval) {
 					clearInterval(movementInterval);
 					movementInterval = null;
@@ -336,10 +319,6 @@
 			ctx.fillStyle = 'rgb(85, 5, 45)';
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-			// Debug de dimensiones
-			console.log('Canvas dimensions:', canvas.width, canvas.height);
-			console.log('Game state dimensions:', gameState.canvas.width, gameState.canvas.height);
-
 			// Dibujar paletas
 			ctx.fillStyle = 'gray';
 			for (const [side, paddle] of Object.entries(gameState.paddles)) {
@@ -366,10 +345,6 @@
 			// Actualizar marcador
 			document.getElementById('player1Score').textContent = gameState.paddles.left.score;
 			document.getElementById('player2Score').textContent = gameState.paddles.right.score;
-
-			// Debug
-			console.log('Ball position:', gameState.ball.x, gameState.ball.y);
-			console.log('Ball speed:', gameState.ball.speed_x, gameState.ball.speed_y);
 		}
 
 		// Asegurarnos de que el canvas tiene el tamaño correcto
