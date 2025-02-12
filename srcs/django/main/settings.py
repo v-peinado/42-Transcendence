@@ -15,92 +15,94 @@ import os
 from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
 
-load_dotenv()																# Cargar variables de entorno desde el archivo .env
+load_dotenv()  # Load environment variables from .env file
 
-# Construir rutas de directorios base y raíz del proyecto Django (main)
+# Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Configuración básica del proyecto
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', get_random_secret_key())	# Clave secreta para la generación de tokens y contraseñas (generar una clave aleatoria)
-DEBUG = True																# Modo de depuración (True para desarrollo, False para producción)
+# Basic project configuration
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY", get_random_secret_key()
+)  # Secret key for token and password generation
+DEBUG = True  # Debug mode (True for development, False for production)
 
-# Definir hosts permitidos en producción (por defecto no permitimos ningún host)
-#ALLOWED_HOSTS = []
+# Define allowed hosts in production (by default, no hosts allowed)
+# ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Definir hosts permitidos en producción (por defecto no permitimos ningún host)
-#ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-
-# Definir aplicaciones instaladas en el proyecto
+# Define installed applications in the project
 INSTALLED_APPS = [
-    'daphne',
-    'jazzmin',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'authentication',
-    'authentication.fortytwo_auth',
-    'channels',
-    'chat',
-    'tournament',
-    'corsheaders',
-    'game',
+    "daphne",
+    "jazzmin",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "authentication",
+    "authentication.fortytwo_auth",
+    "channels",
+    "chat",
+    "tournament",
+    "corsheaders",
+    "game",
 ]
 
-# Configuración de Jazzmin (panel de administración personalizado basado en Django Admin)
+# Jazzmin configuration (custom admin panel based on Django Admin)
 JAZZMIN_SETTINGS = {
     "site_title": "Pong Admin",
     "site_header": "Pong Administration",
-    "welcome_sign": "Bienvenido al Panel de Administración",
+    "welcome_sign": "Welcome to the Admin Panel",
     "show_ui_builder": True,
     "changeform_format": "horizontal_tabs",
 }
 
-# Configuración de middleware (intermediarios por los que pasan las peticiones entre el cliente y la aplicación)
-# Los middleware se ejecutan en orden de arriba hacía abajo y están definidos por defecto en Django
+# Middleware configuration (intermediaries through which requests pass between client and application)
+# Middleware executes in top-down order and is defined by default in Django
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',					# Middleware de seguridad
-    'corsheaders.middleware.CorsMiddleware',							# Middleware para CORS
-    'django.middleware.common.CommonMiddleware',						# Middleware común (para el manejo de cookies)
-    'django.middleware.csrf.CsrfViewMiddleware',						# Middleware para protección CSRF (Cross-Site Request Forgery)
-    'django.contrib.sessions.middleware.SessionMiddleware',				# Middleware para el manejo de sesiones
-    'django.contrib.auth.middleware.AuthenticationMiddleware',			# Middleware para la autenticación de usuarios
-    'django.contrib.messages.middleware.MessageMiddleware',				# Middleware para el manejo de mensajes
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',			# Middleware para protección contra ataques de clickjacking
+    "django.middleware.security.SecurityMiddleware",				# Security middleware
+    "corsheaders.middleware.CorsMiddleware",						# CORS middleware
+    "django.middleware.common.CommonMiddleware",					# Common middleware (for cookie handling)
+    "django.middleware.csrf.CsrfViewMiddleware",					# CSRF protection middleware
+    "django.contrib.sessions.middleware.SessionMiddleware",			# Session handling middleware
+    "django.contrib.auth.middleware.AuthenticationMiddleware",		# User authentication middleware
+    "django.contrib.messages.middleware.MessageMiddleware",			# Message handling middleware
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",		# Clickjacking protection middleware
 ]
 
-# Configuración de CORS (Cross-Origin Resource Sharing - Compartir recursos entre diferentes dominios)
-CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False						# Permitir todos los orígenes en desarrollo 
-CORS_ALLOWED_ORIGINS = [												# Orígenes permitidos para CORS
+# CORS configuration (Cross-Origin Resource Sharing)
+CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False					# Allow all origins in development
+CORS_ALLOWED_ORIGINS = [											# Allowed origins for CORS
     "https://localhost:8443",
 ]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS								# Orígenes de confianza para CSRF
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS							# Trusted origins for CSRF
 
-# Configuración de plantillas y archivos estáticos
-ROOT_URLCONF = 'main.urls'
+# Template and static files configuration
+ROOT_URLCONF = "main.urls"
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'authentication/web/templates')],	# Directorio de plantillas personalizadas (desarrollo)
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            os.path.join(BASE_DIR, "authentication/web/templates")
+        ],  														# Custom template directory (development)
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-# WSGI = Web Server Gateway Interface (Interfaz de pasarela de servidor web)
-# Es una especificación para la comunicación entre servidores web y aplicaciones web o frameworks de aplicaciones web
+# WSGI = Web Server Gateway Interface
+# It is a specification for communication between web servers and web applications or web application frameworks
 # WSGI_APPLICATION = 'main.wsgi.application'
-ASGI_APPLICATION = 'main.asgi.application'
+ASGI_APPLICATION = "main.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -111,7 +113,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-# Configuración de la base de datos
+# Database configuration
 DATABASES = {
     "default": {
         "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
@@ -123,93 +125,108 @@ DATABASES = {
     }
 }
 
-# Validación de contraseñas para los usuarios (contraseñas seguras)
+# Password validation for users (secure passwords)
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},	# Validar que la contraseña no sea similar a atributos del usuario
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},				# Validar que la contraseña tenga una longitud mínima
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},			# Validar que la contraseña no sea una contraseña común
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},			# Validar que la contraseña contenga al menos un dígito
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },  # Validate that the password is not similar to user attributes
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"
+    },  # Validate that the password has a minimum length
+    {
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"
+    },  # Validate that the password is not a common password
+    {
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"
+    },  # Validate that the password contains at least one digit
 ]
 
-# Configuración de internacionalización y zonas horarias
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Internationalization and time zone settings
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# Archivos estáticos y media (imágenes, videos, etc.)
-# En producción, estos archivos deberan ser servidos por NGINX
-# y se configurarán en el archivo de configuración de Nginx (comentar o eliminar estas líneas)
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Static and media files (images, videos, etc.)
+# In production, these files should be served by NGINX
+# and will be configured in the Nginx configuration file (comment or remove these lines)
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 FILE_UPLOAD_PERMISSIONS = 0o644
 
-# Configuración de autenticación personalizada con el modelo CustomUser definido en authentication.models
-# Usamos el modelo CustomUser en lugar del modelo de usuario predeterminado de Django porque hemos añadido campos adicionales
-# y hemos modificado el comportamiento de la autenticación para permitir el inicio de sesión con 42 o con un correo electrónico
-AUTH_USER_MODEL = 'authentication.CustomUser'
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'user'
-LOGOUT_REDIRECT_URL = 'login'
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Custom authentication configuration with CustomUser model defined in authentication.models
+# We use CustomUser model instead of Django's default user model because we've added additional fields
+# and modified authentication behavior to allow login with 42 or email
+AUTH_USER_MODEL = "authentication.CustomUser"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "user"
+LOGOUT_REDIRECT_URL = "login"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Variables de entorno para la autenticación con 42
-FORTYTWO_CLIENT_ID = os.environ.get('FORTYTWO_CLIENT_ID')
-FORTYTWO_CLIENT_SECRET = os.environ.get('FORTYTWO_CLIENT_SECRET')
-FORTYTWO_REDIRECT_URI = os.environ.get('FORTYTWO_REDIRECT_URI')
-FORTYTWO_API_UID = os.environ.get('FORTYTWO_API_UID')
-FORTYTWO_API_SECRET = os.environ.get('FORTYTWO_API_SECRET')
-FORTYTWO_API_URL = os.environ.get('FORTYTWO_API_URL')
+# Environment variables for 42 authentication
+FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")
+FORTYTWO_CLIENT_SECRET = os.environ.get("FORTYTWO_CLIENT_SECRET")
+FORTYTWO_REDIRECT_URI = os.environ.get("FORTYTWO_REDIRECT_URI")
+FORTYTWO_API_UID = os.environ.get("FORTYTWO_API_UID")
+FORTYTWO_API_SECRET = os.environ.get("FORTYTWO_API_SECRET")
+FORTYTWO_API_URL = os.environ.get("FORTYTWO_API_URL")
 
-# Variables de entorno para el envío de correos electrónicos (SMTP)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'# Usar este backend para imprimir los correos en la consola
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'	# Usar este backend para enviar correos reales
-EMAIL_HOST = os.environ.get('EMAIL_HOST')						
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))				
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS') == 'True'		# Usar TLS para enviar correos (TLS es una versión segura de SSL)
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')				
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')		
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')		
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'						# Se requiere verificar la dirección de correo electrónico para activar la cuenta
+# Environment variables for sending emails (SMTP)
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"	# Use this backend to print emails in the console
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'		# Use this backend to send real emails
+EMAIL_HOST = os.environ.get("EMAIL_HOST")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+EMAIL_USE_TLS = (
+    os.environ.get("EMAIL_USE_TLS") == "True"
+)  # Use TLS to send emails (TLS is a secure version of SSL)
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
+ACCOUNT_EMAIL_VERIFICATION = (
+    "mandatory"														# Email address verification is required to activate the account
+)
 
 # Frontend settings
-FRONTEND_URL = 'https://localhost:8445'  # URL del WAF
-SITE_URL = FRONTEND_URL                  # Asegurar que se usa la misma URL
+FRONTEND_URL = "https://localhost:8445"								# WAF URL
+SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
-# Actualizar los CORS y CSRF settings
+# Update CORS and CSRF settings
 CORS_ALLOWED_ORIGINS = [
-    "https://localhost:8445",    # WAF
-    "https://localhost:8443",    # NGINX
-    "http://localhost:3000"      # Frontend desarrollo
+    "https://localhost:8445",
+    "https://localhost:8443",
+    "http://localhost:3000",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    "https://localhost:8445",    # WAF
-    "https://localhost:8443",    # NGINX
-    "http://localhost:8082",     # HTTP WAF
-    "ws://localhost:8000",       # WebSocket directo
-    "wss://localhost:8445",      # WebSocket seguro WAF
+    "https://localhost:8445",
+    "https://localhost:8443",
+    "http://localhost:8082",
+    "ws://localhost:8000",
+    "wss://localhost:8445",
 ]
 
-# Settings para el manejo de sesiones y cookies
+# Session and cookie handling settings
 if DEBUG:
-    ALLOWED_HOSTS = ['*']
+    ALLOWED_HOSTS = ["*"]
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
     CORS_ALLOW_ALL_ORIGINS = False
 
-# Settings de seguridad adicionales
-SECURE_BROWSER_XSS_FILTER = True								# Protección contra ataques XSS
-PASSWORD_RESET_TIMEOUT = 300									# 300 segundos (5 minutos)	
-	
-# Estas no son necesarias si se usa NGINX como proxy, pero se pueden dejar activadas para mayor seguridad
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')	# Esto es para Heroku (no es necesario para NGINX)
-SECURE_CONTENT_TYPE_NOSNIFF = True								# Protección contra ataques MIME sniffing (no es necesario para NGINX)
-X_FRAME_OPTIONS = 'DENY'										# Protección contra ataques de clickjacking (no es necesario para NGINX)
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+PASSWORD_RESET_TIMEOUT = 300										# 300 seconds (5 minutes)
 
-# Settings para la generación de tokens JWT
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
-JWT_ALGORITHM = 'HS256'											# Algoritmo de encriptación estándar
+# These are not necessary if using NGINX as proxy, but can be kept enabled for extra security
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
+SECURE_CONTENT_TYPE_NOSNIFF = True									# MIME sniffing attack protection
+X_FRAME_OPTIONS = "DENY"											# Clickjacking attack protection
+
+# JWT token generation settings
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key")
+JWT_ALGORITHM = "HS256"												# Standard encryption algorithm
