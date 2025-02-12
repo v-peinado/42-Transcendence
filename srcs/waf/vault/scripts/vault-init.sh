@@ -80,7 +80,8 @@ configure_vault() {
         return 1
     fi
     
-    export VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
+    export VAULT_TOKEN
+    VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
     export VAULT_ADDR='https://127.0.0.1:8200'
     
     until vault status >/dev/null 2>&1; do

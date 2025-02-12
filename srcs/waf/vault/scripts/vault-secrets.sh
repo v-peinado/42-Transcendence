@@ -31,13 +31,13 @@ store_secrets() {
 store_secret() {
     local path=$1
     local vars=$2
-    local values=""
+    local -a value_args=()
     
     for var in $vars; do
-        values+="${var}=\"${!var}\" "
+        value_args+=("${var}=${!var}")
     done
 
-    if vault kv put "secret/$path" ${values} >/dev/null 2>&1; then
+    if vault kv put "secret/$path" "${value_args[@]}" >/dev/null 2>&1; then
         log_secret "$path"
     else
         log "ERROR" "Failed to store secret: $path"

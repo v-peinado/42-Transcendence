@@ -13,14 +13,26 @@
 # before proceeding to the next one, providing
 # a robust and secure system initialization.
 
-# Load required modules
-for module in logger.sh vault-config.sh vault-init.sh vault-secrets.sh; do
-    if [ -f "/usr/local/bin/${module}" ]; then
-        source "/usr/local/bin/${module}"
-    else
-        echo "Error: Module ${module} not found"
+# Define modules path
+MODULES_PATH="/usr/local/bin"
+REQUIRED_MODULES=(
+    "${MODULES_PATH}/logger.sh"
+    "${MODULES_PATH}/vault-config.sh"
+    "${MODULES_PATH}/vault-init.sh"
+    "${MODULES_PATH}/vault-secrets.sh"
+)
+
+# Verify and load modules
+for module in "${REQUIRED_MODULES[@]}"; do
+    if [ ! -f "$module" ]; then
+        echo "Error: Required module not found: $module"
         exit 1
     fi
+    # shellcheck source=/usr/local/bin/logger.sh
+    # shellcheck source=/usr/local/bin/vault-config.sh
+    # shellcheck source=/usr/local/bin/vault-init.sh
+    # shellcheck source=/usr/local/bin/vault-secrets.sh
+    source "$module"
 done
 
 # Inicializar servicios en orden

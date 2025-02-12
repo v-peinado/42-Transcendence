@@ -24,12 +24,12 @@ cleanup() {
 
 # Log informational messages
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    printf "${GREEN}[INFO]${NC} %s\n" "$1"
 }
 
 # Log error messages
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
+    printf "${RED}[ERROR]${NC} %s\n" "$1" >&2
 }
 
 # Create SSL directory and certificate configuration
@@ -88,10 +88,10 @@ generate_certificates() {
     chmod 600 "$KEY_FILE"
     
     # Verify certificates were generated successfully
-    [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ] || {
+    if ! { [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; }; then
         log_error "Certificate verification failed"
         return 1
-    }
+    fi
     
     log_info "Certificates generated in: $SSL_DIR"
 }

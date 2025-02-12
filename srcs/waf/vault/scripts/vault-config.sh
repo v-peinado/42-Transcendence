@@ -9,7 +9,7 @@
 # - Environment preparation for Vault execution
 
 VAULT_MODE=${VAULT_MODE:-"production"}
-VAULT_CONFIG="/etc/vault.d/config.hcl"
+export VAULT_CONFIG="/etc/vault.d/config.hcl"
 
 setup_initial() {
     mkdir -p "${LOG_DIR}"
