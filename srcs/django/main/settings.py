@@ -15,7 +15,7 @@ import os
 from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
 
-load_dotenv()														# Load environment variables from .env file
+load_dotenv()  # Load environment variables from .env file
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Basic project configuration
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY", get_random_secret_key()
-)																	# Secret key for token and password generation
-DEBUG = True														# Debug mode (True for development, False for production)
+)  # Secret key for token and password generation
+DEBUG = True  # Debug mode (True for development, False for production)
 
 # Define allowed hosts in production (by default, no hosts allowed)
 # ALLOWED_HOSTS = []
@@ -61,23 +61,23 @@ JAZZMIN_SETTINGS = {
 # Middleware configuration (intermediaries through which requests pass between client and application)
 # Middleware executes in top-down order and is defined by default in Django
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",				# Security middleware
-    "corsheaders.middleware.CorsMiddleware",						# CORS middleware
-    "django.middleware.common.CommonMiddleware",					# Common middleware (for cookie handling)
-    "django.middleware.csrf.CsrfViewMiddleware",					# CSRF protection middleware
-    "django.contrib.sessions.middleware.SessionMiddleware",			# Session handling middleware
-    "django.contrib.auth.middleware.AuthenticationMiddleware",		# User authentication middleware
-    "django.contrib.messages.middleware.MessageMiddleware",			# Message handling middleware
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",		# Clickjacking protection middleware
+    "django.middleware.security.SecurityMiddleware",  # Security middleware
+    "corsheaders.middleware.CorsMiddleware",  # CORS middleware
+    "django.middleware.common.CommonMiddleware",  # Common middleware (for cookie handling)
+    "django.middleware.csrf.CsrfViewMiddleware",  # CSRF protection middleware
+    "django.contrib.sessions.middleware.SessionMiddleware",  # Session handling middleware
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # User authentication middleware
+    "django.contrib.messages.middleware.MessageMiddleware",  # Message handling middleware
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
 ]
 
 # CORS configuration (Cross-Origin Resource Sharing)
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False					# Allow all origins in development
-CORS_ALLOWED_ORIGINS = [											# Allowed origins for CORS
+CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False  # Allow all origins in development
+CORS_ALLOWED_ORIGINS = [  # Allowed origins for CORS
     "https://localhost:8443",
 ]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS							# Trusted origins for CSRF
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS  # Trusted origins for CSRF
 
 # Template and static files configuration
 ROOT_URLCONF = "main.urls"
@@ -86,7 +86,7 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
             os.path.join(BASE_DIR, "authentication/web/templates")
-        ],  														# Custom template directory (development)
+        ],  # Custom template directory (development)
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -174,7 +174,7 @@ FORTYTWO_API_SECRET = os.environ.get("FORTYTWO_API_SECRET")
 FORTYTWO_API_URL = os.environ.get("FORTYTWO_API_URL")
 
 # Environment variables for sending emails (SMTP)
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"	# Use this backend to print emails in the console
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Use this backend to print emails in the console
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'		# Use this backend to send real emails
 EMAIL_HOST = os.environ.get("EMAIL_HOST")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
@@ -185,11 +185,11 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 ACCOUNT_EMAIL_VERIFICATION = (
-    "mandatory"														# Email address verification is required to activate the account
+    "mandatory"  # Email address verification is required to activate the account
 )
 
 # Frontend settings
-FRONTEND_URL = "https://localhost:8445"								# WAF URL
+FRONTEND_URL = "https://localhost:8445"  # WAF URL
 SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
@@ -217,16 +217,16 @@ else:
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
-PASSWORD_RESET_TIMEOUT = 300										# 300 seconds (5 minutes)
+PASSWORD_RESET_TIMEOUT = 300  # 300 seconds (5 minutes)
 
 # These are not necessary if using NGINX as proxy, but can be kept enabled for extra security
 SECURE_PROXY_SSL_HEADER = (
     "HTTP_X_FORWARDED_PROTO",
     "https",
 )
-SECURE_CONTENT_TYPE_NOSNIFF = True									# MIME sniffing attack protection
-X_FRAME_OPTIONS = "DENY"											# Clickjacking attack protection
+SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME sniffing attack protection
+X_FRAME_OPTIONS = "DENY"  # Clickjacking attack protection
 
 # JWT token generation settings
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key")
-JWT_ALGORITHM = "HS256"												# Standard encryption algorithm
+JWT_ALGORITHM = "HS256"  # Standard encryption algorithm

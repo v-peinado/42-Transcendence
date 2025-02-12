@@ -20,36 +20,36 @@ class GameState:
         paddle_y = (self.CANVAS_HEIGHT - self.PADDLE_HEIGHT) / 2
         self.paddles = {
             "left": Paddle(
-                x=10,												# 10 pixels from left edge
+                x=10,  # 10 pixels from left edge
                 y=paddle_y,
                 width=self.PADDLE_WIDTH,
                 height=self.PADDLE_HEIGHT,
             ),
             "right": Paddle(
-                x=self.CANVAS_WIDTH - 20,							# 10 pixels from right edge
+                x=self.CANVAS_WIDTH - 20,  # 10 pixels from right edge
                 y=paddle_y,
                 width=self.PADDLE_WIDTH,
                 height=self.PADDLE_HEIGHT,
             ),
         }
 
-        self.status = "waiting"										# Initial game status
+        self.status = "waiting"  # Initial game status
         self.countdown = 3
         self.countdown_active = False
 
-        self.collision_manager = CollisionManager(self)				# Initialize collision manager
-        self.score_manager = ScoreManager(self)						# Initialize score manager
+        self.collision_manager = CollisionManager(self)  # Initialize collision manager
+        self.score_manager = ScoreManager(self)  # Initialize score manager
 
     def update(self, timestamp=None):
         """Updates the game state"""
         if self.status != "playing":
             return None
 
-        self.ball.update(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)		# Update ball position
+        self.ball.update(self.CANVAS_WIDTH, self.CANVAS_HEIGHT)  # Update ball position
 
-        self.collision_manager.check_collisions()					# Check paddle collisions
+        self.collision_manager.check_collisions()  # Check paddle collisions
 
-        winner = self.score_manager.check_scoring()					# Check for winner
+        winner = self.score_manager.check_scoring()  # Check for winner
         if winner:
             # print(f"Winner detected: {winner} - Scores: {self.paddles['left'].score}-{self.paddles['right'].score}")
             self.status = "finished"
@@ -57,7 +57,7 @@ class GameState:
 
         return None
 
-    def move_paddle(self, side, direction):							# Move paddle
+    def move_paddle(self, side, direction):  # Move paddle
         """Paddle movement"""
         if side in self.paddles:
             paddle = self.paddles[side]

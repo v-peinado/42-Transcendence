@@ -9,26 +9,26 @@ class MultiplayerHandler:
     @staticmethod
     async def handle_player_join(consumer, game):
         """Start or join multiplayer game"""
-        if game.status != "WAITING":														# When trying to join after game has started
+        if game.status != "WAITING":  # When trying to join after game has started
             raise ValueError("Cannot join a game that has already started")
 
         player1 = await database_sync_to_async(getattr)(
             game, "player1"
-        )																					# Player 1 is the game creator
+        )  # Player 1 is the game creator
 
-        if player1 == consumer.user:														# If current user is player 1
+        if player1 == consumer.user:  # If current user is player 1
             consumer.side = "left"
-        else:																				# If current user is player 2
+        else:  # If current user is player 2
             consumer.side = "right"
 
             @database_sync_to_async
             def update_game():
-                with transaction.atomic():													# Operation is atomic (all or nothing)
-                    game.refresh_from_db()													# Refresh game from database
-                    game.player2 = consumer.user											# Set player 2 as current user
-                    game.status = "PLAYING"													# Set game status to 'PLAYING'
-                    game.save()																# Save game to database
-                return game  																# Return updated game
+                with transaction.atomic():  # Operation is atomic (all or nothing)
+                    game.refresh_from_db()  # Refresh game from database
+                    game.player2 = consumer.user  # Set player 2 as current user
+                    game.status = "PLAYING"  # Set game status to 'PLAYING'
+                    game.save()  # Save game to database
+                return game  # Return updated game
 
             await update_game()
 
@@ -54,11 +54,11 @@ class MultiplayerHandler:
         if hasattr(consumer, "side"):
             winner_side = (
                 "right" if consumer.side == "left" else "left"
-            )																				# If left player disconnects, right wins and vice versa
+            )  # If left player disconnects, right wins and vice versa
             consumer.game_state.status = "finished"
 
             @database_sync_to_async
-            def update_game_on_disconnect():												# Update game when a player disconnects
+            def update_game_on_disconnect():  # Update game when a player disconnects
                 with transaction.atomic():
                     game = consumer.scope["game"]
                     game.refresh_from_db()
@@ -77,7 +77,7 @@ class MultiplayerHandler:
                 {
                     "type": "game_finished",
                     "winner": winner_side,
-                    "reason": "desertion",													# Specify game ended due to player desertion
+                    "reason": "desertion",  # Specify game ended due to player desertion
                     "deserter": consumer.side,
                     "final_score": {
                         "left": consumer.game_state.paddles["left"].score,

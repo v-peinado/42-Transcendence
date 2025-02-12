@@ -4,97 +4,99 @@
 
 {% block content %}
 <div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <!-- Formulario de registro tradicional -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h4 class="text-center mb-4">Registro</h4>
-                    <form method="POST" action="{% url 'register' %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username:</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email:</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
+	<div class="row justify-content-center">
+		<div class="col-md-6">
+			<!-- Traditional registration form -->
+			<div class="card shadow-sm mb-4">
+				<div class="card-body p-4">
+					<h4 class="text-center mb-4">Registro</h4>
+					<form method="POST" action="{% url 'register' %}">
+						{% csrf_token %}
+						<div class="mb-3">
+							<label for="username" class="form-label">Username:</label>
+							<input type="text" class="form-control" id="username" name="username" required>
+						</div>
 
-                        <div class="mb-3">
-                            <label for="password1" class="form-label">Password:</label>
-                            <input type="password" class="form-control" id="password1" name="password1" required>
-                        </div>
+						<div class="mb-3">
+							<label for="email" class="form-label">Email:</label>
+							<input type="email" class="form-control" id="email" name="email" required>
+						</div>
 
-                        <div class="mb-3">
-                            <label for="password2" class="form-label">Confirm Password:</label>
-                            <input type="password" class="form-control" id="password2" name="password2" required>
-                        </div>
+						<div class="mb-3">
+							<label for="password1" class="form-label">Password:</label>
+							<input type="password" class="form-control" id="password1" name="password1" required>
+						</div>
 
-                        <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="privacy_policy" name="privacy_policy" required>
-                            <label class="form-check-label" for="privacy_policy">
-                                He leído y acepto la <a href="{% url 'privacy_policy' %}" target="_blank">política de privacidad</a>
-                            </label>
-                        </div>
+						<div class="mb-3">
+							<label for="password2" class="form-label">Confirm Password:</label>
+							<input type="password" class="form-control" id="password2" name="password2" required>
+						</div>
 
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Register</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+						<div class="form-check mb-3">
+							<input type="checkbox" class="form-check-input" id="privacy_policy" name="privacy_policy"
+								required>
+							<label class="form-check-label" for="privacy_policy">
+								He leído y acepto la <a href="{% url 'privacy_policy' %}" target="_blank">política de
+									privacidad</a>
+							</label>
+						</div>
 
-            <!-- Separador -->
-            <div class="text-center my-4">
-                <hr>
-                <span class="bg-white px-3 text-muted" style="position: relative; top: -12px;">
-                    o regístrate con
-                </span>
-            </div>
+						<div class="d-grid">
+							<button type="submit" class="btn btn-primary">Register</button>
+						</div>
+					</form>
+				</div>
+			</div>
 
-            <!-- Botón de 42 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <div class="d-grid">
-                        <a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">
-                            Register with 42
-                        </a>
-                    </div>
-                </div>
-            </div>
+			<!-- Separator -->
+			<div class="text-center my-4">
+				<hr>
+				<span class="bg-white px-3 text-muted" style="position: relative; top: -12px;">
+					o regístrate con
+				</span>
+			</div>
 
-            <!-- Link de login -->
-            <div class="text-center mt-4">
-                <p class="text-muted">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
-            </div>
-        </div>
-    </div>
+			<!-- 42 Button -->
+			<div class="card shadow-sm mb-4">
+				<div class="card-body p-4">
+					<div class="d-grid">
+						<a href="{% url 'fortytwo_auth:login' %}" class="button-42 w-100">
+							Register with 42
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Login link -->
+			<div class="text-center mt-4">
+				<p class="text-muted">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
+			</div>
+		</div>
+	</div>
 </div>
 
 <style>
-.button-42 {
-    background-color: #007BFF;
-    color: white;
-    padding: 15px 20px;
-    border-radius: 5px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    display: block;
-    text-align: center;
-}
+	.button-42 {
+		background-color: #007BFF;
+		color: white;
+		padding: 15px 20px;
+		border-radius: 5px;
+		text-decoration: none;
+		transition: all 0.3s ease;
+		display: block;
+		text-align: center;
+	}
 
-.button-42:hover {
-    background-color: #009B9D;
-    color: white;
-    text-decoration: none;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+	.button-42:hover {
+		background-color: #009B9D;
+		color: white;
+		text-decoration: none;
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	}
 
-.button-42:active {
-    transform: translateY(0);
-}
+	.button-42:active {
+		transform: translateY(0);
+	}
 </style>
 {% endblock %}

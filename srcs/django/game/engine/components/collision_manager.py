@@ -11,13 +11,13 @@ class CollisionManager:
 
         for side, paddle in self.game_state.paddles.items():
             # Calculate distance to paddle center
-            dx = abs(ball.x - (paddle.x + paddle.width / 2))							# Calculate x distance
-            dy = abs(ball.y - (paddle.y + paddle.height / 2))							# Calculate y distance
+            dx = abs(ball.x - (paddle.x + paddle.width / 2))  # Calculate x distance
+            dy = abs(ball.y - (paddle.y + paddle.height / 2))  # Calculate y distance
 
             # Check collision by distance to paddle center
             if dx <= (ball.radius + paddle.width / 2) and dy <= (
                 ball.radius + paddle.height / 2
-            ):																			# Check x and y collision
+            ):  # Check x and y collision
 
                 # Calculate relative impact point on paddle
                 relative_intersect_y = ball.y - (paddle.y + paddle.height / 2)

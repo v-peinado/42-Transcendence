@@ -1,38 +1,41 @@
 from django.core.exceptions import ValidationError
 
+
 class GDPRService:
     @staticmethod
     def export_user_data(user):
-        """Exporta todos los datos personales del usuario en formato diccionario"""
+        """Exports all user's personal data in dictionary format"""
         return {
-            'personal_info': {
-                'username': user.username,
-                'email': user.email,
-                'date_joined': user.date_joined,
-                'last_login': user.last_login,
-                'is_active': user.is_active,
-                'is_fortytwo_user': user.is_fortytwo_user,
-                'fortytwo_id': user.fortytwo_id if user.is_fortytwo_user else None,
+            "personal_info": {
+                "username": user.username,
+                "email": user.email,
+                "date_joined": user.date_joined,
+                "last_login": user.last_login,
+                "is_active": user.is_active,
+                "is_fortytwo_user": user.is_fortytwo_user,
+                "fortytwo_id": user.fortytwo_id if user.is_fortytwo_user else None,
             },
-            'profile_data': {
-                'profile_image': user.profile_image.url if user.profile_image else None,
-                'fortytwo_image': user.fortytwo_image if user.is_fortytwo_user else None,
+            "profile_data": {
+                "profile_image": user.profile_image.url if user.profile_image else None,
+                "fortytwo_image": (
+                    user.fortytwo_image if user.is_fortytwo_user else None
+                ),
             },
-            'security_settings': {
-                'two_factor_enabled': user.two_factor_enabled,
-                'email_verified': user.email_verified,
-            }
+            "security_settings": {
+                "two_factor_enabled": user.two_factor_enabled,
+                "email_verified": user.email_verified,
+            },
         }
 
     @staticmethod
     def anonymize_user(user):
-        """Anonimiza los datos personales del usuario"""
+        """Anonymizes user's personal data"""
         try:
-            # Generar identificadores anónimos
+            # Generate anonymous data
             anon_username = f"deleted_user_{user.id}"
             anon_email = f"deleted_{user.id}@anonymous.com"
 
-            # Actualizar campos con datos anónimos
+            # Save anonymous data to user after deleting sensitive data
             user.username = anon_username
             user.email = anon_email
             user.first_name = "Deleted"
@@ -50,11 +53,11 @@ class GDPRService:
 
     @staticmethod
     def delete_user_data(user):
-        """Elimina permanentemente la cuenta del usuario"""
+        """Permanently deletes user's account"""
         try:
-            # Primero anonimizamos
+            # First anonymize user data
             GDPRService.anonymize_user(user)
-            # Luego eliminamos
+            # Then delete user
             user.delete()
             return True
         except Exception as e:

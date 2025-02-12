@@ -12,23 +12,23 @@ class ScoreManager:
 
         if (
             ball.x + ball.radius >= self.game_state.CANVAS_WIDTH
-        ):																# If ball exits through right side...
-            self.game_state.paddles["left"].score += 1					# Point for left player
+        ):  # If ball exits through right side...
+            self.game_state.paddles["left"].score += 1  # Point for left player
 
-            if (														# If left player has reached winning score...
+            if (  # If left player has reached winning score...
                 self.game_state.paddles["left"].score >= self.game_state.WINNING_SCORE
-            ):  
-                return "left"											# Return left player as winner
+            ):
+                return "left"  # Return left player as winner
 
             self._reset_ball("left")
-            return None													
+            return None
 
-        elif ball.x - ball.radius <= 0:									# If ball exits through left side...
-            self.game_state.paddles["right"].score += 1					# Point for right player
+        elif ball.x - ball.radius <= 0:  # If ball exits through left side...
+            self.game_state.paddles["right"].score += 1  # Point for right player
 
             if (
                 self.game_state.paddles["right"].score >= self.game_state.WINNING_SCORE
-            ):															# etc...					
+            ):  # etc...
                 return "right"
 
             self._reset_ball("right")
@@ -40,17 +40,15 @@ class ScoreManager:
         """Reset ball after scoring"""
         self.game_state.ball.x = (
             self.game_state.CANVAS_WIDTH / 2
-        ) 																# Place ball at canvas center
+        )  # Place ball at canvas center
         self.game_state.ball.y = self.game_state.CANVAS_HEIGHT / 2
 
         direction = (
             1 if scoring_side == "left" else -1
-        )																# Set ball direction after scoring
+        )  # Set ball direction after scoring
         angle = random.uniform(-0.5, 0.5)
 
-        self.game_state.ball.speed_x = (
-            self.game_state.BALL_SPEED * direction
-        )
+        self.game_state.ball.speed_x = self.game_state.BALL_SPEED * direction
         self.game_state.ball.speed_y = self.game_state.BALL_SPEED * math.sin(angle)
 
         # print(f"Ball reset after point - pos:({self.game_state.ball.x}, {self.game_state.ball.y}), speed:({self.game_state.ball.speed_x}, {self.game_state.ball.speed_y})")

@@ -3,7 +3,7 @@ import math
 
 
 class Ball:
-    def __init__(self, x, y, radius=10):						# Set initial ball values
+    def __init__(self, x, y, radius=10):  # Set initial ball values
         self.x = x
         self.y = y
         self.radius = radius
@@ -44,14 +44,14 @@ class Ball:
         self.y = y
 
         # Always ensure constant x velocity
-        while abs(self.speed_y) < 2:								# Ensure y velocity is greater than 2
-            angle = random.uniform(-0.5, 0.5)						# Random serve angle
+        while abs(self.speed_y) < 2:  # Ensure y velocity is greater than 2
+            angle = random.uniform(-0.5, 0.5)  # Random serve angle
             self.speed_x = self.base_speed * (
                 1 if random.random() > 0.5 else -1
-            )														# Constant x velocity
+            )  # Constant x velocity
             self.speed_y = self.base_speed * math.sin(
                 angle
-            )														# Variable y velocity (based on angle)
+            )  # Variable y velocity (based on angle)
 
         # print(f"Ball reset - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")  # Debug
 

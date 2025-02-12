@@ -12,9 +12,9 @@ class AuthenticationConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     # Application name
-    name = "authentication"		# Name of the folder containing the application
+    name = "authentication"  # Name of the folder containing the application
     verbose_name = (
-        "Authentication"		# Name to be displayed in the admin interface (optional)
+        "Authentication"  # Name to be displayed in the admin interface (optional)
     )
 
     def ready(

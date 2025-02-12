@@ -8,12 +8,12 @@ from .two_factor_service import TwoFactorService
 from .qr_service import QRService
 
 __all__ = [
-    'AuthenticationService', 
-    'MailSendingService', 
-    'TokenService', 
-    'ProfileService',
-    'GDPRService',
-    'PasswordService',
-    'TwoFactorService',
-	'QRService'
+    "AuthenticationService",
+    "MailSendingService",
+    "TokenService",
+    "ProfileService",
+    "GDPRService",
+    "PasswordService",
+    "TwoFactorService",
+    "QRService",
 ]

@@ -10,14 +10,14 @@ from ...models import CustomUser
 @login_required
 def enable_2fa(request):
     """Enable 2FA through profile editing"""
-    if request.method == "POST":										# If form is submitted
+    if request.method == "POST":  # If form is submitted
         try:
             TwoFactorService.enable_2fa(request.user)
             messages.success(
                 request, "2FA activado correctamente"
-            )															# Show success message
+            )  # Show success message
             return redirect("user")
-        except Exception as e:											# Catch any TwoFactorService exception
+        except Exception as e:  # Catch any TwoFactorService exception
             messages.error(request, str(e))
             return redirect("user")
     return render(request, "authentication/enable_2fa.html")
@@ -34,9 +34,9 @@ def verify_2fa(request):
         messages.error(request, "Sesión inválida")
         return redirect("login")
 
-    if request.method == "POST":										# If form is submitted
-        code = request.POST.get("code")									# Get 2FA code from form
-        if TwoFactorService.verify_2fa_code(user, code):				# If code is valid...
+    if request.method == "POST":  # If form is submitted
+        code = request.POST.get("code")  # Get 2FA code from form
+        if TwoFactorService.verify_2fa_code(user, code):  # If code is valid...
             TwoFactorService.clean_session_keys(request.session)
             auth_login(request, user)
             messages.success(request, "Inicio de sesión exitoso")
