@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Este script proporciona funciones de logging centralizadas para todos los demás scripts.
-# Características:
-# - Manejo de diferentes niveles de log (INFO, ERROR, WARN, DEBUG)
-# - Formateo consistente de timestamps
-# - Separadores visuales para mejor legibilidad
-# - Logs específicos para secretos con emojis
-# - Gestión de archivos de log en diferentes ubicaciones
+# This script provides centralized logging functions for all other scripts.
+# Features:
+# - Multiple log levels handling (INFO, ERROR, WARN, DEBUG)
+# - Consistent timestamp formatting
+# - Visual separators for better readability
+# - Specific secret logging with emojis
+# - Log file management in different locations
 
 LOG_DIR="/var/log/vault"
 AUDIT_LOG="${LOG_DIR}/audit.log"

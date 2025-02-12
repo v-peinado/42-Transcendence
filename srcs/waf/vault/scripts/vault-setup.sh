@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# Este es el script principal que orquesta todo el proceso de configuración.
-# Responsabilidades:
-# - Carga de módulos necesarios
-# - Coordinación de la secuencia de inicialización
-# - Validación de dependencias
-# - Manejo de errores global
-# - Limpieza de variables sensibles
-# - Inicio del servidor nginx
+# This is the main script that orchestrates the entire configuration process.
+# Responsibilities:
+# - Loading required modules
+# - Coordinating initialization sequence
+# - Dependency validation
+# - Global error handling
+# - Cleanup of sensitive variables
+# - Starting nginx server
 #
-# El script asegura que cada paso se complete correctamente
-# antes de continuar con el siguiente, proporcionando
-# una inicialización robusta y segura del sistema.
+# The script ensures each step completes successfully
+# before proceeding to the next one, providing
+# a robust and secure system initialization.
 
-# Cargar los módulos necesarios
+# Load required modules
 for module in logger.sh vault-config.sh vault-init.sh vault-secrets.sh; do
     if [ -f "/usr/local/bin/${module}" ]; then
         source "/usr/local/bin/${module}"

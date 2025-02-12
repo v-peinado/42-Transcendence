@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Este script gestiona la inicialización y configuración del servidor Vault.
-# Funciones principales:
-# - Inicialización del servidor Vault
-# - Gestión del proceso de unseal (dessellado)
-# - Configuración de políticas de acceso
-# - Gestión de tokens y claves
-# - Monitoreo del estado del servidor
-# - Configuración de políticas de seguridad para Django y Nginx
+# This script manages Vault server initialization and configuration.
+# Main functions:
+# - Vault server initialization
+# - Unseal process management
+# - Access policy configuration
+# - Token and key management
+# - Server status monitoring
+# - Security policy setup for Django and Nginx
 #
-# El script maneja dos modos de operación:
-# 1. Desarrollo: Configuración simplificada para pruebas
-# 2. Producción: Configuración segura con gestión de tokens y unseal
+# The script handles two operation modes:
+# 1. Development: Simplified configuration for testing
+# 2. Production: Secure configuration with token and unseal management
 
 start_vault() {
     show_section "Iniciando Vault"

@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Este script maneja el almacenamiento seguro de secretos en Vault.
-# Responsabilidades:
-# - Almacenamiento de credenciales de Django
-# - Gestión de secretos OAuth
-# - Configuración de email
-# - Almacenamiento de certificados SSL
-# - Gestión de tokens JWT
-# - Verificación de acceso y permisos
+# This script handles the secure storage of secrets in Vault.
+# Responsibilities:
+# - Django credentials storage
+# - OAuth secrets management
+# - Email configuration
+# - SSL certificates storage
+# - JWT token management
+# - Access and permissions verification
 #
-# Implementa validación y manejo de errores para cada operación
-# y proporciona feedback detallado del estado de cada secreto
+# Implements validation and error handling for each operation
+# and provides detailed feedback on each secret's status
 
 store_secrets() {
     show_section "Almacenando Secretos"

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Este script maneja la configuración inicial necesaria para Vault.
-# Funciones:
-# - Configuración del modo de operación (development/production)
-# - Creación de directorios necesarios
-# - Establecimiento de permisos correctos
-# - Generación inicial de certificados SSL si no existen
-# - Preparación del entorno para la ejecución de Vault
+# This script handles the initial configuration required for Vault.
+# Functions:
+# - Operation mode setup (development/production)
+# - Required directory creation
+# - Proper permissions setup
+# - Initial SSL certificate generation if not present
+# - Environment preparation for Vault execution
 
 VAULT_MODE=${VAULT_MODE:-"production"}
 VAULT_CONFIG="/etc/vault.d/config.hcl"

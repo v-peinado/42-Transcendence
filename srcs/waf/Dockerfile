@@ -1,12 +1,12 @@
-# instancia de modsecurity-crs con nginx y vault
+# ModSecurity-CRS instance with nginx and vault
 FROM owasp/modsecurity-crs:nginx
 
-# Configuración de la imagen
+# Image configuration
 USER root
 
 ARG VAULT_VERSION=1.15.2
 
-# Combinar instalación, configuración y limpieza en una sola capa
+# Combine installation, configuration and cleanup in a single layer
 RUN apt-get update && \
 	apt-get install -y --no-install-recommends \
 	curl \
@@ -46,7 +46,7 @@ RUN apt-get update && \
 	chmod 640 /var/log/vault/audit.log && \
 	chown -R nginxuser:nginxuser /var/log/vault/audit.log
 
-# Copiar archivos de configuración (actualizar esta sección)
+# Copy configuration files (update this section)
 COPY waf/vault/config.conf /etc/vault.d/config.hcl
 COPY waf/vault/scripts/vault-setup.sh /usr/local/bin/
 COPY waf/vault/scripts/vault-config.sh /usr/local/bin/
@@ -60,7 +60,7 @@ COPY waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
 COPY waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
 COPY waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
 
-# Configurar permisos (actualizar esta sección)
+# Configure permissions (update this section)
 RUN chmod +x \
 	/usr/local/bin/vault-setup.sh \
 	/usr/local/bin/vault-config.sh \
@@ -75,18 +75,18 @@ RUN chmod +x \
 	/etc/modsecurity/crs/* && \
 	/usr/local/bin/generate-ssl.sh
 
-# Variables de entorno
+# Environment variables
 ENV MODSECURITY=On \
 	VAULT_ADDR=https://127.0.0.1:8200 \
 	VAULT_SKIP_VERIFY=true \
 	PATH="${PATH}:/usr/local/bin"
 
-# Puertos de la aplicación
+# Application ports
 EXPOSE 8081 8200 8445
 
-# HEALTHCHECK para el contenedor
+# Container HEALTHCHECK
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 	CMD curl -f -k https://localhost:8444/health || exit 1
 
-# Actualizar el comando de inicio
+# Update startup command
 CMD ["sh", "-c", "/usr/local/bin/vault-setup.sh"]
