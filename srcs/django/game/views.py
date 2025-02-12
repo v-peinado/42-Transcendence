@@ -4,21 +4,21 @@ from .models import Game
 
 @login_required
 def game_view(request, game_id=None):	
-    """Vista unificada para crear/unirse a juegos"""
-    if game_id is None:														# Si no hay una ID del juego...
-        game = Game.objects.create(											# ...se crea un nuevo juego
+    """Unified view for creating/joining games"""
+    if game_id is None:														# If there's no game ID...
+        game = Game.objects.create(											# ...create a new game
             player1=request.user,
             status='WAITING'
         )
-    else:																	# Si hay una ID del juego...
+    else:																	# If there's a game ID...
         try:
-            game = Game.objects.get(id=game_id)								# Extraemos la ID del juego
-            if game.status != 'WAITING' or game.player1 == request.user:	# Si el juego no está esperando jugadores o el jugador ya está en el juego...
-                return redirect('game:create_game')							# ...se redirige a la creación de un nuevo juego
-        except Game.DoesNotExist:											# Si no se encuentra el juego...
-            return redirect('game:create_game')								# ...se redirige a la creación de un nuevo juego
+            game = Game.objects.get(id=game_id)								# Extract the game ID
+            if game.status != 'WAITING' or game.player1 == request.user:	# If game isn't waiting for players or player is already in game...
+                return redirect('game:create_game')							# ...redirect to create new game
+        except Game.DoesNotExist:											# If game not found...
+            return redirect('game:create_game')								# ...redirect to create new game
 
-    return render(request, 'game/game.html', {								# Renderizamos el template del juego
+    return render(request, 'game/game.html', {								# Render the game template
         'game_id': game.id,
         'user_id': request.user.id
     })

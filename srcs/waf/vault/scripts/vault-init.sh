@@ -14,11 +14,11 @@
 # 2. Production: Secure configuration with token and unseal management
 
 start_vault() {
-    show_section "Iniciando Vault"
-    log "INFO" "Iniciando servidor y estableciendo conexión TLS segura..."
+    show_section "Starting Vault"
+    log "INFO" "Starting server and establishing secure TLS connection..."
 
     if [ "${VAULT_MODE}" = "development" ]; then
-        log_message "Iniciando Vault en modo desarrollo..."
+        log_message "Starting Vault in development mode..."
         vault server -dev \
             -dev-root-token-id="${VAULT_ROOT_TOKEN}" \
             -dev-listen-address="0.0.0.0:8200" \
@@ -32,21 +32,21 @@ start_vault() {
 }
 
 wait_for_vault() {
-    log "INFO" "Esperando a que Vault esté disponible..."
+    log "INFO" "Waiting for Vault to be available..."
     local max_attempts=15
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
         if curl -s -k https://127.0.0.1:8200/v1/sys/health >/dev/null 2>&1; then
-            log "INFO" "✅ Vault está disponible"
+            log "INFO" "✅ Vault is available"
             return 0
         fi
-        log "INFO" "⏳ Intento $attempt de $max_attempts..."
+        log "INFO" "⏳ Attempt $attempt of $max_attempts..."
         attempt=$((attempt + 1))
         sleep 2
     done
 
-    log "ERROR" "❌ Timeout esperando a Vault"
+    log "ERROR" "❌ Timeout waiting for Vault"
     return 1
 }
 
@@ -56,10 +56,10 @@ initialize_vault() {
         export VAULT_SKIP_VERIFY=true
         unset VAULT_TOKEN
 
-        log_message "Configurando VAULT_ADDR=${VAULT_ADDR}"
+        log_message "Setting VAULT_ADDR=${VAULT_ADDR}"
 
         if ! vault operator init -status > /dev/null 2>&1; then
-            log_message "Inicializando Vault..."
+            log_message "Initializing Vault..."
             vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
             chmod 600 "${LOG_DIR}/init.txt"
             chown nginxuser:nginxuser "${LOG_DIR}/init.txt"
@@ -67,7 +67,7 @@ initialize_vault() {
             UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
             ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
             
-            log_message "Dessellando Vault..."
+            log_message "Unsealing Vault..."
             vault operator unseal "$UNSEAL_KEY"
             vault login "$ROOT_TOKEN"
         fi
@@ -76,7 +76,7 @@ initialize_vault() {
 
 configure_vault() {
     if [ ! -f "${LOG_DIR}/init.txt" ]; then
-        log "ERROR" "No se encuentra init.txt"
+        log "ERROR" "init.txt not found"
         return 1
     fi
     
@@ -93,10 +93,10 @@ configure_vault() {
 
     if ! vault secrets list | grep -q '^secret/'; then
         vault secrets enable -path=secret kv-v2
-        log_message "Motor KV-2 habilitado"
+        log_message "KV-2 engine enabled"
     fi
 
-    log_message "Configurando políticas de acceso..."
+    log_message "Configuring access policies..."
     configure_policies
 }
 

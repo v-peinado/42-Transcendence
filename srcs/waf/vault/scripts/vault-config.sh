@@ -18,7 +18,7 @@ setup_initial() {
     chmod 640 "${OPERATION_LOG}"
 
     if [ ! -f "/tmp/ssl/transcendence.crt" ]; then
-        log_message "Generando certificados SSL..."
+        log_message "Generating SSL certificates..."
         /usr/local/bin/generate-ssl.sh 2>> "${ERROR_LOG}" &
     fi
 }

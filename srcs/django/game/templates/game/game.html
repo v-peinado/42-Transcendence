@@ -162,7 +162,7 @@
 	</div>
 
 	<script>
-		// Conexión WebSocket
+		// WebSocket Connection
 		const gameId = '{{ game_id }}';
 		const userId = '{{ user_id }}';
 		const gameSocket = new WebSocket(
@@ -173,7 +173,7 @@
 		const canvas = document.getElementById('gameCanvas');
 		const ctx = canvas.getContext('2d');
 
-		// Establecer dimensiones correctas del canvas
+		// Set correct canvas dimensions
 		canvas.width = 1000;
 		canvas.height = 600;
 
@@ -194,9 +194,9 @@
 
 			if (!isMoving) {
 				isMoving = true;
-				// Enviar movimiento inmediatamente al pulsar
+				// Send movement immediately on keypress
 				sendPaddleMove();
-				// Establecer intervalo para movimiento continuo
+				// Set interval for continuous movement
 				movementInterval = setInterval(sendPaddleMove, 16); // ~60fps
 			}
 		});
@@ -207,7 +207,7 @@
 			const key = e.key.toLowerCase();
 			activeKeys.delete(key);
 
-			// Si no hay teclas de movimiento presionadas, detener el movimiento
+			// If no movement keys are pressed, stop movement
 			if (!(activeKeys.has('w') || activeKeys.has('s') ||
 				activeKeys.has('arrowup') || activeKeys.has('arrowdown'))) {
 				isMoving = false;
@@ -215,7 +215,7 @@
 					clearInterval(movementInterval);
 					movementInterval = null;
 				}
-				// Enviar comando de parada
+				// Send stop command
 				gameSocket.send(JSON.stringify({
 					type: 'move_paddle',
 					side: playerSide,
@@ -231,7 +231,7 @@
 			if (data.type === 'game_state') {
 				gameState = data.state;
 
-				// Mostrar countdown si está activo
+				// Show countdown if active
 				const countdownElement = document.getElementById('countdown');
 				if (gameState.countdown !== undefined) {
 					countdownElement.style.display = 'block';
@@ -273,7 +273,7 @@
 				finalScore.textContent = `Puntuación final: ${data.final_score.left} - ${data.final_score.right}`;
 				gameOver.style.display = 'flex';
 
-				// Detener el juego
+				// Stop the game
 				gameState.status = 'finished';
 				if (movementInterval) {
 					clearInterval(movementInterval);
@@ -282,6 +282,7 @@
 			}
 		};
 
+		// Movement function
 		function sendPaddleMove() {
 			let direction = 0;
 
@@ -302,7 +303,7 @@
 			}
 		}
 
-		// Agregar este manejador de eventos para depuración
+		// Debug event handlers
 		gameSocket.onopen = function (e) {
 			console.log('WebSocket connection established');
 		};
@@ -311,15 +312,15 @@
 			console.error('WebSocket error:', e);
 		};
 
-		// Modificar la función updateDisplay para añadir logs
+		// Display update function
 		function updateDisplay() {
 			if (!gameState) return;
 
-			// Limpiar el canvas
+			// Clear canvas
 			ctx.fillStyle = 'rgb(85, 5, 45)';
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-			// Dibujar paletas
+			// Draw paddles
 			ctx.fillStyle = 'gray';
 			for (const [side, paddle] of Object.entries(gameState.paddles)) {
 				ctx.fillRect(
@@ -330,7 +331,7 @@
 				);
 			}
 
-			// Dibujar pelota
+			// Draw ball
 			ctx.fillStyle = 'green';
 			ctx.beginPath();
 			ctx.arc(
@@ -342,21 +343,21 @@
 			);
 			ctx.fill();
 
-			// Actualizar marcador
+			// Update score
 			document.getElementById('player1Score').textContent = gameState.paddles.left.score;
 			document.getElementById('player2Score').textContent = gameState.paddles.right.score;
 		}
 
-		// Asegurarnos de que el canvas tiene el tamaño correcto
+		// Ensure canvas has correct size
 		function resizeCanvas() {
-			canvas.width = 1000;  // Dimensión correcta
-			canvas.height = 600;  // Dimensión correcta
+			canvas.width = 1000;  // Correct dimension
+			canvas.height = 600;  // Correct dimension
 			if (gameState) {
-				updateDisplay();  // Redibujar después de redimensionar
+				updateDisplay();  // Redraw after resize
 			}
 		}
 
-		// Llamar a resizeCanvas al inicio y en cambios de ventana
+		// Call resizeCanvas at start and on window changes
 		resizeCanvas();
 		window.addEventListener('resize', resizeCanvas);
 
@@ -368,14 +369,14 @@
 			gameSocket.close();
 		});
 
-		// Actualizar el texto de los controles según el lado asignado
+		// Update controls text based on assigned side
 		function updateControlsInfo() {
 			const controlsInfo = document.getElementById('controlsInfo');
 			if (controlsInfo) {
 				if (playerSide === 'left') {
-					controlsInfo.textContent = 'Controles: W/S (Arriba/Abajo)';
+					controlsInfo.textContent = 'Controls: W/S (Up/Down)';
 				} else if (playerSide === 'right') {
-					controlsInfo.textContent = 'Controles: ↑/↓ (Arriba/Abajo)';
+					controlsInfo.textContent = 'Controls: ↑/↓ (Up/Down)';
 				}
 			}
 		}

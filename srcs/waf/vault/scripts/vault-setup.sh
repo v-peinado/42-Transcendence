@@ -18,7 +18,7 @@ for module in logger.sh vault-config.sh vault-init.sh vault-secrets.sh; do
     if [ -f "/usr/local/bin/${module}" ]; then
         source "/usr/local/bin/${module}"
     else
-        echo "Error: No se encuentra el módulo ${module}"
+        echo "Error: Module ${module} not found"
         exit 1
     fi
 done

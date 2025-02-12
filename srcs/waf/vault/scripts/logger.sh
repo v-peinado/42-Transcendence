@@ -34,6 +34,6 @@ log_message() {
 log_secret() {
     local path=$1
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "📦 ${timestamp} [SECRET] Secreto almacenado: $path"
-    echo "   └─ Estado: ✅ Guardado correctamente"
+    echo "📦 ${timestamp} [SECRET] Secret stored: $path"
+    echo "   └─ Status: ✅ Successfully saved"
 }

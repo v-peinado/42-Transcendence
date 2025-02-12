@@ -15,7 +15,7 @@ import os
 from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
 
-load_dotenv()  # Load environment variables from .env file
+load_dotenv()														# Load environment variables from .env file
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Basic project configuration
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY", get_random_secret_key()
-)  # Secret key for token and password generation
-DEBUG = True  # Debug mode (True for development, False for production)
+)																	# Secret key for token and password generation
+DEBUG = True														# Debug mode (True for development, False for production)
 
 # Define allowed hosts in production (by default, no hosts allowed)
 # ALLOWED_HOSTS = []

@@ -13,10 +13,10 @@
 # and provides detailed feedback on each secret's status
 
 store_secrets() {
-    show_section "Almacenando Secretos"
+    show_section "Storing Secrets"
     
     if ! vault token lookup >/dev/null 2>&1; then
-        log "ERROR" "Sin acceso a Vault"
+        log "ERROR" "No Vault access"
         return 1
     fi
 
@@ -40,7 +40,7 @@ store_secret() {
     if vault kv put "secret/$path" ${values} >/dev/null 2>&1; then
         log_secret "$path"
     else
-        log "ERROR" "Fallo al almacenar secreto: $path"
+        log "ERROR" "Failed to store secret: $path"
         return 1
     fi
 }
@@ -51,7 +51,7 @@ store_ssl_certificates() {
         ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')" >/dev/null 2>&1; then
         log_secret "nginx/ssl"
     else
-        log "ERROR" "Fallo al almacenar certificados SSL"
+        log "ERROR" "Failed to store SSL certificates"
         return 1
     fi
 }
