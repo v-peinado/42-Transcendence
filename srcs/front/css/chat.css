@@ -1,6 +1,6 @@
 .chat-container {
-    height: calc(100vh - 120px); /* Reducido más */
-    margin: 0 auto; /* Eliminado margen superior */
+    height: calc(100vh - 120px);
+    margin: 0 auto;
     padding: 5px;
     border-radius: 8px;
     background: rgba(22, 28, 36, 0.85);
@@ -10,6 +10,8 @@
         inset 0 0 50px rgba(66, 153, 225, 0.1);
     color: #fff;
 }
+
+/* Eliminamos los estilos del scrollbar del contenedor principal */
 
 .messages {
     height: 400px;
@@ -58,17 +60,25 @@
 
 .user-column {
     padding: 10px;
-    height: calc(100vh - 150px);
+    height: auto; /* Cambiado de 100% a auto */
+    min-height: 200px; /* Altura mínima */
+    max-height: calc(100vh - 150px);
     overflow-y: auto;
+    overflow-x: hidden; /* Ocultar scroll horizontal */
     background: rgba(30, 41, 59, 0.7);
     border-left: 2px solid rgba(66, 153, 225, 0.2);
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
+#users-container, #requests-container, #friends-container {
+    height: auto;
+    min-height: 100px;
+}
+
 .chat-log {
-    height: calc(100% - 50px); /* Reducido significativamente */
-    flex-grow: 1;
-    overflow-y: auto;
+    height: 500px; /* Altura fija */
+    max-height: calc(100vh - 250px); /* Altura máxima adaptativa */
+    overflow-y: auto; /* Habilitar scroll */
     margin-bottom: 4px;
     padding: 8px;
     background: rgba(15, 23, 42, 0.6);
@@ -76,6 +86,7 @@
     box-shadow: 
         inset 0 0 20px rgba(66, 153, 225, 0.05),
         0 0 10px rgba(66, 153, 225, 0.1);
+    scrollbar-width: thin;
 }
 
 .chat-log::-webkit-scrollbar {
@@ -85,6 +96,10 @@
 .chat-log::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .msg {
@@ -141,17 +156,21 @@
     border-radius: 50%;
     display: inline-block;
     margin-right: 5px;
+    transition: all 0.3s ease;
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
 }
 
 .user-online {
-    background: linear-gradient(135deg, #48bb78, #38a169);
-    box-shadow: 0 0 10px rgba(72, 187, 120, 0.5);
+    background: #28a745;  /* Verde más vivo */
+    box-shadow: 0 0 5px #28a745;
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .user-offline {
-    background: linear-gradient(135deg, #fc8181, #e53e3e);
-    box-shadow: 0 0 10px rgba(245, 101, 101, 0.5);
+    background: #dc3545;  /* Rojo más suave */
+    box-shadow: none;
+    opacity: 0.5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .user-item {
@@ -170,6 +189,7 @@
     overflow: hidden;
     transform-origin: top;
     transform: scaleY(1);
+    transition: background-color 0.2s ease;
 }
 
 .user-item:hover {
@@ -179,6 +199,7 @@
     box-shadow: 
         0 0 15px rgba(66, 153, 225, 0.2),
         inset 0 0 20px rgba(66, 153, 225, 0.1);
+    background-color: rgba(0,0,0,0.02);
 }
 
 .user-item.is-friend {
@@ -194,10 +215,20 @@
 .user-item .btn-group {
     opacity: 0;
     transition: opacity 0.3s ease;
+    gap: 0.5rem;
 }
 
 .user-item:hover .btn-group {
     opacity: 1;
+}
+
+.user-item .btn {
+    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+}
+
+.user-item .btn:hover {
+    transform: scale(1.05);
 }
 
 /* Mostrar y estilizar los tabs */
@@ -417,13 +448,30 @@
 
 .notification-dot {
     position: absolute;
-    right: 10px;
+    right: 5px;
     top: 50%;
     transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     background-color: #dc3545;
     border-radius: 50%;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+
+@keyframes pulse {
+    0% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-50%) scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
 }
 
 /* Estilos específicos para fullscreen */
@@ -565,4 +613,157 @@
     align-items: center !important;
     gap: 0.5rem !important;
     min-width: 200px !important; /* Asegurar espacio para botones */
+}
+
+/* Ajustar la lista de amigos y usuarios */
+#friends-list, #users-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden; /* Ocultar scroll horizontal */
+    scrollbar-width: thin;
+}
+
+/* Estilizar scrollbar para navegadores webkit */
+#friends-list::-webkit-scrollbar,
+#users-list::-webkit-scrollbar,
+.user-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+#friends-list::-webkit-scrollbar-thumb,
+#users-list::-webkit-scrollbar-thumb,
+.user-column::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+#friends-list::-webkit-scrollbar-track,
+#users-list::-webkit-scrollbar-track,
+.user-column::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para los tabs de usuarios */
+#user-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+}
+
+#user-tabs .btn {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    transition: all 0.3s ease;
+    position: relative; /* Para el posicionamiento del badge */
+    overflow: visible; /* Asegurar que el badge no se corte */
+    margin-right: 4px; /* Espacio extra para el badge */
+}
+
+#user-tabs .btn:hover {
+    background: rgba(66, 153, 225, 0.15);
+    transform: translateY(-2px);
+}
+
+#user-tabs .btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
+}
+
+/* Estilos para los contenedores de tabs */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+.user-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.user-status.user-online {
+    background-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.user-status.user-offline {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.user-item .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+
+.username {
+    font-weight: 500;
+}
+
+.blocked-by-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Estilo para el badge de notificación */
+.badge-notification {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #dc3545;
+    color: white;
+    border-radius: 12px; /* Cambiado de 50% a un valor fijo */
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(15, 23, 42, 0.8); /* Color más oscuro para el borde */
+    box-shadow: 
+        0 0 0 2px rgba(220, 53, 69, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2); /* Añadido shadow para profundidad */
+    animation: pulseNotification 2s infinite;
+    z-index: 1; /* Asegurar que esté por encima */
+    font-weight: 600; /* Texto más visible */
+    line-height: 1; /* Mejor centrado vertical */
+}
+
+@keyframes pulseNotification {
+    0% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 0 2px rgba(220, 53, 69, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 
+            0 0 0 4px rgba(220, 53, 69, 0.0),
+            0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 0 2px rgba(220, 53, 69, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.2);
+    }
 }

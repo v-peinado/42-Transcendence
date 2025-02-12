@@ -7,6 +7,8 @@ export class UserList {
         this.usersList = container.querySelector('#users-list');
         this.currentFriends = new Set();
         this.sentRequests = new Set(); // Añadir esta línea
+        this.requestsContainer = container.querySelector('#requests-container');
+        this.friendsContainer = container.querySelector('#friends-container');
     }
 
     updateSentRequests(requests) {
@@ -15,8 +17,14 @@ export class UserList {
     }
 
     updateList(data) {
-        this.lastUserData = data; // Almacenar los datos para futuras actualizaciones
+        this.lastUserData = data;
         this.usersList.innerHTML = '';
+        
+        // Mostrar estado vacío si no hay usuarios o solo está el usuario actual
+        if (!data.users?.length || data.users.length === 1) {
+            this.showEmptyState();
+            return;
+        }
         
         data.users.forEach(user => {
             if (user.id === parseInt(localStorage.getItem('user_id'))) return;
@@ -26,9 +34,19 @@ export class UserList {
         });
     }
 
+    showEmptyState() {
+        this.usersList.innerHTML = `
+            <div class="text-center text-muted p-3">
+                <i class="fas fa-users-slash fa-2x mb-2"></i>
+                <p>No hay otros usuarios conectados</p>
+                <small>Espera a que alguien se conecte</small>
+            </div>
+        `;
+    }
+
     createUserElement(user) {
         const userDiv = document.createElement('div');
-        userDiv.classList.add('list-group-item', 'user-item');
+        userDiv.classList.add('list-group-item', 'user-item', 'py-2');
         userDiv.setAttribute('data-user-id', user.id);
         userDiv.setAttribute('data-username', user.username);
 
@@ -36,12 +54,14 @@ export class UserList {
         
         userDiv.innerHTML = `
             <div class="d-flex justify-content-between align-items-center">
-                <div class="user-info">
-                    <span class="user-status ${user.is_online ? 'user-online' : 'user-offline'}"></span>
-                    ${user.username}
-                    ${user.has_blocked_you ? '<span class="badge bg-danger blocked-by-badge ms-2"><i class="fas fa-ban"></i> Te ha bloqueado</span>' : ''}
+                <div class="user-info d-flex align-items-center">
+                    <span class="user-status ${user.is_online ? 'user-online' : 'user-offline'} me-2"></span>
+                    <span class="username">${user.username}</span>
+                    ${user.has_blocked_you ? 
+                        '<span class="badge bg-danger blocked-by-badge ms-2"><i class="fas fa-ban"></i> Bloqueado</span>' 
+                        : ''}
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="btn-group">
                     ${this.createChatButton(user)}
                     ${actionButtons}
                 </div>
@@ -54,8 +74,9 @@ export class UserList {
     createChatButton(user) {
         const isBlocked = user.is_blocked || user.has_blocked_you;
         return `
-            <button class="btn btn-sm btn-primary chat-btn" ${isBlocked ? 'disabled' : ''}>
-                <i class="fas fa-comment"></i>
+            <button class="btn btn-sm btn-outline-primary chat-btn" ${isBlocked ? 'disabled' : ''} 
+                title="Chat privado">
+                <i class="fas fa-comment-dots"></i>
             </button>
         `;
     }
@@ -68,16 +89,22 @@ export class UserList {
         if (isFriend) {
             return `
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-danger friend-remove">
+                    <button class="btn btn-sm btn-outline-danger friend-remove" 
+                        title="Eliminar amigo">
                         <i class="fas fa-user-minus"></i>
                     </button>
                 </div>`;
         } else if (hasSentRequest) {
-            return '<span class="badge bg-info" style="min-width: 120px;">Solicitud enviada</span>';
+            return `
+                <span class="badge bg-secondary text-light" style="min-width: 120px;">
+                    <i class="fas fa-clock me-1"></i> Solicitud enviada
+                </span>`;
         } else {
-            return `<button class="btn btn-sm btn-success friend-add">
-                        <i class="fas fa-user-plus"></i>
-                    </button>`;
+            return `
+                <button class="btn btn-sm btn-outline-success friend-add" 
+                    title="Agregar amigo">
+                    <i class="fas fa-user-plus"></i>
+                </button>`;
         }
     }
 
@@ -134,6 +161,20 @@ export class UserList {
             const statusDot = userItem.querySelector('.user-status');
             statusDot?.classList.toggle('user-online', isOnline);
             statusDot?.classList.toggle('user-offline', !isOnline);
+        }
+    }
+
+    handleTabChange(tab) {
+        switch(tab) {
+            case 'users':
+                this.updateList(this.lastUserData);
+                break;
+            case 'requests':
+                // La lista de solicitudes se actualiza automáticamente
+                break;
+            case 'friends':
+                // La lista de amigos se actualiza automáticamente
+                break;
         }
     }
 }

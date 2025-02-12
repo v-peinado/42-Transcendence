@@ -68,27 +68,31 @@
                 <!-- Lista de Usuarios -->
                 <div class="col-md-4">
                     <div class="user-column">
-                        <!-- Solicitudes pendientes -->
-                        <div class="chat-header">
-                            <h3 class="section-title">
-                                <i class="fas fa-user-clock me-2"></i>Solicitudes Pendientes
-                            </h3>
-                        </div>
-                        <div id="pending-requests" class="list-group mb-4"></div>
-
-                        <div class="chat-header">
-                            <h3 class="section-title">
+                        <!-- Tabs para las diferentes secciones -->
+                        <div id="user-tabs" class="mb-3">
+                            <button class="btn btn-primary active" data-tab="users">
                                 <i class="fas fa-users me-2"></i>Usuarios
-                            </h3>
-                        </div>
-                        <div id="users-list" class="list-group mb-4"></div>
-                        
-                        <div class="chat-header">
-                            <h3 class="section-title">
+                            </button>
+                            <button class="btn btn-primary" data-tab="requests">
+                                <i class="fas fa-user-clock me-2"></i>Solicitudes
+                            </button>
+                            <button class="btn btn-primary" data-tab="friends">
                                 <i class="fas fa-star me-2"></i>Amigos
-                            </h3>
+                            </button>
                         </div>
-                        <div id="friends-list" class="list-group mb-4"></div>
+
+                        <!-- Contenedores de las diferentes secciones -->
+                        <div id="users-container" class="tab-content active">
+                            <div id="users-list" class="list-group"></div>
+                        </div>
+
+                        <div id="requests-container" class="tab-content">
+                            <div id="pending-requests" class="list-group"></div>
+                        </div>
+
+                        <div id="friends-container" class="tab-content">
+                            <div id="friends-list" class="list-group"></div>
+                        </div>
                     </div>
                 </div>
             </div>

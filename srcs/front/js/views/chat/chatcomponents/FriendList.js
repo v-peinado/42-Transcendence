@@ -77,7 +77,28 @@ export class FriendList {
     updatePendingRequests(data) {
         this.pendingRequests.innerHTML = '';
         
-        if (!data.pending?.length) return;
+        // Actualizar el badge de notificación en la pestaña
+        const requestCount = data.pending?.length || 0;
+        const requestsTab = document.querySelector('[data-tab="requests"]');
+        if (requestsTab) {
+            const existingBadge = requestsTab.querySelector('.requests-badge');
+            if (requestCount > 0) {
+                if (existingBadge) {
+                    existingBadge.textContent = requestCount;
+                } else {
+                    requestsTab.innerHTML += `
+                        <span class="requests-badge badge-notification">${requestCount}</span>
+                    `;
+                }
+            } else if (existingBadge) {
+                existingBadge.remove();
+            }
+        }
+
+        if (!data.pending?.length) {
+            this.showEmptyRequestsState();
+            return;
+        }
 
         data.pending.forEach(request => {
             const requestElement = this.createRequestElement(request);
@@ -130,6 +151,15 @@ export class FriendList {
 
     deleteFriendship(friendshipId) {
         friendService.deleteFriendship(friendshipId);
+    }
+
+    showEmptyRequestsState() {
+        this.pendingRequests.innerHTML = `
+            <div class="text-center text-muted p-3">
+                <i class="fas fa-inbox fa-2x mb-2"></i>
+                <p>No tienes solicitudes pendientes</p>
+            </div>
+        `;
     }
 
     showEmptyState() {

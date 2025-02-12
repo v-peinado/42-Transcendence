@@ -6,6 +6,7 @@ import { ChatEventManager } from './modules/ChatEventManager.js';
 import { webSocketService } from '../../services/WebSocketService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import AuthService from '../../services/AuthService.js';
+import { TabManager } from './modules/TabManager.js';
 
 export async function ChatView() {
     // Inicialización básica
@@ -19,6 +20,16 @@ export async function ChatView() {
     const privateChat = new PrivateChat(container);
     const userList = new UserList(container);
     const friendList = new FriendList(container);
+    
+    const chatTabManager = new TabManager(
+        document.getElementById('chat-tabs'),
+        (tab) => console.log('Chat tab changed:', tab)
+    );
+
+    const userTabManager = new TabManager(
+        document.getElementById('user-tabs'),
+        (tab) => console.log('User tab changed:', tab)
+    );
     
     // Registrar manejadores de eventos
     await eventManager.initialize({
