@@ -83,19 +83,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def update_all_lists(self):
         await self.user_list_update()
         await self.notify_pending_requests(self.scope["user"].id)
+        await self.notify_pending_requests(self.scope["user"].id, sent=True)
         await self.send_friend_list(self.scope["user"].id)
         await self.send_blocked_users()
         await self.send_user_groups()
         await self.send_user_private_channels()
-
-    @database_sync_to_async
-    def get_users(self):
-        """Get all users with their friend request status"""
-        users = User.objects.exclude(id=self.user_id)
-        # Para cada usuario, verificar si hay solicitud de amistad pendiente
-        for user in users:
-            user.friend_request_sent = FriendRequest.objects.filter(
-                from_user_id=self.user_id, 
-                to_user_id=user.id
-            ).exists()
-        return users

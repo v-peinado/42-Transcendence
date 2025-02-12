@@ -6,9 +6,16 @@ export class UserList {
         this.container = container;
         this.usersList = container.querySelector('#users-list');
         this.currentFriends = new Set();
+        this.sentRequests = new Set(); // Añadir esta línea
+    }
+
+    updateSentRequests(requests) {
+        this.sentRequests = new Set(requests.map(req => req.to_user_id));
+        this.updateList(this.lastUserData); // Actualizar la vista con los datos almacenados
     }
 
     updateList(data) {
+        this.lastUserData = data; // Almacenar los datos para futuras actualizaciones
         this.usersList.innerHTML = '';
         
         data.users.forEach(user => {
@@ -56,7 +63,7 @@ export class UserList {
     createActionButtons(user) {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
-        const hasSentRequest = Boolean(user.friend_request_sent);
+        const hasSentRequest = this.sentRequests.has(userId);
 
         if (isFriend) {
             return `

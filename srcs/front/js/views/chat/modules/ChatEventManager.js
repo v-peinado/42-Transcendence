@@ -54,6 +54,7 @@ export class ChatEventManager {
         webSocketService.on('friend_request_accepted', this.handleFriendRequestAccepted.bind(this));
         webSocketService.on('friendship_deleted', this.handleFriendshipDeleted.bind(this));
         webSocketService.on('pending_friend_requests', this.handlePendingRequests.bind(this));
+        webSocketService.on('sent_friend_requests', this.handleSentRequests.bind(this));
         
         // Eventos de error
         webSocketService.on('error', this.handleError.bind(this));
@@ -126,6 +127,11 @@ export class ChatEventManager {
 
     handlePendingRequests(data) {
         this.components.friendList.updatePendingRequests(data);
+    }
+
+    handleSentRequests(data) {
+        // Actualizar UI para mostrar solicitudes enviadas
+        this.components.userList.updateSentRequests(data.pending);
     }
 
     // Manejador de errores
