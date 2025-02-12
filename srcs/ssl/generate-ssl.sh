@@ -1,47 +1,46 @@
 #!/bin/sh
 
-set -e  				# Salir en caso de error
-trap 'cleanup' EXIT		# Limpiar al salir
+set -e  					# Exit on error
+trap 'cleanup' EXIT		# Clean up on exit
 
-# Colores para mensajes
+# Color definitions for messages
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-# Variables de configuración
+# Configuration variables
 SSL_DIR="/tmp/ssl"
 KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
 CONF_FILE="${SSL_DIR}/openssl.cnf"
 
-
-# Función de limpieza al salir del script
+# Cleanup function executed on script exit
 cleanup() {
     if [ $? -ne 0 ]; then
         rm -f "$KEY_FILE" "$CERT_FILE" "$CONF_FILE"
-        log_error "Script terminado con errores"
+        log_error "Script terminated with errors"
     fi
 }
 
-# Mensajes de log
+# Log informational messages
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
 
-# Mensajes de error
+# Log error messages
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
-# Crear directorio para almacenar certificados SSL y configuración de certificado
+# Create SSL directory and certificate configuration
 create_ssl_directory() {
-    log_info "Creando directorios..."
+    log_info "Creating directories..."
     install -d -m 755 "$SSL_DIR" || {
-        log_error "No se pudo crear $SSL_DIR"
+        log_error "Could not create $SSL_DIR"
         return 1
     }
 
-    # Crear configuración de certificado
+    # Create certificate configuration
     cat > "$CONF_FILE" << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -67,14 +66,14 @@ IP.1 = 127.0.0.1
 EOF
 }
 
-# Generar certificados SSL autofirmados
+# Generate self-signed SSL certificates
 generate_certificates() {
-    log_info "Generando certificados SSL..."
+    log_info "Generating SSL certificates..."
     
-    # Limpiar certificados anteriores si existen
+    # Clean up previous certificates if they exist
     rm -f "$CERT_FILE" "$KEY_FILE"
     
-    # Generar certificados SSL autofirmados
+    # Generate self-signed SSL certificates
     openssl req -x509 -nodes \
         -days 365 \
         -newkey rsa:2048 \
@@ -84,24 +83,24 @@ generate_certificates() {
         -extensions v3_req \
         -copy_extensions=copy || return 1
     
-    # Establecer permisos adecuados
+    # Set appropriate permissions
     chmod 644 "$CERT_FILE"
     chmod 600 "$KEY_FILE"
     
-    # Comprobar que los certificados se han generado correctamente
+    # Verify certificates were generated successfully
     [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ] || {
-        log_error "Verificación de certificados fallida"
+        log_error "Certificate verification failed"
         return 1
     }
     
-    log_info "Certificados generados en: $SSL_DIR"
+    log_info "Certificates generated in: $SSL_DIR"
 }
 
-# Función principal 
+# Main function - Script entry point
 main() {
-    log_info "Iniciando configuración SSL..."
+    log_info "Starting SSL configuration..."
     create_ssl_directory && generate_certificates
-    log_info "Configuración SSL completada"
+    log_info "SSL configuration completed"
 }
 
 main
