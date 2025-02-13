@@ -54,20 +54,27 @@ initialize_vault() {
     if [ "${VAULT_MODE}" = "production" ]; then
         export VAULT_ADDR='https://127.0.0.1:8200'
         export VAULT_SKIP_VERIFY=true
-        unset VAULT_TOKEN
-
-        log_message "Setting VAULT_ADDR=${VAULT_ADDR}"
-
+        
         if ! vault operator init -status > /dev/null 2>&1; then
             log_message "Initializing Vault..."
             vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
             chmod 600 "${LOG_DIR}/init.txt"
-            chown nginxuser:nginxuser "${LOG_DIR}/init.txt"
             
             UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
             ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
             
+            # Guardar las claves para uso posterior
+            echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
+            echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
+            chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
+            
             log_message "Unsealing Vault..."
+            vault operator unseal "$UNSEAL_KEY"
+            vault login "$ROOT_TOKEN"
+        else
+            # Recuperar claves guardadas
+            UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
+            ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
             vault operator unseal "$UNSEAL_KEY"
             vault login "$ROOT_TOKEN"
         fi
@@ -102,29 +109,18 @@ configure_vault() {
 }
 
 configure_policies() {
-    vault policy write django - <<-EOF
-    # Permitir acceso a los secretos de Django
-    path "secret/data/django/*" {
-        capabilities = ["create", "read", "update", "delete", "list"]
-    }
-
-    # Permitir listar los secretos
-    path "secret/metadata/django/*" {
-        capabilities = ["list"]
-    }
-
-    # Permitir acceso a los secretos de Nginx
-    path "secret/data/nginx/*" {
-        capabilities = ["create", "read", "update", "delete", "list"]
-    }
-
-    path "secret/metadata/nginx/*" {
-        capabilities = ["list"]
-    }
-    
-    # Gestión de tokens
-    path "auth/token/*-self" {
-        capabilities = ["read", "update"]
-    }
+    # Crear política para Django
+    vault policy write django - <<EOF
+path "secret/data/django/*" {
+    capabilities = ["read", "list"]
+}
+path "secret/metadata/django/*" {
+    capabilities = ["list"]
+}
 EOF
+
+    # Crear token para Django
+    token=$(vault token create -policy=django -format=json | jq -r '.auth.client_token')
+    echo "$token" > "/tmp/ssl/django_token"
+    chmod 644 "/tmp/ssl/django_token"
 }
