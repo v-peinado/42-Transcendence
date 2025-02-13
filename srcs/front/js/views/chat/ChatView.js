@@ -28,7 +28,10 @@ export async function ChatView() {
 
     const userTabManager = new TabManager(
         document.getElementById('user-tabs'),
-        (tab) => console.log('User tab changed:', tab)
+        (tab) => {
+            userList.handleTabChange(tab);
+            friendList.handleTabChange(tab);
+        }
     );
     
     // Registrar manejadores de eventos

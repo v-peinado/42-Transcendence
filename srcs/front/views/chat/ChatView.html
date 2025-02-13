@@ -1,9 +1,10 @@
-<div class="hero-section">
+<div class="hero-section chat-view">
     <div class="hero-content">
         <div class="container-fluid mt-4">
             <div class="row">
                 <!-- Chat General y Chats Privados -->
                 <div class="col-md-8">
+                    <!-- Verifica que los IDs y clases están correctos -->
                     <div id="chat-tabs" class="mb-3">
                         <button class="btn btn-primary active" data-tab="general">
                             <i class="fas fa-comments me-2"></i>General
@@ -68,30 +69,32 @@
                 <!-- Lista de Usuarios -->
                 <div class="col-md-4">
                     <div class="user-column">
-                        <!-- Tabs para las diferentes secciones -->
-                        <div id="user-tabs" class="mb-3">
-                            <button class="btn btn-primary active" data-tab="users">
+                        <!-- Tabs de usuarios -->
+                        <div id="user-tabs" class="nav nav-tabs mb-3">
+                            <button class="nav-link active" data-tab="users">
                                 <i class="fas fa-users me-2"></i>Usuarios
                             </button>
-                            <button class="btn btn-primary" data-tab="requests">
+                            <button class="nav-link" data-tab="requests">
                                 <i class="fas fa-user-clock me-2"></i>Solicitudes
                             </button>
-                            <button class="btn btn-primary" data-tab="friends">
+                            <button class="nav-link" data-tab="friends">
                                 <i class="fas fa-star me-2"></i>Amigos
                             </button>
                         </div>
 
                         <!-- Contenedores de las diferentes secciones -->
-                        <div id="users-container" class="tab-content active">
-                            <div id="users-list" class="list-group"></div>
-                        </div>
+                        <div class="tab-container">
+                            <div id="users-container" class="tab-content">
+                                <div id="users-list" class="list-group"></div>
+                            </div>
 
-                        <div id="requests-container" class="tab-content">
-                            <div id="pending-requests" class="list-group"></div>
-                        </div>
+                            <div id="requests-container" class="tab-content">
+                                <div id="pending-requests" class="list-group"></div>
+                            </div>
 
-                        <div id="friends-container" class="tab-content">
-                            <div id="friends-list" class="list-group"></div>
+                            <div id="friends-container" class="tab-content">
+                                <div id="friends-list" class="list-group"></div>
+                            </div>
                         </div>
                     </div>
                 </div>

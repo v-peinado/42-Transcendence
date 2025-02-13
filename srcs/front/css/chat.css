@@ -684,6 +684,7 @@
     display: none;
     opacity: 0;
     transition: opacity 0.3s ease;
+    background: transparent;
 }
 
 .tab-content.active {
@@ -766,4 +767,249 @@
             0 0 0 2px rgba(220, 53, 69, 0.3),
             0 2px 4px rgba(0, 0, 0, 0.2);
     }
+}
+
+/* Sobrescribir estilos de tabs para el chat */
+.chat-view #chat-tabs,
+.chat-view #user-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+    width: 100%; /* Asegurar que ocupa todo el ancho disponible */
+}
+
+.chat-view #chat-tabs .btn,
+.chat-view #user-tabs .btn {
+    flex: 1;
+    padding: 8px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    transition: all 0.3s ease;
+    white-space: nowrap; /* Evitar que el texto se rompa */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.chat-view #chat-tabs .btn:hover,
+.chat-view #user-tabs .btn:hover {
+    background: rgba(66, 153, 225, 0.15);
+    transform: translateY(-2px);
+}
+
+.chat-view #chat-tabs .btn.active,
+.chat-view #user-tabs .btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
+}
+
+/* Contenido de los tabs */
+.chat-view .tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.chat-view .tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .chat-view #chat-tabs,
+    .chat-view #user-tabs {
+        flex-wrap: wrap;
+    }
+
+    .chat-view #chat-tabs .btn,
+    .chat-view #user-tabs .btn {
+        min-width: calc(50% - 4px); /* 2 botones por fila en móvil */
+    }
+}
+
+/* Empty state styles */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    margin: 1rem;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    color: rgba(66, 153, 225, 0.5);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.empty-state small {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    display: block;
+    max-width: 80%;
+    margin: 0 auto;
+}
+
+[data-animation="floatingIcon"] {
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+}
+
+/* Asegurar que los contenedores de tab están ocultos por defecto */
+.tab-container .tab-content {
+    display: none;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+}
+
+/* Solo mostrar el tab activo */
+.tab-container .tab-content.active {
+    display: block;
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+}
+
+/* Eliminar cualquier propiedad display !important que pueda estar interfiriendo */
+/* Estilos específicos para los tabs del chat */
+.chat-view .user-column .tab-container .tab-content {
+    display: none;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.chat-view .user-column .tab-container .tab-content.active {
+    display: block !important;
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+}
+
+/* Eliminar las reglas anteriores de tab-content y reemplazarlas con estas específicas */
+.user-column .tab-container {
+    position: relative;
+}
+
+.user-column .tab-container .tab-content {
+    display: none !important;
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.user-column .tab-container .tab-content.active {
+    display: block !important;
+    position: relative;
+    opacity: 1;
+}
+
+/* Actualizar estilos del contenedor de tabs para alinear los botones */
+.user-column #user-tabs {
+    display: flex;
+    flex-direction: row; /* Asegurar que los botones están en fila */
+    flex-wrap: nowrap; /* Evitar que se envuelvan */
+    justify-content: space-between; /* Distribuir espacio uniformemente */
+    width: 100%;
+    gap: 0.5rem;
+    padding: 0.35rem; /* Reducido de 0.5rem */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 1.5rem; /* Reducido de 2rem */
+    backdrop-filter: blur(10px);
+}
+
+.user-column #user-tabs .nav-link {
+    flex: 1; /* Hacer que cada botón ocupe el mismo espacio */
+    min-width: 0; /* Permitir que los botones se encojan si es necesario */
+    text-align: center;
+    white-space: nowrap; /* Evitar saltos de línea en el texto */
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    padding: 0.6rem 1rem; /* Reducido de 1rem 1rem */
+    font-size: 0.9rem; /* Añadido para texto ligeramente más pequeño */
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.user-column #user-tabs .btn i {
+    font-size: 0.9rem; /* Añadido para iconos ligeramente más pequeños */
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+}
+
+.user-column #user-tabs .btn:hover i,
+.user-column #user-tabs .btn.active i {
+    color: #0d6efd;
+}
+
+.user-column #user-tabs .nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    transform: none;
+}
+
+.user-column #user-tabs .nav-link.active {
+    color: white;
+    background: rgba(13, 110, 253, 0.15);
+    box-shadow: 
+        0 0 0 1px rgba(13, 110, 253, 0.2),
+        0 4px 12px rgba(13, 110, 253, 0.1);
+}
+
+.user-column #user-tabs .nav-link i {
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+}
+
+.user-column #user-tabs .nav-link:hover i,
+.user-column #user-tabs .nav-link.active i {
+    color: #0d6efd;
+}
+
+/* Contenedor de tabs */
+.user-column .tab-container {
+    position: relative;
+}
+
+.user-column .tab-container .tab-content {
+    display: none;
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.user-column .tab-container .tab-content.active {
+    display: block;
+    position: relative;
+    opacity: 1;
 }
