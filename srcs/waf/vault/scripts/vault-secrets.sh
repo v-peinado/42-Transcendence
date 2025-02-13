@@ -28,6 +28,7 @@ store_secrets() {
         PASSWORD="${POSTGRES_PASSWORD}" \
         HOST="${SQL_HOST}" \
         PORT="${SQL_PORT}"
+		log_secret "django/database"
 
     # OAuth secrets
     vault kv put secret/django/oauth \
@@ -36,18 +37,21 @@ store_secrets() {
         REDIRECT_URI="${FORTYTWO_REDIRECT_URI}" \
         API_UID="${FORTYTWO_API_UID}" \
         API_SECRET="${FORTYTWO_API_SECRET}"
+		log_secret "django/oauth"
 
     # Settings
     vault kv put secret/django/settings \
         DEBUG="${DJANGO_DEBUG:-False}" \
         ALLOWED_HOSTS="${DJANGO_ALLOWED_HOSTS}" \
         SECRET_KEY="${DJANGO_SECRET_KEY}"
+		log_secret "django/settings"
 
     # JWT
     vault kv put secret/django/jwt \
         secret_key="${JWT_SECRET_KEY}" \
         algorithm="${JWT_ALGORITHM}" \
         expiration_time="${JWT_EXPIRATION_TIME}"
+		log_secret "django/jwt"
 
     # Email
     vault kv put secret/django/email \
@@ -57,6 +61,10 @@ store_secrets() {
         HOST_USER="${EMAIL_HOST_USER}" \
         HOST_PASSWORD="${EMAIL_HOST_PASSWORD}" \
         FROM_EMAIL="${DEFAULT_FROM_EMAIL}"
+		log_secret "django/email"
+	
+	# SSL certificates
+	store_ssl_certificates
 }
 
 store_secret() {
@@ -86,13 +94,13 @@ store_secret() {
     fi
 }
 
-# store_ssl_certificates() {
-#     if vault kv put secret/nginx/ssl \
-#         ssl_certificate="$(base64 /tmp/ssl/transcendence.crt 2>/dev/null || echo '')" \
-#         ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')" >/dev/null 2>&1; then
-#         log_secret "nginx/ssl"
-#     else
-#         log "ERROR" "Failed to store SSL certificates"
-#         return 1
-#     fi
-# }
+store_ssl_certificates() {
+    if vault kv put secret/nginx/ssl \
+        ssl_certificate="$(base64 /tmp/ssl/transcendence.crt 2>/dev/null || echo '')" \
+        ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')" >/dev/null 2>&1; then
+        log_secret "nginx/ssl"
+    else
+        log "ERROR" "Failed to store SSL certificates"
+        return 1
+    fi
+}

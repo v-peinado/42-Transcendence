@@ -1,4 +1,5 @@
 import hvac
+import requests
 import os
 import time
 from typing import Dict, Any

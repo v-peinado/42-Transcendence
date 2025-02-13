@@ -166,7 +166,7 @@ LOGOUT_REDIRECT_URL = "login"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Environment variables for 42 authentication
-FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")
+FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")	# 
 FORTYTWO_CLIENT_SECRET = os.environ.get("FORTYTWO_CLIENT_SECRET")
 FORTYTWO_REDIRECT_URI = os.environ.get("FORTYTWO_REDIRECT_URI")
 FORTYTWO_API_UID = os.environ.get("FORTYTWO_API_UID")

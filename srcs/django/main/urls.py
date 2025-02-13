@@ -6,7 +6,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.core.exceptions import ImproperlyConfigured
 import os
-import warnings
 from chat import views
 
 # Check basic configuration
@@ -15,7 +14,7 @@ if "authentication" not in settings.INSTALLED_APPS:
 
 
 def check_nginx_config():
-    if not os.environ.get("DJANGO_DEVELOPMENT", False):  # Solo verificar en producción
+    if not os.environ.get("DJANGO_DEVELOPMENT", False):  # Production environment check (put in .env)
         media_path = "/usr/share/nginx/html/media"
         if not os.path.exists(media_path):
             os.makedirs(media_path, exist_ok=True)

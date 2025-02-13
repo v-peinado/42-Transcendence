@@ -63,7 +63,7 @@ initialize_vault() {
             UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
             ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
             
-            # Guardar las claves para uso posterior
+            # Save keys for unsealing in the future
             echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
             echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
             chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
@@ -72,7 +72,7 @@ initialize_vault() {
             vault operator unseal "$UNSEAL_KEY"
             vault login "$ROOT_TOKEN"
         else
-            # Recuperar claves guardadas
+            # Recover keys from previous initialization
             UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
             ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
             vault operator unseal "$UNSEAL_KEY"
@@ -109,7 +109,7 @@ configure_vault() {
 }
 
 configure_policies() {
-    # Crear política para Django
+    # Configure access policies for Django
     vault policy write django - <<EOF
 path "secret/data/django/*" {
     capabilities = ["read", "list"]
@@ -119,7 +119,7 @@ path "secret/metadata/django/*" {
 }
 EOF
 
-    # Crear token para Django
+    # Create a token for Django with the policy
     token=$(vault token create -policy=django -format=json | jq -r '.auth.client_token')
     echo "$token" > "/tmp/ssl/django_token"
     chmod 644 "/tmp/ssl/django_token"
