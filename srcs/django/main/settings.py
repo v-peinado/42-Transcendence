@@ -15,10 +15,8 @@ import os
 from django.core.management.utils import get_random_secret_key
 from .vault import load_vault_secrets
 
-load_vault_secrets()  # Load secrets from Vault
-from dotenv import load_dotenv
-
-load_dotenv()  # Load environment variables from .env file
+# Intentar cargar secretos de Vault primero
+load_vault_secrets()
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -229,6 +227,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME sniffing attack protection
 X_FRAME_OPTIONS = "DENY"  # Clickjacking attack protection
 
 # JWT token generation settings
-JWT_SECRET_KEY = os.environ.get("secret_key")
-JWT_ALGORITHM = os.environ.get("algorithm", "HS256")
-JWT_EXPIRATION_TIME = int(os.environ.get("expiration_time", 3600))
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "default-secret-key")
+JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
+JWT_EXPIRATION_TIME = int(os.environ.get("JWT_EXPIRATION_TIME") or 3600)

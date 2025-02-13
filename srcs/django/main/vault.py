@@ -6,10 +6,12 @@ import warnings
 from urllib3.exceptions import InsecureRequestWarning
 from typing import Dict, Any
 
+
 # Disable SSL warnings for Vault connection (self-signed certificate)
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 _secrets_cache = {}  # Cache for secrets
+_secrets_loaded = False  # Flag to track if secrets have been loaded
 
 
 class VaultClient:
@@ -35,7 +37,7 @@ class VaultClient:
             return True
 
     def get_secrets(self, path: str) -> Dict[str, Any]:
-        # Verify if secrets are already in cache
+        # Check cache first
         if path in _secrets_cache:
             return _secrets_cache[path]
 
@@ -66,26 +68,76 @@ class VaultClient:
         return {}
 
 
+def get_client():
+    try:
+        token_file = "/tmp/ssl/django_token"
+        with open(token_file, "r") as f:
+            token = f.read().strip()
+            print(f"Using token: {token}")  # Debug line
+
+        client = hvac.Client(url="https://waf:8200", token=token, verify=False)
+
+        # Verify authentication
+        if client.is_authenticated():
+            print("Successfully authenticated with Vault")
+            try:
+                # Test read access
+                client.secrets.kv.v2.read_secret_version(
+                    path="django/database", mount_point="secret"
+                )
+                print("Successfully read test secret")
+            except Exception as e:
+                print(f"Failed to read test secret: {e}")
+        else:
+            print("Failed to authenticate with Vault")
+            return None
+
+        return client
+    except Exception as e:
+        print(f"Error initializing Vault client: {e}")
+        return None
+
+
 def load_vault_secrets():
-    if _secrets_cache:  # If secrets are already loaded
-        for secrets in _secrets_cache.values():
-            os.environ.update(secrets)
+    print("\n=== Loading secrets from Vault ===")
+
+    client = get_client()
+    if not client:
+        print("✗ Failed to initialize Vault client")
+        print("=================================\n")
         return
 
-    client = VaultClient()
-    secrets = {
-        "Database": client.get_secrets("django/database"),
-        "OAuth": client.get_secrets("django/oauth"),
-        "Email": client.get_secrets("django/email"),
-        "Settings": client.get_secrets("django/settings"),
-        "JWT": client.get_secrets("django/jwt"),
+    paths = {
+        "Database": "django/database",
+        "OAuth": "django/oauth",
+        "Email": "django/email",
+        "Settings": "django/settings",
+        "JWT": "django/jwt",
     }
 
-    print("\n=== Loading secrets from Vault ===")
-    for name, data in secrets.items():
-        if data:
-            print(f"✓ {name}")
-            os.environ.update(data)
-        else:
-            print(f"✗ {name}")
+    success = 0
+    total = len(paths)
+
+    for name, path in paths.items():
+        try:
+            print(f"Attempting to read {path}...")  # Debug line
+            response = client.secrets.kv.v2.read_secret_version(
+                path=path, mount_point="secret"
+            )
+            secrets = response["data"]["data"]
+            print(f"✓ {name} - Found {len(secrets)} values")
+            os.environ.update(secrets)
+            success += 1
+        except Exception as e:
+            print(f"✗ {name}: {str(e)}")
+            if hasattr(e, "response") and e.response:
+                print(f"Response details: {e.response.text}")
+
+    print(f"\n{success}/{total} secrets loaded successfully")
     print("=================================\n")
+
+    if success < total:
+        print("Warning: Some secrets missing, using .env as fallback")
+        from dotenv import load_dotenv
+
+        load_dotenv()

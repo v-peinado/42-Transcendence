@@ -20,46 +20,45 @@ store_secrets() {
         return 1
     fi
 
-    # Database secrets
-    vault kv put secret/django/database \
-        ENGINE="${SQL_ENGINE}" \
-        NAME="${POSTGRES_DB}" \
-        USER="${POSTGRES_USER}" \
-        PASSWORD="${POSTGRES_PASSWORD}" \
-        HOST="${SQL_HOST}" \
-        PORT="${SQL_PORT}" >/dev/null 2>&1 && \
-        log_secret "django/database"
+    store_secret "django/database" "ENGINE NAME USER PASSWORD HOST PORT"
+    store_secret "django/oauth" "CLIENT_ID CLIENT_SECRET REDIRECT_URI API_UID API_SECRET"
+    store_secret "django/email" "HOST PORT USE_TLS HOST_USER HOST_PASSWORD FROM_EMAIL"
+    store_secret "django/settings" "DEBUG ALLOWED_HOSTS SECRET_KEY"
+    store_secret "django/jwt" "secret_key algorithm expiration_time"
+    store_ssl_certificates
 
-    # OAuth secrets
-    vault kv put secret/django/oauth \
-        CLIENT_ID="${FORTYTWO_CLIENT_ID}" \
-        CLIENT_SECRET="${FORTYTWO_CLIENT_SECRET}" \
-        REDIRECT_URI="${FORTYTWO_REDIRECT_URI}" \
-        API_UID="${FORTYTWO_API_UID}" \
-        API_SECRET="${FORTYTWO_API_SECRET}" >/dev/null 2>&1 && \
-        log_secret "django/oauth"
-
-    # Settings
-    vault kv put secret/django/settings \
-        DEBUG="${DJANGO_DEBUG:-False}" \
-        ALLOWED_HOSTS="${DJANGO_ALLOWED_HOSTS}" \
-        SECRET_KEY="${DJANGO_SECRET_KEY}" >/dev/null 2>&1 && \
-        log_secret "django/settings"
-
-    # JWT
+    # JWT settings
     vault kv put secret/django/jwt \
-        secret_key="${JWT_SECRET_KEY}" \
-        algorithm="${JWT_ALGORITHM}" \
-        expiration_time="${JWT_EXPIRATION_TIME}" >/dev/null 2>&1 && \
+        JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
+        JWT_ALGORITHM="${JWT_ALGORITHM}" \
+        JWT_EXPIRATION_TIME="${JWT_EXPIRATION_TIME:-3600}" >/dev/null 2>&1 && \
         log_secret "django/jwt"
+}
 
-    # Email
-    vault kv put secret/django/email \
-        HOST="${EMAIL_HOST}" \
-        PORT="${EMAIL_PORT}" \
-        USE_TLS="${EMAIL_USE_TLS}" \
-        HOST_USER="${EMAIL_HOST_USER}" \
-        HOST_PASSWORD="${EMAIL_HOST_PASSWORD}" \
-        FROM_EMAIL="${DEFAULT_FROM_EMAIL}" >/dev/null 2>&1 && \
-        log_secret "django/email"
+store_secret() {
+    local path=$1
+    local vars=$2
+    local -a value_args=()
+    
+    for var in $vars; do
+        value_args+=("${var}=${!var}")
+    done
+
+    if vault kv put "secret/$path" "${value_args[@]}" >/dev/null 2>&1; then
+        log_secret "$path"
+    else
+        log "ERROR" "Failed to store secret: $path"
+        return 1
+    fi
+}
+
+store_ssl_certificates() {
+    if vault kv put secret/nginx/ssl \
+        ssl_certificate="$(base64 /tmp/ssl/transcendence.crt 2>/dev/null || echo '')" \
+        ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')" >/dev/null 2>&1; then
+        log_secret "nginx/ssl"
+    else
+        log "ERROR" "Failed to store SSL certificates"
+        return 1
+    fi
 }

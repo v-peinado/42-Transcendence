@@ -97,18 +97,29 @@ configure_vault() {
 }
 
 configure_policies() {
-    # Configure access policies for Django
+    # Configure access policies for Django with simpler permissions
     vault policy write django - <<EOF
 path "secret/data/django/*" {
-    capabilities = ["read", "list"]
+    capabilities = ["read"]
 }
 path "secret/metadata/django/*" {
-    capabilities = ["list"]
+    capabilities = ["read", "list"]
 }
 EOF
 
-    # Create a token for Django with the policy
-    token=$(vault token create -policy=django -format=json | jq -r '.auth.client_token')
-    echo "$token" > "/tmp/ssl/django_token"
+    # Create a token with extended TTL for Django
+    mkdir -p /tmp/ssl
+    DJANGO_TOKEN=$(vault token create \
+        -policy=django \
+        -display-name=django \
+        -ttl=720h \
+        -format=json | jq -r '.auth.client_token')
+
+    echo "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
     chmod 644 "/tmp/ssl/django_token"
+
+    # Debug info
+    echo "Created token file with contents:"
+    cat "/tmp/ssl/django_token"
+    vault token lookup "$DJANGO_TOKEN"
 }
