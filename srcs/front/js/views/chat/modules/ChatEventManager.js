@@ -24,6 +24,8 @@ export class ChatEventManager {
         
         // Solicitar datos iniciales
         this.requestInitialData();
+
+        this.setupCustomEventListeners();
     }
 
     setupCallbacks() {
@@ -163,5 +165,29 @@ export class ChatEventManager {
 
     getCurrentUserId() {
         return parseInt(localStorage.getItem('user_id'));
+    }
+
+    setupCustomEventListeners() {
+        document.addEventListener('start-private-chat', (event) => {
+            const { channelName, username, userId } = event.detail;
+            
+            // Cambiar el manejo del evento private_channels para que sea una única vez
+            const handlePrivateChannel = (data) => {
+                const channelExists = data.channels.some(channel => channel.name === channelName);
+                if (channelExists) {
+                    this.components.privateChat.showChat(channelName, username);
+                    // Remover el listener después de usarlo
+                    webSocketService.off('private_channels', handlePrivateChannel);
+                }
+            };
+
+            webSocketService.on('private_channels', handlePrivateChannel);
+
+            // Suscribirse al canal
+            webSocketService.send({
+                type: 'subscribe_to_chat',
+                channel_name: channelName
+            });
+        });
     }
 }

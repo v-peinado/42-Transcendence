@@ -23,8 +23,27 @@ export async function ChatView() {
     
     const chatTabManager = new TabManager(
         document.getElementById('chat-tabs'),
-        (tab) => console.log('Chat tab changed:', tab)
+        (tab) => {
+            // Manejar el cambio de tab
+            const generalChat = document.getElementById('general-chat');
+            const allPrivateChats = document.querySelectorAll('[id^="private-chat-"]');
+            
+            // Ocultar todos los chats
+            generalChat.classList.remove('active');
+            allPrivateChats.forEach(chat => chat.classList.remove('active'));
+            
+            // Mostrar el chat seleccionado
+            if (tab === 'general') {
+                generalChat.classList.add('active');
+            } else {
+                document.getElementById(`private-chat-${tab}`).classList.add('active');
+            }
+            console.log('Chat tab changed:', tab);
+        }
     );
+
+    // Hacer el chatTabManager accesible para el PrivateChat
+    privateChat.setChatTabManager(chatTabManager);
 
     const userTabManager = new TabManager(
         document.getElementById('user-tabs'),

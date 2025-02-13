@@ -147,6 +147,9 @@ class WebSocketService {
             const index = callbacks.indexOf(callback);
             if (index !== -1) {
                 callbacks.splice(index, 1);
+                if (callbacks.length === 0) {
+                    this.listeners.delete(eventType);
+                }
             }
         }
     }
