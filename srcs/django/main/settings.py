@@ -12,8 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
+from .vault import load_vault_secrets
+
+load_vault_secrets()  # Load secrets from Vault
+from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -21,10 +24,8 @@ load_dotenv()  # Load environment variables from .env file
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Basic project configuration
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", get_random_secret_key()
-)  # Secret key for token and password generation
-DEBUG = True  # Debug mode (True for development, False for production)
+SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 # Define allowed hosts in production (by default, no hosts allowed)
 # ALLOWED_HOSTS = []
@@ -166,7 +167,7 @@ LOGOUT_REDIRECT_URL = "login"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Environment variables for 42 authentication
-FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")	# 
+FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")  #
 FORTYTWO_CLIENT_SECRET = os.environ.get("FORTYTWO_CLIENT_SECRET")
 FORTYTWO_REDIRECT_URI = os.environ.get("FORTYTWO_REDIRECT_URI")
 FORTYTWO_API_UID = os.environ.get("FORTYTWO_API_UID")
@@ -228,5 +229,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME sniffing attack protection
 X_FRAME_OPTIONS = "DENY"  # Clickjacking attack protection
 
 # JWT token generation settings
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key")
-JWT_ALGORITHM = "HS256"  # Standard encryption algorithm
+JWT_SECRET_KEY = os.environ.get("secret_key")
+JWT_ALGORITHM = os.environ.get("algorithm", "HS256")
+JWT_EXPIRATION_TIME = int(os.environ.get("expiration_time", 3600))

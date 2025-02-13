@@ -82,23 +82,11 @@ initialize_vault() {
 }
 
 configure_vault() {
-    if [ ! -f "${LOG_DIR}/init.txt" ]; then
-        log "ERROR" "init.txt not found"
-        return 1
-    fi
-    
+    # Simplificar ya que ahora manejamos el unseal directamente
     export VAULT_TOKEN
     VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
     export VAULT_ADDR='https://127.0.0.1:8200'
     
-    until vault status >/dev/null 2>&1; do
-        if vault status 2>/dev/null | grep -q "Sealed: true"; then
-            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            vault operator unseal "$UNSEAL_KEY"
-        fi
-        sleep 2
-    done
-
     if ! vault secrets list | grep -q '^secret/'; then
         vault secrets enable -path=secret kv-v2
         log_message "KV-2 engine enabled"

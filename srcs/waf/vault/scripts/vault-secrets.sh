@@ -62,14 +62,4 @@ store_secrets() {
         HOST_PASSWORD="${EMAIL_HOST_PASSWORD}" \
         FROM_EMAIL="${DEFAULT_FROM_EMAIL}" >/dev/null 2>&1 && \
         log_secret "django/email"
-	
-	# SSL certificates
-	store_ssl_certificates
-}
-
-store_ssl_certificates() {
-    vault kv put secret/nginx/ssl \
-        ssl_certificate="$(base64 /tmp/ssl/transcendence.crt 2>/dev/null || echo '')" \
-        ssl_certificate_key="$(base64 /tmp/ssl/transcendence.key 2>/dev/null || echo '')" >/dev/null 2>&1 && \
-        log_secret "nginx/ssl"
 }

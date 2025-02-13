@@ -2,30 +2,30 @@ import hvac
 import requests
 import os
 import time
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
 from typing import Dict, Any
+
+# Disable SSL warnings for Vault connection (self-signed certificate)
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+_secrets_cache = {}  # Cache for secrets
 
 
 class VaultClient:
     def __init__(self):
         token_file = "/tmp/ssl/django_token"
-        retries = 0
-        max_retries = 5
+        try:
+            with open(token_file, "r") as f:
+                token = f.read().strip()
+        except Exception as e:
+            print(f"Error reading Vault token: {e}")
+            token = None
 
-        while retries < max_retries:
-            try:
-                with open(token_file, "r") as f:
-                    token = f.read().strip()
-                if token:
-                    break
-            except Exception as e:
-                print(
-                    f"Attempt {retries + 1}/{max_retries}: Error reading Vault token: {e}"
-                )
-                retries += 1
-                time.sleep(2)
-                token = None
-
-        self.client = hvac.Client(url="https://waf:8200", verify=False, token=token)
+        # Config client with token
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.client = hvac.Client(url="https://waf:8200", verify=False, token=token)
 
     def is_vault_sealed(self) -> bool:
         try:
@@ -35,6 +35,10 @@ class VaultClient:
             return True
 
     def get_secrets(self, path: str) -> Dict[str, Any]:
+        # Verify if secrets are already in cache
+        if path in _secrets_cache:
+            return _secrets_cache[path]
+
         retries = 0
         max_retries = 5
 
@@ -49,30 +53,39 @@ class VaultClient:
                 response = self.client.secrets.kv.v2.read_secret_version(
                     path=path, mount_point="secret"
                 )
-                return response["data"]["data"]
+                secrets = response["data"]["data"]
+                _secrets_cache[path] = secrets  # Save secrets in cache
+                return secrets
             except Exception as e:
-                print(
-                    f"Attempt {retries + 1}/{max_retries}: Error fetching secrets from Vault: {e}"
-                )
+                if (
+                    retries == max_retries - 1
+                ):  # Show error only on last retry to avoid spamming
+                    print(f"Error fetching secrets from Vault: {e}")
                 retries += 1
                 time.sleep(2)
-
         return {}
 
 
 def load_vault_secrets():
+    if _secrets_cache:  # If secrets are already loaded
+        for secrets in _secrets_cache.values():
+            os.environ.update(secrets)
+        return
+
     client = VaultClient()
+    secrets = {
+        "Database": client.get_secrets("django/database"),
+        "OAuth": client.get_secrets("django/oauth"),
+        "Email": client.get_secrets("django/email"),
+        "Settings": client.get_secrets("django/settings"),
+        "JWT": client.get_secrets("django/jwt"),
+    }
 
-    # Cargar secretos de diferentes rutas
-    django_db = client.get_secrets("django/database")
-    django_oauth = client.get_secrets("django/oauth")
-    django_email = client.get_secrets("django/email")
-    django_settings = client.get_secrets("django/settings")
-    django_jwt = client.get_secrets("django/jwt")
-
-    # Actualizar variables de entorno con los secretos
-    os.environ.update(django_db)
-    os.environ.update(django_oauth)
-    os.environ.update(django_email)
-    os.environ.update(django_settings)
-    os.environ.update(django_jwt)
+    print("\n=== Loading secrets from Vault ===")
+    for name, data in secrets.items():
+        if data:
+            print(f"✓ {name}")
+            os.environ.update(data)
+        else:
+            print(f"✗ {name}")
+    print("=================================\n")
