@@ -77,7 +77,7 @@ def main():
         os.environ.pop("VAULT_SECRETS_LOADED", None)  # Forzar recarga de secretos
         load_vault_secrets()
 
-        # Crear un script temporal para las migraciones
+        # Create temporary file to run migrations
         with open("migrate.py", "w") as f:
             f.write(
                 """
@@ -91,11 +91,11 @@ execute_from_command_line(["", "migrate", "--no-input"])
             """
             )
 
-        # Ejecutar migraciones en un proceso separado
+        # Run migrations to apply changes to the database
         if not run_command("python migrate.py"):
             print("Warning: Failed to apply migrations")
 
-        # Limpiar
+        # Remove temporary file
         os.remove("migrate.py")
 
         # Start Daphne

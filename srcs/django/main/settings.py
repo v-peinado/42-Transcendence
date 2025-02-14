@@ -15,7 +15,7 @@ import os
 from django.core.management.utils import get_random_secret_key
 from .vault import load_vault_secrets
 
-# Intentar cargar secretos de Vault primero
+# Load secrets from Vault
 load_vault_secrets()
 
 # Build base and root directory paths for Django project (main)

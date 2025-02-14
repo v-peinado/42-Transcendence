@@ -82,7 +82,6 @@ initialize_vault() {
 }
 
 configure_vault() {
-    # Simplificar ya que ahora manejamos el unseal directamente
     export VAULT_TOKEN
     VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
     export VAULT_ADDR='https://127.0.0.1:8200'
