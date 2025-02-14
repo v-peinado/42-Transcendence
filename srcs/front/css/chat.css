@@ -1,0 +1,1015 @@
+.chat-container {
+    height: calc(100vh - 120px);
+    margin: 0 auto;
+    padding: 5px;
+    border-radius: 8px;
+    background: rgba(22, 28, 36, 0.85);
+    border: 1px solid rgba(66, 153, 225, 0.2);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 0 50px rgba(66, 153, 225, 0.1);
+    color: #fff;
+}
+
+/* Eliminamos los estilos del scrollbar del contenedor principal */
+
+.messages {
+    height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.chat-form {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-form input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.chat-form button {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.chat-form button:hover {
+    background-color: #0056b3;
+}
+
+.chat-column {
+    padding: 5px;
+    height: calc(100vh - 130px); /* Ajustado para el nuevo espacio */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(66, 153, 225, 0.15);
+    box-shadow: inset 0 0 30px rgba(66, 153, 225, 0.05);
+}
+
+.user-column {
+    padding: 10px;
+    height: auto; /* Cambiado de 100% a auto */
+    min-height: 200px; /* Altura mínima */
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    overflow-x: hidden; /* Ocultar scroll horizontal */
+    background: rgba(30, 41, 59, 0.7);
+    border-left: 2px solid rgba(66, 153, 225, 0.2);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+#users-container, #requests-container, #friends-container {
+    height: auto;
+    min-height: 100px;
+}
+
+.chat-log {
+    height: 500px; /* Altura fija */
+    max-height: calc(100vh - 250px); /* Altura máxima adaptativa */
+    overflow-y: auto; /* Habilitar scroll */
+    margin-bottom: 4px;
+    padding: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(66, 153, 225, 0.15);
+    box-shadow: 
+        inset 0 0 20px rgba(66, 153, 225, 0.05),
+        0 0 10px rgba(66, 153, 225, 0.1);
+    scrollbar-width: thin;
+}
+
+.chat-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.msg {
+    padding: 5px 10px;
+    margin: 2px 0;
+    max-width: 80%;
+    font-size: 0.925rem;
+    line-height: 1.4;
+}
+
+.my-msg {
+    margin-left: auto;
+    background: linear-gradient(135deg, rgba(66, 153, 225, 0.15), rgba(66, 153, 225, 0.25));
+    border: 1px solid rgba(66, 153, 225, 0.2);
+    border-radius: 10px 10px 2px 10px;
+    box-shadow: 0 2px 4px rgba(66, 153, 225, 0.1);
+}
+
+.other-msg {
+    margin-right: auto;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.12));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px 10px 10px 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.msg small {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.7rem;
+    margin-bottom: 1px;
+    display: block;
+}
+
+.list-group-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #fff;
+    margin-bottom: 2px;
+    border-radius: 8px;
+    padding: 4px 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.list-group-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.user-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.user-online {
+    background: #28a745;  /* Verde más vivo */
+    box-shadow: 0 0 5px #28a745;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.user-offline {
+    background: #dc3545;  /* Rojo más suave */
+    box-shadow: none;
+    opacity: 0.5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-item {
+    padding: 8px 12px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    margin-bottom: 4px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    max-height: 60px; /* Aumentado para asegurar que quepa todo el contenido */
+    opacity: 1;
+    overflow: hidden;
+    transform-origin: top;
+    transform: scaleY(1);
+    transition: background-color 0.2s ease;
+}
+
+.user-item:hover {
+    background: rgba(66, 153, 225, 0.15);
+    border-color: rgba(13, 110, 253, 0.1);
+    transform: translateX(5px);
+    box-shadow: 
+        0 0 15px rgba(66, 153, 225, 0.2),
+        inset 0 0 20px rgba(66, 153, 225, 0.1);
+    background-color: rgba(0,0,0,0.02);
+}
+
+.user-item.is-friend {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    border-width: 0;
+    transform: scaleY(0);
+    transition: all 0.3s ease;
+}
+
+.user-item .btn-group {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    gap: 0.5rem;
+}
+
+.user-item:hover .btn-group {
+    opacity: 1;
+}
+
+.user-item .btn {
+    transition: all 0.2s ease;
+    padding: 0.25rem 0.5rem;
+}
+
+.user-item .btn:hover {
+    transform: scale(1.05);
+}
+
+/* Mostrar y estilizar los tabs */
+#chat-tabs {
+    display: flex;
+    gap: 10px;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+}
+
+#chat-tabs .btn {
+    flex: 1;
+    padding: 8px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    transition: all 0.3s ease;
+}
+
+#chat-tabs .btn:hover {
+    background: rgba(66, 153, 225, 0.15);
+    transform: translateY(-2px);
+}
+
+#chat-tabs .btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
+}
+
+/* Contenedor de chats */
+#chat-containers .chat-column {
+    display: none;
+}
+
+#chat-containers .chat-column.active {
+    display: block;
+}
+
+/* Lista de chats privados */
+.private-chats-list {
+    height: calc(100% - 240px); /* Ajustado para mejor distribución */
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 4px;
+}
+
+.private-chat-item {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.private-chat-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.private-chat-item.active {
+    background: rgba(13, 110, 253, 0.15);
+    border-color: rgba(13, 110, 253, 0.3);
+}
+
+/* Chat privado - Nuevo y simplificado */
+#private-chats {
+    min-height: 400px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.messages-area {
+    height: calc(100% - 120px);
+    overflow-y: auto;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+#active-private-chat {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+/* Eliminar todos los otros estilos de chat privado */
+
+/* Chat widget para modo juego */
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    height: 480px; /* Reducido de 500px */
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+/* Estado colapsado */
+.chat-widget.collapsed {
+    height: 50px;
+    overflow: hidden;
+}
+
+/* Cabecera del chat con indicador de colapso */
+.chat-header {
+    cursor: pointer;
+    padding: 6px 8px; /* Reducido */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 4px; /* Reducido */
+}
+
+/* Animación del indicador de colapso */
+.collapse-indicator {
+    transition: transform 0.3s ease;
+}
+
+.collapsed .collapse-indicator {
+    transform: rotate(180deg);
+}
+
+/* Modo Widget */
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    height: 480px; /* Reducido de 500px */
+    transition: all 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-widget.collapsed {
+    height: 50px;
+}
+
+/* Estructura del chat */
+.chat-widget .chat-column {
+    display: flex !important; /* Forzar display */
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-widget .chat-log {
+    flex: 1;
+    min-height: 200px;
+    margin-bottom: 10px;
+}
+
+.chat-widget .input-group {
+    height: 40px; /* Altura fija más pequeña */
+    min-height: 40px;
+    padding: 4px;
+    margin-top: 0;
+    display: flex;
+    gap: 5px;
+    background: rgba(30, 41, 59, 0.9);
+    border-top: 2px solid rgba(66, 153, 225, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.input-group .form-control {
+    height: 32px;
+    min-height: 32px;
+    padding: 5px 10px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(66, 153, 225, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.925rem;
+}
+
+.input-group .form-control:focus {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(66, 153, 225, 0.5);
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.25);
+}
+
+.input-group .btn {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 10px;
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    border: none;
+    padding: 0 15px;
+    font-weight: 500;
+    box-shadow: 0 0 10px rgba(66, 153, 225, 0.3);
+}
+
+.input-group {
+    position: sticky;
+    bottom: 0;
+    padding: 10px;
+    background: rgba(33, 37, 41, 0.98);
+}
+
+.notification-dot {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background-color: #dc3545;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+
+@keyframes pulse {
+    0% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-50%) scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Estilos específicos para fullscreen */
+.chat-fullscreen {
+    max-width: 100% !important;
+    height: calc(100vh - 60px); /* 60px es el alto de la navbar */
+    margin: 0 !important;
+    border-radius: 0;
+    padding: 8px;
+}
+
+.chat-fullscreen .chat-column {
+    height: 100%;
+}
+
+.chat-fullscreen .chat-log {
+    height: calc(100% - 60px); /* Reducido */
+}
+
+.chat-fullscreen #chat-containers {
+    height: 100%;
+}
+
+.chat-fullscreen .private-chats-list {
+    max-height: calc(100vh - 600px);
+    height: calc(100% - 260px);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Media queries para diferentes tamaños */
+@media (min-height: 800px) {
+    .chat-container {
+        max-height: 700px;
+    }
+}
+
+@media (max-height: 600px) {
+    .chat-container {
+        height: calc(100vh - 50px);
+    }
+    
+    .msg {
+        padding: 2px 6px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Ajustes para subir el contenido */
+.hero-section .hero-content {
+    padding-top: 0; /* Eliminado padding superior */
+}
+
+/* Estilos para solicitudes de amistad */
+#pending-requests .list-group-item {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+#pending-requests .list-group-item:hover {
+    background: rgba(30, 41, 59, 0.6);
+    transform: translateY(-2px);
+}
+
+#pending-requests .btn-group .btn {
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+#pending-requests .btn-success {
+    background: rgba(72, 187, 120, 0.2);
+    border-color: rgba(72, 187, 120, 0.4);
+}
+
+#pending-requests .btn-danger {
+    background: rgba(245, 101, 101, 0.2);
+    border-color: rgba(245, 101, 101, 0.4);
+}
+
+.friend-request-item {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.friend-request-item:hover {
+    background: rgba(30, 41, 59, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+#pending-requests {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.badge.bg-info {
+    background-color: rgba(66, 153, 225, 0.2) !important;
+    color: #fff;
+    border: 1px solid rgba(66, 153, 225, 0.4);
+    padding: 0.5em 0.8em;
+    font-size: 0.8em;
+}
+
+/* Estilos para badges consistentes */
+.badge {
+    display: inline-block !important;
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+}
+
+.badge.bg-info {
+    background-color: rgba(66, 153, 225, 0.2) !important;
+    color: #fff !important;
+    border: 1px solid rgba(66, 153, 225, 0.4) !important;
+    padding: 0.5em 0.8em !important;
+    font-size: 0.8em !important;
+    min-width: 120px !important; /* Asegurar ancho mínimo */
+    text-align: center !important;
+}
+
+/* Asegurar que los contenedores de botones mantengan su estructura */
+.d-flex.align-items-center.gap-2 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    min-width: 200px !important; /* Asegurar espacio para botones */
+}
+
+/* Ajustar la lista de amigos y usuarios */
+#friends-list, #users-list {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden; /* Ocultar scroll horizontal */
+    scrollbar-width: thin;
+}
+
+/* Estilizar scrollbar para navegadores webkit */
+#friends-list::-webkit-scrollbar,
+#users-list::-webkit-scrollbar,
+.user-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+#friends-list::-webkit-scrollbar-thumb,
+#users-list::-webkit-scrollbar-thumb,
+.user-column::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+#friends-list::-webkit-scrollbar-track,
+#users-list::-webkit-scrollbar-track,
+.user-column::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para los tabs de usuarios */
+#user-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+}
+
+#user-tabs .btn {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    transition: all 0.3s ease;
+    position: relative; /* Para el posicionamiento del badge */
+    overflow: visible; /* Asegurar que el badge no se corte */
+    margin-right: 4px; /* Espacio extra para el badge */
+}
+
+#user-tabs .btn:hover {
+    background: rgba(66, 153, 225, 0.15);
+    transform: translateY(-2px);
+}
+
+#user-tabs .btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
+}
+
+/* Estilos para los contenedores de tabs */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: transparent;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+.user-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.user-status.user-online {
+    background-color: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+}
+
+.user-status.user-offline {
+    background-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.user-item .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+
+.username {
+    font-weight: 500;
+}
+
+.blocked-by-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Estilo para el badge de notificación */
+.badge-notification {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #dc3545;
+    color: white;
+    border-radius: 12px; /* Cambiado de 50% a un valor fijo */
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(15, 23, 42, 0.8); /* Color más oscuro para el borde */
+    box-shadow: 
+        0 0 0 2px rgba(220, 53, 69, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2); /* Añadido shadow para profundidad */
+    animation: pulseNotification 2s infinite;
+    z-index: 1; /* Asegurar que esté por encima */
+    font-weight: 600; /* Texto más visible */
+    line-height: 1; /* Mejor centrado vertical */
+}
+
+@keyframes pulseNotification {
+    0% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 0 2px rgba(220, 53, 69, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 
+            0 0 0 4px rgba(220, 53, 69, 0.0),
+            0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 
+            0 0 0 2px rgba(220, 53, 69, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* Sobrescribir estilos de tabs para el chat */
+.chat-view #chat-tabs,
+.chat-view #user-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+    width: 100%; /* Asegurar que ocupa todo el ancho disponible */
+}
+
+.chat-view #chat-tabs .btn,
+.chat-view #user-tabs .btn {
+    flex: 1;
+    padding: 8px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    transition: all 0.3s ease;
+    white-space: nowrap; /* Evitar que el texto se rompa */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.chat-view #chat-tabs .btn:hover,
+.chat-view #user-tabs .btn:hover {
+    background: rgba(66, 153, 225, 0.15);
+    transform: translateY(-2px);
+}
+
+.chat-view #chat-tabs .btn.active,
+.chat-view #user-tabs .btn.active {
+    background: rgba(66, 153, 225, 0.2);
+    border-color: rgba(66, 153, 225, 0.3);
+    color: white;
+    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
+}
+
+/* Contenido de los tabs */
+.chat-view .tab-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.chat-view .tab-content.active {
+    display: block;
+    opacity: 1;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+    .chat-view #chat-tabs,
+    .chat-view #user-tabs {
+        flex-wrap: wrap;
+    }
+
+    .chat-view #chat-tabs .btn,
+    .chat-view #user-tabs .btn {
+        min-width: calc(50% - 4px); /* 2 botones por fila en móvil */
+    }
+}
+
+/* Empty state styles */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(66, 153, 225, 0.1);
+    margin: 1rem;
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    color: rgba(66, 153, 225, 0.5);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.empty-state small {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    display: block;
+    max-width: 80%;
+    margin: 0 auto;
+}
+
+[data-animation="floatingIcon"] {
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+}
+
+/* Asegurar que los contenedores de tab están ocultos por defecto */
+.tab-container .tab-content {
+    display: none;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+}
+
+/* Solo mostrar el tab activo */
+.tab-container .tab-content.active {
+    display: block;
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+}
+
+/* Eliminar cualquier propiedad display !important que pueda estar interfiriendo */
+/* Estilos específicos para los tabs del chat */
+.chat-view .user-column .tab-container .tab-content {
+    display: none;
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.chat-view .user-column .tab-container .tab-content.active {
+    display: block !important;
+    opacity: 1;
+    height: auto;
+    overflow: visible;
+}
+
+/* Eliminar las reglas anteriores de tab-content y reemplazarlas con estas específicas */
+.user-column .tab-container {
+    position: relative;
+}
+
+.user-column .tab-container .tab-content {
+    display: none !important;
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.user-column .tab-container .tab-content.active {
+    display: block !important;
+    position: relative;
+    opacity: 1;
+}
+
+/* Actualizar estilos del contenedor de tabs para alinear los botones */
+.user-column #user-tabs {
+    display: flex;
+    flex-direction: row; /* Asegurar que los botones están en fila */
+    flex-wrap: nowrap; /* Evitar que se envuelvan */
+    justify-content: space-between; /* Distribuir espacio uniformemente */
+    width: 100%;
+    gap: 0.5rem;
+    padding: 0.35rem; /* Reducido de 0.5rem */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 1.5rem; /* Reducido de 2rem */
+    backdrop-filter: blur(10px);
+}
+
+.user-column #user-tabs .nav-link {
+    flex: 1; /* Hacer que cada botón ocupe el mismo espacio */
+    min-width: 0; /* Permitir que los botones se encojan si es necesario */
+    text-align: center;
+    white-space: nowrap; /* Evitar saltos de línea en el texto */
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+    padding: 0.6rem 1rem; /* Reducido de 1rem 1rem */
+    font-size: 0.9rem; /* Añadido para texto ligeramente más pequeño */
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.user-column #user-tabs .btn i {
+    font-size: 0.9rem; /* Añadido para iconos ligeramente más pequeños */
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+}
+
+.user-column #user-tabs .btn:hover i,
+.user-column #user-tabs .btn.active i {
+    color: #0d6efd;
+}
+
+.user-column #user-tabs .nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    transform: none;
+}
+
+.user-column #user-tabs .nav-link.active {
+    color: white;
+    background: rgba(13, 110, 253, 0.15);
+    box-shadow: 
+        0 0 0 1px rgba(13, 110, 253, 0.2),
+        0 4px 12px rgba(13, 110, 253, 0.1);
+}
+
+.user-column #user-tabs .nav-link i {
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+}
+
+.user-column #user-tabs .nav-link:hover i,
+.user-column #user-tabs .nav-link.active i {
+    color: #0d6efd;
+}
+
+/* Contenedor de tabs */
+.user-column .tab-container {
+    position: relative;
+}
+
+.user-column .tab-container .tab-content {
+    display: none;
+    position: absolute;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.user-column .tab-container .tab-content.active {
+    display: block;
+    position: relative;
+    opacity: 1;
+}

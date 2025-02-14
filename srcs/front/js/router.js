@@ -1,13 +1,13 @@
-// Importar solo los módulos que existen por ahora
 import { LoginView } from '/js/views/auth/LoginView.js';
 import { RegisterView } from '/js/views/auth/RegisterView.js';
-import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
-import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';  // Nueva importación
-import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Mantener solo UserProfileView
+import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';
+import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';
+import { UserProfileView } from '/js/views/user/UserProfileView.js';
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
-import { NotFoundView } from '/js/views/NotFoundView.js';  // Añadir esta importación al inicio con las otras
+import { NotFoundView } from '/js/views/NotFoundView.js';
+import { ChatView } from '/js/views/chat/ChatView.js';
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
 import { loadHTML, replaceContent } from '/js/utils/htmlLoader.js';
@@ -84,16 +84,18 @@ class Router {
         },
         '/login': LoginView,
         '/register': RegisterView,
-        '/verify-email/:uid/:token': VerifyEmailView,  // Nueva ruta para verificación
-        '/verify-email-change/:uid/:token': VerifyEmailChangeView,  // Añadir esta ruta
-        '/verify-email-change/:uid/:token/': VerifyEmailChangeView,  // Añadir slash final
-        '/profile': UserProfileView,  // Mantener solo la ruta de profile
-        '/profile/': UserProfileView, // Con slash final también
+        '/verify-email/:uid/:token': VerifyEmailView,
+        '/verify-email-change/:uid/:token': VerifyEmailChangeView,
+        '/verify-email-change/:uid/:token/': VerifyEmailChangeView,
+        '/profile': UserProfileView,
+        '/profile/': UserProfileView,
         '/reset_password': RequestPasswordResetView,
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
         '/gdpr-settings/': GDPRSettingsView,
-        '/404': NotFoundView,  // Reemplazar la función anónima existente con NotFoundView
+        '/chat': ChatView,
+        '/chat/': ChatView,
+        '/404': NotFoundView,
     };
 
     async renderHomePage(isAuthenticated, userInfo = null) {
@@ -144,12 +146,19 @@ class Router {
     async handleLogout() {
         try {
             await AuthService.logout();
-        } catch (error) {
-            console.error('Error en logout:', error);
-        } finally {
+            // Desconectar WebSocket antes de limpiar
+            webSocketService.disconnect();
+            // Limpiar todo
             localStorage.clear();
             sessionStorage.clear();
+            // Limpiar cookies
+            document.cookie.split(';').forEach(cookie => {
+                const name = cookie.split('=')[0].trim();
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+            });
             window.location.href = '/';
+        } catch (error) {
+            console.error('Error en logout:', error);
         }
     }
 
@@ -272,16 +281,15 @@ class Router {
             }
         }
 
-        // Verificar rutas protegidas
-        if (path.startsWith('/profile') && localStorage.getItem('isAuthenticated') !== 'true') {
+        // Verificar rutas protegidas y obtener perfil
+        if ((path.startsWith('/profile') || path.startsWith('/chat')) && 
+            localStorage.getItem('isAuthenticated') !== 'true') {
             window.location.href = '/login';
             return;
         }
 
-        // Verificar autenticación pendiente para rutas protegidas
         if (path.startsWith('/profile')) {
             if (sessionStorage.getItem('pendingAuth') === 'true') {
-                // Redirigir de vuelta al login si hay auth pendiente
                 window.location.replace('/login');
                 return;
             }
@@ -291,7 +299,7 @@ class Router {
             }
         }
 
-        const normalizedPath = path.split('?')[0];  // Eliminar query params para matching
+        const normalizedPath = path.split('?')[0];
         const route = this.routes[normalizedPath] || this.routes['/404'];
         
         if (typeof route === 'function') {
