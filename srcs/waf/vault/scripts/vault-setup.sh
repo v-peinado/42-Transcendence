@@ -62,7 +62,7 @@ setup() {
     
     # Store secrets
     store_secrets
-    
+
     # Start nginx after everything is ready
     nginx -g 'daemon off;'
 }

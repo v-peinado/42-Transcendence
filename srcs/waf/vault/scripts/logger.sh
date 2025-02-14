@@ -1,7 +1,5 @@
 #!/bin/bash
 
-LOG_DIR="/var/log/vault"
-
 log() {
     local level=$1
     local message=$2

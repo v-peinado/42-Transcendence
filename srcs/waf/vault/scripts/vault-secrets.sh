@@ -70,7 +70,11 @@ store_secrets() {
             return 1
         fi
     done
+	
+	# Store SSL certificates
+	store_ssl_certificates
 
+	
     log_message "All secrets stored and verified successfully"
 }
 
