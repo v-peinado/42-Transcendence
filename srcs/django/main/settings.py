@@ -13,10 +13,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from django.core.management.utils import get_random_secret_key
-from .vault import load_vault_secrets
-
-# Load secrets from Vault
-load_vault_secrets()
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -214,3 +210,26 @@ X_FRAME_OPTIONS = "DENY"
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "default-secret-key")
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 JWT_EXPIRATION_TIME = int(os.environ.get("JWT_EXPIRATION_TIME") or 3600)
+
+# Logging configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+        },
+    },
+    "loggers": {
+        "main.vault": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,  # Cambiar a False para evitar duplicación
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}

@@ -3,6 +3,11 @@ import time
 import subprocess
 import os
 import sys
+import django
+from main.vault import load_vault_secrets
+
+# Configure Django settings module first
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "main.settings")
 
 
 # Function to verify if the database service is available
@@ -68,8 +73,7 @@ def main():
         if not wait_for_vault():
             sys.exit(1)
 
-        # Load secrets from Vault
-        from main.vault import load_vault_secrets
+        django.setup()
 
         load_vault_secrets()
 
