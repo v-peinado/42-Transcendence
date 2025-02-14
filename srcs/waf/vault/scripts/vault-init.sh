@@ -62,7 +62,11 @@ initialize_vault() {
         
     if ! vault operator init -status > /dev/null 2>&1; then
         log_message "Initializing Vault..."
-        vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
+        else
+            vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt" 2>/dev/null
+        fi
         chmod 600 "${LOG_DIR}/init.txt"
         
         UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
@@ -74,14 +78,22 @@ initialize_vault() {
         chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
         
         log_message "Unsealing Vault..."
-        vault operator unseal "$UNSEAL_KEY"
-        vault login "$ROOT_TOKEN"
+        vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            vault login "$ROOT_TOKEN"
+        else
+            vault login "$ROOT_TOKEN" >/dev/null 2>&1
+        fi
     else
         # Recover keys from previous initialization
         UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
         ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
-        vault operator unseal "$UNSEAL_KEY"
-        vault login "$ROOT_TOKEN"
+        vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            vault login "$ROOT_TOKEN"
+        else
+            vault login "$ROOT_TOKEN" >/dev/null 2>&1
+        fi
     fi
 }
 
@@ -118,16 +130,21 @@ EOF
         -policy=django \
         -display-name=django \
         -ttl=720h \
-        -format=json | jq -r '.auth.client_token')
+        -format=json | jq -r '.auth.client_token' 2>/dev/null)
 
     if [ -n "$DJANGO_TOKEN" ]; then
         echo "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
         chmod 644 "/tmp/ssl/django_token"
-        echo "Created token file with contents:"
-        cat "/tmp/ssl/django_token"
-        vault token lookup "$DJANGO_TOKEN"
+        
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            log_message "Created Django token with value: $DJANGO_TOKEN"
+            vault token lookup "$DJANGO_TOKEN"
+        else
+            log_message "Created Django token successfully"
+            vault token lookup "$DJANGO_TOKEN" >/dev/null 2>&1 || log "ERROR" "Token verification failed"
+        fi
     else
-        echo "Error: Failed to create Django token"
+        log "ERROR" "Failed to create Django token"
         exit 1
     fi
 }

@@ -19,6 +19,5 @@ log_message() {
 }
 
 log_secret() {
-    local path=$1
-    echo "📦 [SECRET] Secret stored: $path"
+    echo "📦 [SECRET] Secret stored successfully"
 }
