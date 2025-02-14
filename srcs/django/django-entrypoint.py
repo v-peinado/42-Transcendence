@@ -47,12 +47,11 @@ def wait_for_vault(max_attempts=30):
 # Function to execute a terminal command
 def run_command(command):
     try:
-        process = subprocess.run(command, shell=True, text=True, check=True)
+        subprocess.run(command, shell=True, text=True, check=True)
         print(f"Successfully executed: {command}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error executing: {command}")
-        print(f"Error code: {e.returncode}")
+        print(f"Error executing command (code {e.returncode})")
         return False
 
 
@@ -62,43 +61,27 @@ def main():
         db_host = os.getenv("SQL_HOST", "db")
         db_port = int(os.getenv("SQL_PORT", "5432"))
 
-        # Wait for database to be available
+        # Wait for services
         if not wait_for_db(db_host, db_port):
-            print("Critical error: Could not connect to database")
             sys.exit(1)
 
-        # Wait for Vault to be ready
         if not wait_for_vault():
             sys.exit(1)
 
-        # Load secrets from Vault once at the start
+        # Load secrets from Vault
         from main.vault import load_vault_secrets
 
-        os.environ.pop("VAULT_SECRETS_LOADED", None)  # Forzar recarga de secretos
         load_vault_secrets()
 
-        # Create temporary file to run migrations
-        with open("migrate.py", "w") as f:
-            f.write(
-                """
-import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "main.settings")
-import django
-django.setup()
-from django.core.management import execute_from_command_line
-execute_from_command_line(["", "makemigrations", "authentication", "chat", "game", "tournament", "--no-input"])
-execute_from_command_line(["", "migrate", "--no-input"])
-            """
-            )
-
-        # Run migrations to apply changes to the database
-        if not run_command("python migrate.py"):
+        # Run migrations directly
+        if not run_command(
+            "python manage.py makemigrations authentication chat game tournament --no-input"
+        ):
+            print("Warning: Failed to make migrations")
+        if not run_command("python manage.py migrate --no-input"):
             print("Warning: Failed to apply migrations")
 
-        # Remove temporary file
-        os.remove("migrate.py")
-
-        # Start Daphne
+        # Start Daphne server
         if not run_command("daphne -b 0.0.0.0 -p 8000 main.asgi:application"):
             sys.exit(1)
 

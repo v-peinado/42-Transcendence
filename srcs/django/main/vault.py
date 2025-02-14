@@ -6,12 +6,10 @@ import warnings
 from urllib3.exceptions import InsecureRequestWarning
 from typing import Dict, Any
 
-
 # Disable SSL warnings for Vault connection (self-signed certificate)
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 _secrets_cache = {}  # Cache for secrets
-_secrets_loaded = False  # Flag to track if secrets have been loaded
 
 
 class VaultClient:
@@ -29,7 +27,7 @@ class VaultClient:
             warnings.simplefilter("ignore")
             self.client = hvac.Client(url="https://waf:8200", verify=False, token=token)
 
-    def is_vault_sealed(self) -> bool:
+    def _is_vault_sealed(self) -> bool:  # Private method
         try:
             response = requests.get("https://waf:8200/v1/sys/seal-status", verify=False)
             return response.json().get("sealed", True)
@@ -46,7 +44,7 @@ class VaultClient:
 
         while retries < max_retries:
             try:
-                if self.is_vault_sealed():
+                if self._is_vault_sealed():  # Using private method
                     print("Vault is sealed, waiting for unseal...")
                     time.sleep(2)
                     retries += 1
@@ -56,12 +54,10 @@ class VaultClient:
                     path=path, mount_point="secret"
                 )
                 secrets = response["data"]["data"]
-                _secrets_cache[path] = secrets  # Save secrets in cache
+                _secrets_cache[path] = secrets
                 return secrets
             except Exception as e:
-                if (
-                    retries == max_retries - 1
-                ):  # Show error only on last retry to avoid spamming
+                if retries == max_retries - 1:
                     print(f"Error fetching secrets from Vault: {e}")
                 retries += 1
                 time.sleep(2)
@@ -120,7 +116,7 @@ def wait_for_secrets(client, path: str, max_retries=10, delay=2) -> Dict[str, An
     for attempt in range(max_retries):
         try:
             response = client.secrets.kv.v2.read_secret_version(
-                path=path, mount_point="secret", raise_on_deleted_version=False
+                path=path, mount_point="secret"
             )
             if response and "data" in response and "data" in response["data"]:
                 return response["data"]["data"]

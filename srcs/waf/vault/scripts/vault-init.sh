@@ -13,6 +13,10 @@
 # 1. Development: Simplified configuration for testing
 # 2. Production: Secure configuration with token and unseal management
 
+# Set environment variables upfront
+export VAULT_ADDR='https://127.0.0.1:8200'
+export VAULT_SKIP_VERIFY=true
+
 start_vault() {
     show_section "Starting Vault"
     log "INFO" "Starting server and establishing secure TLS connection..."
@@ -51,40 +55,37 @@ wait_for_vault() {
 }
 
 initialize_vault() {
-    if [ "${VAULT_MODE}" = "production" ]; then
-        export VAULT_ADDR='https://127.0.0.1:8200'
-        export VAULT_SKIP_VERIFY=true
+    # Only proceed with initialization in production mode
+    if [ "${VAULT_MODE}" != "production" ]; then
+        return 0
+    fi
         
-        if ! vault operator init -status > /dev/null 2>&1; then
-            log_message "Initializing Vault..."
-            vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
-            chmod 600 "${LOG_DIR}/init.txt"
-            
-            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            
-            # Save keys for unsealing in the future
-            echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
-            echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
-            chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
-            
-            log_message "Unsealing Vault..."
-            vault operator unseal "$UNSEAL_KEY"
-            vault login "$ROOT_TOKEN"
-        else
-            # Recover keys from previous initialization
-            UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
-            ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
-            vault operator unseal "$UNSEAL_KEY"
-            vault login "$ROOT_TOKEN"
-        fi
+    if ! vault operator init -status > /dev/null 2>&1; then
+        log_message "Initializing Vault..."
+        vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
+        chmod 600 "${LOG_DIR}/init.txt"
+        
+        UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
+        ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
+        
+        # Save keys for unsealing in the future
+        echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
+        echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
+        chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
+        
+        log_message "Unsealing Vault..."
+        vault operator unseal "$UNSEAL_KEY"
+        vault login "$ROOT_TOKEN"
+    else
+        # Recover keys from previous initialization
+        UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
+        ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
+        vault operator unseal "$UNSEAL_KEY"
+        vault login "$ROOT_TOKEN"
     fi
 }
 
 configure_vault() {
-    export VAULT_TOKEN
-    VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-    export VAULT_ADDR='https://127.0.0.1:8200'
     
     if ! vault secrets list | grep -q '^secret/'; then
         vault secrets enable -path=secret kv-v2

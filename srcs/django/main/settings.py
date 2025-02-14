@@ -70,13 +70,25 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
 ]
 
-# CORS configuration (Cross-Origin Resource Sharing)
+# CORS and Security configuration
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False  # Allow all origins in development
-CORS_ALLOWED_ORIGINS = [  # Allowed origins for CORS
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8445",
     "https://localhost:8443",
+    "http://localhost:3000",
 ]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS  # Trusted origins for CSRF
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + [
+    "http://localhost:8082",
+    "ws://localhost:8000",
+    "wss://localhost:8445",
+]
+
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+    CORS_ALLOW_ALL_ORIGINS = False
 
 # Template and static files configuration
 ROOT_URLCONF = "main.urls"
@@ -98,9 +110,8 @@ TEMPLATES = [
     },
 ]
 
-# WSGI = Web Server Gateway Interface
+# ASGI = Asynchronous Server Gateway Interface
 # It is a specification for communication between web servers and web applications or web application frameworks
-# WSGI_APPLICATION = 'main.wsgi.application'
 ASGI_APPLICATION = "main.asgi.application"
 
 CHANNEL_LAYERS = {
@@ -188,43 +199,16 @@ ACCOUNT_EMAIL_VERIFICATION = (
 )
 
 # Frontend settings
-FRONTEND_URL = "https://localhost:8445"  # WAF URL
+FRONTEND_URL = "https://localhost:8445"
 SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
-# Update CORS and CSRF settings
-CORS_ALLOWED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:3000",
-]
-CSRF_TRUSTED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:8082",
-    "ws://localhost:8000",
-    "wss://localhost:8445",
-]
-
-# Session and cookie handling settings
-if DEBUG:
-    ALLOWED_HOSTS = ["*"]
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-    CORS_ALLOW_ALL_ORIGINS = False
-
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
-PASSWORD_RESET_TIMEOUT = 300  # 300 seconds (5 minutes)
-
-# These are not necessary if using NGINX as proxy, but can be kept enabled for extra security
-SECURE_PROXY_SSL_HEADER = (
-    "HTTP_X_FORWARDED_PROTO",
-    "https",
-)
-SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME sniffing attack protection
-X_FRAME_OPTIONS = "DENY"  # Clickjacking attack protection
+PASSWORD_RESET_TIMEOUT = 300
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
 
 # JWT token generation settings
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "default-secret-key")
