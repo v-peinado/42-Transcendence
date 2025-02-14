@@ -35,16 +35,37 @@ for module in "${REQUIRED_MODULES[@]}"; do
     source "$module"
 done
 
-# Inicializar servicios en orden
-setup_initial || exit 1
-start_vault || exit 1
-initialize_vault || exit 1
-configure_vault || exit 1
-store_secrets || exit 1
+# Source required scripts
+source /usr/local/bin/logger.sh
+source /usr/local/bin/vault-init.sh
+source /usr/local/bin/vault-secrets.sh
 
-# Limpiar variables sensibles
-unset VAULT_TOKEN
-trap 'unset VAULT_TOKEN' EXIT
+# Main setup function
+setup() {
+    # Start Vault server
+    start_vault
+    
+    # Wait a bit for Vault to be fully ready
+    sleep 5
+    
+    # Initialize and unseal Vault
+    initialize_vault
+    
+    # Wait for Vault to be ready after unsealing
+    sleep 5
+    
+    # Configure Vault and policies
+    configure_vault
+    
+    # Wait for policies to be applied
+    sleep 5
+    
+    # Store secrets
+    store_secrets
+    
+    # Start nginx after everything is ready
+    nginx -g 'daemon off;'
+}
 
-# Iniciar nginx
-exec nginx -g 'daemon off;'
+# Run setup
+setup

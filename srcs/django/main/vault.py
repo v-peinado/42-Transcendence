@@ -68,34 +68,69 @@ class VaultClient:
         return {}
 
 
-def get_client():
-    try:
-        token_file = "/tmp/ssl/django_token"
-        with open(token_file, "r") as f:
-            token = f.read().strip()
-            print(f"Using token: {token}")  # Debug line
+def wait_for_token(max_attempts=30, delay=2):
+    """Wait for Vault token file to be available"""
+    token_file = "/tmp/ssl/django_token"
 
+    for attempt in range(max_attempts):
+        try:
+            if os.path.exists(token_file):
+                with open(token_file, "r") as f:
+                    token = f.read().strip()
+                    if token:
+                        print(f"Found Vault token after {attempt + 1} attempts")
+                        return token
+            print(f"Waiting for token file... ({attempt + 1}/{max_attempts})")
+            time.sleep(delay)
+        except Exception as e:
+            print(f"Error reading token: {e}")
+            time.sleep(delay)
+    return None
+
+
+def get_client():
+    token = wait_for_token()
+    if not token:
+        print("Failed to get Vault token")
+        return None
+
+    try:
         client = hvac.Client(url="https://waf:8200", token=token, verify=False)
 
-        # Verify authentication
-        if client.is_authenticated():
-            print("Successfully authenticated with Vault")
-            try:
-                # Test read access
-                client.secrets.kv.v2.read_secret_version(
-                    path="django/database", mount_point="secret"
-                )
-                print("Successfully read test secret")
-            except Exception as e:
-                print(f"Failed to read test secret: {e}")
-        else:
-            print("Failed to authenticate with Vault")
+        if not client.is_authenticated():
+            print("Failed to authenticate with token")
             return None
 
-        return client
+        # Test the connection
+        try:
+            client.sys.read_health_status()
+            print("Successfully connected to Vault")
+            return client
+        except Exception as e:
+            print(f"Error connecting to Vault: {e}")
+            return None
+
     except Exception as e:
-        print(f"Error initializing Vault client: {e}")
+        print(f"Error creating Vault client: {e}")
         return None
+
+
+def wait_for_secrets(client, path: str, max_retries=10, delay=2) -> Dict[str, Any]:
+    """Wait for secrets to be available with exponential backoff"""
+    for attempt in range(max_retries):
+        try:
+            response = client.secrets.kv.v2.read_secret_version(
+                path=path, mount_point="secret", raise_on_deleted_version=False
+            )
+            if response and "data" in response and "data" in response["data"]:
+                return response["data"]["data"]
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"Failed to read {path} after {max_retries} attempts: {e}")
+            time.sleep(
+                delay * (1.5**attempt)
+            )  # Exponential backoff with smaller factor
+    return {}
 
 
 def load_vault_secrets():
@@ -118,20 +153,20 @@ def load_vault_secrets():
     success = 0
     total = len(paths)
 
+    # Wait for vault to be fully ready
+    time.sleep(5)  # Give vault time to initialize
+
     for name, path in paths.items():
-        try:
-            print(f"Attempting to read {path}...")  # Debug line
-            response = client.secrets.kv.v2.read_secret_version(
-                path=path, mount_point="secret"
-            )
-            secrets = response["data"]["data"]
+        print(f"Attempting to read {path}...")
+        secrets = wait_for_secrets(client, path)
+
+        if secrets:
             print(f"✓ {name} - Found {len(secrets)} values")
             os.environ.update(secrets)
+            _secrets_cache[path] = secrets
             success += 1
-        except Exception as e:
-            print(f"✗ {name}: {str(e)}")
-            if hasattr(e, "response") and e.response:
-                print(f"Response details: {e.response.text}")
+        else:
+            print(f"✗ {name}: Failed to read secrets")
 
     print(f"\n{success}/{total} secrets loaded successfully")
     print("=================================\n")

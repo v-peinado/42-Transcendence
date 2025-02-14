@@ -27,24 +27,20 @@ def wait_for_db(host, port):
 
 def wait_for_vault(max_attempts=30):
     print("Waiting for Vault secrets to be ready...")
-    from main.vault import VaultClient
+    from main.vault import get_client, wait_for_secrets
 
-    client = VaultClient()
+    client = get_client()
+    if not client:
+        print("Failed to initialize Vault client")
+        return False
 
-    for attempt in range(max_attempts):
-        try:
-            # Intenta leer un secreto conocido
-            response = client.client.secrets.kv.v2.read_secret_version(
-                path="django/database", mount_point="secret"
-            )
-            if response and response.get("data", {}).get("data"):
-                print("Vault secrets are ready")
-                return True
-        except Exception:
-            print(f"Vault not ready, waiting... ({attempt + 1}/{max_attempts})")
-            time.sleep(2)
+    # Try to read a test secret
+    secrets = wait_for_secrets(client, "django/database")
+    if secrets:
+        print("Successfully verified Vault access")
+        return True
 
-    print("Error: Could not connect to Vault after multiple attempts")
+    print("Failed to verify Vault access")
     return False
 
 
