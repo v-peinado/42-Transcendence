@@ -3,6 +3,11 @@ import time
 import subprocess
 import os
 import sys
+import django
+from main.vault import load_vault_secrets
+
+# Configure Django settings module first
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "main.settings")
 
 
 # Function to verify if the database service is available
@@ -25,15 +30,33 @@ def wait_for_db(host, port):
     return False
 
 
+def wait_for_vault(max_attempts=30):
+    print("Waiting for Vault secrets to be ready...")
+    from main.vault import get_client, wait_for_secrets
+
+    client = get_client()
+    if not client:
+        print("Failed to initialize Vault client")
+        return False
+
+    # Try to read a test secret
+    secrets = wait_for_secrets(client, "django/database")
+    if secrets:
+        print("Successfully verified Vault access")
+        return True
+
+    print("Failed to verify Vault access")
+    return False
+
+
 # Function to execute a terminal command
 def run_command(command):
     try:
-        process = subprocess.run(command, shell=True, text=True, check=True)
+        subprocess.run(command, shell=True, text=True, check=True)
         print(f"Successfully executed: {command}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error executing: {command}")
-        print(f"Error code: {e.returncode}")
+        print(f"Error executing command (code {e.returncode})")
         return False
 
 
@@ -43,24 +66,27 @@ def main():
         db_host = os.getenv("SQL_HOST", "db")
         db_port = int(os.getenv("SQL_PORT", "5432"))
 
-        # Wait for database to be available
+        # Wait for services
         if not wait_for_db(db_host, db_port):
-            print("Critical error: Could not connect to database")
             sys.exit(1)
 
-        # Execute specific migrations first
-        apps = ["authentication", "chat", "game", "tournament"]
-        for app in apps:
-            if not run_command(f"python manage.py makemigrations {app}"):
-                sys.exit(1)
-
-        # Apply all migrations
-        if not run_command("python manage.py migrate"):
+        if not wait_for_vault():
             sys.exit(1)
 
-        # Start Daphne
-        gunicorn_cmd = f"daphne -b 0.0.0.0 -p 8000 main.asgi:application --verbosity 3"
-        if not run_command(gunicorn_cmd):
+        django.setup()
+
+        load_vault_secrets()
+
+        # Run migrations directly
+        if not run_command(
+            "python manage.py makemigrations authentication chat game tournament --no-input"
+        ):
+            print("Warning: Failed to make migrations")
+        if not run_command("python manage.py migrate --no-input"):
+            print("Warning: Failed to apply migrations")
+
+        # Start Daphne server
+        if not run_command("daphne -b 0.0.0.0 -p 8000 main.asgi:application"):
             sys.exit(1)
 
     except Exception as e:

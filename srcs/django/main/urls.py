@@ -6,7 +6,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.core.exceptions import ImproperlyConfigured
 import os
-import warnings
 from chat import views
 
 # Check basic configuration
@@ -15,19 +14,11 @@ if "authentication" not in settings.INSTALLED_APPS:
 
 
 def check_nginx_config():
-    """Checks Nginx configuration for serving media files"""
-    nginx_media_path = "/usr/share/nginx/html/media"
-    if not settings.DEBUG and not os.path.exists(nginx_media_path):
-        raise RuntimeWarning(
-            "\nCONFIGURATION ERROR!"
-            "\nNginx is not properly configured to serve media files."
-            f"\nDirectory not found: {nginx_media_path}"
-            "\n"
-            "\nMake sure to:"
-            "\n1. Have Nginx installed and configured"
-            "\n2. Have django_media volume properly mounted"
-            "\n3. Configure the correct path in nginx.conf"
-        )
+    if not os.environ.get("DJANGO_DEVELOPMENT", False):  # Production environment check (put in .env)
+        media_path = "/usr/share/nginx/html/media"
+        if not os.path.exists(media_path):
+            os.makedirs(media_path, exist_ok=True)
+            os.chmod(media_path, 0o755)
 
 
 # Main URL patterns

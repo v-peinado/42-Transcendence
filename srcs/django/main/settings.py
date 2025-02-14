@@ -12,19 +12,14 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 from django.core.management.utils import get_random_secret_key
-
-load_dotenv()  # Load environment variables from .env file
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Basic project configuration
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", get_random_secret_key()
-)  # Secret key for token and password generation
-DEBUG = True  # Debug mode (True for development, False for production)
+SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 # Define allowed hosts in production (by default, no hosts allowed)
 # ALLOWED_HOSTS = []
@@ -71,13 +66,25 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
 ]
 
-# CORS configuration (Cross-Origin Resource Sharing)
+# CORS and Security configuration
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-CORS_ALLOW_ALL_ORIGINS = DEBUG if True else False  # Allow all origins in development
-CORS_ALLOWED_ORIGINS = [  # Allowed origins for CORS
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8445",
     "https://localhost:8443",
+    "http://localhost:3000",
 ]
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS  # Trusted origins for CSRF
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + [
+    "http://localhost:8082",
+    "ws://localhost:8000",
+    "wss://localhost:8445",
+]
+
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+    CORS_ALLOW_ALL_ORIGINS = False
 
 # Template and static files configuration
 ROOT_URLCONF = "main.urls"
@@ -99,9 +106,8 @@ TEMPLATES = [
     },
 ]
 
-# WSGI = Web Server Gateway Interface
+# ASGI = Asynchronous Server Gateway Interface
 # It is a specification for communication between web servers and web applications or web application frameworks
-# WSGI_APPLICATION = 'main.wsgi.application'
 ASGI_APPLICATION = "main.asgi.application"
 
 CHANNEL_LAYERS = {
@@ -166,7 +172,7 @@ LOGOUT_REDIRECT_URL = "login"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Environment variables for 42 authentication
-FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")
+FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")  #
 FORTYTWO_CLIENT_SECRET = os.environ.get("FORTYTWO_CLIENT_SECRET")
 FORTYTWO_REDIRECT_URI = os.environ.get("FORTYTWO_REDIRECT_URI")
 FORTYTWO_API_UID = os.environ.get("FORTYTWO_API_UID")
@@ -189,44 +195,41 @@ ACCOUNT_EMAIL_VERIFICATION = (
 )
 
 # Frontend settings
-FRONTEND_URL = "https://localhost:8445"  # WAF URL
+FRONTEND_URL = "https://localhost:8445"
 SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
-# Update CORS and CSRF settings
-CORS_ALLOWED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:3000",
-]
-CSRF_TRUSTED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:8082",
-    "ws://localhost:8000",
-    "wss://localhost:8445",
-]
-
-# Session and cookie handling settings
-if DEBUG:
-    ALLOWED_HOSTS = ["*"]
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-    CORS_ALLOW_ALL_ORIGINS = False
-
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
-PASSWORD_RESET_TIMEOUT = 300  # 300 seconds (5 minutes)
-
-# These are not necessary if using NGINX as proxy, but can be kept enabled for extra security
-SECURE_PROXY_SSL_HEADER = (
-    "HTTP_X_FORWARDED_PROTO",
-    "https",
-)
-SECURE_CONTENT_TYPE_NOSNIFF = True  # MIME sniffing attack protection
-X_FRAME_OPTIONS = "DENY"  # Clickjacking attack protection
+PASSWORD_RESET_TIMEOUT = 300
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
 
 # JWT token generation settings
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "your-secret-key")
-JWT_ALGORITHM = "HS256"  # Standard encryption algorithm
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "default-secret-key")
+JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
+JWT_EXPIRATION_TIME = int(os.environ.get("JWT_EXPIRATION_TIME") or 3600)
+
+# Logging configuration
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "DEBUG",
+        },
+    },
+    "loggers": {
+        "main.vault": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,  # Cambiar a False para evitar duplicación
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}

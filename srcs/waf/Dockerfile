@@ -13,14 +13,16 @@ RUN apt-get update && \
 	unzip \
 	openssl \
 	libmodsecurity3 \
-	modsecurity-crs && \
+	modsecurity-crs \
+	jq \
+	bash && \
 	curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
 	unzip vault.zip && \
 	mv vault /usr/local/bin/ && \
 	rm vault.zip && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* && \
-	# Crear directorios
+	# Create directories and user
 	mkdir -p \
 	/var/log/modsecurity \
 	/var/log/vault \
@@ -29,7 +31,7 @@ RUN apt-get update && \
 	/etc/nginx/modsecurity/rules \
 	/etc/modsecurity/crs \
 	/tmp/ssl && \
-	# Crear usuario y configurar permisos en una sola capa
+	# Create user and set permissions for directories
 	useradd -r -s /sbin/nologin nginxuser || true && \
 	chown -R nginxuser:nginxuser \
 	/var/log/modsecurity \

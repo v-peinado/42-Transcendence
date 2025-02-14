@@ -13,6 +13,10 @@
 # 1. Development: Simplified configuration for testing
 # 2. Production: Secure configuration with token and unseal management
 
+# Set environment variables upfront
+export VAULT_ADDR='https://127.0.0.1:8200'
+export VAULT_SKIP_VERIFY=true
+
 start_vault() {
     show_section "Starting Vault"
     log "INFO" "Starting server and establishing secure TLS connection..."
@@ -51,47 +55,50 @@ wait_for_vault() {
 }
 
 initialize_vault() {
-    if [ "${VAULT_MODE}" = "production" ]; then
-        export VAULT_ADDR='https://127.0.0.1:8200'
-        export VAULT_SKIP_VERIFY=true
-        unset VAULT_TOKEN
-
-        log_message "Setting VAULT_ADDR=${VAULT_ADDR}"
-
-        if ! vault operator init -status > /dev/null 2>&1; then
-            log_message "Initializing Vault..."
+    # Only proceed with initialization in production mode
+    if [ "${VAULT_MODE}" != "production" ]; then
+        return 0
+    fi
+        
+    if ! vault operator init -status > /dev/null 2>&1; then
+        log_message "Initializing Vault..."
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt"
-            chmod 600 "${LOG_DIR}/init.txt"
-            chown nginxuser:nginxuser "${LOG_DIR}/init.txt"
-            
-            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            
-            log_message "Unsealing Vault..."
-            vault operator unseal "$UNSEAL_KEY"
+        else
+            vault operator init -key-shares=1 -key-threshold=1 > "${LOG_DIR}/init.txt" 2>/dev/null
+        fi
+        chmod 600 "${LOG_DIR}/init.txt"
+        
+        UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
+        ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
+        
+        # Save keys for unsealing in the future
+        echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
+        echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
+        chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
+        
+        log_message "Unsealing Vault..."
+        vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             vault login "$ROOT_TOKEN"
+        else
+            vault login "$ROOT_TOKEN" >/dev/null 2>&1
+        fi
+    else
+        # Recover keys from previous initialization
+        UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
+        ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
+        vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            vault login "$ROOT_TOKEN"
+        else
+            vault login "$ROOT_TOKEN" >/dev/null 2>&1
         fi
     fi
 }
 
 configure_vault() {
-    if [ ! -f "${LOG_DIR}/init.txt" ]; then
-        log "ERROR" "init.txt not found"
-        return 1
-    fi
     
-    export VAULT_TOKEN
-    VAULT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
-    export VAULT_ADDR='https://127.0.0.1:8200'
-    
-    until vault status >/dev/null 2>&1; do
-        if vault status 2>/dev/null | grep -q "Sealed: true"; then
-            UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
-            vault operator unseal "$UNSEAL_KEY"
-        fi
-        sleep 2
-    done
-
     if ! vault secrets list | grep -q '^secret/'; then
         vault secrets enable -path=secret kv-v2
         log_message "KV-2 engine enabled"
@@ -102,29 +109,42 @@ configure_vault() {
 }
 
 configure_policies() {
-    vault policy write django - <<-EOF
-    # Permitir acceso a los secretos de Django
-    path "secret/data/django/*" {
-        capabilities = ["create", "read", "update", "delete", "list"]
-    }
+    # Create required directories first
+    mkdir -p /tmp/ssl
+    mkdir -p /etc/vault.d/data
+    chmod 755 /tmp/ssl
+    chmod 755 /etc/vault.d/data
 
-    # Permitir listar los secretos
-    path "secret/metadata/django/*" {
-        capabilities = ["list"]
-    }
-
-    # Permitir acceso a los secretos de Nginx
-    path "secret/data/nginx/*" {
-        capabilities = ["create", "read", "update", "delete", "list"]
-    }
-
-    path "secret/metadata/nginx/*" {
-        capabilities = ["list"]
-    }
-    
-    # Gestión de tokens
-    path "auth/token/*-self" {
-        capabilities = ["read", "update"]
-    }
+    # Configure access policies for Django with simpler and more permissive rules
+    vault policy write django - <<EOF
+path "secret/data/*" {
+    capabilities = ["read", "list"]
+}
+path "secret/metadata/*" {
+    capabilities = ["read", "list"]
+}
 EOF
+
+    # Create token with longer TTL and proper name
+    DJANGO_TOKEN=$(vault token create \
+        -policy=django \
+        -display-name=django \
+        -ttl=720h \
+        -format=json | jq -r '.auth.client_token' 2>/dev/null)
+
+    if [ -n "$DJANGO_TOKEN" ]; then
+        echo "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
+        chmod 644 "/tmp/ssl/django_token"
+        
+        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
+            log_message "Created Django token with value: $DJANGO_TOKEN"
+            vault token lookup "$DJANGO_TOKEN"
+        else
+            log_message "Created Django token successfully"
+            vault token lookup "$DJANGO_TOKEN" >/dev/null 2>&1 || log "ERROR" "Token verification failed"
+        fi
+    else
+        log "ERROR" "Failed to create Django token"
+        exit 1
+    fi
 }
