@@ -8,7 +8,6 @@ services:
   web:
     build:
       context: ./django
-    container_name: django
     ports:
       - "8000:8000"
     networks:
@@ -30,7 +29,6 @@ services:
 
   db:
     image: postgres:17
-    container_name: db
     expose:
       - "5432"
     networks:
@@ -46,6 +44,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
   nginx:
     build:
       context: .
@@ -74,6 +73,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
   waf:
     build:
       context: .
@@ -91,7 +91,6 @@ services:
       - vault_data:/etc/vault.d/data
     env_file:
       - .env
-    depends_on: []
     restart: always
     healthcheck:
       test: [ "CMD", "curl", "-k", "https://localhost:8200/v1/sys/health" ]
@@ -102,7 +101,6 @@ services:
 
   redis:
     image: redis:latest
-    container_name: redis
     expose:
       - "6379"
     networks:

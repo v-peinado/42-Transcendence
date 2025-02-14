@@ -35,11 +35,6 @@ for module in "${REQUIRED_MODULES[@]}"; do
     source "$module"
 done
 
-# Source required scripts
-source /usr/local/bin/logger.sh
-source /usr/local/bin/vault-init.sh
-source /usr/local/bin/vault-secrets.sh
-
 # Main setup function
 setup() {
     # Start Vault server
@@ -62,7 +57,7 @@ setup() {
     
     # Store secrets
     store_secrets
-
+    
     # Start nginx after everything is ready
     nginx -g 'daemon off;'
 }
