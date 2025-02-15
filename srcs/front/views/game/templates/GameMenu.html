@@ -1,0 +1,103 @@
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10 text-center">
+                <h1 class="display-4 text-gradient mb-4">Pong Arcade</h1>
+                <div class="game-modes">
+                    <div class="game-modes-grid">
+                        <!-- Classic Matchmaking -->
+                        <div class="game-mode-card active" id="matchmakingBtn">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-icon">
+                                    <i class="fas fa-gamepad"></i>
+                                </div>
+                                <h3>Partida Rápida</h3>
+                                <p>1 vs 1 Online</p>
+                                <div class="mode-details">
+                                    <i class="fas fa-signal"></i>
+                                    <span>Matchmaking</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Training -->
+                        <div class="game-mode-card disabled" id="aiBtn">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-icon">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <h3>Modo IA</h3>
+                                <p>Entrenamiento</p>
+                                <div class="difficulty-badges">
+                                    <span class="badge">Fácil</span>
+                                    <span class="badge">Normal</span>
+                                    <span class="badge">Difícil</span>
+                                </div>
+                                <div class="coming-soon">Próximamente</div>
+                            </div>
+                        </div>
+
+                        <!-- Local Tournament -->
+                        <div class="game-mode-card disabled" id="localTournamentBtn">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <h3>Torneo Local</h3>
+                                <p>Compite en el mismo dispositivo</p>
+                                <div class="tournament-info">
+                                    <span>2-8 jugadores</span>
+                                </div>
+                                <div class="coming-soon">Próximamente</div>
+                            </div>
+                        </div>
+
+                        <!-- Torneo Online -->
+                        <div class="game-mode-card disabled" id="onlineTournamentBtn">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-icon">
+                                    <i class="fas fa-globe-americas"></i>
+                                </div>
+                                <h3>Torneo Online</h3>
+                                <p>Torneos programados</p>
+                                <div class="tournament-schedule">
+                                    <i class="far fa-clock"></i>                                </div>
+                                <div class="coming-soon">Próximamente</div>
+                            </div>
+                        </div>
+
+                        <!-- Invitar Amigo -->
+                        <div class="game-mode-card disabled" id="friendInviteBtn">
+                            <div class="card-glow"></div>
+                            <div class="card-content">
+                                <div class="card-icon">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <h3>Desafiar Amigo</h3>
+                                <p>Partida Personalizada</p>
+                                <div class="invite-info">
+                                    <i class="fas fa-link"></i>
+                                    <span>Invitación por enlace</span>
+                                </div>
+                                <div class="coming-soon">Próximamente</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="status" class="matchmaking-status" style="display: none;">
+                        <div class="status-content">
+                            <div class="spinner-border text-light" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span id="status-text">Iniciando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

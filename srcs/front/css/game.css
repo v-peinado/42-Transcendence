@@ -1,0 +1,339 @@
+/* Menú del juego */
+.game-modes {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Game Mode Cards */
+.game-modes {
+    padding: 2rem;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.game-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: stretch;
+}
+
+/* Ajustar las últimas dos tarjetas al centro */
+.game-modes-grid > :nth-last-child(-n+2) {
+    grid-column: span 1;
+}
+
+.game-modes-grid > :nth-last-child(2) {
+    margin-left: auto;
+}
+
+.game-modes-grid > :last-child {
+    margin-right: auto;
+}
+
+/* Ajuste responsive */
+@media (max-width: 1400px) {
+    .game-modes-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .game-modes-grid > :nth-last-child(-n+2) {
+        grid-column: auto;
+    }
+
+    .game-mode-card {
+        height: 320px; /* Ligeramente más pequeña en pantallas medianas */
+    }
+}
+
+@media (max-width: 768px) {
+    .game-modes-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .game-mode-card {
+        height: 300px; /* Más compacta en móviles */
+    }
+}
+
+.game-mode-card {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 350px; /* Altura fija para todas las tarjetas */
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Ancho completo dentro del grid */
+    margin: 0;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.card-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at var(--x, 50%) var(--y, 50%),
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.game-mode-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(13, 110, 253, 0.2),
+        0 0 40px rgba(13, 110, 253, 0.1);
+}
+
+.game-mode-card:hover .card-glow {
+    opacity: 1;
+}
+
+.card-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem 0;
+}
+
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    height: 60px; /* Altura fija para los iconos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-mode-card:hover .card-icon {
+    transform: scale(1.1);
+}
+
+.game-mode-card h3 {
+    font-size: 1.5rem;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+.game-mode-card p {
+    margin: 0;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+    flex-grow: 0;
+}
+
+.mode-details,
+.difficulty-badges,
+.tournament-info,
+.tournament-schedule,
+.invite-info {
+    margin-top: auto; /* Empuja estos elementos al final */
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.game-mode-card.disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(108, 117, 125, 0.05));
+    border-color: rgba(108, 117, 125, 0.2);
+}
+
+.coming-soon {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.35rem 1rem;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+}
+
+/* Colores específicos por modo con gradientes */
+.game-mode-card[id="matchmakingBtn"] .card-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-mode-card[id="aiBtn"] .card-icon {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-mode-card[id="localTournamentBtn"] .card-icon {
+    background: linear-gradient(135deg, #ffd86f 0%, #ffc107 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-mode-card[id="onlineTournamentBtn"] .card-icon {
+    background: linear-gradient(135deg, #2196f3 0%, #4dabf5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-mode-card[id="friendInviteBtn"] .card-icon {
+    background: linear-gradient(135deg, #4caf50 0%, #80e27e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.matchmaking-status {
+    background: rgba(13, 110, 253, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.status-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: white;
+}
+
+.game-btn {
+    padding: 1.5rem;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    background: rgba(13, 110, 253, 0.8);
+    border: none;
+}
+
+.game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.game-btn.btn-secondary {
+    background: rgba(108, 117, 125, 0.8);
+}
+
+#status {
+    background: rgba(13, 110, 253, 0.2);
+    border: none;
+    color: white;
+}
+
+#playersCount {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Área de juego */
+.game-container {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    margin: 0 auto;
+}
+
+.game-menu {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.game-area {
+    text-align: center;
+}
+
+.game-status {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 4px;
+    color: white;
+}
+
+/* Marcadores */
+.score {
+    position: absolute;
+    color: rgb(28, 42, 236);
+    font-size: 3rem;
+    font-family: 'roboto';
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#player1Score { left: 35%; }
+#player2Score { right: 35%; }
+
+/* Información del juego */
+.game-info {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: rgb(28, 42, 236);
+    padding: 10px;
+    font-family: 'roboto';
+}
+
+#gameStatus, #playerInfo, #controlsInfo {
+    margin: 5px 0;
+    font-weight: bold;
+}
+
+/* Badges para niveles de dificultad */
+.difficulty-levels {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.difficulty-levels .badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Info de torneo */
+.tournament-info,
+.tournament-schedule,
+.invite-info {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Iconos específicos por modo */
+.game-mode-card[id="aiBtn"] .card-icon { color: rgba(255, 82, 82, 0.8); }
+.game-mode-card[id="localTournamentBtn"] .card-icon { color: rgba(255, 193, 7, 0.8); }
+.game-mode-card[id="onlineTournamentBtn"] .card-icon { color: rgba(33, 150, 243, 0.8); }
+.game-mode-card[id="friendInviteBtn"] .card-icon { color: rgba(76, 175, 80, 0.8); }
+

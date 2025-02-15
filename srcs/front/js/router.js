@@ -11,6 +11,8 @@ import { ChatView } from '/js/views/chat/ChatView.js';
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
 import { loadHTML, replaceContent } from '/js/utils/htmlLoader.js';
+import GameView from './views/game/GameView.js';
+import { GameMatchView } from '/js/views/game/GameMatchView.js';
 
 class Router {
     constructor() {
@@ -95,6 +97,9 @@ class Router {
         '/gdpr-settings/': GDPRSettingsView,
         '/chat': ChatView,
         '/chat/': ChatView,
+        '/game': GameView,
+        '/game/': GameView,
+        '/game/:id': GameMatchView,  // Definición de ruta con parámetro
         '/404': NotFoundView,
     };
 
@@ -243,13 +248,22 @@ class Router {
     }
 
     async handleRoute() {
-        const path = window.location.pathname + window.location.search;  // Incluir query params
-        console.log('Manejando ruta completa:', path);  // Debug
-        
+        const path = window.location.pathname + window.location.search;
+        console.log('Manejando ruta completa:', path);
+
         // Reset data-page attribute
         document.body.removeAttribute('data-page');
-        
-        console.log('Ruta actual:', path);
+
+        // Manejar rutas de juego específicamente
+        if (path.startsWith('/game/')) {
+            const gameMatch = path.match(/^\/game\/(\d+)$/);
+            if (gameMatch) {
+                const gameId = gameMatch[1];
+                console.log('Cargando partida:', gameId);
+                await GameMatchView(gameId);
+                return;
+            }
+        }
 
         // Manejar login con código de 42
         if (path.startsWith('/login') && path.includes('code=')) {
@@ -257,7 +271,7 @@ class Router {
             return;
         }
 
-        // Manejar verificación de email sin redirección automática
+        // Manejar verificación de email
         if (path.includes('/verify-email/')) {
             const parts = path.split('/verify-email/')[1].split('/');
             if (parts.length >= 2) {
@@ -269,44 +283,34 @@ class Router {
             }
         }
 
-        // Manejar verificación de cambio de email sin redirección automática
+        // Verificar cambio de email
         if (path.includes('/verify-email-change/')) {
             const parts = path.split('/verify-email-change/')[1].split('/');
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
-                const token = parts[1];  // Quitar el replace('/', '') porque necesitamos el slash
+                const token = parts[1];
                 console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
                 return;
             }
         }
 
-        // Verificar rutas protegidas y obtener perfil
-        if ((path.startsWith('/profile') || path.startsWith('/chat')) && 
+        // Verificar rutas protegidas
+        if ((path.startsWith('/profile') || path.startsWith('/chat') || path.startsWith('/game')) && 
             localStorage.getItem('isAuthenticated') !== 'true') {
             window.location.href = '/login';
             return;
-        }
-
-        if (path.startsWith('/profile')) {
-            if (sessionStorage.getItem('pendingAuth') === 'true') {
-                window.location.replace('/login');
-                return;
-            }
-            if (localStorage.getItem('isAuthenticated') !== 'true') {
-                window.location.replace('/login');
-                return;
-            }
         }
 
         const normalizedPath = path.split('?')[0];
         const route = this.routes[normalizedPath] || this.routes['/404'];
         
         if (typeof route === 'function') {
-            if (route.constructor.name === 'AsyncFunction') {
+            try {
                 await route();
-            } else {
-                route();
+            } catch (error) {
+                console.error('Error al cargar la ruta:', error);
+                this.routes['/404']();
             }
         }
     }
