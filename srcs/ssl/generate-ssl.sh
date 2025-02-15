@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# DISCLAIMER
+# This script generates self-signed SSL certificates for development and
+# academic purposes only. These certificates are NOT suitable for production
+# use. This is part of the 42 School curriculum project and should only be
+# used in a controlled development environment.
+
 set -e  					# Exit on error
 trap 'cleanup' EXIT		# Clean up on exit
 
@@ -93,7 +99,7 @@ generate_certificates() {
         return 1
     fi
     
-    log_info "Certificates generated in: $SSL_DIR"
+    log_info "Certificates generated successfully"
 }
 
 # Main function - Script entry point
@@ -101,6 +107,7 @@ main() {
     log_info "Starting SSL configuration..."
     create_ssl_directory && generate_certificates
     log_info "SSL configuration completed"
+	log_info "We are using self-signed certificates for development/academic purposes only"
 }
 
 main
