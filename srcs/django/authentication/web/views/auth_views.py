@@ -4,51 +4,43 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from authentication.services.auth_service import AuthenticationService
 
-
 def home(request):
-    """Main view"""
-    return render(request, "authentication/home.html")
-
+    """Vista principal"""
+    return render(request, 'authentication/home.html')
 
 def login(request):
-    """Login view for manually registered users"""
-    if request.method == "POST":
+    """Vista de inicio de sesión para usuarios registrados de forma manual"""
+    if request.method == 'POST':
         try:
             redirect_to = AuthenticationService.login_user(
                 request,
-                request.POST.get("username"),
-                request.POST.get("password"),
-                request.POST.get("remember", None),
+                request.POST.get('username'),
+                request.POST.get('password'),
+                request.POST.get('remember', None)
             )
             return redirect(redirect_to)
         except ValidationError as e:
             messages.error(request, str(e))
-
-    return render(request, "authentication/login.html")
-
+            
+    return render(request, 'authentication/login.html')
 
 def register(request):
-    """Registration view for new users registering manually"""
-    if request.method == "POST":
+    """Vista de registro para nuevos usuarios que se registran manualmente"""
+    if request.method == 'POST':
         try:
             result = AuthenticationService.handle_registration(request.POST)
-            if isinstance(result, dict) and result.get("success"):
-                messages.success(
-                    request, AuthenticationService.MESSAGES["email_verification"]
-                )
-                return redirect("login")
+            if isinstance(result, dict) and result.get('success'):
+                messages.success(request, AuthenticationService.MESSAGES['email_verification'])
+                return redirect('login')
             elif result:
-                messages.success(
-                    request, AuthenticationService.MESSAGES["email_verification"]
-                )
-                return redirect("login")
+                messages.success(request, AuthenticationService.MESSAGES['email_verification'])
+                return redirect('login')
         except ValidationError as e:
             messages.error(request, str(e))
-
-    return render(request, "authentication/register.html")
-
+            
+    return render(request, 'authentication/register.html')
 
 def logout(request):
-    """Logout view"""
+    """Vista de cierre de sesión"""
     auth_logout(request)
-    return redirect("home")
+    return redirect('home')

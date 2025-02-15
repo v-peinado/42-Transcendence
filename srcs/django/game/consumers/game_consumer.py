@@ -7,7 +7,6 @@ from .handlers.multiplayer_handler import MultiplayerHandler
 from .utils.database_operations import DatabaseOperations
 from ..models import Game
 
-
 class GameConsumer(BaseGameConsumer):
     """Main game consumer that coordinates different handlers"""
 

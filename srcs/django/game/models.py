@@ -35,6 +35,7 @@ class Game(models.Model):  # Database model:
         max_length=20,
         choices=[
             ("WAITING", "Waiting for players"),
+            ("MATCHED", "Matched"),
             ("PLAYING", "In progress"),
             ("FINISHED", "Finished"),
         ],

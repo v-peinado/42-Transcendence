@@ -1,20 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-
 class CustomUser(AbstractUser):
-    DEFAULT_PROFILE_IMAGE = (
-        "https://ui-avatars.com/api/?name={}&background=random&length=2"
-    )
-
+    DEFAULT_PROFILE_IMAGE = "https://ui-avatars.com/api/?name={}&background=random&length=2"
+    
     def profile_image_path(instance, filename):
-        ext = filename.split(".")[-1]
-        return f"profile_images/{instance.username}.{ext}"
-
+        ext = filename.split('.')[-1]
+        return f'profile_images/{instance.username}.{ext}'
+    
     fortytwo_image = models.URLField(max_length=500, blank=True, null=True)
-    profile_image = models.ImageField(
-        upload_to=profile_image_path, null=True, blank=True
-    )
+    profile_image = models.ImageField(upload_to=profile_image_path, null=True, blank=True)
     fortytwo_id = models.CharField(max_length=50, blank=True, null=True)
     is_fortytwo_user = models.BooleanField(default=False)
     email_verified = models.BooleanField(default=False)
@@ -27,7 +22,7 @@ class CustomUser(AbstractUser):
     pending_email_token = models.CharField(max_length=255, blank=True, null=True)
 
     def get_profile_image_url(self):
-        if self.profile_image and hasattr(self.profile_image, "url"):
+        if self.profile_image and hasattr(self.profile_image, 'url'):
             return self.profile_image.url
         if self.is_fortytwo_user and self.fortytwo_image:
             return self.fortytwo_image
@@ -35,11 +30,7 @@ class CustomUser(AbstractUser):
 
     @property
     def fortytwo_image_url(self):
-        return (
-            self.fortytwo_image
-            if self.is_fortytwo_user
-            else self.get_profile_image_url()
-        )
+        return self.fortytwo_image if self.is_fortytwo_user else self.get_profile_image_url()
 
     def anonymize(self):
         self.username = f"deleted_user_{self.id}"
@@ -51,33 +42,26 @@ class CustomUser(AbstractUser):
         self.save()
 
     class Meta:
-        verbose_name = "Usuario"
-        verbose_name_plural = "Usuarios"
+        verbose_name = 'Usuario'
+        verbose_name_plural = 'Usuarios'
 
     def __str__(self):
         return self.username
 
-
 class PreviousPassword(models.Model):
-    user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name="previous_passwords"
-    )
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='previous_passwords')
     password = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "-created_at"])]
-        verbose_name = "Contraseña anterior"
-        verbose_name_plural = "Contraseñas anteriores"
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['user', '-created_at'])]
+        verbose_name = 'Contraseña anterior'
+        verbose_name_plural = 'Contraseñas anteriores'
 
     def save(self, *args, **kwargs):
         if self.__class__.objects.filter(user=self.user).count() >= 3:
-            oldest = (
-                self.__class__.objects.filter(user=self.user)
-                .order_by("created_at")
-                .first()
-            )
+            oldest = self.__class__.objects.filter(user=self.user).order_by('created_at').first()
             if oldest:
                 oldest.delete()
         super().save(*args, **kwargs)

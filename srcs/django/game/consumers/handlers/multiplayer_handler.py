@@ -9,7 +9,7 @@ class MultiplayerHandler:
     @staticmethod
     async def handle_player_join(consumer, game):
         """Start or join multiplayer game"""
-        if game.status != "WAITING":  # When trying to join after game has started
+        if game.status != "MATCHED":  # When trying to join after game has started
             raise ValueError("Cannot join a game that has already started")
 
         player1 = await database_sync_to_async(getattr)(
