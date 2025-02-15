@@ -1,9 +1,18 @@
 import { gameWebSocketService } from '../../services/GameWebSocketService.js';
 import AuthService from '../../services/AuthService.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
+import { getNavbarHTML } from '../../components/Navbar.js';
 
 export default async function GameView() {
     const app = document.getElementById('app');
+    app.innerHTML = ''; // Limpiar el contenido anterior
+    
+    // Cargar y añadir el navbar autenticado
+    const userInfo = await AuthService.getUserProfile();
+    const navbarHtml = await getNavbarHTML(true, userInfo);
+    const tempNavDiv = document.createElement('div');
+    tempNavDiv.innerHTML = navbarHtml;
+    app.appendChild(tempNavDiv.firstElementChild);
     
     // Cargar template del menú de juego
     const template = await loadHTML('/views/game/templates/GameMenu.html');

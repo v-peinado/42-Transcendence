@@ -1,10 +1,11 @@
 /* Menú del juego */
 .game-modes {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(15px);
+    padding: 2.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
 }
 
 /* Game Mode Cards */
@@ -16,36 +17,29 @@
 
 .game-modes-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
     align-items: stretch;
 }
 
-/* Ajustar las últimas dos tarjetas al centro */
+/* Eliminamos los ajustes específicos de las últimas tarjetas */
 .game-modes-grid > :nth-last-child(-n+2) {
-    grid-column: span 1;
+    grid-column: auto; /* Elimina el span anterior */
 }
 
-.game-modes-grid > :nth-last-child(2) {
-    margin-left: auto;
-}
-
+.game-modes-grid > :nth-last-child(2),
 .game-modes-grid > :last-child {
-    margin-right: auto;
+    margin: 0; /* Elimina los márgenes automáticos */
 }
 
 /* Ajuste responsive */
 @media (max-width: 1400px) {
     .game-modes-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.5rem;
     }
     
-    .game-modes-grid > :nth-last-child(-n+2) {
-        grid-column: auto;
-    }
-
     .game-mode-card {
         height: 320px; /* Ligeramente más pequeña en pantallas medianas */
     }
@@ -53,7 +47,7 @@
 
 @media (max-width: 768px) {
     .game-modes-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         max-width: 400px;
         margin-left: auto;
         margin-right: auto;
@@ -66,20 +60,51 @@
 
 .game-mode-card {
     position: relative;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 20px;
-    padding: 2.5rem 2rem;
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
     cursor: pointer;
     overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    height: 350px; /* Altura fija para todas las tarjetas */
+    transition: all 0.3s ease;
+    height: 320px;
     display: flex;
     flex-direction: column;
-    width: 100%; /* Ancho completo dentro del grid */
-    margin: 0;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        inset 0 0 20px rgba(13, 110, 253, 0.03);
+}
+
+/* Eliminar las clases relacionadas con el fondo */
+.card-background,
+.card-overlay {
+    display: none;
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.game-mode-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(13, 110, 253, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(13, 110, 253, 0.2);
+}
+
+.game-mode-card:hover .card-icon {
+    transform: scale(1.15);
 }
 
 .card-glow {
@@ -95,15 +120,6 @@
     pointer-events: none;
 }
 
-.game-mode-card:hover {
-    transform: translateY(-8px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 
-        0 15px 35px rgba(0, 0, 0, 0.2),
-        0 0 20px rgba(13, 110, 253, 0.2),
-        0 0 40px rgba(13, 110, 253, 0.1);
-}
-
 .game-mode-card:hover .card-glow {
     opacity: 1;
 }
@@ -111,7 +127,6 @@
 .card-content {
     position: relative;
     z-index: 1;
-    text-align: center;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -133,16 +148,18 @@
 }
 
 .game-mode-card h3 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 600;
     margin: 0;
     padding: 0.5rem 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .game-mode-card p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
     margin: 0;
-    padding: 0.5rem 0;
-    font-size: 1rem;
-    flex-grow: 0;
 }
 
 .mode-details,
@@ -153,26 +170,28 @@
     margin-top: auto; /* Empuja estos elementos al final */
     padding: 0.5rem 0;
     font-size: 0.9rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .game-mode-card.disabled {
-    opacity: 0.75;
+    opacity: 0.7;
     cursor: not-allowed;
-    background: linear-gradient(135deg, rgba(108, 117, 125, 0.1), rgba(108, 117, 125, 0.05));
-    border-color: rgba(108, 117, 125, 0.2);
+    background: linear-gradient(145deg, 
+        rgba(108, 117, 125, 0.05) 0%,
+        rgba(108, 117, 125, 0.02) 100%
+    );
 }
 
 .coming-soon {
     position: absolute;
-    top: 1.25rem;
-    right: 1.25rem;
-    background: rgba(255, 255, 255, 0.1);
+    top: 1rem;
+    right: 1rem;
+    background: rgba(13, 110, 253, 0.15);
     padding: 0.35rem 1rem;
-    border-radius: 25px;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: white;
+    border: 1px solid rgba(13, 110, 253, 0.2);
     font-weight: 500;
 }
 
@@ -181,37 +200,44 @@
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(79, 172, 254, 0.3));
 }
 
 .game-mode-card[id="aiBtn"] .card-icon {
     background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.3));
 }
 
 .game-mode-card[id="localTournamentBtn"] .card-icon {
     background: linear-gradient(135deg, #ffd86f 0%, #ffc107 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
 }
 
 .game-mode-card[id="onlineTournamentBtn"] .card-icon {
     background: linear-gradient(135deg, #2196f3 0%, #4dabf5 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(33, 150, 243, 0.3));
 }
 
 .game-mode-card[id="friendInviteBtn"] .card-icon {
     background: linear-gradient(135deg, #4caf50 0%, #80e27e 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.3));
 }
 
 .matchmaking-status {
-    background: rgba(13, 110, 253, 0.2);
-    border-radius: 10px;
+    background: rgba(33, 37, 41, 0.95);
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    border-radius: 12px;
     padding: 1rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    backdrop-filter: blur(10px);
 }
 
 .status-content {
