@@ -1,136 +1,146 @@
 networks:
-  transcendence-backend:
-    driver: bridge
-  app-network:
-    driver: bridge
+    transcendence-backend:
+        driver: bridge
+    app-network:
+        driver: bridge
 
 services:
-  web:
-    build:
-      context: ./django
-    ports:
-      - "8000:8000"
-    networks:
-      - transcendence-backend
-    volumes:
-      - django_static:/app/static
-      - django_media:/app/media
-      - ssl_certs:/tmp/ssl:ro
-    depends_on:
-      waf:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    env_file:
-      - .env
-    restart: always
+    web:
+        build:
+            context: ./django
+        ports:
+            - "8000:8000"
+        networks:
+            - transcendence-backend
+        volumes:
+            - django_static:/app/static
+            - django_media:/app/media
+            - ssl_certs:/tmp/ssl:ro
+        depends_on:
+            waf:
+                condition: service_healthy
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_started
+        env_file:
+            - .env
+        restart: always
 
-  db:
-    image: postgres:17
-    expose:
-      - "5432"
-    networks:
-      - transcendence-backend
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
-    restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -h db" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    db:
+        image: postgres:17
+        expose:
+            - "5432"
+        networks:
+            - transcendence-backend
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        env_file:
+            - .env
+        restart: always
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres -h db" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        depends_on:
+            init-postgres-data:
+                condition: service_completed_successfully
 
-  nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
-    expose:
-      - "80"
-      - "443"
-      - "8443"
-    networks:
-      - transcendence-backend
-      - app-network
-    volumes:
-      - type: volume
-        source: nginx_static
-        target: /usr/share/nginx/html
-      - type: volume
-        source: django_media
-        target: /usr/share/nginx/html/media:rw
-      - ssl_certs:/tmp/ssl:rw
-    depends_on:
-      - web
-      - waf
-    restart: always
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8443/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    nginx:
+        build:
+            context: .
+            dockerfile: nginx/Dockerfile
+        expose:
+            - "80"
+            - "443"
+            - "8443"
+        networks:
+            - transcendence-backend
+            - app-network
+        volumes:
+            - type: volume
+              source: nginx_static
+              target: /usr/share/nginx/html
+            - type: volume
+              source: django_media
+              target: /usr/share/nginx/html/media:rw
+            - ssl_certs:/tmp/ssl:rw
+        depends_on:
+            - web
+            - waf
+        restart: always
+        healthcheck:
+            test: [ "CMD", "curl", "-k", "https://localhost:8443/health" ]
+            interval: 30s
+            timeout: 10s
+            retries: 3
 
-  waf:
-    build:
-      context: .
-      dockerfile: waf/Dockerfile
-    ports:
-      - "8082:8081"
-      - "8445:8444"
-      - "8200:8200"
-    networks:
-      - transcendence-backend
-      - app-network
-    volumes:
-      - ssl_certs:/tmp/ssl:rw
-      - waf_logs:/var/log/nginx
-      - vault_data:/etc/vault.d/data
-    env_file:
-      - .env
-    restart: always
-    healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8200/v1/sys/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
+    waf:
+        build:
+            context: .
+            dockerfile: waf/Dockerfile
+        ports:
+            - "8082:8081"
+            - "8445:8444"
+            - "8200:8200"
+        networks:
+            - transcendence-backend
+            - app-network
+        volumes:
+            - ssl_certs:/tmp/ssl:rw
+            - waf_logs:/var/log/nginx
+            - vault_data:/etc/vault.d/data
+        env_file:
+            - .env
+        restart: always
+        healthcheck:
+            test: [ "CMD", "curl", "-k", "https://localhost:8200/v1/sys/health" ]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
 
-  redis:
-    image: redis:latest
-    expose:
-      - "6379"
-    networks:
-      - transcendence-backend
-    restart: always
-    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
+    redis:
+        image: redis:latest
+        expose:
+            - "6379"
+        networks:
+            - transcendence-backend
+        restart: always
+        command: [ "redis-server", "--save", "", "--appendonly", "no" ]
 
-  front:
-    build: ./front
-    container_name: front
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./front:/app
-    networks:
-      - app-network
-    restart: always
+    front:
+        build: ./front
+        container_name: front
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./front:/app
+        networks:
+            - app-network
+        restart: always
+    init-postgres-data:
+        image: bash:latest
+        volumes:
+            - ./init-postgres-data.sh:/init-postgres-data.sh
+            - postgres_data:/var/lib/postgresql/data
+        command: [ "/bin/bash", "-c", "chmod +x /init-postgres-data.sh && /init-postgres-data.sh" ]
+        user: root
 
 volumes:
-  postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: ./postgres_data
-      o: bind
-  django_media:
-  django_static:
-  nginx_static:
-  waf_logs:
-  ssl_certs:
-    name: ssl_certs
-  vault_data:
-    driver: local
+    postgres_data:
+        driver: local
+        driver_opts:
+            type: none
+            device: ./postgres_data
+            o: bind
+    django_media:
+    django_static:
+    nginx_static:
+    waf_logs:
+    ssl_certs:
+        name: ssl_certs
+    vault_data:
+        driver: local

@@ -1,5 +1,0 @@
-#.env
-#.env.*
-postgres_data/*
-!postgres_data/.gitkeep
-
