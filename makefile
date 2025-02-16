@@ -25,7 +25,7 @@ else
     DOCKER_SOCKET=/var/run/docker.sock
 endif
 
-all: up help
+all: create_postgres_data_dir up help
 
 # Configurar Docker rootless en Linux
 configure-rootless:
@@ -119,10 +119,20 @@ rebuild-images:
 		docker build -t $$image . || exit 1; \
 	done
 
+# Regla para crear directorio de db
+create_postgres_data_dir:
+	@if [ ! -d "./srcs/postgres_data" ]; then \
+        mkdir -p ./srcs/postgres_data; \
+        chmod 777 ./srcs/postgres_data; \
+        echo "$(COLOR_GREEN)Directorio postgres_data creado y permisos asignados$(COLOR_RESET)"; \
+	else \
+		echo "$(COLOR_YELLOW)Directorio postgres_data ya existe$(COLOR_RESET)"; \
+	fi
+
 # Regla para limpiar el directorio de datos de postgres
 clean_postgres_data_dir:
-	@rm -rf ./srcs/postgres_data/*
-	@echo "$(COLOR_GREEN)Contenido del directorio postgres_data eliminado$(COLOR_RESET)"
+	@rm -rf ./srcs/postgres_data
+	@echo "$(COLOR_GREEN)Directorio postgres_data eliminado$(COLOR_RESET)"
 
 # Regla para destruir (eliminar) todas las imágenes
 destroy-images:
@@ -139,7 +149,7 @@ destroy-images:
 	@echo "$(COLOR_GREEN)Eliminando imágenes huérfanas...$(COLOR_RESET)"
 	docker image prune -a -f
 
-fclean: close destroy-images clean-postgres-data clean-volumes clean_postgres_data_dir
+fclean: close destroy-images clean-postgres-data clean-volumes
 	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
 
 re: fclean all
@@ -206,4 +216,3 @@ help:
 	@echo ""
 	
 .PHONY: all up down logs reset clean close debug status images help rebuild-images destroy-images check_db_tables connect_db list_databases fclean re clean view-users view-tables view-users-fields
-

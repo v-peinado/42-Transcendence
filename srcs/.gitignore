@@ -1,0 +1,4 @@
+#.env
+#.env.*
+postgres_data/*
+

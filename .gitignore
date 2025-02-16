@@ -1,4 +1,0 @@
-#.env
-#.env.*
-srcs/postgres_data/*
-
