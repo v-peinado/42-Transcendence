@@ -1,4 +1,4 @@
 #.env
 #.env.*
-srcs/postgres_data/
+srcs/postgres_data/*
 
