@@ -715,3 +715,68 @@
     display: none;
 }
 
+/* Botón de pantalla completa */
+.fullscreen-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.fullscreen-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Tooltip personalizado */
+.fullscreen-btn::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 120%;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.fullscreen-btn:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Estilos para modo pantalla completa */
+.game-wrapper.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: rgba(16, 19, 34, 1);
+    margin: 0;
+    padding: 20px;
+}
+
+.game-wrapper.fullscreen #gameCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+

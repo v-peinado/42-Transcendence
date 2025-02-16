@@ -268,6 +268,48 @@ export async function GameMatchView(gameId) {
         document.addEventListener('keyup', handleKeyUp);
     }
 
+    // Añadir después de la configuración inicial
+    const gameWrapper = document.querySelector('.game-wrapper');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            if (gameWrapper.requestFullscreen) {
+                gameWrapper.requestFullscreen();
+            } else if (gameWrapper.webkitRequestFullscreen) {
+                gameWrapper.webkitRequestFullscreen();
+            } else if (gameWrapper.msRequestFullscreen) {
+                gameWrapper.msRequestFullscreen();
+            }
+            gameWrapper.classList.add('fullscreen');
+            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            gameWrapper.classList.remove('fullscreen');
+            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+    });
+
+    // Manejar cambios de pantalla completa
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    function handleFullscreenChange() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement &&
+            !document.mozFullScreenElement && !document.msFullscreenElement) {
+            gameWrapper.classList.remove('fullscreen');
+            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+    }
+
     // Cleanup mejorado
     return () => {
         if (movementInterval) {
@@ -283,5 +325,10 @@ export async function GameMatchView(gameId) {
         if (cssLink) {
             document.head.removeChild(cssLink);
         }
+
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
 }
