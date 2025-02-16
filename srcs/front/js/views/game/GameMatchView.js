@@ -1,102 +1,25 @@
+import { loadHTML } from '../../utils/htmlLoader.js';
+
 export async function GameMatchView(gameId) {
     console.log('Iniciando partida:', gameId);
     const app = document.getElementById('app');
     
-    app.innerHTML = `
-        <div class="game-container">
-            <canvas id="gameCanvas"></canvas>
-            <div class="score" id="player1Score">0</div>
-            <div class="score" id="player2Score">0</div>
-            <div class="game-info">
-                <div class="game-id">Partida ID: ${gameId}</div>
-                <div id="gameStatus">Conectando...</div>
-                <div id="playerInfo">Esperando asignación...</div>
-                <div id="controlsInfo"></div>
-            </div>
-            <div id="countdown" class="countdown" style="display: none;"></div>
-            <div id="gameOverScreen" class="game-over-screen" style="display: none;">
-                <div class="game-over-content">
-                    <h2 id="winnerText"></h2>
-                    <div id="finalScore"></div>
-                    <button id="returnToLobby" class="btn btn-primary">Volver al Lobby</button>
-                </div>
-            </div>
-        </div>
-    `;
+    // Cargar template y CSS
+    const template = await loadHTML('/views/game/templates/GameMatch.html');
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = template;
+    
+    // Limpiar y añadir el nuevo contenido
+    app.innerHTML = '';
+    app.appendChild(tempDiv.firstElementChild);
 
-    // estilos temporales, tengo que moverlos al css
-    const style = document.createElement('style');
-    style.textContent = `
-        .game-container {
-            position: relative;
-            width: 1000px;
-            height: 600px;
-            margin: 0 auto;
-        }
-        #gameCanvas {
-            background: rgb(85, 5, 45);
-            border: 1px solid #000;
-        }
-        .score {
-            position: absolute;
-            color: rgb(28, 42, 236);
-            font-size: 3rem;
-            font-family: 'roboto';
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        #player1Score { left: 35%; }
-        #player2Score { right: 35%; }
-        .game-info {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            color: rgb(28, 42, 236);
-            padding: 10px;
-            top: 10px;
-            font-family: 'roboto';
-        }
-        #gameStatus, #playerInfo, #controlsInfo {
-            margin: 5px 0;
-            font-weight: bold;
-        }
-        .countdown {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 64px;
-            color: white;
-        }
-        .game-over-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        .game-over-content {
-            background: rgb(85, 5, 45);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            color: white;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #007bff;
-            color: white;
-        }
-    `;
-    document.head.appendChild(style);
+    // Cargar CSS
+    if (!document.querySelector('link[href="/css/game.css"]')) {
+        const linkElem = document.createElement('link');
+        linkElem.rel = 'stylesheet';
+        linkElem.href = '/css/game.css';
+        document.head.appendChild(linkElem);
+    }
 
     // Variables de estado
     let playerSide = null;
@@ -120,45 +43,46 @@ export async function GameMatchView(gameId) {
 
     socket.onopen = () => {
         console.log('Conexión establecida');
-        document.getElementById('gameStatus').textContent = 'Conectado - Esperando inicio...';
+        document.getElementById('gameStatus').textContent = '🎮 Conectado - Esperando oponente...';
     };
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         
-        // Solo logear mensajes que no sean del estado del juego
         if (data.type !== 'game_state') {
             console.log('Mensaje recibido:', data);
         }
 
         switch(data.type) {
             case 'game_start':
-                console.log('Game Start Data:', {
-                    player1_id: data.player1_id,
-                    player2_id: data.player2_id,
-                    myId: userId,
-                    player1: data.player1,
-                    player2: data.player2
-                });
+                console.log('Game Start Data:', data);
 
-                // Asignar lado y actualizar UI
+                // Asignar lado y actualizar UI de forma segura
                 if (userId && data.player1_id && data.player2_id) {
+                    const player1Name = document.getElementById('player1Name');
+                    const player2Name = document.getElementById('player2Name');
+                    const leftControls = document.getElementById('leftControls');
+                    const rightControls = document.getElementById('rightControls');
+                    const gameStatus = document.getElementById('gameStatus');
+
+                    // Actualizar nombres de ambos jugadores
+                    if (player1Name) player1Name.textContent = data.player1;
+                    if (player2Name) player2Name.textContent = data.player2;
+
                     if (userId === data.player1_id.toString()) {
                         playerSide = 'left';
-                        document.getElementById('playerInfo').textContent = 
-                            `Tú eres el Jugador 1 - ${data.player1} (Izquierda)`;
-                        document.getElementById('controlsInfo').textContent = 
-                            'Controles: W/S para arriba/abajo';
+                        if (leftControls) leftControls.style.display = 'block';
+                        if (rightControls) rightControls.style.display = 'none';
                     } else if (userId === data.player2_id.toString()) {
                         playerSide = 'right';
-                        document.getElementById('playerInfo').textContent = 
-                            `Tú eres el Jugador 2 - ${data.player2} (Derecha)`;
-                        document.getElementById('controlsInfo').textContent = 
-                            'Controles: ↑/↓ para arriba/abajo';
+                        if (rightControls) rightControls.style.display = 'block';
+                        if (leftControls) leftControls.style.display = 'none';
                     }
-                    
-                    console.log('Lado asignado:', playerSide);
-                    document.getElementById('gameStatus').textContent = '¡Partida iniciada!';
+
+                    if (gameStatus) {
+                        gameStatus.textContent = '🔥 ¡Partida en curso!';
+                    }
+
                     setupControls();
                 } else {
                     console.error('Datos de jugador incompletos:', {
@@ -218,20 +142,32 @@ export async function GameMatchView(gameId) {
     function drawGame() {
         if (!gameState) return;
 
-        ctx.fillStyle = 'rgb(85, 5, 45)';
+        // Fondo limpio y elegante
+        ctx.fillStyle = 'rgba(16, 19, 34, 0.95)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Dibujar raquetas
-        ctx.fillStyle = 'white';
+        // Línea central sutil
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 10]);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Dibujar raquetas con estilo minimalista
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         Object.values(gameState.paddles).forEach(paddle => {
-            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 5);
+            ctx.fill();
         });
 
-        // Dibujar pelota
+        // Dibujar pelota con brillo sutil
         ctx.beginPath();
         ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.closePath();
     }
 
     function handleGameEnd(data) {
@@ -240,8 +176,21 @@ export async function GameMatchView(gameId) {
         const winnerText = document.getElementById('winnerText');
         const finalScore = document.getElementById('finalScore');
         
-        winnerText.textContent = isWinner ? '¡Has ganado!' : 'Has perdido';
-        finalScore.textContent = `Puntuación final: ${data.final_score.left} - ${data.final_score.right}`;
+        if (isWinner) {
+            winnerText.textContent = '🏆 ¡Victoria!';
+            winnerText.className = 'winner-text victory';
+        } else {
+            winnerText.textContent = '💔 Derrota';
+            winnerText.className = 'winner-text defeat';
+        }
+        
+        finalScore.innerHTML = `
+            <div class="score-detail">
+                <span class="score-label">Puntuación Final:</span>
+                <span class="score-numbers">${data.final_score.left} - ${data.final_score.right}</span>
+            </div>
+        `;
+        
         gameOverScreen.style.display = 'flex';
 
         // Detener controles
@@ -328,6 +277,11 @@ export async function GameMatchView(gameId) {
         document.removeEventListener('keydown', handleKeyDown);
         document.removeEventListener('keyup', handleKeyUp);
         socket.close();
-        document.head.removeChild(style);
+        
+        // Eliminar el CSS si no hay otras vistas que lo usen
+        const cssLink = document.querySelector('link[href="/css/game.css"]');
+        if (cssLink) {
+            document.head.removeChild(cssLink);
+        }
     };
 }

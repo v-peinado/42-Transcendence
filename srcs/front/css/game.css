@@ -276,56 +276,297 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* Área de juego */
+/* Área de juego - Diseño minimalista */
 .game-container {
     position: relative;
     width: 1000px;
     height: 600px;
-    margin: 0 auto;
-}
-
-.game-menu {
-    text-align: center;
-    margin: 20px 0;
-}
-
-.game-area {
-    text-align: center;
-}
-
-.game-status {
-    margin-top: 20px;
+    margin: 0;
+    background: rgba(33, 37, 41, 0.95);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
     padding: 10px;
-    border-radius: 4px;
-    color: white;
+    overflow: hidden;
 }
 
-/* Marcadores */
+#gameCanvas {
+    border-radius: 15px;
+    background: rgba(16, 19, 34, 0.95);
+}
+
+/* Marcadores - Estilo retro */
 .score {
     position: absolute;
-    color: rgb(28, 42, 236);
-    font-size: 3rem;
-    font-family: 'roboto';
-    top: 50%;
-    transform: translateY(-50%);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    top: 40px;
+    text-shadow: 
+        0 0 10px rgba(255, 255, 255, 0.4),
+        0 0 20px rgba(255, 255, 255, 0.2);
+    transform: none;
+    letter-spacing: 2px;
+    background: none;
+    -webkit-text-fill-color: initial;
 }
 
-#player1Score { left: 35%; }
-#player2Score { right: 35%; }
+#player1Score { 
+    left: 35%; 
+}
+
+#player2Score { 
+    right: 35%; 
+}
+
+/* Separador de puntuación */
+.score::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+/* Información del juego más sutil */
+.game-info {
+    display: none;
+}
+
+#gameStatus, #playerInfo, #controlsInfo {
+    color: rgba(255, 255, 255, 0.95);
+    margin: 8px 0;
+    font-weight: 500;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+#gameStatus {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+}
+
+#playerInfo {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+#controlsInfo {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    display: inline-block;
+}
+
+/* Cuenta regresiva más elegante */
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 5rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(33, 37, 41, 0.98);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    border-radius: 20px;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.game-over-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.game-over-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+}
+
+.game-over-content #finalScore {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+#returnToLobby {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+#returnToLobby:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.winner-text {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.winner-text.victory {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(79, 172, 254, 0.5);
+}
+
+.winner-text.defeat {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(255, 107, 107, 0.5);
+}
+
+.score-detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.score-label {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.score-numbers {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+    .game-container {
+        width: 90%;
+        height: auto;
+        aspect-ratio: 16/9;
+    }
+    
+    .score {
+        font-size: 3rem;
+    }
+    
+    .countdown {
+        font-size: 4rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .score {
+        font-size: 2.5rem;
+    }
+    
+    .countdown {
+        font-size: 3rem;
+    }
+    
+    .game-over-content h2 {
+        font-size: 2rem;
+    }
+}
 
 /* Información del juego */
 .game-info {
-    position: absolute;
-    width: 100%;
-    text-align: center;
-    color: rgb(28, 42, 236);
-    padding: 10px;
-    font-family: 'roboto';
+    display: none;
 }
 
 #gameStatus, #playerInfo, #controlsInfo {
     margin: 5px 0;
     font-weight: bold;
+}
+
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 64px;
+    color: white;
+}
+
+.game-over-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.game-over-content {
+    background: rgb(85, 5, 45);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
 }
 
 /* Badges para niveles de dificultad */
@@ -362,4 +603,115 @@
 .game-mode-card[id="localTournamentBtn"] .card-icon { color: rgba(255, 193, 7, 0.8); }
 .game-mode-card[id="onlineTournamentBtn"] .card-icon { color: rgba(33, 150, 243, 0.8); }
 .game-mode-card[id="friendInviteBtn"] .card-icon { color: rgba(76, 175, 80, 0.8); }
+
+/* Centrado del juego */
+.game-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.game-wrapper {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-container {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    margin: 0;
+    /* ...rest of existing game-container styles... */
+}
+
+/* Nueva sección para la información del juego */
+.game-status-header {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto 20px;
+    padding: 15px 20px;
+    background: rgba(33, 37, 41, 0.95);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.game-id {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 8px;
+}
+
+#gameStatus {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+#playerInfo {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 8px;
+}
+
+#controlsInfo {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    display: inline-block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+    .game-wrapper {
+        width: 90%;
+        height: auto;
+        aspect-ratio: 16/9;
+    }
+    /* ...existing responsive styles... */
+}
+
+/* Header del juego */
+.game-header {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px; /* Aumentado el espacio entre jugadores */
+    z-index: 10;
+}
+
+.player-info {
+    text-align: center;
+    min-width: 150px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+/* Eliminar los estilos del game-status que ya no se usa */
+.game-status {
+    display: none;
+}
+
+/* Ocultar información redundante */
+.game-id {
+    display: none;
+}
 
