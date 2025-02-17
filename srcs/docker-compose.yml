@@ -28,25 +28,26 @@ services:
         restart: always
 
     db:
-        image: postgres:17
+        build:
+            context: ./db
         expose:
             - "5432"
         networks:
             - transcendence-backend
         volumes:
-            - postgres_data:/var/lib/postgresql/data
+            - type: bind
+              source: ./postgres_data
+              target: /var/lib/postgresql/data
         env_file:
             - .env
         restart: always
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U postgres -h db" ]
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
             interval: 10s
             timeout: 5s
             retries: 5
             start_period: 10s
-        depends_on:
-            init-postgres-data:
-                condition: service_completed_successfully
+        user: postgres
 
     nginx:
         build:
@@ -121,21 +122,8 @@ services:
         networks:
             - app-network
         restart: always
-    init-postgres-data:
-        image: bash:latest
-        volumes:
-            - ./init-postgres-data.sh:/init-postgres-data.sh
-            - postgres_data:/var/lib/postgresql/data
-        command: [ "/bin/bash", "-c", "chmod +x /init-postgres-data.sh && /init-postgres-data.sh" ]
-        user: root
 
 volumes:
-    postgres_data:
-        driver: local
-        driver_opts:
-            type: none
-            device: ./postgres_data
-            o: bind
     django_media:
     django_static:
     nginx_static:
