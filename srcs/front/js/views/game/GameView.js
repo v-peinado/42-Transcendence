@@ -30,15 +30,44 @@ export default async function GameView() {
             onlineTournamentBtn: document.getElementById('onlineTournamentBtn'),
             friendBtn: document.getElementById('friendInviteBtn'),
             status: document.getElementById('status'),
-            statusText: document.getElementById('status-text')
+            statusText: document.getElementById('status-text'),
+            modal: document.getElementById('matchmakingModal'),
+            modalStatusText: document.getElementById('modal-status-text'),
+            cancelMatchmakingBtn: document.getElementById('cancelMatchmaking')
         };
+
+        // Función mejorada para mostrar/ocultar el modal
+        const showMatchmakingModal = (show) => {
+            if (show) {
+                elements.modal.classList.add('show');
+                elements.modal.style.display = 'flex';
+            } else {
+                elements.modal.classList.remove('show');
+                elements.modal.style.display = 'none';
+                localStorage.removeItem('matchmaking_active');
+            }
+            document.body.classList.toggle('matchmaking-modal-open', show);
+        };
+
+        // Verificar si hay una búsqueda activa al cargar
+        const isSearchingActive = localStorage.getItem('matchmaking_active') === 'true';
+        if (isSearchingActive) {
+            showMatchmakingModal(true);
+            elements.modalStatusText.textContent = 'Reconectando...';
+            elements.matchmakingBtn.classList.add('disabled');
+            
+            // Reiniciar la conexión WebSocket
+            gameWebSocketService.setupConnection((message) => {
+                elements.modalStatusText.textContent = message;
+            });
+        }
 
         // Event listeners para los modos de juego
         if (elements.matchmakingBtn) {
             elements.matchmakingBtn.addEventListener('click', async () => {
                 try {
-                    elements.status.style.display = 'block';
-                    elements.statusText.textContent = 'Conectando al servidor...';
+                    showMatchmakingModal(true);
+                    elements.modalStatusText.textContent = 'Conectando al servidor...';
                     elements.matchmakingBtn.classList.add('disabled');
 
                     const userId = await AuthService.getUserId();
@@ -47,15 +76,45 @@ export default async function GameView() {
                     }
 
                     await gameWebSocketService.setupConnection((message) => {
-                        elements.statusText.textContent = message;
+                        elements.modalStatusText.textContent = message;
                     });
                 } catch (error) {
                     console.error('Error:', error);
-                    elements.statusText.textContent = `Error: ${error.message}`;
+                    elements.modalStatusText.textContent = `Error: ${error.message}`;
                     elements.matchmakingBtn.classList.remove('disabled');
+                    setTimeout(() => showMatchmakingModal(false), 2000);
                 }
             });
         }
+
+        // Función global para cancelar matchmaking
+        window.cancelMatchmaking = function() {
+            console.log('Cancelando búsqueda (función global)');
+            gameWebSocketService.disconnect();
+            showMatchmakingModal(false);
+            elements.matchmakingBtn.classList.remove('disabled');
+            localStorage.removeItem('matchmaking_active');
+        };
+
+        // Solo por si acaso, mantener también el listener original
+        document.getElementById('cancelMatchmaking').addEventListener('click', function(e) {
+            console.log('Click en botón cancelar');
+            e.preventDefault();
+            e.stopPropagation();
+            window.cancelMatchmaking();
+        });
+
+        // Event listener simplificado para el botón de cancelar
+        document.getElementById('cancelMatchmaking').onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Botón cancelar clickeado');
+            
+            gameWebSocketService.disconnect();
+            showMatchmakingModal(false);
+            elements.matchmakingBtn.classList.remove('disabled');
+            localStorage.removeItem('matchmaking_active');
+        };
 
         // Event listeners para modos no disponibles
         const disabledModes = [

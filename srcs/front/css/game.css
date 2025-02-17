@@ -377,6 +377,16 @@
     font-weight: bold;
     color: rgba(255, 255, 255, 0.9);
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.countdown[textContent="GO!"] {
+    color: #4facfe;
+    font-size: 10rem; /* Más grande que los números */
+    text-shadow: 
+        0 0 30px rgba(79, 172, 254, 0.7),
+        0 0 50px rgba(79, 172, 254, 0.5);
 }
 
 .game-over-screen {
@@ -779,4 +789,738 @@
     height: 100%;
     object-fit: contain;
 }
+
+/* Botones específicos del juego */
+.game-section .btn,
+.game-modes .btn {
+    padding: 1.5rem;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    background: rgba(13, 110, 253, 0.8);
+    border: none;
+    color: white;
+}
+
+.game-section .btn:hover,
+.game-modes .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    background: rgba(13, 110, 253, 0.9);
+}
+
+.game-section .btn-secondary,
+.game-modes .btn-secondary {
+    background: rgba(108, 117, 125, 0.8);
+}
+
+.game-section .btn-secondary:hover,
+.game-modes .btn-secondary:hover {
+    background: rgba(108, 117, 125, 0.9);
+}
+
+.game-over-screen .btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    color: white;
+}
+
+.game-over-screen .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+/* Botón de pantalla completa específico */
+.game-wrapper .fullscreen-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    padding: 0;
+}
+
+.game-wrapper .fullscreen-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Estilos para el modal de matchmaking */
+.modal {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+    display: flex !important;
+}
+
+.matchmaking-animation {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    background: transparent;
+}
+
+.pong-logo {
+    width: 120px;
+    height: 120px;
+    animation: float 3s ease-in-out infinite;
+    background: transparent;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Eliminar absolutamente todos los efectos y contenedores */
+.matchmaking-animation-container,
+.pong-logo-wrapper,
+.pong-logo-wrapper::before,
+.matchmaking-animation,
+.ping-circle,
+.pong-logo::before,
+.pong-logo::after {
+    all: unset !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+.pong-logo {
+    width: 100px;
+    height: 100px;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+}
+
+/* Eliminar los estilos antiguos del ping-circle ya que no lo usaremos */
+.ping-circle {
+    display: none;
+}
+
+/* Mejorar el aspecto del modal */
+.modal-content.bg-dark {
+    background: rgba(36, 36, 62, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+    backdrop-filter: blur(10px);
+}
+
+@keyframes ping {
+    0% {
+        width: 50px;
+        height: 50px;
+        opacity: 1;
+    }
+    100% {
+        width: 100px;
+        height: 100px;
+        opacity: 0;
+    }
+}
+
+/* Estilos específicos para el modal de matchmaking */
+.matchmaking-modal {
+    background: rgba(16, 19, 34, 0.7); /* Reducido de 0.95 a 0.7 */
+    backdrop-filter: blur(5px); /* Reducido de 10px a 5px para menor opacidad */
+}
+
+.matchmaking-modal-dialog {
+    max-width: 600px;  /* Aumentado de 400px a 600px */
+    margin: 1.75rem auto;
+}
+
+.matchmaking-modal-content {
+    background: linear-gradient(145deg, 
+        rgba(36, 36, 62, 0.85) 0%, /* Reducido de 0.98 a 0.85 */
+        rgba(25, 25, 45, 0.85) 100%); /* Reducido de 0.99 a 0.85 */
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3); /* Reducido de 0.5 a 0.3 */
+}
+
+.matchmaking-modal-body {
+    display: flex;
+    flex-direction: column;  /* Cambiado a column para apilar verticalmente */
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.logo-container {
+    margin-bottom: 1rem;  /* Espacio entre el logo y el texto */
+    flex-shrink: 0;
+}
+
+.matchmaking-info {
+    width: 100%;         /* Ocupa todo el ancho disponible */
+    max-width: 400px;    /* Limita el ancho máximo */
+    text-align: center;  /* Mantiene el texto centrado */
+}
+
+.matchmaking-info h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+}
+
+#cancelMatchmaking {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(255, 107, 107, 0.2);
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    z-index: 9999;
+    position: relative;
+}
+
+#cancelMatchmaking:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: rgba(255, 107, 107, 0.7);
+    transform: translateY(-2px);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Eliminar absolutamente todos los efectos y contenedores */
+.matchmaking-animation-container,
+.pong-logo-wrapper,
+.pong-logo-wrapper::before,
+.matchmaking-animation,
+.ping-circle,
+.pong-logo::before,
+.pong-logo::after {
+    all: unset !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+}
+
+.matchmaking-info {
+    text-align: center;
+}
+
+.matchmaking-info h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+}
+
+#cancelMatchmaking {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(255, 107, 107, 0.2);
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    z-index: 9999;
+    position: relative;
+}
+
+#cancelMatchmaking:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: rgba(255, 107, 107, 0.7);
+    transform: translateY(-2px);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Eliminar todos los estilos de contenedores y efectos adicionales */
+.matchmaking-animation-container,
+.pong-logo-wrapper,
+.pong-logo-wrapper::before,
+.matchmaking-animation,
+.ping-circle {
+    all: unset;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animación de pulso para el contenedor del logo */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(79, 172, 254, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(79, 172, 254, 0);
+    }
+}
+
+@keyframes rotatePulse {
+    0% {
+        transform: rotate(0deg) scale(0.8);
+        opacity: 0.5;
+    }
+    50% {
+        transform: rotate(180deg) scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: rotate(360deg) scale(0.8);
+        opacity: 0.5;
+    }
+}
+
+/* Eliminar los estilos antiguos */
+.modal, .modal.show, .ping-circle {
+    display: none;
+}
+
+/* Estilos del modal de matchmaking */
+.matchmaking-info h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.pong-logo .paddle,
+.pong-logo .ball {
+    fill: rgba(255, 255, 255, 0.9) !important;
+}
+
+#cancelMatchmaking {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(255, 107, 107, 0.2);
+    border: 2px solid rgba(255, 107, 107, 0.5);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    z-index: 9999;
+    position: relative;
+}
+
+#cancelMatchmaking:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: rgba(255, 107, 107, 0.7);
+    transform: translateY(-2px);
+}
+
+/* Nuevo estilo específico para el botón de cancelar */
+.cancel-matchmaking-btn {
+    display: block;
+    width: auto;
+    margin: 0 auto;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(220, 53, 69, 0.2);
+    border: 2px solid rgba(220, 53, 69, 0.5);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cancel-matchmaking-btn:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: rgba(220, 53, 69, 0.7);
+    transform: translateY(-2px);
+}
+
+/* Asegurar que el botón está por encima de otros elementos */
+.matchmaking-modal-body {
+    position: relative;
+    z-index: 1;
+}
+
+.logo-container {
+    position: relative;
+    z-index: 1;
+}
+
+.matchmaking-info {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.cancel-button {
+    width: auto;
+    min-width: 200px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(220, 53, 69, 0.2);
+    border: 2px solid rgba(220, 53, 69, 0.5);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 3;
+    text-align: center;
+    display: block;
+    margin-top: 1rem;
+}
+
+.cancel-button:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: rgba(220, 53, 69, 0.7);
+    transform: translateY(-2px);
+}
+
+.cancel-button:active {
+    transform: translateY(1px);
+}
+
+.matchmaking-modal {
+    pointer-events: auto !important;
+}
+
+.matchmaking-modal-content {
+    pointer-events: auto !important;
+}
+
+/* ...existing code... */
+
+.cancel-button {
+    display: inline-block;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(220, 53, 69, 0.2);
+    border: 2px solid rgba(220, 53, 69, 0.5);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 9999;
+    margin-top: 1rem;
+}
+
+.cancel-button:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: rgba(220, 53, 69, 0.7);
+    transform: translateY(-2px);
+}
+
+.cancel-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+}
+
+/* ...existing code... */
+
+.matchmaking-info h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: white;
+    font-weight: 600;
+}
+
+.matchmaking-description {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+/* Nuevos estilos para la transición de partida encontrada */
+.match-found-title {
+    color: #4facfe;
+    font-size: 2rem;
+    animation: pulseText 1s infinite;
+}
+
+.opponent-info {
+    margin: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.opponent-info .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    text-transform: uppercase;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.match-message {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes pulseText {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+/* ...existing code... */
+
+.match-found-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(36, 36, 62, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.match-found-content {
+    padding: 2rem;
+    text-align: center;
+    color: white;
+}
+
+.match-found-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: #4facfe;
+    animation: pulseText 1s infinite;
+}
+
+.players-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.vs-badge {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.pre-match-info {
+    margin-top: 2rem;
+}
+
+.controls-reminder {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+#preMatchCountdown {
+    font-size: 4rem;
+    font-weight: bold;
+    margin: 1rem 0;
+    animation: pulseText 1s infinite;
+}
+
+/* ...existing code... */
+
+/* Mejorar el estilo de la cuenta regresiva */
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8rem; /* Más grande */
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 
+        0 0 20px rgba(79, 172, 254, 0.5),
+        0 0 40px rgba(79, 172, 254, 0.3);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.countdown-pulse {
+    animation: countdownPulse 0.8s ease-in-out;
+}
+
+@keyframes countdownPulse {
+    0% { 
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+    100% { 
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+
+.countdown[textContent="GO!"] {
+    color: #4facfe;
+    font-size: 10rem; /* Más grande que los números */
+    text-shadow: 
+        0 0 30px rgba(79, 172, 254, 0.7),
+        0 0 50px rgba(79, 172, 254, 0.5);
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.match-found-content {
+    background: rgba(36, 36, 62, 0.95);
+    padding: 3rem;
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+    border: 1px solid rgba(79, 172, 254, 0.2);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
+}
+
+.match-found-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pulseText 1s infinite;
+}
+
+.players-vs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    margin: 2.5rem 0;
+}
+
+.player-card {
+    text-align: center;
+}
+
+.player-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 1rem;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.vs {
+    font-size: 2rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.controls-info {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+}
+
+.controls-info .keys {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4facfe;
+    margin-top: 0.5rem;
+}
+
+/* ...existing code... */
 

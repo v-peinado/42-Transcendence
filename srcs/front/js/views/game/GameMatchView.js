@@ -1,4 +1,5 @@
 import { loadHTML } from '../../utils/htmlLoader.js';
+import { soundService } from '../../services/SoundService.js';
 
 export async function GameMatchView(gameId) {
     console.log('Iniciando partida:', gameId);
@@ -46,55 +47,94 @@ export async function GameMatchView(gameId) {
         document.getElementById('gameStatus').textContent = '🎮 Conectado - Esperando oponente...';
     };
 
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type !== 'game_state') {
-            console.log('Mensaje recibido:', data);
-        }
+    async function showPreMatchSequence(player1, player2, playerSide) {
+        return new Promise(async (resolve) => {
+            const modal = document.getElementById('matchFoundModal');
+            const countdown = document.getElementById('countdown');
+            
+            // 1. Mostrar modal inicial
+            document.getElementById('player1NamePreMatch').textContent = player1;
+            document.getElementById('player2NamePreMatch').textContent = player2;
+            document.getElementById('playerControls').textContent = 
+                playerSide === 'left' ? 'W / S' : '↑ / ↓';
+            
+            modal.style.display = 'flex';
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // 2. Ocultar modal
+            modal.style.animation = 'fadeOut 0.5s ease-out';
+            await new Promise(r => setTimeout(r, 500));
+            modal.style.display = 'none';
+            
+            // 3. Mostrar cuenta regresiva grande con sonido y texto en inglés
+            for(let i = 3; i >= 0; i--) {
+                countdown.style.display = 'flex';
+                countdown.textContent = i === 0 ? 'GO!' : i.toString();
+                countdown.classList.remove('countdown-pulse');
+                void countdown.offsetWidth;
+                countdown.classList.add('countdown-pulse');
+                await soundService.playCountdown();
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            countdown.style.display = 'none';
+            
+            // 4. Señalar que la secuencia ha terminado
+            resolve();
+        });
+    }
 
+    let gameStarted = false; // Nueva variable de estado
+
+    socket.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+        console.log('Mensaje recibido:', data); // Debug
+        
         switch(data.type) {
             case 'game_start':
                 console.log('Game Start Data:', data);
-
-                // Asignar lado y actualizar UI de forma segura
+                
+                // 1. Configurar información inicial
                 if (userId && data.player1_id && data.player2_id) {
                     const player1Name = document.getElementById('player1Name');
                     const player2Name = document.getElementById('player2Name');
-                    const leftControls = document.getElementById('leftControls');
-                    const rightControls = document.getElementById('rightControls');
-                    const gameStatus = document.getElementById('gameStatus');
-
-                    // Actualizar nombres de ambos jugadores
+                    
                     if (player1Name) player1Name.textContent = data.player1;
                     if (player2Name) player2Name.textContent = data.player2;
 
                     if (userId === data.player1_id.toString()) {
                         playerSide = 'left';
-                        if (leftControls) leftControls.style.display = 'block';
-                        if (rightControls) rightControls.style.display = 'none';
                     } else if (userId === data.player2_id.toString()) {
                         playerSide = 'right';
-                        if (rightControls) rightControls.style.display = 'block';
-                        if (leftControls) leftControls.style.display = 'none';
                     }
+                }
 
-                    if (gameStatus) {
-                        gameStatus.textContent = '🔥 ¡Partida en curso!';
-                    }
+                // 2. Mostrar secuencia completa y esperar a que termine
+                await showPreMatchSequence(
+                    data.player1,
+                    data.player2,
+                    userId === data.player1_id.toString() ? 'left' : 'right'
+                );
 
-                    setupControls();
-                } else {
-                    console.error('Datos de jugador incompletos:', {
-                        userId, 
-                        player1Id: data.player1_id, 
-                        player2Id: data.player2_id
-                    });
+                // 3. Una vez terminada la secuencia, configurar controles y empezar el juego
+                setupControls();
+                
+                // 4. Marcar que el juego puede comenzar
+                gameStarted = true;
+                
+                // 5. Enviar señal de inicio
+                socket.send(JSON.stringify({
+                    type: 'start_game',
+                    game_id: gameId
+                }));
+                break;
+
+            case 'game_state':
+                // Simplificar la lógica de cuando procesar estados
+                if (gameStarted) {
+                    handleGameState(data.state);
                 }
                 break;
-            case 'game_state':
-                handleGameState(data.state);
-                break;
+
             case 'game_finished':
                 handleGameEnd(data);
                 break;
@@ -124,19 +164,13 @@ export async function GameMatchView(gameId) {
     }
 
     function handleGameState(state) {
+        // No necesitamos la comprobación de gameStarted aquí ya que lo hacemos arriba
         gameState = state;
         requestAnimationFrame(drawGame);
 
         // Actualizar marcador
         document.getElementById('player1Score').textContent = state.paddles.left.score;
         document.getElementById('player2Score').textContent = state.paddles.right.score;
-
-        // Mostrar cuenta regresiva si existe
-        if (state.countdown !== undefined) {
-            const countdown = document.getElementById('countdown');
-            countdown.style.display = 'block';
-            countdown.textContent = state.countdown;
-        }
     }
 
     function drawGame() {

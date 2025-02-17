@@ -101,4 +101,48 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal de Matchmaking -->
+    <div id="matchmakingModal" class="matchmaking-modal modal fade" tabindex="-1">
+        <div class="matchmaking-modal-dialog modal-dialog modal-dialog-centered">
+            <div class="matchmaking-modal-content">
+                <div class="matchmaking-modal-body">
+                    <div class="logo-container">
+                        <svg class="pong-logo" width="120" height="120" viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#fff;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#fff;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Cambiado el fondo a transparente -->
+                            <rect width="100" height="100" fill="transparent"/>
+                            <rect class="paddle" x="10" y="40" width="10" height="20" fill="url(#glowGradient)">
+                                <animate attributeName="height" values="20;40;20" dur="1s" repeatCount="indefinite"/>
+                            </rect>
+                            <circle class="ball" cx="50" cy="50" r="5" fill="#fff">
+                                <animate attributeName="cx" values="50;52;50" dur="0.5s" repeatCount="indefinite"/>
+                                <animate attributeName="cy" values="50;48;50" dur="0.5s" repeatCount="indefinite"/>
+                            </circle>
+                            <rect class="paddle" x="80" y="40" width="10" height="20" fill="url(#glowGradient)">
+                                <animate attributeName="height" values="40;20;40" dur="1s" repeatCount="indefinite"/>
+                            </rect>
+                        </svg>
+                    </div>
+                    <div class="matchmaking-info">
+                        <h4 id="modal-status-text">Buscando oponente...</h4>
+                        <p class="matchmaking-description">
+                            ¡Espera un momento mientras encontramos a otro jugador! 
+                            La partida comenzará automáticamente.
+                        </p>
+                        <button type="button" 
+                                class="cancel-button" 
+                                id="cancelMatchmaking">
+                            Cancelar búsqueda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

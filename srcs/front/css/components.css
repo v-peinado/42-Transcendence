@@ -137,6 +137,19 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     animation: buttonGlow 1.5s linear infinite;
 }
 
+/* Botones - Estilos base */
+.btn:not(.game-section .btn):not(.game-modes .btn):not(.game-over-screen .btn):not(.game-wrapper .fullscreen-btn) {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.btn:not(.game-section .btn):not(.game-modes .btn):not(.game-over-screen .btn):not(.game-wrapper .fullscreen-btn):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
 /* Botones sociales */
 .btn-social {
     transition: all 0.3s ease;
@@ -1277,4 +1290,58 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
 .site-footer .authors {
     color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
+}
+
+/* Botones de configuración específicos */
+.settings-card .btn {
+    padding: 0.75rem 1.25rem;
+    margin: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+/* Botón de 2FA */
+.btn-2fa {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-2fa:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+.btn-2fa.active {
+    background: rgba(25, 135, 84, 0.2);
+    border-color: rgba(25, 135, 84, 0.5);
+    color: #2ecc71;
+}
+
+.btn-2fa.active:hover {
+    background: rgba(25, 135, 84, 0.3);
+    border-color: rgba(25, 135, 84, 0.6);
+}
+
+/* Botón de QR */
+.btn-qr {
+    background: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-qr:hover {
+    background: rgba(13, 110, 253, 0.2);
+    border-color: rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+/* Contenedor de botones de settings */
+.settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
