@@ -1,13 +1,13 @@
 FROM postgres:17
 
-# Copy scripts and config files
-COPY config/setup.sh /usr/local/bin/
+# Set only essential postgres configuration
+ENV POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256 --auth-local=trust --data-checksums"
+
+# Copy config files
 COPY config/init-db.sh /docker-entrypoint-initdb.d/
-COPY config/pg_hba.conf /docker-entrypoint-initdb.d/
+COPY config/pg_hba.conf /tmp/
 
-# Set execute permissions and prepare data directory
-RUN chmod +x /usr/local/bin/setup.sh \
-	&& chmod +x /docker-entrypoint-initdb.d/init-db.sh \
-	&& mkdir -p /var/lib/postgresql/data
-
-# Let PostgreSQL handle user permissions
+# Set secure permissions and ownership
+RUN chmod 755 /docker-entrypoint-initdb.d/init-db.sh && \
+	chown -R postgres:postgres /docker-entrypoint-initdb.d/ && \
+	chown postgres:postgres /tmp/pg_hba.conf
