@@ -35,6 +35,25 @@ for module in "${REQUIRED_MODULES[@]}"; do
     source "$module"
 done
 
+wait_for_nginx() {
+    echo "Waiting for Nginx to be ready..."
+    local max_attempts=30
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if nc -z nginx 8443 2>/dev/null; then
+            echo "✅ Nginx is ready"
+            return 0
+        fi
+        echo "⏳ Attempt $attempt of $max_attempts - Waiting for Nginx..."
+        attempt=$((attempt + 1))
+        sleep 2
+    done
+
+    echo "⚠️ Warning: Nginx not ready, but continuing..."
+    return 0  # Continue even if Nginx is not ready
+}
+
 # Main setup function
 setup() {
     # Start Vault server
@@ -57,6 +76,9 @@ setup() {
     
     # Store secrets
     store_secrets
+    
+    # Wait for nginx to be ready before starting the proxy
+    wait_for_nginx
     
     # Start nginx after everything is ready
     nginx -g 'daemon off;'

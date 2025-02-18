@@ -15,7 +15,8 @@ RUN apt-get update && \
 	libmodsecurity3 \
 	modsecurity-crs \
 	jq \
-	bash && \
+	bash \
+	netcat-traditional && \
 	curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
 	unzip vault.zip && \
 	mv vault /usr/local/bin/ && \

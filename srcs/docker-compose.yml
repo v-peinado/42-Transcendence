@@ -38,6 +38,16 @@ services:
       - type: bind
         source: ./postgres_data
         target: /var/lib/postgresql/data
+      - ssl_certs:/tmp/ssl:ro
+    depends_on:
+      waf:
+        condition: service_healthy
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        /usr/local/bin/get-vault-secrets.sh
+        docker-entrypoint.sh postgres
     env_file:
       - .env
     restart: always
@@ -69,13 +79,13 @@ services:
       - ssl_certs:/tmp/ssl:rw
     depends_on:
       - web
-      - waf
     restart: always
     healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8443/health" ]
-      interval: 30s
-      timeout: 10s
+      test: [ "CMD", "curl", "-k", "--fail", "https://localhost:8443/health" ]
+      interval: 10s
+      timeout: 5s
       retries: 3
+      start_period: 5s
 
   waf:
     build:
@@ -96,7 +106,9 @@ services:
       - .env
     restart: always
     healthcheck:
-      test: [ "CMD", "curl", "-k", "https://localhost:8200/v1/sys/health" ]
+      test:
+        - "CMD-SHELL"
+        - "curl -k https://localhost:8200/v1/sys/health && curl -k --fail --max-time 1 https://nginx:8443/health || exit 0"
       interval: 10s
       timeout: 5s
       retries: 3
