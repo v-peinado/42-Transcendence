@@ -92,37 +92,23 @@ export async function GameMatchView(gameId) {
             case 'game_start':
                 console.log('Game Start Data:', data);
                 
-                // Configurar información inicial
-                if (userId && data.player1_id && data.player2_id) {
-                    // Actualizar nombres en los controles del header
-                    const player1Name = document.querySelector('.control-info.left .player-name');
-                    const player2Name = document.querySelector('.control-info.right .player-name');
-                    
-                    if (player1Name) player1Name.textContent = data.player1;
-                    if (player2Name) player2Name.textContent = data.player2;
+                // Actualizar nombres en todos los lugares necesarios
+                document.querySelector('#player1NamePreMatch').textContent = data.player1;
+                document.querySelector('#player2NamePreMatch').textContent = data.player2;
+                document.querySelector('#leftPlayerName').textContent = data.player1;
+                document.querySelector('#rightPlayerName').textContent = data.player2;
 
-                    // Asignar lado del jugador
-                    if (userId === data.player1_id.toString()) {
-                        playerSide = 'left';
-                    } else if (userId === data.player2_id.toString()) {
-                        playerSide = 'right';
-                    }
+                // Asignar lado del jugador
+                if (userId === data.player1_id.toString()) {
+                    playerSide = 'left';
+                } else if (userId === data.player2_id.toString()) {
+                    playerSide = 'right';
                 }
 
-                // 2. Mostrar secuencia completa y esperar a que termine
-                await showPreMatchSequence(
-                    data.player1,
-                    data.player2,
-                    userId === data.player1_id.toString() ? 'left' : 'right'
-                );
-
-                // 3. Una vez terminada la secuencia, configurar controles y empezar el juego
+                await showPreMatchSequence(data.player1, data.player2, playerSide);
                 setupControls();
-                
-                // 4. Marcar que el juego puede comenzar
                 gameStarted = true;
                 
-                // 5. Enviar señal de inicio
                 socket.send(JSON.stringify({
                     type: 'start_game',
                     game_id: gameId

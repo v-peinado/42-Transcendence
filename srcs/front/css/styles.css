@@ -5,3 +5,6 @@
 @import 'pages.css';
 @import 'chat.css';
 @import 'game.css';
+@import 'game-modes.css';
+@import 'matchmaking.css';
+@import 'buttons.css';

@@ -1,29 +1,30 @@
 <div class="hero-section game-section">
     <div class="game-wrapper">
-        <div class="game-header">
-            <div class="control-info left">
-                <div class="player-name" id="player1Name">Jugador 1</div>
-                <div class="keys">
-                    <span class="key">W</span>
-                    <span class="key">S</span>
-                </div>
-            </div>
-
-            <div class="minimal-header">
-                <div class="player-score left" id="player1Score">0</div>
-                <div class="score-divider"></div>
-                <div class="player-score right" id="player2Score">0</div>
-            </div>
-
-            <div class="control-info right">
-                <div class="player-name" id="player2Name">Jugador 2</div>
-                <div class="keys">
-                    <span class="key">↑</span>
-                    <span class="key">↓</span>
-                </div>
+        <!-- Control izquierdo -->
+        <div class="side-control left">
+            <span class="player-name" id="leftPlayerName"></span>
+            <div class="control-keys">
+                <span class="key">W</span>
+                <span class="key">S</span>
             </div>
         </div>
-        
+
+        <!-- Puntuación central -->
+        <div class="minimal-header">
+            <div class="player-score">0</div>
+            <div class="score-divider"></div>
+            <div class="player-score">0</div>
+        </div>
+
+        <!-- Control derecho -->
+        <div class="side-control right">
+            <span class="player-name" id="rightPlayerName"></span>
+            <div class="control-keys">
+                <span class="key">↑</span>
+                <span class="key">↓</span>
+            </div>
+        </div>
+
         <canvas id="gameCanvas"></canvas>
         
         <button id="fullscreenBtn" class="fullscreen-btn" title="Pantalla completa (ESC para salir)">
@@ -43,18 +44,19 @@
             </div>
         </div>
         
+        <!-- Modal de partida encontrada -->
         <div id="matchFoundModal" class="match-found-screen">
             <div class="match-found-content">
                 <h2>¡Partida encontrada!</h2>
                 <div class="players-vs">
                     <div class="player-card">
                         <div class="player-avatar"></div>
-                        <h3 id="player1NamePreMatch">Jugador 1</h3>
+                        <h3 id="player1NamePreMatch"></h3>
                     </div>
                     <div class="vs">VS</div>
                     <div class="player-card">
                         <div class="player-avatar"></div>
-                        <h3 id="player2NamePreMatch">Jugador 2</h3>
+                        <h3 id="player2NamePreMatch"></h3>
                     </div>
                 </div>
                 <div class="controls-info">
