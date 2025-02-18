@@ -25,8 +25,9 @@ else
     DOCKER_SOCKET=/var/run/docker.sock
 endif
 
-all: create_postgres_data_dir up help
-
+all: help
+	@echo "Por favor: para levantarlo usa $(COLOR_GREEN)docker-compose up --build$(COLOR_RESET) desde /srcs, make está inhabilitado!!!!$(COLOR_RESET)"
+	@echo ""
 # Configurar Docker rootless en Linux
 configure-rootless:
 ifeq ($(UNAME_S),Linux)

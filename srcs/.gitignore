@@ -1,0 +1,11 @@
+# env
+#.env
+#.env.*
+
+# database
+postgres_data/
+
+# Logs and temporary files
+*.log
+*.tmp
+

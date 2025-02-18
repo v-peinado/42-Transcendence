@@ -79,6 +79,7 @@ initialize_vault() {
         
         log_message "Unsealing Vault..."
         vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
+		vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1	# Double unseal to ensure it's unsealed
         if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             vault login "$ROOT_TOKEN"
         else
@@ -111,9 +112,7 @@ configure_vault() {
 configure_policies() {
     # Create required directories first
     mkdir -p /tmp/ssl
-    mkdir -p /etc/vault.d/data
     chmod 755 /tmp/ssl
-    chmod 755 /etc/vault.d/data
 
     # Configure access policies for Django with simpler and more permissive rules
     vault policy write django - <<EOF
@@ -130,11 +129,17 @@ EOF
         -policy=django \
         -display-name=django \
         -ttl=720h \
-        -format=json | jq -r '.auth.client_token' 2>/dev/null)
+        -format=json | jq -r '.auth.client_token')
 
     if [ -n "$DJANGO_TOKEN" ]; then
-        echo "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
+        echo "Creating token file..."
+        mkdir -p "/tmp/ssl"
+        chmod 755 "/tmp/ssl"
+        echo -n "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
         chmod 644 "/tmp/ssl/django_token"
+        ls -la "/tmp/ssl/django_token"
+        chown root:root "/tmp/ssl/django_token"
+        ls -l "/tmp/ssl/django_token" || echo "Failed to verify token file"
         
         if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             log_message "Created Django token with value: $DJANGO_TOKEN"
