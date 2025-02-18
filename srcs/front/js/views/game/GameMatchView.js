@@ -192,40 +192,64 @@ export async function GameMatchView(gameId) {
     }
 
     function handleGameEnd(data) {
-        const isWinner = data.winner === playerSide;
         const gameOverScreen = document.getElementById('gameOverScreen');
         const winnerText = document.getElementById('winnerText');
-        const finalScore = document.getElementById('finalScore');
+        const resultIcon = document.querySelector('.result-icon i');
+        const player1Score = document.querySelector('.player1-score');
+        const player2Score = document.querySelector('.player2-score');
         
-        if (isWinner) {
-            winnerText.textContent = '🏆 ¡Victoria!';
-            winnerText.className = 'winner-text victory';
+        // Actualizar nombres finales
+        document.getElementById('finalPlayer1Name').textContent = data.player1;
+        document.getElementById('finalPlayer2Name').textContent = data.player2;
+        
+        // Actualizar puntuaciones
+        player1Score.textContent = data.final_score.left;
+        player2Score.textContent = data.final_score.right;
+        
+        // Configurar estilo según victoria/derrota
+        if (data.winner === playerSide) {
+            gameOverScreen.classList.add('victory');
+            gameOverScreen.classList.remove('defeat');
+            winnerText.textContent = '¡Victoria!';
+            resultIcon.className = 'fas fa-trophy';
         } else {
-            winnerText.textContent = '💔 Derrota';
-            winnerText.className = 'winner-text defeat';
+            gameOverScreen.classList.add('defeat');
+            gameOverScreen.classList.remove('victory');
+            winnerText.textContent = 'Derrota';
+            resultIcon.className = 'fas fa-flag'; // Cambiamos el icono a uno más elegante
         }
         
-        finalScore.innerHTML = `
-            <div class="score-detail">
-                <span class="score-label">Puntuación Final:</span>
-                <span class="score-numbers">${data.final_score.left} - ${data.final_score.right}</span>
-            </div>
-        `;
-        
-        gameOverScreen.style.display = 'flex';
-
-        // Detener controles
-        if (movementInterval) {
-            clearInterval(movementInterval);
-            movementInterval = null;
-        }
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keyup', handleKeyUp);
-
-        // Añadir evento al botón de retorno
-        document.getElementById('returnToLobby').onclick = () => {
+        // Configurar el botón de retorno
+        const returnButton = document.getElementById('returnToLobby');
+        returnButton.onclick = () => {
             window.location.href = '/game';
         };
+        
+        gameOverScreen.style.display = 'flex';
+        
+        // Animaciones de números
+        animateScore(player1Score, data.final_score.left);
+        animateScore(player2Score, data.final_score.right);
+    }
+
+    function animateScore(element, finalScore) {
+        let start = 0;
+        const duration = 1000;
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const current = Math.floor(progress * finalScore);
+            element.textContent = current;
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
     }
 
     function handleKeyDown(e) {

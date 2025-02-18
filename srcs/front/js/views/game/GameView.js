@@ -36,7 +36,7 @@ export default async function GameView() {
             cancelMatchmakingBtn: document.getElementById('cancelMatchmaking')
         };
 
-        // Función mejorada para mostrar/ocultar el modal
+        // Eliminar el código del timer
         const showMatchmakingModal = (show) => {
             if (show) {
                 elements.modal.classList.add('show');

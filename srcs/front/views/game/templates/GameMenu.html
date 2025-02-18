@@ -103,19 +103,25 @@
 
         <!-- Modal de matchmaking -->
         <div class="modal matchmaking-modal" id="matchmakingModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered matchmaking-modal-dialog">
-                <div class="modal-content matchmaking-modal-content">
-                    <div class="modal-body matchmaking-modal-body">
-                        <div class="logo-container">
-                            <div class="pong-logo-wrapper">
-                                <img src="/img/pong-logo.svg" alt="Pong Logo" class="pong-logo">
-                                <div class="ping-circle"></div>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-body text-center">
+                        <div class="matchmaking-content">
+                            <div class="search-status">
+                                <div class="matchmaking-logo-wrapper">
+                                    <img src="/public/pong-logo.svg" alt="Pong Logo" class="matchmaking-logo">
+                                </div>
+                                <div class="search-indicator">
+                                    <div class="ping-circle"></div>
+                                </div>
+                                <h3>Buscando partida</h3>
+                                <div id="modal-status-text" class="status-message">
+                                    <span id="search-time">0:00</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="matchmaking-info">
-                            <h4>Buscando oponente...</h4>
-                            <div id="modal-status-text">Conectando al servidor...</div>
-                            <button id="cancelMatchmaking" class="cancel-button">Cancelar búsqueda</button>
+                            <button id="cancelMatchmaking" class="btn-cancel">
+                                Cancelar
+                            </button>
                         </div>
                     </div>
                 </div>

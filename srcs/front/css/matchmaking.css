@@ -1,240 +1,107 @@
-/* Matchmaking Modal Styles */
 .matchmaking-modal {
-    background: rgba(16, 19, 34, 0.7);
-    backdrop-filter: blur(5px);
-}
-
-.matchmaking-modal-dialog {
-    max-width: 600px;
-    margin: 1.75rem auto;
-}
-
-.matchmaking-modal-content {
-    background: linear-gradient(145deg, 
-        rgba(36, 36, 62, 0.85) 0%,
-        rgba(25, 25, 45, 0.85) 100%);
-    border: 1px solid rgba(79, 172, 254, 0.2);
-    border-radius: 20px;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
-}
-
-/* Matchmaking Content */
-.matchmaking-info {
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
-
-.matchmaking-info h4 {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: 600;
-}
-
-.matchmaking-description {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
-    line-height: 1.4;
-}
-
-/* Cancel Button */
-#cancelMatchmaking {
-    padding: 0.8rem 2rem;
-    font-size: 1rem;
-    font-weight: 500;
-    color: white;
-    background: rgba(255, 107, 107, 0.2);
-    border: 2px solid rgba(255, 107, 107, 0.5);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-    z-index: 9999;
-}
-
-#cancelMatchmaking:hover {
-    background: rgba(255, 107, 107, 0.3);
-    border-color: rgba(255, 107, 107, 0.7);
-    transform: translateY(-2px);
-}
-
-/* Match Found Screen */
-.match-found-screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(36, 36, 62, 0.95);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s ease-out;
-}
-
-.match-found-content {
-    padding: 3rem;
-    border-radius: 20px;
-    text-align: center;
-    color: white;
-    border: 1px solid rgba(79, 172, 254, 0.2);
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
-}
-
-.players-vs {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3rem;
-    margin: 2.5rem 0;
-}
-
-/* Match Found Styles adicionales */
-.player-card {
-    text-align: center;
-}
-
-.player-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    color: white;
-    margin-bottom: 1rem;
-    animation: scaleIn 0.5s ease-out;
-}
-
-.vs {
-    font-size: 2rem;
-    font-weight: bold;
-    color: rgba(255, 255, 255, 0.6);
-}
-
-.controls-info {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
-}
-
-.controls-info .keys {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #4facfe;
-    margin-top: 0.5rem;
-}
-
-/* Estado de matchmaking */
-.matchmaking-status {
-    background: rgba(33, 37, 41, 0.95);
-    border: 1px solid rgba(13, 110, 253, 0.2);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-top: 1.5rem;
+    background: rgba(16, 19, 34, 0.95);
     backdrop-filter: blur(10px);
 }
 
-.status-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    color: white;
+.matchmaking-modal-dialog {
+    max-width: 400px;
+    margin: 2rem auto;
 }
 
-#status {
-    background: rgba(13, 110, 253, 0.2);
-    border: none;
-    color: white;
+.matchmaking-modal-content {
+    background: rgba(33, 37, 41, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
 }
 
-#playersCount {
-    font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.8);
+.modal-body {
+    padding: 2.5rem;
 }
 
-/* Estilos del logo animado */
-.pong-logo-wrapper {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto;
+/* Logo - usando nombre de clase más específico */
+.matchmaking-logo-wrapper {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.pong-logo {
-    width: 100px;
-    height: 100px;
-    animation: float 3s ease-in-out infinite;
+.matchmaking-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+    animation: floatLogo 3s ease-in-out infinite;
 }
 
-/* Match Found Info */
-.match-found-title {
-    color: #4facfe;
-    font-size: 2rem;
-    animation: pulseText 1s infinite;
+/* Content */
+.matchmaking-content {
+    text-align: center;
 }
 
-.opponent-info {
-    margin: 2rem 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+.search-status {
+    margin-bottom: 2rem;
 }
 
-.match-message {
+.search-status h4 {
+    font-size: 1.6rem;
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+#modal-status-text {
     color: rgba(255, 255, 255, 0.9);
     font-size: 1.1rem;
-    animation: fadeIn 0.5s ease-out;
+    margin: 1.5rem 0;
 }
 
-.pre-match-info {
-    margin-top: 2rem;
-}
-
-.controls-reminder {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.1);
+/* Cancel button */
+#cancelMatchmaking {
+    padding: 0.8rem 2rem;
+    width: auto;
+    min-width: 180px;
+    font-size: 0.9rem;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
     border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 1rem auto 0;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
-#preMatchCountdown {
-    font-size: 4rem;
-    font-weight: bold;
-    margin: 1rem 0;
-    animation: pulseText 1s infinite;
+#cancelMatchmaking:hover {
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
+#cancelMatchmaking:active {
+    transform: translateY(1px);
 }
 
 /* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+@keyframes floatLogo {
+    0%, 100% { 
+        transform: translateY(0) rotate(0deg); 
+    }
+    50% { 
+        transform: translateY(-10px) rotate(2deg); 
+    }
 }
 
-@keyframes pulseText {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-body {
+        padding: 1.5rem;
+    }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-}
-
-@keyframes scaleIn {
-    from { transform: scale(0); }
-    to { transform: scale(1); }
+    .search-status h4 {
+        font-size: 1.4rem;
+    }
 }
