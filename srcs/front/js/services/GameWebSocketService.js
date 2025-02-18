@@ -94,38 +94,16 @@ class GameWebSocketService {
         this.isSearching = false;
         localStorage.removeItem('matchmaking_active');
         
-        // Nueva secuencia de transición
-        this.updateStatus('¡Partida encontrada!', 'success');
-        
-        // Mostrar info del oponente
-        const opponentInfo = data.opponent || { username: 'Oponente' };
-        await this.showMatchFoundSequence(opponentInfo);
-        
-        // Redirección
-        window.history.pushState(null, '', `/game/${data.game_id}`);
-        window.dispatchEvent(new PopStateEvent('popstate'));
-    }
-
-    async showMatchFoundSequence(opponent) {
+        // Solo reproducir el sonido y redirigir
         try {
-            // Reproducir sonido de match found
             await soundService.playMatchFound();
         } catch (e) {
             console.log('Audio no soportado');
         }
         
-        const modalContent = document.querySelector('.matchmaking-info');
-        modalContent.innerHTML = `
-            <h4 class="match-found-title">¡Partida encontrada!</h4>
-            <div class="opponent-info">
-                <div class="avatar">${opponent.username.charAt(0)}</div>
-                <h5>${opponent.username}</h5>
-            </div>
-            <p class="match-message">La partida comenzará en 3 segundos...</p>
-        `;
-        
-        // Esperar 3 segundos antes de la redirección
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Redirección inmediata
+        window.history.pushState(null, '', `/game/${data.game_id}`);
+        window.dispatchEvent(new PopStateEvent('popstate'));
     }
 
     send(message) {

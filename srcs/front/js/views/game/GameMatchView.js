@@ -51,22 +51,22 @@ export async function GameMatchView(gameId) {
         return new Promise(async (resolve) => {
             const modal = document.getElementById('matchFoundModal');
             const countdown = document.getElementById('countdown');
-            
+                
             // 1. Mostrar modal inicial
             document.getElementById('player1NamePreMatch').textContent = player1;
             document.getElementById('player2NamePreMatch').textContent = player2;
             document.getElementById('playerControls').textContent = 
                 playerSide === 'left' ? 'W / S' : '↑ / ↓';
-            
+                
             modal.style.display = 'flex';
             await new Promise(r => setTimeout(r, 2000));
-            
+                
             // 2. Ocultar modal
             modal.style.animation = 'fadeOut 0.5s ease-out';
             await new Promise(r => setTimeout(r, 500));
             modal.style.display = 'none';
-            
-            // 3. Mostrar cuenta regresiva grande con sonido y texto en inglés
+                
+            // 3. Mostrar cuenta regresiva
             for(let i = 3; i >= 0; i--) {
                 countdown.style.display = 'flex';
                 countdown.textContent = i === 0 ? 'GO!' : i.toString();
@@ -77,8 +77,7 @@ export async function GameMatchView(gameId) {
                 await new Promise(r => setTimeout(r, 1000));
             }
             countdown.style.display = 'none';
-            
-            // 4. Señalar que la secuencia ha terminado
+                
             resolve();
         });
     }
@@ -93,14 +92,16 @@ export async function GameMatchView(gameId) {
             case 'game_start':
                 console.log('Game Start Data:', data);
                 
-                // 1. Configurar información inicial
+                // Configurar información inicial
                 if (userId && data.player1_id && data.player2_id) {
-                    const player1Name = document.getElementById('player1Name');
-                    const player2Name = document.getElementById('player2Name');
+                    // Actualizar nombres en los controles del header
+                    const player1Name = document.querySelector('.control-info.left .player-name');
+                    const player2Name = document.querySelector('.control-info.right .player-name');
                     
                     if (player1Name) player1Name.textContent = data.player1;
                     if (player2Name) player2Name.textContent = data.player2;
 
+                    // Asignar lado del jugador
                     if (userId === data.player1_id.toString()) {
                         playerSide = 'left';
                     } else if (userId === data.player2_id.toString()) {

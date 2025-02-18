@@ -1,22 +1,35 @@
 <div class="hero-section game-section">
     <div class="game-wrapper">
         <div class="game-header">
-            <div class="player-info">
-                <div id="player1Name" class="player-name">Jugador 1</div>
-                <div id="leftControls" class="controls-info">[W] Arriba | [S] Abajo</div>
+            <div class="control-info left">
+                <div class="player-name" id="player1Name">Jugador 1</div>
+                <div class="keys">
+                    <span class="key">W</span>
+                    <span class="key">S</span>
+                </div>
             </div>
-            <div class="player-info">
-                <div id="player2Name" class="player-name">Jugador 2</div>
-                <div id="rightControls" class="controls-info">[↑] Arriba | [↓] Abajo</div>
+
+            <div class="minimal-header">
+                <div class="player-score left" id="player1Score">0</div>
+                <div class="score-divider"></div>
+                <div class="player-score right" id="player2Score">0</div>
+            </div>
+
+            <div class="control-info right">
+                <div class="player-name" id="player2Name">Jugador 2</div>
+                <div class="keys">
+                    <span class="key">↑</span>
+                    <span class="key">↓</span>
+                </div>
             </div>
         </div>
         
         <canvas id="gameCanvas"></canvas>
-        <div class="score" id="player1Score">0</div>
-        <div class="score" id="player2Score">0</div>
+        
         <button id="fullscreenBtn" class="fullscreen-btn" title="Pantalla completa (ESC para salir)">
             <i class="fas fa-expand"></i>
         </button>
+        
         <div id="countdown" class="countdown" style="display: none;"></div>
         <div id="gameOverScreen" class="game-over-screen" style="display: none;">
             <div class="game-over-content">
@@ -25,6 +38,7 @@
                 <button id="returnToLobby" class="btn btn-primary">Volver al Menú Principal</button>
             </div>
         </div>
+        
         <div id="matchFoundModal" class="match-found-screen">
             <div class="match-found-content">
                 <h2>¡Partida encontrada!</h2>
