@@ -275,6 +275,8 @@
                     alert(data.username + " desbloqueado con éxito.");
                 } else if (data.type === 'blocked') {
                     alert(data.username + " bloqueado con éxito.");
+                } else if (data.type === 'challenge_action') {
+                    this.handleChallengeAction(data);
                 }
             }
 
@@ -375,7 +377,21 @@
                     return;
                 }
                 privateChannelList.innerHTML = '';
-        
+            
+                const activeChannels = new Set(channels.map(channel => {
+                    const userIds = channel.members.map(m => m.id).sort((a, b) => a - b);
+                    return `dm_${userIds[0]}_${userIds[1]}`;
+                }));
+            
+                // Eliminar ventanas de chat privado de canales que ya no están en la lista
+                this.opennedChats.forEach(channelName => {
+                    if (!activeChannels.has(channelName)) {
+                        const userIds = channelName.split('_').slice(1).map(Number);
+                        const otherUserId = userIds.find(id => id !== this.userId);
+                        this.closePrivateChat(otherUserId);
+                    }
+                });
+            
                 if (channels && Array.isArray(channels)) {
                     channels.forEach(channel => {
                         // Buscar el "otro" usuario
@@ -384,14 +400,14 @@
                         if (!otherMember) {
                             return; // Si no hay otro miembro, saltar
                         }
-        
+            
                         const channelItem = document.createElement('li');
                         channelItem.classList.add('canal-privado-item');
-        
+            
                         // Nombre del canal (por ejemplo: dm_1_2)
                         const channelName = document.createElement('span');
                         channelName.textContent = "Conversacion con " + otherMember.username;
-        
+            
                         // Botón para abrir el chat
                         const openChannelButton = document.createElement('button');
                         openChannelButton.textContent = 'Abrir Canal';
@@ -407,7 +423,7 @@
                         deleteChannelButton.addEventListener('click', () => {
                             this.deletePrivateChat(otherMember.id, channel.id, channel.name);
                         });
-        
+            
                         channelItem.appendChild(channelName);
                         channelItem.appendChild(openChannelButton);
                         channelItem.appendChild(deleteChannelButton);
@@ -422,20 +438,21 @@
             openPrivateChat(userId, username) {
                 const tabs = document.getElementById('private-chat-tabs');
                 const contents = document.getElementById('private-chat-contents');
-        
+            
                 const userIds = [this.userId, userId].sort((a, b) => a - b);
                 const channelName = `dm_${userIds[0]}_${userIds[1]}`;
-        
+            
                 if (this.opennedChats.has(channelName)) {
                     document.getElementById(`tab-${channelName}`).click();
                     return;
                 }
-        
+            
                 this.opennedChats.add(channelName);
-        
+            
+                // Crear la pestaña y el panel de contenido
                 const tabId = `tab-${channelName}`;
                 const contentId = `content-${channelName}`;
-        
+            
                 const newTab = document.createElement('a');
                 newTab.className = 'nav-item nav-link';
                 newTab.id = tabId;
@@ -443,7 +460,7 @@
                 newTab.setAttribute('data-bs-toggle', 'tab');
                 newTab.innerText = `Chat con ${username}`;
                 tabs.appendChild(newTab);
-        
+            
                 const newContent = document.createElement('div');
                 newContent.className = 'tab-pane fade';
                 newContent.id = contentId;
@@ -452,11 +469,14 @@
                     <input id="campo-texto-${channelName}" class="form-control mt-2" type="text" placeholder="Nuevo mensaje...">
                     <button class="btn btn-primary btn-block mt-2" onclick="chatApp.sendMessage(document.getElementById('campo-texto-${channelName}'), '${channelName}')">Enviar</button>
                     <button class="btn btn-danger btn-block mt-2" onclick="chatApp.closePrivateChat('${userId}')">Cerrar</button>
+                    <button class="btn btn-success btn-block mt-2" onclick="chatApp.sendChallenge('${channelName}', '${username}')">Invitar a jugar</button>
                 `;
                 contents.appendChild(newContent);
-        
+            
+                // Activar la nueva pestaña
                 newTab.click();
-        
+            
+                // Manejar “Enter” en el input
                 const campoPrivado = document.getElementById(`campo-texto-${channelName}`);
                 if (campoPrivado) {
                     campoPrivado.addEventListener('keyup', (e) => {
@@ -466,7 +486,7 @@
                         }
                     });
                 }
-        
+            
                 // Enviar solicitud al servidor para crear el canal privado
                 const messageData = {
                     type: 'create_private_channel',
@@ -475,6 +495,116 @@
                 };
                 this.chatSocket.send(JSON.stringify(messageData));
             }
+
+            sendChallenge(channelName, username) {
+                const messageData = {
+                  type: 'challenge_action',
+                  action: 'challenge', // antes era type: 'challenge'
+                  channel_name: channelName,
+                  from_user_id: this.userId,
+                  to_username: username
+                };
+                console.log('Sending challenge:', messageData);
+                this.chatSocket.send(JSON.stringify(messageData));
+              
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = `Has invitado a ${username} a jugar. Esperando respuesta...`;
+                document.getElementById(`chat-log-${channelName}`).appendChild(msgDiv);
+              }
+
+              handleChallengeAction(data) {
+                // data.action puede ser 'challenge', 'accept', 'reject'
+                switch (data.action) {
+                  case 'challenge': {
+                    // Equivale a lo que hacía antes handleChallenge
+                    if (data.from_user_id === this.userId) return;
+                    const chatLog = document.getElementById(`chat-log-${data.channel_name}`);
+                    if (!chatLog) {
+                        // Abrir la ventana de chat privado si no está abierta
+                        this.openPrivateChat(data.from_user_id, data.from_username);
+                    }
+                            
+                    const msgDiv = document.createElement('div');
+                    msgDiv.textContent = `${data.from_username} te invita a jugar.`;
+              
+                    const acceptBtn = document.createElement('button');
+                    acceptBtn.textContent = 'Aceptar';
+                    acceptBtn.onclick = () => {
+                      msgDiv.textContent = `Has aceptado el reto de ${data.from_username}`;
+                      this.chatSocket.send(JSON.stringify({
+                        type: 'challenge_action',
+                        action: 'accept',
+                        channel_name: data.channel_name,
+                        from_user_id: this.userId,
+                        from_username: this.username,
+                        to_user_id: data.from_user_id,
+                        to_username: data.from_username
+                      }));
+                    };
+              
+                    const rejectBtn = document.createElement('button');
+                    rejectBtn.textContent = 'Rechazar';
+                    rejectBtn.onclick = () => {
+                      msgDiv.textContent = `Has rechazado el reto de ${data.from_username}`;
+                      this.chatSocket.send(JSON.stringify({
+                        type: 'challenge_action',
+                        action: 'reject',
+                        channel_name: data.channel_name,
+                        from_user_id: this.userId,
+                        from_username: this.username,
+                        to_user_id: data.from_user_id,
+                        to_username: data.from_username
+                      }));
+                    };
+              
+                    msgDiv.appendChild(document.createElement('br'));
+                    msgDiv.appendChild(acceptBtn);
+                    msgDiv.appendChild(rejectBtn);
+                    chatLog.appendChild(msgDiv);
+              
+                    // Rechazar automáticamente tras 10 segundos
+                    setTimeout(() => {
+                      if (msgDiv.contains(acceptBtn)) {
+                        msgDiv.textContent = `Has rechazado el reto de ${data.from_username} (tiempo agotado)`;
+                        this.chatSocket.send(JSON.stringify({
+                          type: 'challenge_action',
+                          action: 'reject',
+                          channel_name: data.channel_name,
+                          from_user_id: this.userId,
+                          from_username: this.username,
+                          to_user_id: data.from_user_id,
+                          to_username: data.from_username
+                        }));
+                      }
+                    }, 10000);
+                    break;
+                  }
+                  case 'accept': {
+                    // Equivale a lo que hacía antes handleAcceptChallenge
+                    const chatLog = document.getElementById(`chat-log-${data.channel_name}`);
+                    if (!chatLog) return;
+                    const msgDiv = document.createElement('div');
+                    msgDiv.textContent = `${data.to_username} ha aceptado tu invitación :)`;
+                    if (data.game_id) {
+                      window.location.href = `/game/game/${data.game_id}/`;
+                    }
+                    chatLog.appendChild(msgDiv);
+                    break;
+                  }
+                  case 'reject': {
+                    // Equivale a lo que hacía antes handleRejectChallenge
+                    if (data.from_user_id === this.userId) return;
+                    const chatLog = document.getElementById(`chat-log-${data.channel_name}`);
+                    if (!chatLog) return;
+                    const msgDiv = document.createElement('div');
+                    msgDiv.textContent = `${data.to_username} ha rechazado tu invitación :(`;
+                    chatLog.appendChild(msgDiv);
+                    break;
+                  }
+                  default:
+                    break;
+                }
+              }
         
             closePrivateChat(userId) {
                 const userIds = [this.userId, userId].sort((a, b) => a - b);
@@ -760,12 +890,6 @@
                             this.sendFriendRequest(user.id);
                         });
     
-                        const playButton = document.createElement('button');
-                        playButton.textContent = 'Jugar';
-                        playButton.addEventListener('click', () => {
-                            alert(`Jugar con ${user.username}`);
-                        });
-    
                         const blockButton = document.createElement('button');
                         blockButton.textContent = 'Bloquear';
                         blockButton.addEventListener('click', () => {
@@ -785,7 +909,6 @@
                         });
     
                         dropdownContent.appendChild(addFriendButton);
-                        dropdownContent.appendChild(playButton);
                         dropdownContent.appendChild(blockButton);
                         dropdownContent.appendChild(privateMessageButton);
                         dropdownContent.appendChild(addToGroupButton);

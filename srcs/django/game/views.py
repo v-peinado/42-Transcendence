@@ -42,11 +42,11 @@ class GameView(View):
             {"game_id": game.id, "user_id": request.user.id},  # Render the game template
         )
 
-@method_decorator(login_required, name='dispatch')
-class ChallengeFriendView(View):
-    def get(self, request, friend_id):
-        """View to challenge a friend to a game"""
-        user = request.user
-        friend = get_object_or_404(User, id=friend_id)
-        game = Game.objects.create(player1=user, player2=friend, status='WAITING')
-        return redirect('game:game_view', game_id=game.id)
+# @method_decorator(login_required, name='dispatch')
+# class ChallengeFriendView(View):
+#     def get(self, request, friend_id):
+#         """View to challenge a friend to a game"""
+#         user = request.user
+#         friend = get_object_or_404(User, id=friend_id)
+#         game = Game.objects.create(player1=user, player2=friend, status='WAITING')
+#         return redirect('game:game_view', game_id=game.id)

@@ -5,6 +5,7 @@ from .messages import MessagesConsumer
 from .friends import FriendRequestsConsumer
 from .groups import GroupsConsumer
 from .privatechat import PrivateConsumer
+from .challenge import ChallengeConsumer
 
 import json
 from django.contrib.auth import get_user_model
@@ -19,6 +20,7 @@ class MainChatConsumer(
     UsersConsumer,
     GroupsConsumer,
     PrivateConsumer,
+    ChallengeConsumer,
 ):
    
     async def receive(self, text_data):
@@ -52,3 +54,7 @@ class MainChatConsumer(
             await self.delete_private_channel(data)
         elif message_type == 'leave_group':
             await self.leave_group(data)
+        elif message_type == 'challenge_action' and channel_name:
+            await self.handle_challenge_action(data, channel_name)
+        elif message_type == 'request_channel_messages':
+            await self.load_unarchived_messages(self.scope['user'].id, data.get('channel_name'))

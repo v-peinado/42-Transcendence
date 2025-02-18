@@ -298,32 +298,6 @@
     font-size: 1.1rem;
 }
 
-.modern-button {
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.modern-button:hover {
-    background: rgba(255, 59, 59, 0.1);
-    border-color: rgba(255, 59, 59, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 59, 59, 0.2);
-}
-
-.modern-button:active {
-    transform: translateY(1px);
-}
 
 @keyframes pulse {
     0%, 100% {
@@ -396,43 +370,6 @@
     font-size: 0.8rem;
     color: rgba(79, 172, 254, 0.7);
     letter-spacing: 1px;
-}
-
-.retro-button {
-    background: transparent;
-    border: 2px solid #4facfe;
-    color: #4facfe;
-    padding: 1rem 2rem;
-    font-family: 'Press Start 2P', monospace;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 100%;
-    margin-top: 2rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.retro-button::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: #4facfe;
-    z-index: -1;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-}
-
-.retro-button:hover {
-    color: #000;
-}
-
-.retro-button:hover::before {
-    transform: scaleX(1);
 }
 
 @keyframes scanline {
