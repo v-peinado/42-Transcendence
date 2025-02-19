@@ -1013,3 +1013,229 @@
     position: relative;
     opacity: 1;
 }
+
+/* Widget Container */
+.chat-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+/* Toggle Button - Volvemos al estilo original */
+.chat-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.chat-toggle-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.chat-toggle-btn i {
+    font-size: 24px;
+}
+
+/* Widget Panel */
+.chat-widget {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: rgba(22, 28, 36, 0.95);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(66, 153, 225, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    display: none;
+}
+
+.chat-widget.visible {
+    display: block;
+}
+
+/* Widget Container - Actualizamos el z-index y la estructura */
+.chat-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Alinear a la derecha */
+    gap: 10px;
+}
+
+/* Toggle Button - Aseguramos que siempre esté visible */
+.chat-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: fixed; /* Cambiamos a fixed para mantenerlo siempre visible */
+    bottom: 20px;
+    right: 20px;
+    transition: all 0.3s ease;
+    z-index: 1001;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-toggle-btn i {
+    font-size: 24px;
+    transition: transform 0.3s ease;
+}
+
+.chat-toggle-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Widget Panel - Ajustamos para que no tape el botón */
+.chat-widget {
+    position: fixed;
+    bottom: 90px; /* Aumentamos para dar más espacio al botón */
+    right: 20px;
+    width: 350px;
+    height: 500px;
+    /* ...resto del código existente... */
+}
+
+/* Widget Panel */
+.chat-widget {
+    display: none;
+    width: 350px;
+    height: 500px;
+    background: rgba(22, 28, 36, 0.95);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(66, 153, 225, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transform-origin: bottom right;
+    animation: slideIn 0.3s ease;
+}
+
+.chat-widget.visible {
+    display: block;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Widget Header */
+.chat-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+.chat-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.minimize-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.minimize-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.minimize-btn i {
+    font-size: 14px;
+}
+
+.chat-widget-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.1rem;
+    color: white;
+}
+
+/* Ajustes específicos para el widget */
+.chat-widget-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-widget #widget-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.6);
+    margin: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+}
+
+.chat-widget .input-group {
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.8);
+    margin: 0 10px 10px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+.chat-widget-header {
+    padding: 15px;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+.chat-widget-header h3 {
+    color: white;
+    font-size: 1.1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chat-widget-header h3 i {
+    color: rgba(66, 153, 225, 0.8);
+}

@@ -2,6 +2,7 @@ import { gameWebSocketService } from '../../services/GameWebSocketService.js';
 import AuthService from '../../services/AuthService.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
+import { ChatWidget } from '../../components/ChatWidget.js';
 
 export default async function GameView() {
     const app = document.getElementById('app');
@@ -21,7 +22,7 @@ export default async function GameView() {
     app.appendChild(tempDiv.firstElementChild);
 
     // Esperar al siguiente ciclo del event loop para asegurar que el DOM está actualizado
-    setTimeout(() => {
+    setTimeout(async () => {
         // Obtener referencias a los elementos
         const elements = {
             matchmakingBtn: document.getElementById('matchmakingBtn'),
@@ -62,6 +63,11 @@ export default async function GameView() {
             });
         }
 
+        // Inicializar el chat widget inmediatamente después de verificar búsqueda activa
+        if (!document.querySelector('.chat-widget-container')) {
+            await ChatWidget.initialize();
+        }
+
         // Event listeners para los modos de juego
         if (elements.matchmakingBtn) {
             elements.matchmakingBtn.addEventListener('click', async () => {
@@ -69,6 +75,13 @@ export default async function GameView() {
                     showMatchmakingModal(true);
                     elements.modalStatusText.textContent = 'Conectando al servidor...';
                     elements.matchmakingBtn.classList.add('disabled');
+
+                    // Minimizar el chat widget cuando comience la búsqueda
+                    const chatWidget = document.querySelector('.chat-widget');
+                    const toggleBtn = document.querySelector('.chat-toggle-btn');
+                    if (chatWidget && chatWidget.classList.contains('visible')) {
+                        toggleBtn.click();
+                    }
 
                     const userId = await AuthService.getUserId();
                     if (!userId) {
@@ -150,5 +163,6 @@ export default async function GameView() {
     // Cleanup
     return () => {
         gameWebSocketService.disconnect();
+        // No necesitamos limpiar el ChatWidget ya que es un singleton
     };
 }
