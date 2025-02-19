@@ -7,6 +7,12 @@ from authentication.services.mail_service import MailSendingService
 from authentication.services.two_factor_service import TwoFactorService
 from authentication.models import CustomUser
 from django.contrib.auth import login as auth_login
+from django.utils import timezone
+from datetime import timedelta
+from authentication.services.rate_limit_service import RateLimitService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FortyTwoAuthService:
@@ -24,6 +30,8 @@ class FortyTwoAuthService:
             self.client_id = settings.FORTYTWO_CLIENT_ID
             self.client_secret = settings.FORTYTWO_CLIENT_SECRET
             self.redirect_uri = settings.FORTYTWO_REDIRECT_URI
+        self.rate_limiter = RateLimitService()
+        self.TOKEN_EXPIRY_HOURS = 24
 
     @classmethod
     def get_auth_url(cls, is_api=False):
@@ -74,13 +82,28 @@ class FortyTwoAuthService:
 
         return user, created
 
+    def _is_token_expired(self, user):
+        """Check if verification token has expired"""
+        if not user.email_token_created_at:
+            return True
+        expiry_time = user.email_token_created_at + timedelta(
+            hours=self.TOKEN_EXPIRY_HOURS
+        )
+        return timezone.now() > expiry_time
+
     def _handle_new_user(self, user):
         token = TokenService.generate_auth_token(user)
         user.email_verification_token = token
+        user.email_token_created_at = timezone.now()
         user.save()
 
         MailSendingService.send_verification_email(
-            user, {"uid": urlsafe_base64_encode(force_bytes(user.pk)), "token": token}
+            user,
+            {
+                "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                "token": token,
+                "expiry_hours": self.TOKEN_EXPIRY_HOURS,
+            },
         )
 
     @classmethod
@@ -97,11 +120,44 @@ class FortyTwoAuthService:
         if not code:
             return False, None, "No se proporcionó código de autorización"
 
+        # Rate limiting check
+        service = cls(is_api=is_api)
+        ip = request.META.get("REMOTE_ADDR", "unknown")
+        is_limited, remaining_time = service.rate_limiter.is_rate_limited(
+            ip, "oauth_callback"
+        )
+
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for IP {ip}")
+            return (
+                False,
+                None,
+                f"Too many attempts. Please try again in {remaining_time} seconds",
+            )
+
         try:
-            service = cls(is_api=is_api)
             token_data = service.get_access_token(code)
             user_data = service.get_user_info(token_data["access_token"])
             user, created = service.process_user_authentication(user_data)
+
+            # Reset rate limit on successful authentication
+            service.rate_limiter.reset_limit(ip, "oauth_callback")
+
+            # Check token expiration for existing users
+            if (
+                not created
+                and not user.email_verified
+                and service._is_token_expired(user)
+            ):
+                service._handle_new_user(user)  # Generate new token
+                return (
+                    False,
+                    user,
+                    {
+                        "status": "token_expired",
+                        "message": "Verification token expired. A new one has been sent.",
+                    },
+                )
 
             # Verify email first
             if created or not user.email_verified:
@@ -132,4 +188,5 @@ class FortyTwoAuthService:
             return True, user, None
 
         except Exception as e:
+            logger.error(f"Authentication error: {str(e)}")
             return False, None, str(e)
