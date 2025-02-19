@@ -1239,3 +1239,92 @@
 .chat-widget-header h3 i {
     color: rgba(66, 153, 225, 0.8);
 }
+
+/* Toggle Button - Estilo mejorado */
+.chat-toggle-btn {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: none;
+    border: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1001;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transform: scale(1);
+}
+
+.chat-toggle-btn::before {
+    display: none; /* Eliminamos el efecto before */
+}
+
+.chat-toggle-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: none;
+}
+
+.chat-toggle-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.chat-toggle-btn i {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.9);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.chat-toggle-btn:hover i {
+    transform: scale(1.1);
+    color: #3b82f6;
+}
+
+/* Eliminamos la animación de pulso */
+.chat-toggle-btn.has-notifications {
+    animation: none;
+}
+
+/* Animación de pulso mejorada para notificaciones */
+@keyframes elegant-pulse {
+    0% {
+        box-shadow: 
+            0 4px 12px rgba(37, 99, 235, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 
+            0 6px 16px rgba(37, 99, 235, 0.5),
+            0 3px 6px rgba(0, 0, 0, 0.15),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 
+            0 4px 12px rgba(37, 99, 235, 0.3),
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            inset 0 2px 4px rgba(255, 255, 255, 0.2);
+        transform: scale(1);
+    }
+}
+
+.chat-toggle-btn.has-notifications {
+    animation: elegant-pulse 2s infinite ease-in-out;
+}
+
+/* Ocultar temporalmente las notificaciones del chat */
+.chat-notification,
+.badge-notification {
+    display: none !important;
+}
+
+.chat-toggle-btn.has-notifications {
+    animation: none; /* También desactivamos la animación de notificación */
+}
