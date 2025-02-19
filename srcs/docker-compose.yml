@@ -35,9 +35,7 @@ services:
     networks:
       - transcendence-backend
     volumes:
-      - type: bind
-        source: ./postgres_data
-        target: /var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ssl_certs:/tmp/ssl:ro
     depends_on:
       waf:
@@ -143,3 +141,4 @@ volumes:
     name: ssl_certs
   vault_data:
     driver: local
+  postgres_data:

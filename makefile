@@ -12,29 +12,30 @@ up:
 	@echo "$(COLOR_GREEN)Desplegando servicios...$(COLOR_RESET)"
 	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d --build
 
-# Detiene y limpia todo
+# Detiene y limpia todo (sin eliminar volúmenes)
 down:
 	@echo "$(COLOR_GREEN)Deteniendo servicios...$(COLOR_RESET)"
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) down
+
+# Detiene y limpia todo (incluyendo volúmenes)
+down_volumes:
+	@echo "$(COLOR_GREEN)Deteniendo servicios y eliminando volúmenes...$(COLOR_RESET)"
 	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) down --volumes
 
-# Limpia todos los recursos
+# Limpia todos los recursos (excepto volúmenes críticos)
 clean:
 	@echo "$(COLOR_GREEN)Limpiando recursos...$(COLOR_RESET)"
 	@docker system prune -f --all
-	@docker volume prune -f
+	@docker volume rm $$(docker volume ls -q | grep -v "postgres_data\|vault_data") 2>/dev/null || true
 	@docker network prune -f
 
-# Limpieza completa
+# Limpieza completa (preservando la base de datos)
 fclean: down clean
-	@echo "$(COLOR_GREEN)Limpieza completa finalizada$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)Limpieza completa finalizada (base de datos preservada)$(COLOR_RESET)"
 
-# Limpieza completa y eliminación del directorio de datos de postgres
-fcleandb: clean_postgres_data_dir fclean
-
-# Regla para limpiar el directorio de datos de postgres
-clean_postgres_data_dir:
-	@rm -rf ./srcs/postgres_data
-	@echo "$(COLOR_GREEN)Directorio postgres_data eliminado$(COLOR_RESET)"
+# Limpieza completa (incluyendo la base de datos)
+fcleandb: down_volumes clean
+	@echo "$(COLOR_GREEN)Limpieza completa finalizada (incluyendo base de datos)$(COLOR_RESET)"
 
 # Reinicio completo
 re: fclean all
@@ -48,8 +49,7 @@ help:
 	@echo "  make down                - Detiene todos los servicios"
 	@echo "  make clean               - Limpia todos los recursos (imágenes, contenedores, volúmenes y redes)"
 	@echo "  make fclean              - Limpieza completa (detiene, limpia y elimina todos los recursos)"
-	@echo "  make fcleandb            - Limpieza completa y eliminación del directorio de datos de postgres"
-	@echo "  make clean_postgres_data_dir - Elimina el directorio de datos de postgres"
+	@echo "  make fcleandb            - Limpieza completa (detiene, limpia y elimina todos los recursos, incluyendo la base de datos)"
 	@echo ""
 	@echo "$(COLOR_GREEN)Accesos:$(COLOR_RESET)"
 	@echo "  https://localhost:8445     - WAF entrada principal al frontend <<<<<<<<<<<<<<<<===================="
@@ -65,4 +65,4 @@ help:
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
 
-.PHONY: all up down clean fclean re help clean_postgres_data_dir fcleandb
+.PHONY: all up down clean fclean re help down_volumes fcleandb

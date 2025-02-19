@@ -72,23 +72,23 @@ initialize_vault() {
         UNSEAL_KEY=$(grep "Unseal Key 1" "${LOG_DIR}/init.txt" | awk '{print $4}')
         ROOT_TOKEN=$(grep "Initial Root Token" "${LOG_DIR}/init.txt" | awk '{print $4}')
         
-        # Save keys for unsealing in the future
-        echo "$UNSEAL_KEY" > "${LOG_DIR}/unseal.key"
-        echo "$ROOT_TOKEN" > "${LOG_DIR}/root.token"
-        chmod 600 "${LOG_DIR}/unseal.key" "${LOG_DIR}/root.token"
+        # Cambiar la ruta de guardado de las claves
+        mkdir -p /etc/vault.d/data
+        echo "$UNSEAL_KEY" > "/etc/vault.d/data/unseal.key"
+        echo "$ROOT_TOKEN" > "/etc/vault.d/data/root.token"
+        chmod 600 "/etc/vault.d/data/unseal.key" "/etc/vault.d/data/root.token"
         
         log_message "Unsealing Vault..."
         vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
-		vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1	# Double unseal to ensure it's unsealed
         if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             vault login "$ROOT_TOKEN"
         else
             vault login "$ROOT_TOKEN" >/dev/null 2>&1
         fi
     else
-        # Recover keys from previous initialization
-        UNSEAL_KEY=$(cat "${LOG_DIR}/unseal.key")
-        ROOT_TOKEN=$(cat "${LOG_DIR}/root.token")
+        # Recuperar claves desde el volumen persistente
+        UNSEAL_KEY=$(cat "/etc/vault.d/data/unseal.key")
+        ROOT_TOKEN=$(cat "/etc/vault.d/data/root.token")
         vault operator unseal "$UNSEAL_KEY" >/dev/null 2>&1
         if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
             vault login "$ROOT_TOKEN"
