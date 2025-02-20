@@ -126,5 +126,7 @@ class AuthenticationService:
         """
         if request.user.is_authenticated:
             logout(request)
+            # Clear session ressidue data
+            request.session.flush()
             return True
         raise ValidationError(AuthenticationService.MESSAGES["no_session"])
