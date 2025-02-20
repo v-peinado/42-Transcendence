@@ -62,9 +62,9 @@ class RateLimitService:
             'token_refresh': {'max_attempts': 10, 'window': 600, 'block': 300},  # 10 attempts / 10 min, block 5 min
         }
         self.LIMITS.update({
-            'email_change': {'max_attempts': 2, 'window': 3600, 'block': 7200},  # 2 intentos/hora, bloqueo 2h
-            'profile_update': {'max_attempts': 5, 'window': 300, 'block': 900},  # 5 intentos/5min, bloqueo 15min
-            'email_send': {'max_attempts': 5, 'window': 3600, 'block': 7200},    # 5 emails/hora, bloqueo 2h
+            'email_change': {'max_attempts': 2, 'window': 3600, 'block': 7200},  # 2 attempts / hour, block 2h
+            'profile_update': {'max_attempts': 5, 'window': 300, 'block': 900},  # 5 attempts / 5 min, block 15 min
+            'email_send': {'max_attempts': 5, 'window': 3600, 'block': 7200},    # 5 attempts / hour, block 2h
         })
         # Token expiration times (in minutes)
         self.TOKEN_EXPIRY = {
