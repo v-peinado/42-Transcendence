@@ -30,8 +30,11 @@ class LoginAPIView(View):
                 data = request.data
             else:
                 data = json.loads(request.body)
+                
+			# Clean residual session data
+            request.session.flush()
 
-            # Verificar si hay una sesión activa
+            # Verify if there is an active session
             if request.session.session_key:
                 return JsonResponse(
                     {
@@ -104,7 +107,7 @@ class RegisterAPIView(View):
                 result = AuthenticationService.handle_registration(data)
 
                 if isinstance(result, dict):
-                    # Si el servicio devuelve un diccionario con datos adicionales
+                    # If the service returns a dictionary with data
                     return JsonResponse(
                         {
                             "status": "success",
@@ -116,7 +119,7 @@ class RegisterAPIView(View):
                         status=201,
                     )
                 elif result:
-                    # Si el servicio devuelve True
+                    # If the service returns True
                     return JsonResponse(
                         {
                             "status": "success",

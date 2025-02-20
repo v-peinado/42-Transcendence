@@ -8,11 +8,17 @@ from .mail_service import MailSendingService
 from .password_service import PasswordService
 from ..models import PreviousPassword
 from .gdpr_service import GDPRService
+from .rate_limit_service import RateLimitService
 import re
 import base64
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ProfileService:
+    def __init__(self):
+        self.rate_limiter = RateLimitService()
+
     @staticmethod
     def handle_image_restoration(user):
         """Handles profile image restoration"""
@@ -26,6 +32,13 @@ class ProfileService:
     @staticmethod
     def handle_email_change(user, new_email):
         """Handles email change for manual users"""
+        rate_limiter = RateLimitService()
+        is_limited, remaining_time = rate_limiter.is_rate_limited(user.id, 'email_change')
+        
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for user {user.id} on email change")
+            raise ValidationError(f"Please wait {remaining_time} seconds before requesting another email change")
+
         if re.match(r".*@student\.42.*\.com$", new_email.lower()):
             raise ValidationError(
                 "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
@@ -47,6 +60,7 @@ class ProfileService:
         }
 
         MailSendingService.send_email_change_verification(user, verification_data)
+        rate_limiter.reset_limit(user.id, 'email_change')
         return "Te hemos enviado un email para confirmar el cambio"
 
     @staticmethod
@@ -64,6 +78,13 @@ class ProfileService:
     @staticmethod
     def update_profile(user, data, files=None):
         """Updates user profile"""
+        rate_limiter = RateLimitService()
+        is_limited, remaining_time = rate_limiter.is_rate_limited(user.id, 'profile_update')
+        
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for user {user.id} on profile update")
+            raise ValidationError(f"Please wait {remaining_time} seconds before updating your profile again")
+
         try:
             if not user.is_fortytwo_user and "email" in data:
                 email = data.get("email")
@@ -114,6 +135,7 @@ class ProfileService:
                 user.profile_image = profile_image
 
             user.save()
+            rate_limiter.reset_limit(user.id, 'profile_update')
             return {
                 "email": user.email,
                 "profile_image_url": (

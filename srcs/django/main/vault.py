@@ -50,7 +50,7 @@ class VaultClient:
         while retries < max_retries:
             try:
                 if self._is_vault_sealed():  # Using private method
-                    logger.info("Vault is sealed, waiting for unseal...")
+                    logger.info("⌛️Vault is sealed, waiting for unseal...")
                     time.sleep(2)
                     retries += 1
                     continue
@@ -63,7 +63,7 @@ class VaultClient:
                 return secrets
             except Exception as e:
                 if retries == max_retries - 1:
-                    logger.error(f"Error fetching secrets from Vault: {e}")
+                    logger.error(f"❌Error fetching secrets from Vault: {e}")
                 retries += 1
                 time.sleep(2)
         return {}
@@ -79,12 +79,12 @@ def wait_for_token(max_attempts=30, delay=2):
                 with open(token_file, "r") as f:
                     token = f.read().strip()
                     if token:
-                        logger.info(f"Found Vault token after {attempt + 1} attempts")
+                        logger.info(f"✅Found Vault token after {attempt + 1} attempts")
                         return token
-            logger.info(f"Waiting for token file... ({attempt + 1}/{max_attempts})")
+            logger.info(f"⌛️Waiting for token file... ({attempt + 1}/{max_attempts})")
             time.sleep(delay)
         except Exception as e:
-            logger.error(f"Error reading token: {e}")
+            logger.error(f"❌Error reading token: {e}")
             time.sleep(delay)
     return None
 
@@ -92,27 +92,27 @@ def wait_for_token(max_attempts=30, delay=2):
 def get_client():
     token = wait_for_token()
     if not token:
-        logger.error("Failed to get Vault token")
+        logger.error("❌Failed to get Vault token")
         return None
 
     try:
         client = hvac.Client(url="https://waf:8200", token=token, verify=False)
 
         if not client.is_authenticated():
-            logger.error("Failed to authenticate with token")
+            logger.error("❌Failed to authenticate with token")
             return None
 
         # Test the connection
         try:
             client.sys.read_health_status()
-            logger.info("Successfully connected to Vault")
+            logger.info("✅Successfully connected to Vault")
             return client
         except Exception as e:
-            logger.error(f"Error connecting to Vault: {e}")
+            logger.error(f"❌Error connecting to Vault: {e}")
             return None
 
     except Exception as e:
-        logger.error(f"Error creating Vault client: {e}")
+        logger.error(f"❌Error creating Vault client: {e}")
         return None
 
 
@@ -127,7 +127,7 @@ def wait_for_secrets(client, path: str, max_retries=10, delay=2) -> Dict[str, An
                 return response["data"]["data"]
         except Exception as e:
             if attempt == max_retries - 1:
-                logger.error(f"Failed to read {path} after {max_retries} attempts: {e}")
+                logger.error(f"❌Failed to read {path} after {max_retries} attempts: {e}")
             time.sleep(
                 delay * (1.5**attempt)
             )  # Exponential backoff with smaller factor
@@ -139,7 +139,7 @@ def load_vault_secrets():
 
     client = get_client()
     if not client:
-        logger.error("✗ Failed to initialize Vault client")
+        logger.error("❌Failed to initialize Vault client")
         return
 
     paths = {
@@ -157,21 +157,21 @@ def load_vault_secrets():
     time.sleep(5)  # Give vault time to initialize
 
     for name, path in paths.items():
-        logger.info(f"Attempting to read {path}...")
+        logger.info(f"⌛️Attempting to read {path}...")
         secrets = wait_for_secrets(client, path)
 
         if secrets:
-            logger.info(f"✓ {name} - Found {len(secrets)} values")
+            logger.info(f"✅ {name} - Found {len(secrets)} values")
             os.environ.update(secrets)
             _secrets_cache[path] = secrets
             success += 1
         else:
-            logger.error(f"✗ {name}: Failed to read secrets")
+            logger.error(f"❌ {name}: Failed to read secrets")
 
-    logger.info(f"\n{success}/{total} secrets loaded successfully")
+    logger.info(f"\n{success}/{total} secrets loaded successfully✅")
     logger.info("=================================\n")
 
     if success < total:
-        logger.warning("Some secrets missing, using .env as fallback")
+        logger.warning("⚠️Some secrets missing, using .env as fallback")
 
         load_dotenv()

@@ -8,15 +8,18 @@ from authentication.forms.auth_forms import RegistrationForm
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.utils.html import escape
 from authentication.models import PreviousPassword
+from .rate_limit_service import RateLimitService
+import logging
 
+logger = logging.getLogger(__name__)
 
 class AuthenticationService:
     MESSAGES = {
-        "privacy_policy": "Debes aceptar la política de privacidad",
+        "privacy_policy": "You must accept the privacy policy",
         "email_verification": "email_verification_required",
-        "form_validation": "Error en la validación del formulario",
-        "logout_success": "Sesión cerrada correctamente",
-        "no_session": "No hay sesión activa",
+        "form_validation": "Form validation error",
+        "logout_success": "Successfully logged out",
+        "no_session": "No active session",
     }
 
     @staticmethod
@@ -32,16 +35,31 @@ class AuthenticationService:
 
     @staticmethod
     def login_user(request, username, password, remember=False):
-        """Manages the login process"""
-        user = authenticate(
-            request, username=username.strip().lower(), password=password
-        )
+        """
+        Manages the login process
+        Includes rate limiting and 2FA validation
+        Returns: 'verify_2fa' if 2FA is enabled, 'user' if login successful
+        """
+        rate_limiter = RateLimitService()
+        ip = request.META.get('REMOTE_ADDR', 'unknown')
+        
+        # Check rate limiting
+        is_limited, remaining_time = rate_limiter.is_rate_limited(ip, 'login')
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for IP {ip} on login")
+            raise ValidationError(f"Demasiados intentos. Por favor espera {remaining_time} segundos")
+
+        user = authenticate(request, username=username.strip().lower(), password=password)
 
         if not user:
+            logger.warning(f"Failed login attempt for user {username} from IP {ip}")
             raise ValidationError("Usuario o contraseña incorrectos")
 
         if not user.email_verified:
             raise ValidationError("Por favor verifica tu email para activar tu cuenta")
+
+        # Reset rate limit on successful login
+        rate_limiter.reset_limit(ip, 'login')
 
         if user.two_factor_enabled:
             request.session.update(
@@ -64,7 +82,10 @@ class AuthenticationService:
 
     @staticmethod
     def handle_registration(form_data):
-        """Manages the registration process"""
+        """
+        Manages the complete registration process
+        Includes form validation, user creation and email verification
+        """
         if not form_data.get("privacy_policy"):
             raise ValidationError(AuthenticationService.MESSAGES["privacy_policy"])
 
@@ -101,14 +122,11 @@ class AuthenticationService:
     def logout_user(request):
         """
         Logs out the current user
-
-        Args:
-            request: HttpRequest object
-
-        Raises:
-            ValidationError: If no user is authenticated
+        Raises ValidationError if no user is authenticated
         """
         if request.user.is_authenticated:
             logout(request)
+            # Clear session ressidue data
+            request.session.flush()
             return True
         raise ValidationError(AuthenticationService.MESSAGES["no_session"])

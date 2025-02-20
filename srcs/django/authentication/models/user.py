@@ -19,6 +19,7 @@ class CustomUser(AbstractUser):
     is_fortytwo_user = models.BooleanField(default=False)
     email_verified = models.BooleanField(default=False)
     email_verification_token = models.CharField(max_length=255, blank=True, null=True)
+    email_token_created_at = models.DateTimeField(null=True, blank=True)
     two_factor_enabled = models.BooleanField(default=False)
     two_factor_secret = models.CharField(max_length=32, blank=True, null=True)
     last_2fa_code = models.CharField(max_length=6, blank=True, null=True)
