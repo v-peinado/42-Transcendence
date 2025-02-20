@@ -30,14 +30,8 @@ class FortyTwoAuthService:
             self.client_id = settings.FORTYTWO_CLIENT_ID
             self.client_secret = settings.FORTYTWO_CLIENT_SECRET
             self.redirect_uri = settings.FORTYTWO_REDIRECT_URI
-        self._rate_limiter = None
+        self.rate_limiter = RateLimitService()
         self.TOKEN_EXPIRY_HOURS = 24
-
-    @property
-    def rate_limiter(self):
-        if self._rate_limiter is None:
-            self._rate_limiter = RateLimitService()
-        return self._rate_limiter
 
     @classmethod
     def get_auth_url(cls, is_api=False):
