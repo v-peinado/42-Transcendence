@@ -2,7 +2,12 @@
 COMPOSE_FILE = ./srcs/docker-compose.yml
 COMPOSE_CMD = docker compose
 COLOR_GREEN = \033[0;32m
+COLOR_RED = \033[0;31m
 COLOR_RESET = \033[0m
+
+# Variables de entorno del archivo .env
+-include srcs/.env
+export $(shell sed 's/=.*//' srcs/.env 2>/dev/null)
 
 # Regla por defecto
 all: up help
@@ -10,7 +15,7 @@ all: up help
 # Levanta los servicios
 up:
 	@echo "$(COLOR_GREEN)Desplegando servicios...$(COLOR_RESET)"
-	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build -d
 
 # Detiene y limpia todo (sin eliminar volúmenes)
 down:
@@ -39,6 +44,29 @@ fcleandb: down_volumes clean
 
 # Reinicio completo
 re: fclean all
+
+# Muestra todos los usuarios de la base de datos 
+# (docker exec -e srcs-db-1 psql -U srcs -d srcs -c "SELECT * FROM authentication_customuser;")
+view-users:
+	@echo "$(COLOR_GREEN)Consultando usuarios en la base de datos...$(COLOR_RESET)"
+	@if [ "$$(docker ps -q -f name=srcs-db)" ]; then \
+		if docker exec srcs-db-1 pg_isready >/dev/null 2>&1; then \
+			echo "\n$(COLOR_GREEN)Lista de usuarios:$(COLOR_RESET)"; \
+			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" srcs-db-1 psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
+				-c "SELECT u.id, u.username, u.email, u.is_active, \
+					CASE WHEN u.password IS NULL THEN 'No password (OAuth)' \
+					ELSE 'Hash: ' || substr(u.password, 1, 30) || '...' END as password_info \
+					FROM authentication_customuser u \
+					ORDER BY u.id;" || \
+			( \
+				echo "$(COLOR_RED)Error: No se pudo consultar la base de datos$(COLOR_RESET)" \
+			); \
+		else \
+			echo "$(COLOR_RED)Error: La base de datos no está lista$(COLOR_RESET)"; \
+		fi \
+	else \
+		echo "$(COLOR_RED)Error: Base de datos no encontrada. Ejecuta 'make up' primero.$(COLOR_RESET)"; \
+	fi
 
 # Ayuda básica
 help:
