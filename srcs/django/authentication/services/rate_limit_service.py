@@ -22,32 +22,43 @@ class RateLimitService:
         Returns: (is_limited, remaining_time)
         """
         key = self._get_key(identifier, action)
+        try:
+            # Check if blocked
+            block_key = f"{key}:blocked"
+            if self.redis_client.exists(block_key):
+                ttl = int(self.redis_client.ttl(block_key))
+                logger.warning(f"Access blocked for {identifier} on {action}. Remaining block time: {ttl}s")
+                return True, ttl
 
-        # Check if blocked
-        block_key = f"{key}:blocked"
-        if self.redis_client.exists(block_key):
-            return True, int(self.redis_client.ttl(block_key))
+            # Get current attempts
+            attempts = self.redis_client.get(key)
+            if not attempts:
+                logger.info(f"New rate limit created for {identifier} on {action}")
+                self.redis_client.setex(key, self.WINDOW_TIME, 1)
+                return False, self.MAX_ATTEMPTS - 1
 
-        # Get current attempts
-        attempts = self.redis_client.get(key)
-        if not attempts:
-            self.redis_client.setex(key, self.WINDOW_TIME, 1)
-            return False, self.MAX_ATTEMPTS - 1
+            attempts = int(attempts)
+            if attempts >= self.MAX_ATTEMPTS:
+                logger.error(f"Rate limit exceeded for {identifier} on {action}. Blocking for {self.BLOCK_TIME}s")
+                self.redis_client.setex(block_key, self.BLOCK_TIME, 1)
+                self.redis_client.delete(key)
+                return True, self.BLOCK_TIME
 
-        attempts = int(attempts)
-        if attempts >= self.MAX_ATTEMPTS:
-            # Block the user
-            self.redis_client.setex(block_key, self.BLOCK_TIME, 1)
-            self.redis_client.delete(key)
-            logger.warning(f"Rate limit exceeded for {identifier} on {action}")
-            return True, self.BLOCK_TIME
-
-        # Increment attempts
-        self.redis_client.incr(key)
-        return False, self.MAX_ATTEMPTS - attempts - 1
+            # Increment attempts
+            new_attempts = self.redis_client.incr(key)
+            logger.info(f"Rate limit increment for {identifier} on {action}: {new_attempts}/{self.MAX_ATTEMPTS}")
+            return False, self.MAX_ATTEMPTS - new_attempts
+            
+        except redis.RedisError as e:
+            logger.error(f"Redis error in rate limit: {str(e)}")
+            return False, self.MAX_ATTEMPTS
 
     def reset_limit(self, identifier: str, action: str):
-        """Reset rate limit for successful actions"""
-        key = self._get_key(identifier, action)
-        self.redis_client.delete(key)
-        self.redis_client.delete(f"{key}:blocked")
+        """ Reset the rate limit for the identifier on the action """
+        try:
+            key = self._get_key(identifier, action)
+            self.redis_client.delete(key)
+            self.redis_client.delete(f"{key}:blocked")
+            logger.info(f"Rate limit reset for {identifier} on {action}")
+        except redis.RedisError as e:
+            logger.error(f"Redis error when resetting rate limit: {str(e)}")
