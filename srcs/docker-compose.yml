@@ -14,7 +14,7 @@ services:
       - transcendence-backend
     volumes:
       - django_static:/app/static
-      - django_media:/app/media
+      - django_media:/app/media:rw
       - ssl_certs:/tmp/ssl:ro
     depends_on:
       waf:
@@ -74,6 +74,7 @@ services:
       - type: volume
         source: django_media
         target: /usr/share/nginx/html/media:rw
+      - django_static:/usr/share/nginx/html/static:ro
       - ssl_certs:/tmp/ssl:rw
     depends_on:
       - web
@@ -100,6 +101,7 @@ services:
       - ssl_certs:/tmp/ssl:rw
       - waf_logs:/var/log/nginx
       - vault_data:/etc/vault.d/data
+      - django_media:/usr/share/nginx/html/media:rw
     env_file:
       - .env
     restart: always

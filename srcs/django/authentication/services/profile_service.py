@@ -12,6 +12,9 @@ from .rate_limit_service import RateLimitService
 import re
 import base64
 import logging
+import os
+from pathlib import Path
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -129,21 +132,53 @@ class ProfileService:
                         f"Formato no permitido. Use: {', '.join(valid_extensions)}"
                     )
 
-                if user.profile_image:
-                    default_storage.delete(user.profile_image.path)
+                # Ensure profile_images directory exists and has correct permissions
+                media_root = Path(settings.MEDIA_ROOT)
+                profile_images_dir = media_root / 'profile_images'
+                profile_images_dir.mkdir(parents=True, exist_ok=True)
+                os.chmod(profile_images_dir, 0o755)
 
-                user.profile_image = profile_image
+                # Generate unique filename
+                timestamp = int(time.time())
+                filename = f"profile_{user.id}_{timestamp}.{ext}"
+                relative_path = f'profile_images/{filename}'
+                file_path = media_root / relative_path
+
+                # Erase old image if it exists
+                if user.profile_image:
+                    try:
+                        old_path = Path(user.profile_image.path)
+                        if old_path.exists():
+                            os.remove(old_path)
+                    except Exception as e:
+                        logger.warning(f"Error removing old image: {e}")
+
+                # Save new image
+                try:
+                    with open(file_path, 'wb+') as destination:
+                        for chunk in profile_image.chunks():
+                            destination.write(chunk)
+                    os.chmod(file_path, 0o644)
+                    user.profile_image = relative_path
+                except Exception as e:
+                    logger.error(f"Error saving image: {e}")
+                    raise ValidationError(f"Error al guardar la imagen: {str(e)}")
 
             user.save()
             rate_limiter.reset_limit(user.id, 'profile_update')
+            
+            # Build profile image URL
+            profile_image_url = None
+            if user.profile_image:
+                profile_image_url = f"{settings.MEDIA_URL}{user.profile_image}"
+
             return {
                 "email": user.email,
-                "profile_image_url": (
-                    user.profile_image.url if user.profile_image else None
-                ),
+                "profile_image_url": profile_image_url
             }
 
         except Exception as e:
+            logger.error(f"Error updating profile: {str(e)}")
             raise ValidationError(f"Error al actualizar perfil: {str(e)}")
 
     @staticmethod
@@ -170,6 +205,11 @@ class ProfileService:
         if not user.is_authenticated:
             raise ValidationError("Usuario no autenticado")
 
+        # CBuilt profile image URL
+        profile_image_url = None
+        if user.profile_image:
+            profile_image_url = f"{settings.SITE_URL}{settings.MEDIA_URL}{user.profile_image}"
+
         data = {
             "id": user.id,
             "username": user.username,
@@ -179,7 +219,7 @@ class ProfileService:
             "date_joined": user.date_joined.isoformat(),
             "last_login": user.last_login.isoformat() if user.last_login else None,
             "is_fortytwo_user": user.is_fortytwo_user,
-            "profile_image": user.profile_image.url if user.profile_image else None,
+            "profile_image": profile_image_url,
             "fortytwo_image": user.fortytwo_image,
         }
         # print("DEBUG - Profile data:", data)
