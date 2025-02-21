@@ -39,21 +39,21 @@ class ValidateQRAPIView(View):
 
     def post(self, request):
         try:
-            # Deserializar JSON 
+            # Deserialize JSON
             data = json.loads(request.body.decode('utf-8'))
             
-            # Primera validación: obtener username y validar QR
+            # First validation: get username and validate QR
             success, message, username = self._qr_service.pre_validate_qr(data)
             if not success:
                 return JsonResponse({"error": message}, status=400)
                 
-            # Segunda validación: autenticar usuario
+            # Second validation: authenticate user
             success, result, redirect_url = self._qr_service.authenticate_qr(username)
             if not success:
                 return JsonResponse({"error": result}, status=400)
 
             if redirect_url == "/verify-2fa/":
-                # Caso especial: 2FA requerido
+                # Special case: 2FA required
                 request.session.update({
                     "pending_user_id": result.id,
                     "user_authenticated": True,
@@ -66,8 +66,8 @@ class ValidateQRAPIView(View):
                     "redirect_url": redirect_url
                 })
             else:
-                # Autenticación exitosa
-                auth_login(request, result) # result es el usuario en este caso
+                # Successful authentication
+                auth_login(request, result) # result is the user in this case
                 return JsonResponse({
                     "success": True,
                     "redirect_url": redirect_url

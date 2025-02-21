@@ -29,7 +29,7 @@ class QRService:
         return self._rate_limiter
 
     def _generate_username_hash(self, username, timestamp):
-        """Genera un hash temporal único para el username"""
+        """Generates a unique temporary hash for the username"""
         data = f"{username}:{timestamp}"
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
@@ -42,24 +42,24 @@ class QRService:
             if is_limited:
                 raise ValueError(f"Demasiados intentos. Intenta de nuevo en {remaining} segundos")
 
-            # Generar hash único para esta sesión
+            # Generate unique hash for this session
             timestamp = int(timezone.now().timestamp())
             username_hash = self._generate_username_hash(username, timestamp)
             
-            # Almacenar en Redis con TTL explícito (5 minutos)
+            # Store in Redis with explicit TTL (5 minutes)
             key = f"qr_auth:{username_hash}"
             success = self.rate_limiter.redis_client.setex(
                 key, 
-                300,  # 5 minutos de validez
+                300,  # 5 minutes validity
                 username
             )
             logger.info(f"QR Redis storage: key={key}, success={success}, username={username}")
 
-            # Verificación inmediata
+            # Immediate verification
             stored_value = self.rate_limiter.redis_client.get(key)
             logger.info(f"QR Redis verification: stored_value={stored_value}")
 
-            # Generar QR
+            # Generate QR
             qr = qrcode.QRCode(version=1, box_size=10, border=4)
             qr.add_data(username_hash)
             qr.make(fit=True)
@@ -78,12 +78,12 @@ class QRService:
     def validate_qr_data(self, qr_data):
         """Validates QR data and handles 2FA"""
         try:
-            # Primera fase: validar formato y obtener username
+            # First phase: validate format and get username
             valid, error, username = self.pre_validate_qr(qr_data)
             if not valid:
                 return False, error, None
 
-            # Segunda fase: autenticar usuario
+            # Second phase: authenticate user
             valid, user, redirect_url = self.authenticate_qr(username)
             if not valid:
                 return False, user, None
@@ -95,21 +95,21 @@ class QRService:
             return False, f"Error al validar QR: {str(e)}", None
 
     def pre_validate_qr(self, qr_data):
-        """Primera fase: validar formato y obtener username"""
+        """First phase: validate format and get username"""
         try:
-            # Validar formato del hash
+            # Validate hash format
             hash_code = self._validate_hash_format(qr_data)
             if not hash_code:
                 return False, "Datos QR inválidos", None
 
-            # Obtener username de Redis
+            # Get username from Redis
             key = f"qr_auth:{hash_code}"
             stored_username = self.rate_limiter.redis_client.get(key)
             if not stored_username:
                 logger.error(f"No username found for hash {hash_code}")
                 return False, "Código QR expirado o inválido", None
 
-            # Decodificar username
+            # Decode username
             username = stored_username.decode('utf-8') if isinstance(stored_username, bytes) else stored_username
             logger.info(f"QR pre-validation: hash={hash_code}, username={username}")
             
@@ -120,16 +120,16 @@ class QRService:
             return False, str(e), None
 
     def authenticate_qr(self, username):
-        """Segunda fase: autenticar usuario"""
+        """Second phase: authenticate user"""
         try:
-            # Verificar rate limit
+            # Check rate limit
             is_limited, remaining = self.rate_limiter.is_rate_limited(
                 username, 'qr_validation'
             )
             if is_limited:
                 return False, f"Demasiados intentos. Intenta en {remaining} segundos", None
 
-            # Obtener y validar usuario
+            # Get and validate user
             try:
                 user = CustomUser.objects.get(username=username)
             except CustomUser.DoesNotExist:
@@ -139,13 +139,13 @@ class QRService:
             if not user.email_verified:
                 return False, "Por favor verifica tu email primero", None
 
-            # Manejar 2FA si está habilitado
+            # Handle 2FA if enabled
             if user.two_factor_enabled:
                 code = TwoFactorService.generate_2fa_code(user)
                 TwoFactorService.send_2fa_code(user, code)
                 return True, user, "/verify-2fa/"
 
-            # Eliminación del QR después de autenticación exitosa
+            # Remove QR after successful authentication
             key = f"qr_auth:{self._current_hash}"
             self.rate_limiter.redis_client.delete(key)
             logger.info(f"QR code deleted for user {username}")
@@ -157,7 +157,7 @@ class QRService:
             return False, str(e), None
 
     def _validate_hash_format(self, qr_data):
-        """Valida el formato del hash QR"""
+        """Validates QR hash format"""
         try:
             if isinstance(qr_data, str):
                 hash_code = qr_data.strip()
