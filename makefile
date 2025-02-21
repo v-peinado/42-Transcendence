@@ -15,7 +15,7 @@ all: up help
 # Levanta los servicios
 up:
 	@echo "$(COLOR_GREEN)Desplegando servicios...$(COLOR_RESET)"
-	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build 
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build -d
 
 # Detiene y limpia todo (sin eliminar volúmenes)
 down:
