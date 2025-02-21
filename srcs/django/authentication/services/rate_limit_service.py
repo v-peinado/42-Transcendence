@@ -66,6 +66,10 @@ class RateLimitService:
             'profile_update': {'max_attempts': 5, 'window': 300, 'block': 900},  # 5 attempts / 5 min, block 15 min
             'email_send': {'max_attempts': 5, 'window': 3600, 'block': 7200},    # 5 attempts / hour, block 2h
         })
+        self.LIMITS.update({
+            'qr_generation': {'max_attempts': 10, 'window': 3600, 'block': 900},  # 10 intentos/hora
+            'qr_validation': {'max_attempts': 5, 'window': 300, 'block': 900},   # 5 intentos/5min
+        })
         # Token expiration times (in minutes)
         self.TOKEN_EXPIRY = {
             'auth': 15,             # Standard authentication token

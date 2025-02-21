@@ -225,7 +225,7 @@ LOGGING = {
         "main.vault": {
             "handlers": ["console"],
             "level": "INFO",
-            "propagate": False,  # Cambiar a False para evitar duplicación
+            "propagate": False,  # Custom logger for vault app
         },
     },
     "root": {
