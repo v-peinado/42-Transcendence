@@ -4,7 +4,6 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views import View
 from django.utils.decorators import method_decorator
-from ...models import CustomUser
 from ...services.qr_service import QRService
 import json
 

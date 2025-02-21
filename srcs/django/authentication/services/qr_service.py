@@ -4,7 +4,6 @@ from authentication.services.token_service import TokenService
 from authentication.services.rate_limit_service import RateLimitService
 import qrcode
 import io
-import json
 from django.utils import timezone
 import logging
 import hashlib
@@ -34,7 +33,7 @@ class QRService:
         return hashlib.sha256(data.encode()).hexdigest()[:16]
 
     def generate_qr(self, username):
-        """Generate QR code for username"""
+        """Generate QR code for username with 8h validity and max 3 uses"""
         try:
             is_limited, remaining = self.rate_limiter.is_rate_limited(
                 username, 'qr_generation'
@@ -46,14 +45,17 @@ class QRService:
             timestamp = int(timezone.now().timestamp())
             username_hash = self._generate_username_hash(username, timestamp)
             
-            # Store in Redis with explicit TTL (5 minutes)
+            # Store in Redis with 8h TTL
             key = f"qr_auth:{username_hash}"
-            success = self.rate_limiter.redis_client.setex(
-                key, 
-                300,  # 5 minutes validity
-                username
-            )
-            logger.info(f"QR Redis storage: key={key}, success={success}, username={username}")
+            uses_key = f"qr_uses:{username_hash}"
+            
+            # Pipeline for atomic operations
+            pipe = self.rate_limiter.redis_client.pipeline()
+            pipe.setex(key, 28800, username)  # 8 hours validity
+            pipe.setex(uses_key, 28800, 0)    # Counter starts at 0
+            pipe.execute()
+
+            logger.info(f"QR generated for {username} - valid for 8h, max 3 uses")
 
             # Immediate verification
             stored_value = self.rate_limiter.redis_client.get(key)
@@ -97,39 +99,63 @@ class QRService:
     def pre_validate_qr(self, qr_data):
         """First phase: validate format and get username"""
         try:
-            # Validate hash format
             hash_code = self._validate_hash_format(qr_data)
             if not hash_code:
-                return False, "Datos QR inválidos", None
+                return False, "El formato del código QR no es válido", None
 
-            # Get username from Redis
             key = f"qr_auth:{hash_code}"
             stored_username = self.rate_limiter.redis_client.get(key)
-            if not stored_username:
-                logger.error(f"No username found for hash {hash_code}")
-                return False, "Código QR expirado o inválido", None
-
-            # Decode username
-            username = stored_username.decode('utf-8') if isinstance(stored_username, bytes) else stored_username
-            logger.info(f"QR pre-validation: hash={hash_code}, username={username}")
             
+            if not stored_username:
+                # Check if expired or never existed
+                if self.rate_limiter.redis_client.exists(f"qr_uses:{hash_code}"):
+                    return False, "Este código QR ha expirado (válido por 8 horas)", None
+                return False, "Este código QR no es válido o nunca ha existido", None
+
+            username = stored_username.decode('utf-8') if isinstance(stored_username, bytes) else stored_username
+            
+            # Get current uses for message
+            uses = int(self.rate_limiter.redis_client.get(f"qr_uses:{hash_code}") or 0)
+            remaining_uses = 3 - uses
+            
+            logger.info(f"QR pre-validation: hash={hash_code}, username={username}, remaining_uses={remaining_uses}")
             return True, None, username
 
         except Exception as e:
             logger.error(f"QR pre-validation error: {str(e)}")
-            return False, str(e), None
+            return False, f"Error al validar el QR: {str(e)}", None
 
     def authenticate_qr(self, username):
-        """Second phase: authenticate user"""
+        """Second phase: authenticate user with usage control"""
         try:
-            # Check rate limit
+            # Combine QR existence and usage checks
+            auth_key = f"qr_auth:{self._current_hash}"
+            uses_key = f"qr_uses:{self._current_hash}"
+            
+            pipe = self.rate_limiter.redis_client.pipeline()
+            pipe.exists(auth_key)
+            pipe.get(uses_key)
+            exists, uses = pipe.execute()
+            
+            if not exists or uses is None:
+                return False, "El código QR ha expirado (válido por 8 horas)", None
+                
+            uses = int(uses)
+            if uses >= 3:
+                self._cleanup_qr_keys(auth_key, uses_key)
+                return False, "Has alcanzado el límite máximo de 3 usos para este QR", None
+
+            # Increment uses counter and get remaining uses in one operation
+            new_uses = self.rate_limiter.redis_client.incr(uses_key)
+            remaining_uses = 3 - new_uses
+
+            # Remaining validations
             is_limited, remaining = self.rate_limiter.is_rate_limited(
                 username, 'qr_validation'
             )
             if is_limited:
-                return False, f"Demasiados intentos. Intenta en {remaining} segundos", None
+                return False, f"Demasiados intentos. Espera {remaining} segundos antes de intentar de nuevo", None
 
-            # Get and validate user
             try:
                 user = CustomUser.objects.get(username=username)
             except CustomUser.DoesNotExist:
@@ -137,24 +163,31 @@ class QRService:
                 return False, "Usuario no encontrado", None
 
             if not user.email_verified:
-                return False, "Por favor verifica tu email primero", None
+                return False, "Este usuario aún no ha verificado su email", None
 
-            # Handle 2FA if enabled
+            # Handle 2FA
             if user.two_factor_enabled:
                 code = TwoFactorService.generate_2fa_code(user)
                 TwoFactorService.send_2fa_code(user, code)
                 return True, user, "/verify-2fa/"
 
-            # Remove QR after successful authentication
-            key = f"qr_auth:{self._current_hash}"
-            self.rate_limiter.redis_client.delete(key)
-            logger.info(f"QR code deleted for user {username}")
+            # Clean up if it's the last use
+            if new_uses >= 3:
+                self._cleanup_qr_keys(auth_key, uses_key)
             
             return True, user, "/"
 
         except Exception as e:
             logger.error(f"QR authentication error: {str(e)}", exc_info=True)
-            return False, str(e), None
+            return False, f"Error interno: {str(e)}", None
+
+    def _cleanup_qr_keys(self, auth_key, uses_key):
+        """Helper method to clean up QR related Redis keys"""
+        pipe = self.rate_limiter.redis_client.pipeline()
+        pipe.delete(auth_key)
+        pipe.delete(uses_key)
+        pipe.execute()
+        logger.info(f"QR keys cleaned up: {auth_key}, {uses_key}")
 
     def _validate_hash_format(self, qr_data):
         """Validates QR hash format"""
