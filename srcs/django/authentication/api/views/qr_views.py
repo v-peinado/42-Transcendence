@@ -1,12 +1,14 @@
+import logging
 from django.contrib.auth import login as auth_login
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views import View
+from django.utils.decorators import method_decorator
 from ...models import CustomUser
 from ...services.qr_service import QRService
 import json
-from django.views import View
-from django.utils.decorators import method_decorator
 
+logger = logging.getLogger(__name__)
 qr_service = QRService()
 
 
@@ -31,46 +33,48 @@ class GenerateQRAPIView(View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class ValidateQRAPIView(View):
-    def post(self, request, *args, **kwargs):
+    def __init__(self):
+        super().__init__()
+        self._qr_service = QRService()
+
+    def post(self, request):
         try:
-            if hasattr(request, "data"):
-                data = request.data
+            # Deserializar JSON 
+            data = json.loads(request.body.decode('utf-8'))
+            
+            # Primera validación: obtener username y validar QR
+            success, message, username = self._qr_service.pre_validate_qr(data)
+            if not success:
+                return JsonResponse({"error": message}, status=400)
+                
+            # Segunda validación: autenticar usuario
+            success, result, redirect_url = self._qr_service.authenticate_qr(username)
+            if not success:
+                return JsonResponse({"error": result}, status=400)
+
+            if redirect_url == "/verify-2fa/":
+                # Caso especial: 2FA requerido
+                request.session.update({
+                    "pending_user_id": result.id,
+                    "user_authenticated": True,
+                    "manual_user": not result.is_fortytwo_user,
+                    "fortytwo_user": result.is_fortytwo_user,
+                })
+                return JsonResponse({
+                    "success": True,
+                    "require_2fa": True, 
+                    "redirect_url": redirect_url
+                })
             else:
-                data = json.loads(request.body)
+                # Autenticación exitosa
+                auth_login(request, result) # result es el usuario en este caso
+                return JsonResponse({
+                    "success": True,
+                    "redirect_url": redirect_url
+                })
 
-            username = data.get("username")
-
-            if not username:
-                return JsonResponse(
-                    {"success": False, "error": "Código QR inválido"}, status=400
-                )
-
-            user = CustomUser.objects.filter(username=username).first()
-            success, message, redirect_url = qr_service.validate_qr_data(user)
-
-            if success:
-                if redirect_url == "/verify-2fa/":
-                    request.session.update(
-                        {
-                            "pending_user_id": user.id,
-                            "user_authenticated": True,
-                            "manual_user": not user.is_fortytwo_user,
-                            "fortytwo_user": user.is_fortytwo_user,
-                        }
-                    )
-                    return JsonResponse(
-                        {
-                            "success": True,
-                            "require_2fa": True,
-                            "message": message,
-                            "redirect_url": redirect_url,
-                        }
-                    )
-                else:
-                    auth_login(request, user)
-                    return JsonResponse({"success": True, "redirect_url": redirect_url})
-
-            return JsonResponse({"success": False, "error": message}, status=400)
-
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
         except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            logger.error(f"QR validation error: {str(e)}", exc_info=True)
+            return JsonResponse({"error": str(e)}, status=400)

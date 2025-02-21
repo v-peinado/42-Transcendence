@@ -15,7 +15,7 @@ all: up help
 # Levanta los servicios
 up:
 	@echo "$(COLOR_GREEN)Desplegando servicios...$(COLOR_RESET)"
-	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build -d
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) up --build 
 
 # Detiene y limpia todo (sin eliminar volúmenes)
 down:
@@ -68,6 +68,10 @@ view-users:
 		echo "$(COLOR_RED)Error: Base de datos no encontrada. Ejecuta 'make up' primero.$(COLOR_RESET)"; \
 	fi
 
+# muestra los logs de los servicios
+logs:
+	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) logs -f
+
 # Ayuda básica
 help:
 	@echo ""
@@ -75,6 +79,8 @@ help:
 	@echo "  make                     - Despliega los servicios (equivalente a docker compose up --build)"
 	@echo "  make re                  - Limpieza completa y redespliega todo"
 	@echo "  make down                - Detiene todos los servicios"
+	@echo "  make view-users          - Muestra todos los usuarios de la base de datos"
+	@echo "  make logs                - Muestra los logs de los servicios"
 	@echo "  make clean               - Limpia todos los recursos (imágenes, contenedores, volúmenes y redes)"
 	@echo "  make fclean              - Limpieza completa (detiene, limpia y elimina todos los recursos)"
 	@echo "  make fcleandb            - Limpieza completa (detiene, limpia y elimina todos los recursos, incluyendo la base de datos)"
@@ -93,4 +99,4 @@ help:
 	@echo "  http://localhost:8000/api/ninja/docs - Apis"
 	@echo ""
 
-.PHONY: all up down clean fclean re help down_volumes fcleandb
+.PHONY: all up down clean fclean re help down_volumes fcleandb view-users logs
