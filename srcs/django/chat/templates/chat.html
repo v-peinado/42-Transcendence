@@ -202,6 +202,7 @@
                 <div class="tab-content" id="group-chat-contents"></div>
             </div>
         </div>
+        <div id="results" class="mt-4 bg-white p-3 border rounded"></div>
     </div>
     <script>
         //--------------------------------------------------------------------------------------------
@@ -518,10 +519,10 @@
                   case 'challenge': {
                     // Equivale a lo que hacía antes handleChallenge
                     if (data.from_user_id === this.userId) return;
-                    const chatLog = document.getElementById(`chat-log-${data.channel_name}`);
+                    let chatLog = document.getElementById(`chat-log-${data.channel_name}`);
                     if (!chatLog) {
-                        // Abrir la ventana de chat privado si no está abierta
                         this.openPrivateChat(data.from_user_id, data.from_username);
+                        chatLog = document.getElementById(`chat-log-${data.channel_name}`);
                     }
                             
                     const msgDiv = document.createElement('div');
@@ -856,6 +857,64 @@
             // --------------------------------------------------------------------------------------------
             // Funciones para manejar la lista de usuarios
             // --------------------------------------------------------------------------------------------
+
+            async playerStats(playerId) {
+                try {
+                    console.log('Fetching player stats for player ID:', playerId);
+                    const response = await fetch(`/api/dashboard/player-stats-id/${playerId}/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'  // Envío de cookies de sesión
+                    });
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    this.displayPlayerStats(data);
+                } catch (error) {
+                    console.error('Error fetching player stats:', error);
+                }      
+            }
+
+            displayPlayerStats(data) {
+                const resultsDiv = document.getElementById('results');
+                const winRatio = data.win_ratio.toFixed(2);
+            
+                resultsDiv.innerHTML = `
+                    <h2>Player Stats</h2>
+                    <table class="table table-striped">
+                        <tr><th>Username</th><td>${data.username}</td></tr>
+                        <tr><th>Games Played</th><td>${data.games_played}</td></tr>
+                        <tr><th>Games Won</th><td>${data.games_won}</td></tr>
+                        <tr>
+                          <th>Win Ratio</th>
+                          <td>
+                            <div class="progress" style="max-width: 300px;">
+                              <div class="progress-bar" role="progressbar"
+                                   style="width: ${winRatio}%;"
+                                   aria-valuenow="${winRatio}" aria-valuemin="0" aria-valuemax="100">
+                                ${winRatio}%
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr><th>Average Points Per Game</th><td>${data.avg_points_per_game.toFixed(2)}</td></tr>
+                        <tr><th>Total Points Scored</th><td>${data.total_points_scored}</td></tr>
+                        <tr><th>Total Points Conceded</th><td>${data.total_points_conceded}</td></tr>
+                    </table>
+                    <button id="remove-stats-btn" class="btn btn-danger mt-2">Eliminar Estadísticas</button>
+                `;
+            
+                // Añadir el evento para el botón de eliminar estadísticas
+                document.getElementById('remove-stats-btn').addEventListener('click', () => {
+                    resultsDiv.innerHTML = '';
+                });
+            }
+
+
+
             handleUserList(users) {
                 if (!this.userList) {
                     console.error('Elemento lista-usuarios es null.');
@@ -879,7 +938,7 @@
                     const viewProfileButton = document.createElement('button');
                     viewProfileButton.textContent = 'Ver perfil';
                     viewProfileButton.addEventListener('click', () => {
-                        alert(`Ver perfil de ${user.username}`);
+                        this.playerStats(user.id);
                     });
                     dropdownContent.appendChild(viewProfileButton);
     
@@ -1059,7 +1118,7 @@
                     viewProfileBtn.textContent = 'Ver perfil';
                     viewProfileBtn.classList.add('btn', 'btn-primary', 'btn-sm', 'ms-2');
                     viewProfileBtn.addEventListener('click', () => {
-                        window.location.href = `/profile/${friendId}/`;
+                        this.playerStats(friend.id);
                     });
                     friendItem.appendChild(viewProfileBtn);
             

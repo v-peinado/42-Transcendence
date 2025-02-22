@@ -1,5 +1,6 @@
 import { webSocketService } from '../../../services/WebSocketService.js';
 import { friendService } from '../../../services/FriendService.js';
+import { blockService } from '../../../services/BlockService.js';
 
 export class UserList {
     constructor(container) {
@@ -12,6 +13,12 @@ export class UserList {
         
         // Cargar estado guardado
         this.loadSavedState();
+
+        // Añadir listener para cambios de estado de bloqueo
+        document.addEventListener('block-status-changed', (event) => {
+            console.log('Estado de bloqueo cambiado:', event.detail);
+            this.handleBlockStatusChange(event.detail);
+        });
     }
 
     loadSavedState() {
@@ -95,10 +102,10 @@ export class UserList {
     createUserElement(user) {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
-        const hasSentRequest = this.sentRequests.has(userId);
-
+        const blockReason = blockService.getBlockReason(userId);
+        
         const userElement = document.createElement('div');
-        userElement.className = `cw-user-item ${isFriend ? 'is-friend' : ''}`;
+        userElement.className = `cw-user-item ${isFriend ? 'is-friend' : ''} ${blockReason ? `is-${blockReason}` : ''}`;
         userElement.dataset.userId = userId;
         
         userElement.innerHTML = `
@@ -107,63 +114,167 @@ export class UserList {
                 <span class="cw-username">
                     ${user.username}
                     ${isFriend ? '<i class="fas fa-star friend-star" title="Amigo"></i>' : ''}
+                    ${blockReason === 'blocked' ? '<i class="fas fa-ban text-danger" title="Bloqueado por ti"></i>' : ''}
+                    ${blockReason === 'blockedBy' ? '<i class="fas fa-lock text-warning" title="Te ha bloqueado"></i>' : ''}
                 </span>
             </div>
             <div class="cw-user-actions">
-                <button class="cw-chat-btn" title="Chat privado">
-                    <i class="fas fa-comment"></i>
-                </button>
-                ${!isFriend ? this.createFriendActionButton(user, isFriend, hasSentRequest) : ''}
+                ${this.createUserActions(user, blockReason)}
             </div>
         `;
 
-        this.attachUserEventListeners(userElement, user, isFriend);
+        this.attachUserEventListeners(userElement, user);
         return userElement;
     }
 
-    createFriendActionButton(user, isFriend, hasSentRequest) {
-        // Si ya son amigos, no mostrar ningún botón
-        if (isFriend) {
-            return ''; // Retornamos string vacío si son amigos
-        }
+    createUserActions(user, blockReason) {
+        const userId = parseInt(user.id);
+        const isFriend = this.currentFriends.has(userId);
+        const hasSentRequest = this.sentRequests.has(userId);
         
-        // Si hay una solicitud pendiente, mostrar el icono de reloj
-        if (hasSentRequest) {
+        // Si el otro usuario nos ha bloqueado
+        if (blockService.isBlockedByUser(userId)) {
+            return `
+                <div class="cw-block-status">
+                    <i class="fas fa-lock"></i>
+                    Este usuario te ha bloqueado
+                    <span class="cw-block-hint">No podrás enviarle mensajes ni verlo en línea</span>
+                </div>`;
+        }
+
+        // Determinar si el usuario está bloqueado
+        const isBlocked = blockService.hasBlockedUser(userId);
+        console.log(`Estado de bloqueo para ${user.username}:`, isBlocked); // Debug
+
+        return `
+            <div class="cw-user-actions-group">
+                ${!isBlocked ? `
+                    <button class="cw-chat-btn" title="Chat privado">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    ${!isFriend ? `
+                        ${!hasSentRequest ? `
+                            <button class="cw-friend-add" title="Agregar amigo">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        ` : `
+                            <span class="cw-request-pending" title="Solicitud enviada">
+                                <i class="fas fa-clock"></i>
+                            </span>
+                        `}
+                    ` : `
+                        <button class="cw-friend-remove" title="Eliminar amigo">
+                            <i class="fas fa-user-minus"></i>
+                        </button>
+                    `}
+                    <button class="cw-block-btn" title="Bloquear usuario">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                ` : `
+                    <button class="cw-unblock-btn" title="Desbloquear usuario">
+                        <i class="fas fa-unlock"></i>
+                    </button>
+                `}
+            </div>
+        `;
+    }
+
+    createFriendButtons(user) {
+        const userId = parseInt(user.id);
+        const isFriend = this.currentFriends.has(userId);
+        const hasSentRequest = this.sentRequests.has(userId);
+
+        if (isFriend) {
+            return `
+                <button class="cw-friend-remove" title="Eliminar amigo">
+                    <i class="fas fa-user-minus"></i>
+                </button>`;
+        } else if (hasSentRequest) {
             return `
                 <span class="cw-request-pending" title="Solicitud enviada">
                     <i class="fas fa-clock"></i>
                 </span>`;
+        } else {
+            return `
+                <button class="cw-friend-add" title="Agregar amigo">
+                    <i class="fas fa-user-plus"></i>
+                </button>`;
         }
-        
-        // Si no son amigos y no hay solicitud pendiente, mostrar botón de agregar
-        return `
-            <button class="cw-friend-add" title="Agregar amigo">
-                <i class="fas fa-user-plus"></i>
-            </button>`;
     }
 
-    attachUserEventListeners(userElement, user, isFriend) {
+    attachUserEventListeners(userElement, user) {
         const userId = parseInt(user.id);
+
+        // Block/Unblock buttons
+        const blockBtn = userElement.querySelector('.cw-block-btn');
+        const unblockBtn = userElement.querySelector('.cw-unblock-btn');
+
+        if (blockBtn) {
+            blockBtn.addEventListener('click', () => {
+                blockService.blockUser(userId);
+                userElement.classList.add('is-blocked');
+                userElement.querySelector('.cw-user-actions').innerHTML = `
+                    <div class="cw-user-actions-group">
+                        <button class="cw-unblock-btn" title="Desbloquear usuario">
+                            <i class="fas fa-unlock"></i>
+                        </button>
+                    </div>
+                `;
+                // Re-adjuntar los event listeners
+                this.attachUserEventListeners(userElement, user);
+            });
+        }
+
+        if (unblockBtn) {
+            unblockBtn.addEventListener('click', () => {
+                blockService.unblockUser(userId);
+                userElement.classList.remove('is-blocked');
+                userElement.querySelector('.cw-user-actions').innerHTML = `
+                    <div class="cw-user-actions-group">
+                        <button class="cw-chat-btn" title="Chat privado">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                        ${this.createFriendButtons(user)}
+                        <button class="cw-block-btn" title="Bloquear usuario">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    </div>
+                `;
+                // Re-adjuntar los event listeners
+                this.attachUserEventListeners(userElement, user);
+            });
+        }
+
+        // Chat button
         const chatButton = userElement.querySelector('.cw-chat-btn');
-        const addButton = userElement.querySelector('.cw-friend-add');
+        if (chatButton) {
+            chatButton.addEventListener('click', () => {
+                if (this.onChatClick) {
+                    this.onChatClick(userId, user.username);
+                }
+            });
+        }
 
-        chatButton?.addEventListener('click', () => {
-            this.onChatCallback?.(user.id, user.username);
-        });
+        // Friend buttons
+        const addFriendBtn = userElement.querySelector('.cw-friend-add');
+        const removeFriendBtn = userElement.querySelector('.cw-friend-remove');
 
-        // Solo añadir el evento al botón de agregar si existe y no son amigos
-        if (addButton && !isFriend) {
-            addButton.addEventListener('click', async () => {
-                try {
-                    addButton.outerHTML = `
-                        <span class="cw-request-pending" title="Solicitud enviada">
-                            <i class="fas fa-clock"></i>
-                        </span>`;
-                    await friendService.sendFriendRequest(userId);
-                    this.sentRequests.add(userId);
-                    this.saveState();
-                } catch (error) {
-                    console.error('Error al enviar solicitud:', error);
+        if (addFriendBtn) {
+            addFriendBtn.addEventListener('click', async () => {
+                await friendService.sendFriendRequest(userId);
+                this.sentRequests.add(userId);
+                this.saveState();
+                this.updateList(this.lastUserData);
+            });
+        }
+
+        if (removeFriendBtn) {
+            removeFriendBtn.addEventListener('click', () => {
+                const friendship = this.currentFriendships?.find(f => 
+                    (f.user1_id === userId || f.user2_id === userId)
+                );
+                if (friendship) {
+                    friendService.deleteFriendship(friendship.id);
                 }
             });
         }
@@ -210,6 +321,7 @@ export class UserList {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
         const hasSentRequest = this.sentRequests.has(userId);
+        const isBlocked = blockService.isBlocked(userId);
 
         if (isFriend) {
             return `
@@ -226,10 +338,21 @@ export class UserList {
                 </span>`;
         } else {
             return `
-                <button class="btn btn-sm btn-outline-success friend-add" 
-                    title="Agregar amigo">
-                    <i class="fas fa-user-plus"></i>
-                </button>`;
+                <div class="cw-user-actions">
+                    ${!isBlocked ? `
+                        <button class="cw-chat-btn" title="Chat privado">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                        <button class="cw-block-btn" title="Bloquear usuario">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    ` : `
+                        <button class="cw-unblock-btn" title="Desbloquear usuario">
+                            <i class="fas fa-unlock"></i>
+                        </button>
+                    `}
+                </div>
+            `;
         }
     }
 
@@ -283,6 +406,7 @@ export class UserList {
     // Método para establecer el callback de chat
     onUserChat(callback) {
         this.onChatClick = callback;
+        console.log('Callback de chat configurado:', !!callback);
     }
 
     // Método para actualizar el estado de un usuario específico
@@ -305,5 +429,30 @@ export class UserList {
             case 'friends':
                 break;
         }
+    }
+
+    handleBlockStatusChange(detail) {
+        const { userId, action, isBlocked, isBlockedBy } = detail;
+        const userElement = this.container.querySelector(`[data-user-id="${userId}"]`);
+        
+        if (!userElement) return;
+
+        // Actualizar clases CSS
+        userElement.classList.toggle('is-blocked', isBlocked);
+        userElement.classList.toggle('is-blockedBy', isBlockedBy);
+
+        // Actualizar acciones
+        const actionsContainer = userElement.querySelector('.cw-user-actions');
+        const user = this.lastUserData.users.find(u => u.id === userId);
+        
+        if (user) {
+            actionsContainer.innerHTML = this.createUserActions(user, blockService.getBlockReason(userId));
+            this.attachUserEventListeners(userElement, user);
+        }
+
+        // Forzar actualización visual
+        userElement.style.animation = 'none';
+        userElement.offsetHeight; // Trigger reflow
+        userElement.style.animation = null;
     }
 }

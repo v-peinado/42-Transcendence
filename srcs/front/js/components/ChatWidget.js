@@ -2,7 +2,9 @@ import { webSocketService } from '../services/WebSocketService.js';
 import AuthService from '../services/AuthService.js';
 import { UserList } from '../views/chat/chatcomponents/UserList.js';
 import { FriendList } from '../views/chat/chatcomponents/FriendList.js';
+import { PrivateChat } from '../views/chat/chatcomponents/PrivateChat.js'; // Añadir esta importación
 import { friendService } from '../services/FriendService.js';
+import { blockService } from '../services/BlockService.js';
 
 export class ChatWidget {
     static instance = null;
@@ -131,17 +133,17 @@ export class ChatWidget {
                     <div class="cw-content">
                         <header class="cw-header">
                             <nav class="cw-tabs">
-                                <button class="cw-tab-btn cw-active" data-tab="chat">
-                                    <i class="fas fa-comments"></i> Chat
+                                <button class="cw-tab-btn cw-active" data-tab="chat" title="Chat general">
+                                    <i class="fas fa-comments"></i>
                                 </button>
-                                <button class="cw-tab-btn" data-tab="users">
-                                    <i class="fas fa-users"></i> Usuarios
+                                <button class="cw-tab-btn" data-tab="users" title="Lista de usuarios">
+                                    <i class="fas fa-users"></i>
                                 </button>
-                                <button class="cw-tab-btn" data-tab="friends">
-                                    <i class="fas fa-user-friends"></i> Amigos
+                                <button class="cw-tab-btn" data-tab="friends" title="Lista de amigos">
+                                    <i class="fas fa-user-friends"></i>
                                 </button>
-                                <button class="cw-tab-btn" data-tab="requests">
-                                    <i class="fas fa-user-plus"></i> Solicitudes
+                                <button class="cw-tab-btn" data-tab="requests" title="Solicitudes de amistad">
+                                    <i class="fas fa-user-plus"></i>
                                     <span class="cw-requests-badge"></span>
                                 </button>
                             </nav>
@@ -189,316 +191,376 @@ export class ChatWidget {
                 </button>
             `;
 
-            // Inicializar UserList y configurar eventos de usuarios
+            // Inicializar componentes (eliminar duplicados y configurar correctamente)
             this.userList = new UserList(this.container);
             this.friendList = new FriendList(this.container);
-            
-            // Limpiar listeners duplicados
-            webSocketService.off('friend_list_update');
-            webSocketService.off('pending_friend_requests');
-            webSocketService.off('sent_friend_requests');
-            webSocketService.off('error');
+            this.privateChat = new PrivateChat(this.container);
 
-            // Añadir un solo listener para friend_list_update
-            webSocketService.on('friend_list_update', (data) => {
-                console.log('Lista de amigos actualizada:', data);
-                if (data.friends) {
-                    const currentUserId = parseInt(localStorage.getItem('user_id'));
-                    const friendIds = data.friends.map(f => 
-                        f.user1_id === currentUserId ? f.user2_id : f.user1_id
-                    );
-                    this.userList.setCurrentFriends(friendIds);
-                    this.friendList.updateFriendsList(data);
-                }
-            });
-
-            // Configurar eventos de WebSocket para la gestión de amigos
-            webSocketService.on('pending_friend_requests', (data) => {
-                console.log('Solicitudes pendientes recibidas:', data);
-                this.friendList.updatePendingRequests(data);
-            });
-
-            webSocketService.on('sent_friend_requests', (data) => {
-                console.log('Solicitudes enviadas:', data);
-                this.userList.updateSentRequests(data.pending || []);
-            });
-
-            // Solicitar datos iniciales
-            webSocketService.send({ type: 'get_pending_requests' });
-            webSocketService.send({ type: 'get_sent_requests' });
-            webSocketService.send({ type: 'get_friend_list' });
-
-            // Manejar errores
-            webSocketService.on('error', (data) => {
-                console.error('Error del servidor:', data.message);
-                // Opcional: Mostrar notificación al usuario
-            });
-
-            // Solicitar datos iniciales
-            webSocketService.send({ type: 'get_pending_requests' });
-            webSocketService.send({ type: 'get_sent_requests' });
-            webSocketService.send({ type: 'get_friend_list' });
-
-            // Añadir callback para el chat privado
+            // Configurar callbacks inmediatamente después de inicializar
             this.userList.onUserChat((userId, username) => {
-                // Aquí puedes manejar el inicio de un chat privado si lo deseas
-                console.log('Solicitud de chat privado:', userId, username);
+                console.log('Callback de chat recibido para:', userId, username);
+                this.privateChat.createPrivateChat(userId, username);
             });
 
-            // Suscribirse a eventos de WebSocket
-            webSocketService.on('user_list', (data) => {
-                console.log('Lista de usuarios recibida en widget:', data);
-                this.userList.updateList(data);
+            this.friendList.onChat((userId, username) => {
+                console.log('Callback de chat de amigo recibido para:', userId, username);
+                this.privateChat.createPrivateChat(userId, username);
             });
 
-            webSocketService.on('user_status', (data) => {
-                console.log('Estado de usuario actualizado:', data);
-                this.userList.updateUserStatus(data.user_id, data.is_online);
-            });
+            // Limpiar TODOS los listeners existentes
+            this.clearAllWebSocketListeners();
 
-            webSocketService.on('friend_request_response', (data) => {
-                console.log('Respuesta de solicitud de amistad:', data);
-                // Actualizar la lista de usuarios si es necesario
-                if (data.success) {
-                    this.userList.updateSentRequests(data.sent_requests || []);
-                }
-            });
+            // Configurar todos los listeners una sola vez
+            this.setupWebSocketListeners();
+            
+            // Configurar eventos UI
+            this.setupUIEventListeners();
 
-            webSocketService.on('friend_list', (data) => {
-                console.log('Lista de amigos recibida:', data);
-                this.friendList.updateFriendsList(data);
-            });
-
-            webSocketService.on('friend_requests', (data) => {
-                console.log('Solicitudes de amistad recibidas:', data);
-                this.friendList.updatePendingRequests(data);
-            });
-
-            // Suscribirse a eventos de WebSocket para amistades
-            webSocketService.on('pending_friend_requests', (data) => {
-                console.log('Solicitudes pendientes recibidas:', data);
-                this.friendList.updatePendingRequests(data);
-            });
-
-            webSocketService.on('sent_friend_requests', (data) => {
-                console.log('Solicitudes enviadas:', data);
-                this.userList.updateSentRequests(data.pending || []);
-            });
-
-            webSocketService.on('friend_list_update', (data) => {
-                console.log('Lista de amigos actualizada:', data);
-                this.friendList.updateFriendsList(data);
-                // Actualizar también la lista de amigos en UserList
-                this.userList.setCurrentFriends(
-                    new Set(data.friends.map(f => 
-                        f.user1_id === parseInt(localStorage.getItem('user_id')) 
-                            ? f.user2_id 
-                            : f.user1_id
-                    ))
-                );
-            });
-
-            // Solicitar lista inicial de usuarios al conectar
-            webSocketService.send({
-                type: 'get_user_list'
-            });
-
-            // Solicitar listas iniciales
-            webSocketService.send({ type: 'get_friend_list' });
-            webSocketService.send({ type: 'get_friend_requests' });
-
-            // Solicitar listas iniciales con el tipo correcto
-            webSocketService.send({ type: 'get_pending_requests' });
-            webSocketService.send({ type: 'get_sent_requests' });
-            webSocketService.send({ type: 'get_friend_list' });
-
-            // Manejar errores de WebSocket
-            webSocketService.on('error', (data) => {
-                console.error('Error del servidor:', data.message);
-                // Aquí podrías mostrar un toast o notificación al usuario
-            });
-
-            // Manejar actualización de amigos
-            webSocketService.on('friend_list_update', (data) => {
-                console.log('Lista de amigos actualizada:', data);
-                this.friendList.updateFriendsList(data);
-                // Actualizar también UserList con la nueva lista de amigos
-                if (data.friends) {
-                    const currentUserId = parseInt(localStorage.getItem('user_id'));
-                    const friendIds = data.friends.map(f => 
-                        f.user1_id === currentUserId ? f.user2_id : f.user1_id
-                    );
-                    this.userList.setCurrentFriends(new Set(friendIds));
-                }
-            });
-
-            // Solicitar datos iniciales con el tipo correcto
-            webSocketService.send({ type: 'request_friend_list' });
-            webSocketService.send({ type: 'request_pending_requests' });
-            webSocketService.send({ type: 'request_sent_requests' });
-
-            // Manejar respuestas a solicitudes de amistad
-            webSocketService.on('friend_request_response', (data) => {
-                console.log('Respuesta de solicitud de amistad:', data);
-                if (data.success) {
-                    const isAccepted = data.status === 'accepted';
-                    this.userList.handleFriendRequestResponse(data.user_id, isAccepted);
-                    
-                    // Actualizar listas
-                    webSocketService.send({ type: 'get_friend_list' });
-                    webSocketService.send({ type: 'get_sent_requests' });
-                }
-            });
-
-            // Configurar cambio de tabs
-            const tabButtons = this.container.querySelectorAll('.cw-tab-btn');
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remover active de todos los tabs
-                    tabButtons.forEach(btn => btn.classList.remove('cw-active'));
-                    this.container.querySelectorAll('.cw-tab-pane').forEach(pane => 
-                        pane.classList.remove('cw-active'));
-                    
-                    // Activar tab seleccionado
-                    button.classList.add('cw-active');
-                    const tabId = `${button.dataset.tab}-tab`;
-                    this.container.querySelector(`#${tabId}`).classList.add('cw-active');
-                });
-            });
-
-            // Obtener referencias a elementos
-            const toggleBtn = this.container.querySelector('.cw-toggle-btn');
-            const chatWidget = this.container.querySelector('.cw-widget');
-            const minimizeBtn = this.container.querySelector('.cw-minimize-btn');
-            const messageInput = this.container.querySelector('#widget-message-input');
-            const sendButton = this.container.querySelector('#widget-send-button');
-            const messagesContainer = this.container.querySelector('#widget-messages');
-
-            // Configurar eventos
-            toggleBtn.addEventListener('click', () => {
-                this.isMinimized = !this.isMinimized;
-                chatWidget.classList.toggle('visible');
-                toggleBtn.querySelector('i').classList.toggle('fa-comments');
-                toggleBtn.querySelector('i').classList.toggle('fa-times');
-                
-                if (!this.isMinimized) {
-                    // Asegurar que el widget sea visible
-                    chatWidget.style.display = 'block';
-                    this.resetUnreadCount();
-                } else {
-                    // Asegurar que el widget esté oculto
-                    chatWidget.style.display = 'none';
-                }
-                
-                localStorage.setItem('chat_minimized', this.isMinimized.toString());
-            });
-
-            // Configurar evento de minimizar
-            minimizeBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Evitar que el click se propague
-                chatWidget.classList.remove('visible');
-                toggleBtn.querySelector('i').classList.remove('fa-times');
-                toggleBtn.querySelector('i').classList.add('fa-comments');
-                this.isMinimized = true;
-            });
-
-            // Manejar envío de mensajes - Actualizamos el formato
-            const sendMessage = async () => {
-                const messageInput = this.container.querySelector('#widget-message-input');
-                const message = messageInput.value.trim();
-                if (!message) return;
-
-                const userId = localStorage.getItem('user_id');
-                if (!userId) {
-                    console.error('ID de usuario no encontrado, reintentando sincronización...');
-                    await this.syncUserData();
-                    if (!localStorage.getItem('user_id')) {
-                        console.error('No se pudo obtener el ID de usuario');
-                        return;
-                    }
-                }
-
-                const messageData = {
-                    type: 'chat_message',
-                    content: message,
-                    room: 'general',
-                    channel_name: 'chat_general',
-                    user_id: parseInt(userId),
-                    username: localStorage.getItem('username')
-                };
-
-                console.log('Enviando mensaje con datos:', messageData);
-                webSocketService.send(messageData);
-                messageInput.value = '';
-            };
-
-            sendButton.addEventListener('click', sendMessage);
-            messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
-            });
-
-            // Escuchar mensajes nuevos - Actualizamos esta parte
-            webSocketService.on('chat_message', (data) => {
-                console.log('Mensaje recibido en widget:', data);
-                const messageContent = data.message || data.content; // Manejar ambos formatos
-                if (!messageContent) return;
-                
-                const messageElement = document.createElement('div');
-                messageElement.className = `cw-message ${
-                    data.user_id === parseInt(localStorage.getItem('user_id')) 
-                        ? 'cw-message-my' 
-                        : 'cw-message-other'
-                }`;
-                
-                messageElement.innerHTML = `
-                    <span class="cw-message-username">${data.username}</span>
-                    ${messageContent}
-                `;
-                
-                const messagesContainer = this.container.querySelector('#widget-messages');
-                if (messagesContainer) {
-                    messagesContainer.appendChild(messageElement);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    console.log('Mensaje añadido al contenedor');
-                } else {
-                    console.error('No se encontró el contenedor de mensajes');
-                }
-
-                if (this.isMinimized) {
-                    this.incrementUnreadCount();
-                }
-            });
-
-            // Configurar listeners de WebSocket para usuarios
-            webSocketService.on('user_list', (data) => {
-                console.log('Lista de usuarios recibida:', data);
-                this.userList.updateList(data);
-            });
-
-            webSocketService.on('user_status', (data) => {
-                this.userList.updateUserStatus(data.user_id, data.is_online);
-            });
-
-            // Asegurarnos de que el WebSocket esté conectado antes de empezar
-            if (!webSocketService.socket || webSocketService.socket.readyState !== WebSocket.OPEN) {
-                await webSocketService.connect('general');
-            }
-
-            // Inicializar estado al montar
-            const lastState = localStorage.getItem('chat_minimized');
-            if (lastState === 'false') {
-                this.isMinimized = false;
-                chatWidget.classList.add('visible');
-                chatWidget.style.display = 'block';
-                this.resetUnreadCount();
-            }
+            // Solicitar datos iniciales
+            this.requestInitialData();
 
             document.body.appendChild(this.container);
 
         } catch (error) {
             console.error('Error durante el montaje del chat:', error);
+        }
+    }
+
+    clearAllWebSocketListeners() {
+        [
+            'chat_message',
+            'private_channels',
+            'friend_list_update',
+            'pending_friend_requests',
+            'sent_friend_requests',
+            'user_list',
+            'user_status',
+            'error'
+        ].forEach(event => webSocketService.off(event));
+    }
+
+    setupUIEventListeners() {
+        // Obtener referencias a elementos
+        const toggleBtn = this.container.querySelector('.cw-toggle-btn');
+        const chatWidget = this.container.querySelector('.cw-widget');
+        const minimizeBtn = this.container.querySelector('.cw-minimize-btn');
+        const messageInput = this.container.querySelector('#widget-message-input');
+        const sendButton = this.container.querySelector('#widget-send-button');
+
+        // Configurar evento de toggle
+        toggleBtn.addEventListener('click', () => {
+            this.isMinimized = !this.isMinimized;
+            chatWidget.classList.toggle('visible');
+            toggleBtn.querySelector('i').classList.toggle('fa-comments');
+            toggleBtn.querySelector('i').classList.toggle('fa-times');
+            
+            if (!this.isMinimized) {
+                // Asegurar que el widget sea visible
+                chatWidget.style.display = 'block';
+                this.resetUnreadCount();
+            } else {
+                // Asegurar que el widget esté oculto
+                chatWidget.style.display = 'none';
+            }
+            
+            localStorage.setItem('chat_minimized', this.isMinimized.toString());
+        });
+
+        // Configurar evento de minimizar
+        minimizeBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evitar que el click se propague
+            this.isMinimized = true;
+            chatWidget.classList.remove('visible');
+            chatWidget.style.display = 'none';
+            toggleBtn.querySelector('i').classList.remove('fa-times');
+            toggleBtn.querySelector('i').classList.add('fa-comments');
+            
+            // Guardar estado
+            localStorage.setItem('chat_minimized', 'true');
+        });
+
+        // Configurar envío de mensajes
+        const sendMessage = async () => {
+            const messageInput = this.container.querySelector('#widget-message-input');
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            const userId = localStorage.getItem('user_id');
+            if (!userId) {
+                console.error('ID de usuario no encontrado, reintentando sincronización...');
+                await this.syncUserData();
+                if (!localStorage.getItem('user_id')) {
+                    console.error('No se pudo obtener el ID de usuario');
+                    return;
+                }
+            }
+
+            const messageData = {
+                type: 'chat_message',
+                content: message,
+                room: 'general',
+                channel_name: 'chat_general',
+                user_id: parseInt(userId),
+                username: localStorage.getItem('username')
+            };
+
+            console.log('Enviando mensaje con datos:', messageData);
+            webSocketService.send(messageData);
+            messageInput.value = '';
+        };
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Añadir manejador de tabs
+        const tabButtons = this.container.querySelectorAll('.cw-tab-btn');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover active de todos los tabs y panes
+                tabButtons.forEach(btn => btn.classList.remove('cw-active'));
+                this.container.querySelectorAll('.cw-tab-pane').forEach(pane => 
+                    pane.classList.remove('cw-active')
+                );
+                
+                // Activar tab y pane seleccionados
+                button.classList.add('cw-active');
+                const tabId = `${button.dataset.tab}-tab`;
+                const targetPane = this.container.querySelector(`#${tabId}`);
+                if (targetPane) {
+                    targetPane.classList.add('cw-active');
+                }
+                
+                // Actualizar contenido según el tab
+                switch(button.dataset.tab) {
+                    case 'users':
+                        this.userList.updateList(this.userList.lastUserData);
+                        break;
+                    case 'friends':
+                        webSocketService.send({ type: 'get_friend_list' });
+                        break;
+                    case 'requests':
+                        webSocketService.send({ type: 'get_pending_requests' });
+                        break;
+                }
+            });
+        });
+
+        // Añadir listener para nuevos mensajes privados
+        document.addEventListener('new-private-message', (event) => {
+            const { userId, username, message } = event.detail;
+            
+            // Si el widget está minimizado, mostrar notificación
+            if (this.isMinimized) {
+                this.incrementUnreadCount();
+                // Opcional: Mostrar una notificación del sistema
+                if (Notification.permission === 'granted') {
+                    new Notification(`Mensaje de ${username}`, {
+                        body: message,
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
+        });
+    }
+
+    setupWebSocketListeners() {
+        // Chat messages (un solo listener)
+        webSocketService.on('chat_message', (data) => {
+            console.log('Mensaje recibido:', data);
+            if (data.channel_name?.startsWith('dm_')) {
+                this.privateChat.handlePrivateMessage(data);
+            } else {
+                this.handleGeneralChatMessage(data);
+            }
+        });
+
+        // Private channels
+        webSocketService.on('private_channels', (data) => {
+            console.log('Canales privados recibidos:', data);
+            if (data.channels) {
+                data.channels.forEach(channel => {
+                    const otherUser = channel.members.find(m => 
+                        m.id !== parseInt(localStorage.getItem('user_id'))
+                    );
+                    if (otherUser) {
+                        // Solo crear el chat si no existe
+                        if (!this.privateChat.activeChats.has(otherUser.id)) {
+                            this.privateChat.createPrivateChat(otherUser.id, otherUser.username);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Friend related events
+        webSocketService.on('friend_list_update', (data) => {
+            if (data.friends) {
+                const currentUserId = parseInt(localStorage.getItem('user_id'));
+                const friendIds = data.friends.map(f => 
+                    f.user1_id === currentUserId ? f.user2_id : f.user1_id
+                );
+                this.userList.setCurrentFriends(friendIds);
+                this.friendList.updateFriendsList(data);
+            }
+        });
+
+        // User related events
+        webSocketService.on('user_list', (data) => {
+            this.userList.updateList(data);
+        });
+
+        webSocketService.on('user_status', (data) => {
+            this.userList.updateUserStatus(data.user_id, data.is_online);
+        });
+
+        // Error handling
+        webSocketService.on('error', (data) => {
+            console.error('Error del servidor:', data.message);
+        });
+
+        // Friend requests events
+        webSocketService.on('pending_friend_requests', (data) => {
+            console.log('Solicitudes pendientes recibidas:', data);
+            this.friendList.updatePendingRequests(data);
+        });
+
+        webSocketService.on('sent_friend_requests', (data) => {
+            console.log('Solicitudes enviadas:', data);
+            this.userList.updateSentRequests(data.pending || []);
+        });
+
+        webSocketService.on('friend_request_response', (data) => {
+            console.log('Respuesta de solicitud de amistad:', data);
+            if (data.success) {
+                const isAccepted = data.status === 'accepted';
+                this.userList.handleFriendRequestResponse(data.user_id, isAccepted);
+                
+                // Actualizar listas después de responder a una solicitud
+                webSocketService.send({ type: 'get_friend_list' });
+                webSocketService.send({ type: 'get_pending_requests' });
+                webSocketService.send({ type: 'get_sent_requests' });
+            }
+        });
+
+        // Añadir listener para historial de mensajes
+        webSocketService.on('chat_history', (data) => {
+            if (data.messages && data.channel_name) {
+                data.messages.forEach(msg => {
+                    this.privateChat.handlePrivateMessage({
+                        ...msg,
+                        channel_name: data.channel_name
+                    });
+                });
+            }
+        });
+
+        // Añadir listener para usuarios bloqueados
+        webSocketService.on('blocked_users', (data) => {
+            console.log('Lista de usuarios bloqueados recibida:', data);
+            blockService.handleBlockedUsers(data.blocked_users);
+        });
+
+        webSocketService.on('blocked', (data) => {
+            console.log('Usuario bloqueado:', data);
+            blockService.blockUser(data.user_id);
+            // Si hay un chat abierto con este usuario, cerrarlo
+            if (this.privateChat.activeChats.has(data.user_id)) {
+                this.privateChat.closeChat(data.user_id);
+            }
+        });
+
+        webSocketService.on('unblocked', (data) => {
+            console.log('Usuario desbloqueado:', data);
+            const unblockData = {
+                type: 'unblocked',
+                user_id: data.user_id,
+                username: data.username
+            };
+            blockService.handleBlockedUsers(unblockData);
+            this.userList.updateList(this.userList.lastUserData);
+        });
+
+        webSocketService.on('blocked_users', (data) => {
+            console.log('Lista de usuarios bloqueados/bloqueantes:', data);
+            blockService.handleBlockedUsers(data);
+            // Actualizar la UI
+            this.userList.updateList(this.userList.lastUserData);
+        });
+
+        webSocketService.on('blocked', (data) => {
+            console.log('Usuario bloqueado:', data);
+            if (this.privateChat.activeChats.has(data.user_id)) {
+                this.privateChat.closeChat(data.user_id);
+            }
+            this.userList.updateList(this.userList.lastUserData);
+        });
+
+        // Actualizar el manejo de eventos de bloqueo
+        webSocketService.on('blocked_users', (data) => {
+            console.log('Lista de usuarios bloqueados recibida:', data);
+            blockService.handleBlockedUsers(data);
+            this.userList.updateList(this.userList.lastUserData);
+        });
+
+        webSocketService.on('blocked', (data) => {
+            console.log('Estado de bloqueo actualizado:', data);
+            // Recargar la lista completa de usuarios bloqueados
+            webSocketService.send({ type: 'get_blocked_users' });
+            this.userList.updateList(this.userList.lastUserData);
+        });
+
+        webSocketService.on('unblocked', (data) => {
+            console.log('Estado de bloqueo actualizado:', data);
+            // Recargar la lista completa de usuarios bloqueados
+            webSocketService.send({ type: 'get_blocked_users' });
+            this.userList.updateList(this.userList.lastUserData);
+        });
+    }
+
+    requestInitialData() {
+        const requests = [
+            { type: 'get_user_list' },
+            { type: 'get_friend_list' },
+            { type: 'get_pending_requests' },
+            { type: 'get_sent_requests' }
+        ];
+
+        // Enviar solicitudes con un pequeño retraso entre ellas
+        requests.forEach((request, index) => {
+            setTimeout(() => {
+                console.log('Solicitando datos:', request.type);
+                webSocketService.send(request);
+            }, index * 100);
+        });
+    }
+
+    handleGeneralChatMessage(data) {
+        // Mover aquí la lógica existente para mensajes del chat general
+        const messageContent = data.message || data.content;
+        if (!messageContent) return;
+        
+        const messageElement = document.createElement('div');
+        messageElement.className = `cw-message ${
+            data.user_id === parseInt(localStorage.getItem('user_id')) 
+                ? 'cw-message-my' 
+                : 'cw-message-other'
+        }`;
+        
+        messageElement.innerHTML = `
+            <span class="cw-message-username">${data.username}</span>
+            ${messageContent}
+        `;
+        
+        const messagesContainer = this.container.querySelector('#widget-messages');
+        if (messagesContainer) {
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        if (this.isMinimized) {
+            this.incrementUnreadCount();
         }
     }
 
