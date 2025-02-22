@@ -11,7 +11,8 @@ export class ChatWidget {
         
         this.container = null;
         this.isMinimized = true;
-        this.unreadCount = 0;
+        // Modificar para usar localStorage
+        this.unreadCount = parseInt(localStorage.getItem('chat_unread_count') || '0');
     }
 
     static async initialize() {
@@ -32,25 +33,50 @@ export class ChatWidget {
             <div class="chat-widget">
                 <div class="chat-widget-content">
                     <div class="chat-widget-header">
-                        <h3><i class="fas fa-comments"></i> Chat General</h3>
+                        <div class="chat-header-info">
+                            <h3><i class="fas fa-comments"></i> Chat General</h3>
+                            <div class="chat-header-status">
+                                <span class="status-indicator online"></span>
+                                <span>En línea</span>
+                            </div>
+                        </div>
                         <div class="chat-controls">
-                            <button class="minimize-btn">
+                            <button class="minimize-btn" title="Minimizar">
                                 <i class="fas fa-minus"></i>
                             </button>
                         </div>
                     </div>
+                    
                     <div id="widget-messages" class="chat-log"></div>
-                    <div class="input-group">
-                        <input type="text" id="widget-message-input" class="form-control" 
-                            placeholder="Escribe un mensaje..." autocomplete="off">
-                        <button type="submit" id="widget-send-button" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i>
+                    
+                    <div class="chat-toolbar">
+                        <button class="emoji-btn" title="Emojis">
+                            <i class="far fa-smile"></i>
                         </button>
+                        <button class="attachment-btn" title="Adjuntar archivo">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <input type="text" 
+                                   id="widget-message-input" 
+                                   class="chat-input" 
+                                   placeholder="Escribe un mensaje..." 
+                                   autocomplete="off">
+                            <button type="submit" 
+                                    id="widget-send-button" 
+                                    class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
             <button class="chat-toggle-btn">
                 <i class="fas fa-comments"></i>
+                <span class="chat-notification"></span>
             </button>
         `;
 
@@ -68,6 +94,14 @@ export class ChatWidget {
             chatWidget.classList.toggle('visible');
             toggleBtn.querySelector('i').classList.toggle('fa-comments');
             toggleBtn.querySelector('i').classList.toggle('fa-times');
+            
+            // Guardar estado en localStorage
+            localStorage.setItem('chat_minimized', this.isMinimized.toString());
+            
+            // Añadimos: Si el chat se está abriendo, resetear notificaciones
+            if (!this.isMinimized) {
+                this.resetUnreadCount();
+            }
         });
 
         // Configurar evento de minimizar
@@ -144,15 +178,20 @@ export class ChatWidget {
         }
 
         document.body.appendChild(this.container);
+        this.initializeWidgetState(); // Inicializar estado después de montar
     }
 
     incrementUnreadCount() {
         this.unreadCount++;
+        // Guardar en localStorage
+        localStorage.setItem('chat_unread_count', this.unreadCount.toString());
         this.updateNotificationBadge();
     }
 
     resetUnreadCount() {
         this.unreadCount = 0;
+        // Limpiar en localStorage
+        localStorage.setItem('chat_unread_count', '0');
         this.updateNotificationBadge();
     }
 
@@ -169,6 +208,16 @@ export class ChatWidget {
             badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
         } else if (badge) {
             badge.remove();
+        }
+    }
+
+    // Añadir método para inicializar el estado del widget
+    initializeWidgetState() {
+        const lastState = localStorage.getItem('chat_minimized');
+        if (lastState === 'false') {
+            this.isMinimized = false;
+            this.container.querySelector('.chat-widget').classList.add('visible');
+            this.resetUnreadCount(); // Si el chat estaba abierto, resetear notificaciones
         }
     }
 }
