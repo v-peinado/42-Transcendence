@@ -1,5 +1,6 @@
 import { webSocketService } from '../services/WebSocketService.js';
 import AuthService from '../services/AuthService.js';
+import { UserList } from '../views/chat/chatcomponents/UserList.js';  // Añadir esta importación
 
 export class ChatWidget {
     static instance = null;
@@ -121,64 +122,80 @@ export class ChatWidget {
             
             // Crear el contenedor del widget
             this.container = document.createElement('div');
-            this.container.className = 'chat-widget-container';
+            this.container.className = 'cw-container';  // Cambiado de chat-widget-container a cw-container
             
             // Crear la estructura completa del widget
             this.container.innerHTML = `
-                <div class="chat-widget">
-                    <div class="chat-widget-content">
-                        <div class="chat-widget-header">
-                            <div class="chat-header-info">
-                                <h3><i class="fas fa-comments"></i> Chat General</h3>
-                                <div class="chat-header-status">
-                                    <span class="status-indicator online"></span>
-                                    <span>En línea</span>
+                <div class="cw-widget">
+                    <div class="cw-content">
+                        <header class="cw-header">
+                            <nav class="cw-tabs">
+                                <button class="cw-tab-btn cw-active" data-tab="chat">
+                                    <i class="fas fa-comments"></i> Chat
+                                </button>
+                                <button class="cw-tab-btn" data-tab="users">
+                                    <i class="fas fa-users"></i> Usuarios
+                                </button>
+                            </nav>
+                            <button class="cw-minimize-btn" title="Minimizar">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </header>
+                        
+                        <div class="cw-tab-content">
+                            <div id="chat-tab" class="cw-tab-pane cw-active">
+                                <div id="widget-messages" class="cw-messages"></div>
+                                <div class="cw-input-container">
+                                    <div class="cw-input-wrapper">
+                                        <input type="text" 
+                                            id="widget-message-input" 
+                                            class="cw-input" 
+                                            placeholder="Escribe un mensaje..." 
+                                            autocomplete="off">
+                                        <button type="submit" 
+                                                id="widget-send-button" 
+                                                class="cw-send-btn">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="chat-controls">
-                                <button class="minimize-btn" title="Minimizar">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="widget-messages" class="chat-log"></div>
-                        
-                        <div class="chat-toolbar">
-                            <button class="emoji-btn" title="Emojis">
-                                <i class="far fa-smile"></i>
-                            </button>
-                            <button class="attachment-btn" title="Adjuntar archivo">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="chat-input-container">
-                            <div class="chat-input-wrapper">
-                                <input type="text" 
-                                       id="widget-message-input" 
-                                       class="chat-input" 
-                                       placeholder="Escribe un mensaje..." 
-                                       autocomplete="off">
-                                <button type="submit" 
-                                        id="widget-send-button" 
-                                        class="send-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
+                            
+                            <div id="users-tab" class="cw-tab-pane">
+                                <div id="widget-users-list" class="cw-users-list"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <button class="chat-toggle-btn">
+                <button class="cw-toggle-btn">
                     <i class="fas fa-comments"></i>
-                    <span class="chat-notification"></span>
+                    <span class="cw-notification"></span>
                 </button>
             `;
 
+            // Inicializar UserList
+            this.userList = new UserList(this.container);
+            
+            // Configurar cambio de tabs
+            const tabButtons = this.container.querySelectorAll('.cw-tab-btn');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remover active de todos los tabs
+                    tabButtons.forEach(btn => btn.classList.remove('cw-active'));
+                    this.container.querySelectorAll('.cw-tab-pane').forEach(pane => 
+                        pane.classList.remove('cw-active'));
+                    
+                    // Activar tab seleccionado
+                    button.classList.add('cw-active');
+                    const tabId = `${button.dataset.tab}-tab`;
+                    this.container.querySelector(`#${tabId}`).classList.add('cw-active');
+                });
+            });
+
             // Obtener referencias a elementos
-            const toggleBtn = this.container.querySelector('.chat-toggle-btn');
-            const chatWidget = this.container.querySelector('.chat-widget');
-            const minimizeBtn = this.container.querySelector('.minimize-btn');
+            const toggleBtn = this.container.querySelector('.cw-toggle-btn');
+            const chatWidget = this.container.querySelector('.cw-widget');
+            const minimizeBtn = this.container.querySelector('.cw-minimize-btn');
             const messageInput = this.container.querySelector('#widget-message-input');
             const sendButton = this.container.querySelector('#widget-send-button');
             const messagesContainer = this.container.querySelector('#widget-messages');
@@ -190,13 +207,16 @@ export class ChatWidget {
                 toggleBtn.querySelector('i').classList.toggle('fa-comments');
                 toggleBtn.querySelector('i').classList.toggle('fa-times');
                 
-                // Guardar estado en localStorage
-                localStorage.setItem('chat_minimized', this.isMinimized.toString());
-                
-                // Añadimos: Si el chat se está abriendo, resetear notificaciones
                 if (!this.isMinimized) {
+                    // Asegurar que el widget sea visible
+                    chatWidget.style.display = 'block';
                     this.resetUnreadCount();
+                } else {
+                    // Asegurar que el widget esté oculto
+                    chatWidget.style.display = 'none';
                 }
+                
+                localStorage.setItem('chat_minimized', this.isMinimized.toString());
             });
 
             // Configurar evento de minimizar
@@ -252,14 +272,14 @@ export class ChatWidget {
                 if (!messageContent) return;
                 
                 const messageElement = document.createElement('div');
-                messageElement.className = `msg ${
+                messageElement.className = `cw-message ${
                     data.user_id === parseInt(localStorage.getItem('user_id')) 
-                        ? 'my-msg' 
-                        : 'other-msg'
+                        ? 'cw-message-my' 
+                        : 'cw-message-other'
                 }`;
                 
                 messageElement.innerHTML = `
-                    <small>${data.username}</small>
+                    <span class="cw-message-username">${data.username}</span>
                     ${messageContent}
                 `;
                 
@@ -277,13 +297,32 @@ export class ChatWidget {
                 }
             });
 
+            // Configurar listeners de WebSocket para usuarios
+            webSocketService.on('user_list', (data) => {
+                console.log('Lista de usuarios recibida:', data);
+                this.userList.updateList(data);
+            });
+
+            webSocketService.on('user_status', (data) => {
+                this.userList.updateUserStatus(data.user_id, data.is_online);
+            });
+
             // Asegurarnos de que el WebSocket esté conectado antes de empezar
             if (!webSocketService.socket || webSocketService.socket.readyState !== WebSocket.OPEN) {
                 await webSocketService.connect('general');
             }
 
+            // Inicializar estado al montar
+            const lastState = localStorage.getItem('chat_minimized');
+            if (lastState === 'false') {
+                this.isMinimized = false;
+                chatWidget.classList.add('visible');
+                chatWidget.style.display = 'block';
+                this.resetUnreadCount();
+            }
+
             document.body.appendChild(this.container);
-            this.initializeWidgetState(); // Inicializar estado después de montar
+
         } catch (error) {
             console.error('Error durante el montaje del chat:', error);
         }
@@ -304,13 +343,13 @@ export class ChatWidget {
     }
 
     updateNotificationBadge() {
-        const toggleBtn = this.container.querySelector('.chat-toggle-btn');
-        let badge = toggleBtn.querySelector('.chat-notification');
+        const toggleBtn = this.container.querySelector('.cw-toggle-btn');
+        let badge = toggleBtn.querySelector('.cw-notification');
         
         if (this.unreadCount > 0) {
             if (!badge) {
                 badge = document.createElement('span');
-                badge.className = 'chat-notification';
+                badge.className = 'cw-notification';
                 toggleBtn.appendChild(badge);
             }
             badge.textContent = this.unreadCount > 9 ? '9+' : this.unreadCount;
@@ -324,7 +363,7 @@ export class ChatWidget {
         const lastState = localStorage.getItem('chat_minimized');
         if (lastState === 'false') {
             this.isMinimized = false;
-            this.container.querySelector('.chat-widget').classList.add('visible');
+            this.container.querySelector('.cw-widget').classList.add('visible');
             this.resetUnreadCount(); // Si el chat estaba abierto, resetear notificaciones
         }
     }
