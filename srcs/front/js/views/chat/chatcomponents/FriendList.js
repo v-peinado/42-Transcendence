@@ -14,48 +14,76 @@ export class FriendList {
     }
 
     updateFriendsList(data) {
-        this.friendsList.innerHTML = '';
+        console.log('Actualizando lista de amigos:', data);
+        const friendsList = this.container.querySelector('#widget-friends-list');
+        if (!friendsList) {
+            console.error('No se encontró el contenedor de amigos');
+            return;
+        }
+
+        friendsList.innerHTML = '';
         
-        if (!data.friends?.length) {
-            this.showEmptyState();
+        if (!data?.friends?.length) {
+            friendsList.innerHTML = `
+                <div class="cw-empty-state">
+                    <i class="fas fa-user-friends"></i>
+                    <p>No tienes amigos agregados</p>
+                </div>
+            `;
             return;
         }
 
         data.friends.forEach(friend => {
-            const friendElement = this.createFriendElement(friend);
-            this.friendsList.appendChild(friendElement);
-        });
-    }
+            // Extraer correctamente el ID y username del amigo
+            const isFriendUser1 = friend.user1_id === this.currentUserId;
+            const friendId = isFriendUser1 ? friend.user2_id : friend.user1_id;
+            // Corregido: usar user2__username en lugar de user2_username
+            const friendUsername = isFriendUser1 ? friend.user2__username : friend.user1__username;
 
-    createFriendElement(friend) {
-        const isFriendUser1 = friend.user1_id === this.currentUserId;
-        const friendId = isFriendUser1 ? friend.user2_id : friend.user1_id;
-        const friendUsername = isFriendUser1 ? friend.user2__username : friend.user1__username;
+            console.log('Procesando amigo:', {
+                friendId,
+                friendUsername,
+                rawData: friend
+            });
 
-        const friendDiv = document.createElement('div');
-        friendDiv.className = 'list-group-item friend-item';
-        friendDiv.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <span class="user-status ${friend.is_online ? 'user-online' : 'user-offline'}"></span>
-                    <span class="ms-2">${friendUsername}</span>
+            if (!friendUsername) {
+                console.error('Username indefinido para amigo:', friend);
+                return;
+            }
+
+            const friendElement = document.createElement('div');
+            friendElement.className = 'cw-user-item';
+            friendElement.dataset.userId = friendId; // Añadido para facilitar búsqueda
+            friendElement.innerHTML = `
+                <div class="cw-user-info">
+                    <span class="cw-user-status ${friend.is_online ? 'online' : 'offline'}"></span>
+                    <span class="cw-username">${friendUsername}</span>
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-sm btn-primary chat-with-friend" 
-                            data-user-id="${friendId}"
-                            data-username="${friendUsername}">
+                <div class="cw-user-actions">
+                    <button class="cw-chat-btn" title="Chat privado">
                         <i class="fas fa-comment"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline-danger delete-friend" 
-                            data-friendship-id="${friend.id}">
+                    <button class="cw-friend-remove" title="Eliminar amigo" data-friendship-id="${friend.id}">
                         <i class="fas fa-user-minus"></i>
                     </button>
                 </div>
-            </div>
-        `;
+            `;
 
-        this.attachFriendEventListeners(friendDiv);
-        return friendDiv;
+            const chatBtn = friendElement.querySelector('.cw-chat-btn');
+            const removeBtn = friendElement.querySelector('.cw-friend-remove');
+
+            chatBtn.addEventListener('click', () => {
+                this.onChatCallback?.(friendId, friendUsername);
+            });
+
+            removeBtn.addEventListener('click', () => {
+                const friendshipId = friend.id;
+                friendService.deleteFriendship(friendshipId);
+                friendElement.remove();
+            });
+
+            friendsList.appendChild(friendElement);
+        });
     }
 
     attachFriendEventListeners(friendDiv) {
@@ -75,35 +103,97 @@ export class FriendList {
     }
 
     updatePendingRequests(data) {
-        this.pendingRequests.innerHTML = '';
-        
-        // Actualizar el badge de notificación en la pestaña
-        const requestCount = data.pending?.length || 0;
-        const requestsTab = document.querySelector('[data-tab="requests"]');
-        if (requestsTab) {
-            const existingBadge = requestsTab.querySelector('.requests-badge');
-            if (requestCount > 0) {
-                if (existingBadge) {
-                    existingBadge.textContent = requestCount;
-                } else {
-                    requestsTab.innerHTML += `
-                        <span class="requests-badge badge-notification">${requestCount}</span>
-                    `;
-                }
-            } else if (existingBadge) {
-                existingBadge.remove();
-            }
-        }
-
-        if (!data.pending?.length) {
-            this.showEmptyRequestsState();
+        console.log('Actualizando solicitudes pendientes:', data);
+        const requestsList = this.container.querySelector('#widget-requests-list');
+        if (!requestsList) {
+            console.error('No se encontró el contenedor de solicitudes');
             return;
         }
 
-        data.pending.forEach(request => {
-            const requestElement = this.createRequestElement(request);
-            this.pendingRequests.appendChild(requestElement);
+        requestsList.innerHTML = '';
+        const requests = data.pending || [];
+
+        if (!requests.length) {
+            requestsList.innerHTML = `
+                <div class="cw-empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay solicitudes pendientes</p>
+                </div>
+            `;
+            this.updateRequestsCount(0);
+            return;
+        }
+
+        requests.forEach(request => {
+            const requestId = request.request_id;
+            if (!requestId) {
+                console.error('Solicitud sin request_id:', request);
+                return;
+            }
+
+            const requestElement = document.createElement('div');
+            requestElement.className = 'cw-user-item';  // Cambiado para coincidir con el estilo general
+            requestElement.dataset.requestId = requestId;
+            requestElement.innerHTML = `
+                <div class="cw-user-info">
+                    <span class="cw-user-status offline"></span>
+                    <span class="cw-username">${request.from_user_username}</span>
+                    <small class="cw-request-text">quiere ser tu amigo</small>
+                </div>
+                <div class="cw-user-actions">
+                    <button class="cw-accept-btn" title="Aceptar solicitud">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="cw-reject-btn" title="Rechazar solicitud">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            const acceptBtn = requestElement.querySelector('.cw-accept-btn');
+            acceptBtn.addEventListener('click', async () => {
+                try {
+                    console.log('Aceptando solicitud:', requestId);
+                    await friendService.acceptFriendRequest(requestId);
+                    requestElement.remove();
+                    this.updateRequestsCount(requestsList.querySelectorAll('.cw-request-item').length);
+                } catch (error) {
+                    console.error('Error al aceptar solicitud:', error);
+                }
+            });
+
+            const rejectBtn = requestElement.querySelector('.cw-reject-btn');
+            rejectBtn.addEventListener('click', async () => {
+                try {
+                    console.log('Rechazando solicitud:', requestId);
+                    await friendService.rejectFriendRequest(requestId);
+                    requestElement.remove();
+                    this.updateRequestsCount(requestsList.querySelectorAll('.cw-request-item').length);
+                } catch (error) {
+                    console.error('Error al rechazar solicitud:', error);
+                }
+            });
+
+            requestsList.appendChild(requestElement);
         });
+
+        this.updateRequestsCount(requests.length);
+    }
+
+    updateRequestsCount(count) {
+        const requestsTab = this.container.querySelector('[data-tab="requests"]');
+        let badge = requestsTab.querySelector('.cw-requests-badge');
+        
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'cw-requests-badge';
+                requestsTab.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
     }
 
     createRequestElement(request) {

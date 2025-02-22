@@ -9,18 +9,48 @@ export class UserList {
         this.sentRequests = new Set(); // Añadir esta línea
         this.requestsContainer = container.querySelector('#requests-container');
         this.friendsContainer = container.querySelector('#friends-container');
+        
+        // Cargar estado guardado
+        this.loadSavedState();
+    }
+
+    loadSavedState() {
+        try {
+            const savedFriends = JSON.parse(localStorage.getItem('currentFriends') || '[]');
+            this.currentFriends = new Set(savedFriends);
+            const savedRequests = JSON.parse(localStorage.getItem('sentRequests') || '[]');
+            this.sentRequests = new Set(savedRequests);
+        } catch (error) {
+            console.error('Error cargando estado guardado:', error);
+        }
+    }
+
+    saveState() {
+        localStorage.setItem('currentFriends', JSON.stringify([...this.currentFriends]));
+        localStorage.setItem('sentRequests', JSON.stringify([...this.sentRequests]));
     }
 
     updateSentRequests(requests) {
-        this.sentRequests = new Set(requests.map(req => req.to_user_id));
-        this.updateList(this.lastUserData); // Actualizar la vista con los datos almacenados
+        console.log('Actualizando solicitudes enviadas:', requests);
+        // Limpiar las solicitudes actuales
+        this.sentRequests.clear();
+        // Añadir las nuevas solicitudes si existen
+        if (Array.isArray(requests)) {
+            requests.forEach(req => {
+                if (req.to_user_id) {
+                    this.sentRequests.add(req.to_user_id);
+                }
+            });
+        }
+        this.saveState();
+        // Actualizar la vista
+        this.updateList(this.lastUserData);
     }
 
     updateList(data) {
         console.log('Actualizando lista de usuarios:', data);
         this.lastUserData = data;
         
-        // Asegurarse de que usersList existe
         const usersList = this.container.querySelector('#widget-users-list');
         if (!usersList) {
             console.error('No se encontró el contenedor de usuarios');
@@ -30,11 +60,12 @@ export class UserList {
         usersList.innerHTML = '';
         
         // Mostrar estado vacío si no hay usuarios
-        if (!data.users?.length || data.users.length === 1) {
+        if (!data?.users?.length || (data.users.length === 1 && data.users[0].id === parseInt(localStorage.getItem('user_id')))) {
             usersList.innerHTML = `
                 <div class="cw-empty-state">
-                    <i class="fas fa-users-slash fa-2x mb-2"></i>
-                    <p>No hay otros usuarios conectados</p>
+                    <i class="fas fa-users-slash"></i>
+                    <p>No hay usuarios conectados</p>
+                    <small>Espera a que alguien se conecte</small>
                 </div>
             `;
             return;
@@ -44,28 +75,9 @@ export class UserList {
         const currentUserId = parseInt(localStorage.getItem('user_id'));
         const otherUsers = data.users.filter(user => user.id !== currentUserId);
 
-        // Crear elementos para cada usuario
+        // Usar createUserElement para cada usuario
         otherUsers.forEach(user => {
-            const userElement = document.createElement('div');
-            userElement.className = 'cw-user-item';
-            userElement.innerHTML = `
-                <div class="cw-user-info">
-                    <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
-                    <span class="cw-username">${user.username}</span>
-                </div>
-                <div class="cw-user-actions">
-                    <button class="cw-chat-btn" title="Chat privado">
-                        <i class="fas fa-comment"></i>
-                    </button>
-                </div>
-            `;
-
-            // Añadir eventos
-            const chatButton = userElement.querySelector('.cw-chat-btn');
-            chatButton.addEventListener('click', () => {
-                this.onChatCallback?.(user.id, user.username);
-            });
-
+            const userElement = this.createUserElement(user);
             usersList.appendChild(userElement);
         });
     }
@@ -81,30 +93,107 @@ export class UserList {
     }
 
     createUserElement(user) {
-        const userDiv = document.createElement('div');
-        userDiv.classList.add('list-group-item', 'user-item', 'py-2');
-        userDiv.setAttribute('data-user-id', user.id);
-        userDiv.setAttribute('data-username', user.username);
+        const userId = parseInt(user.id);
+        const isFriend = this.currentFriends.has(userId);
+        const hasSentRequest = this.sentRequests.has(userId);
 
-        const actionButtons = this.createActionButtons(user);
+        const userElement = document.createElement('div');
+        userElement.className = `cw-user-item ${isFriend ? 'is-friend' : ''}`;
+        userElement.dataset.userId = userId;
         
-        userDiv.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="user-info d-flex align-items-center">
-                    <span class="user-status ${user.is_online ? 'user-online' : 'user-offline'} me-2"></span>
-                    <span class="username">${user.username}</span>
-                    ${user.has_blocked_you ? 
-                        '<span class="badge bg-danger blocked-by-badge ms-2"><i class="fas fa-ban"></i> Bloqueado</span>' 
-                        : ''}
-                </div>
-                <div class="btn-group">
-                    ${this.createChatButton(user)}
-                    ${actionButtons}
-                </div>
-            </div>`;
+        userElement.innerHTML = `
+            <div class="cw-user-info">
+                <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
+                <span class="cw-username">
+                    ${user.username}
+                    ${isFriend ? '<i class="fas fa-star friend-star" title="Amigo"></i>' : ''}
+                </span>
+            </div>
+            <div class="cw-user-actions">
+                <button class="cw-chat-btn" title="Chat privado">
+                    <i class="fas fa-comment"></i>
+                </button>
+                ${!isFriend ? this.createFriendActionButton(user, isFriend, hasSentRequest) : ''}
+            </div>
+        `;
 
-        this.attachEventListeners(userDiv, user);
-        return userDiv;
+        this.attachUserEventListeners(userElement, user, isFriend);
+        return userElement;
+    }
+
+    createFriendActionButton(user, isFriend, hasSentRequest) {
+        // Si ya son amigos, no mostrar ningún botón
+        if (isFriend) {
+            return ''; // Retornamos string vacío si son amigos
+        }
+        
+        // Si hay una solicitud pendiente, mostrar el icono de reloj
+        if (hasSentRequest) {
+            return `
+                <span class="cw-request-pending" title="Solicitud enviada">
+                    <i class="fas fa-clock"></i>
+                </span>`;
+        }
+        
+        // Si no son amigos y no hay solicitud pendiente, mostrar botón de agregar
+        return `
+            <button class="cw-friend-add" title="Agregar amigo">
+                <i class="fas fa-user-plus"></i>
+            </button>`;
+    }
+
+    attachUserEventListeners(userElement, user, isFriend) {
+        const userId = parseInt(user.id);
+        const chatButton = userElement.querySelector('.cw-chat-btn');
+        const addButton = userElement.querySelector('.cw-friend-add');
+
+        chatButton?.addEventListener('click', () => {
+            this.onChatCallback?.(user.id, user.username);
+        });
+
+        // Solo añadir el evento al botón de agregar si existe y no son amigos
+        if (addButton && !isFriend) {
+            addButton.addEventListener('click', async () => {
+                try {
+                    addButton.outerHTML = `
+                        <span class="cw-request-pending" title="Solicitud enviada">
+                            <i class="fas fa-clock"></i>
+                        </span>`;
+                    await friendService.sendFriendRequest(userId);
+                    this.sentRequests.add(userId);
+                    this.saveState();
+                } catch (error) {
+                    console.error('Error al enviar solicitud:', error);
+                }
+            });
+        }
+    }
+
+    // Añadir método para manejar respuestas a solicitudes
+    handleFriendRequestResponse(userId, accepted) {
+        // Buscar el elemento de solicitud pendiente
+        const userElement = this.container.querySelector(`[data-user-id="${userId}"]`);
+        if (!userElement) return;
+
+        const pendingElement = userElement.querySelector('.cw-request-pending');
+        if (pendingElement) {
+            if (accepted) {
+                // Si fue aceptada, mostrar botón de eliminar amigo
+                pendingElement.outerHTML = `
+                    <button class="cw-friend-remove" title="Eliminar amigo">
+                        <i class="fas fa-user-minus"></i>
+                    </button>`;
+            } else {
+                // Si fue rechazada, volver a mostrar el botón de agregar
+                pendingElement.outerHTML = `
+                    <button class="cw-friend-add" title="Agregar amigo">
+                        <i class="fas fa-user-plus"></i>
+                    </button>`;
+            }
+            // Actualizar el conjunto de solicitudes enviadas
+            this.sentRequests.delete(userId);
+            this.saveState();
+        }
     }
 
     createChatButton(user) {
@@ -179,10 +268,16 @@ export class UserList {
 
     setCurrentFriends(friends) {
         this.currentFriends = new Set(friends);
+        this.saveState();
+        // Forzar actualización de la UI
+        if (this.lastUserData) {
+            this.updateList(this.lastUserData);
+        }
     }
 
     setCurrentFriendships(friendships) {
         this.currentFriendships = friendships;
+        console.log('Amistades actualizadas:', friendships);
     }
 
     // Método para establecer el callback de chat
@@ -206,10 +301,8 @@ export class UserList {
                 this.updateList(this.lastUserData);
                 break;
             case 'requests':
-                // La lista de solicitudes se actualiza automáticamente
                 break;
             case 'friends':
-                // La lista de amigos se actualiza automáticamente
                 break;
         }
     }

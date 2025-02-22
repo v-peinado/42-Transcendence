@@ -1,10 +1,12 @@
 import { webSocketService } from '../services/WebSocketService.js';
 import AuthService from '../services/AuthService.js';
-import { UserList } from '../views/chat/chatcomponents/UserList.js';  // Añadir esta importación
+import { UserList } from '../views/chat/chatcomponents/UserList.js';
+import { FriendList } from '../views/chat/chatcomponents/FriendList.js';
+import { friendService } from '../services/FriendService.js';
 
 export class ChatWidget {
     static instance = null;
-    static syncPromise = null;  // Añadimos esta variable estática
+    static syncPromise = null;
     
     constructor() {
         if (ChatWidget.instance) {
@@ -16,7 +18,6 @@ export class ChatWidget {
         this.isMinimized = true;
         this.unreadCount = parseInt(localStorage.getItem('chat_unread_count') || '0');
         
-        // No llamamos a syncUserData aquí
     }
 
     async syncUserData() {
@@ -136,6 +137,13 @@ export class ChatWidget {
                                 <button class="cw-tab-btn" data-tab="users">
                                     <i class="fas fa-users"></i> Usuarios
                                 </button>
+                                <button class="cw-tab-btn" data-tab="friends">
+                                    <i class="fas fa-user-friends"></i> Amigos
+                                </button>
+                                <button class="cw-tab-btn" data-tab="requests">
+                                    <i class="fas fa-user-plus"></i> Solicitudes
+                                    <span class="cw-requests-badge"></span>
+                                </button>
                             </nav>
                             <button class="cw-minimize-btn" title="Minimizar">
                                 <i class="fas fa-minus"></i>
@@ -164,6 +172,14 @@ export class ChatWidget {
                             <div id="users-tab" class="cw-tab-pane">
                                 <div id="widget-users-list" class="cw-users-list"></div>
                             </div>
+
+                            <div id="friends-tab" class="cw-tab-pane">
+                                <div id="widget-friends-list" class="cw-users-list"></div>
+                            </div>
+
+                            <div id="requests-tab" class="cw-tab-pane">
+                                <div id="widget-requests-list" class="cw-users-list"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -175,7 +191,54 @@ export class ChatWidget {
 
             // Inicializar UserList y configurar eventos de usuarios
             this.userList = new UserList(this.container);
+            this.friendList = new FriendList(this.container);
             
+            // Limpiar listeners duplicados
+            webSocketService.off('friend_list_update');
+            webSocketService.off('pending_friend_requests');
+            webSocketService.off('sent_friend_requests');
+            webSocketService.off('error');
+
+            // Añadir un solo listener para friend_list_update
+            webSocketService.on('friend_list_update', (data) => {
+                console.log('Lista de amigos actualizada:', data);
+                if (data.friends) {
+                    const currentUserId = parseInt(localStorage.getItem('user_id'));
+                    const friendIds = data.friends.map(f => 
+                        f.user1_id === currentUserId ? f.user2_id : f.user1_id
+                    );
+                    this.userList.setCurrentFriends(friendIds);
+                    this.friendList.updateFriendsList(data);
+                }
+            });
+
+            // Configurar eventos de WebSocket para la gestión de amigos
+            webSocketService.on('pending_friend_requests', (data) => {
+                console.log('Solicitudes pendientes recibidas:', data);
+                this.friendList.updatePendingRequests(data);
+            });
+
+            webSocketService.on('sent_friend_requests', (data) => {
+                console.log('Solicitudes enviadas:', data);
+                this.userList.updateSentRequests(data.pending || []);
+            });
+
+            // Solicitar datos iniciales
+            webSocketService.send({ type: 'get_pending_requests' });
+            webSocketService.send({ type: 'get_sent_requests' });
+            webSocketService.send({ type: 'get_friend_list' });
+
+            // Manejar errores
+            webSocketService.on('error', (data) => {
+                console.error('Error del servidor:', data.message);
+                // Opcional: Mostrar notificación al usuario
+            });
+
+            // Solicitar datos iniciales
+            webSocketService.send({ type: 'get_pending_requests' });
+            webSocketService.send({ type: 'get_sent_requests' });
+            webSocketService.send({ type: 'get_friend_list' });
+
             // Añadir callback para el chat privado
             this.userList.onUserChat((userId, username) => {
                 // Aquí puedes manejar el inicio de un chat privado si lo deseas
@@ -201,9 +264,90 @@ export class ChatWidget {
                 }
             });
 
+            webSocketService.on('friend_list', (data) => {
+                console.log('Lista de amigos recibida:', data);
+                this.friendList.updateFriendsList(data);
+            });
+
+            webSocketService.on('friend_requests', (data) => {
+                console.log('Solicitudes de amistad recibidas:', data);
+                this.friendList.updatePendingRequests(data);
+            });
+
+            // Suscribirse a eventos de WebSocket para amistades
+            webSocketService.on('pending_friend_requests', (data) => {
+                console.log('Solicitudes pendientes recibidas:', data);
+                this.friendList.updatePendingRequests(data);
+            });
+
+            webSocketService.on('sent_friend_requests', (data) => {
+                console.log('Solicitudes enviadas:', data);
+                this.userList.updateSentRequests(data.pending || []);
+            });
+
+            webSocketService.on('friend_list_update', (data) => {
+                console.log('Lista de amigos actualizada:', data);
+                this.friendList.updateFriendsList(data);
+                // Actualizar también la lista de amigos en UserList
+                this.userList.setCurrentFriends(
+                    new Set(data.friends.map(f => 
+                        f.user1_id === parseInt(localStorage.getItem('user_id')) 
+                            ? f.user2_id 
+                            : f.user1_id
+                    ))
+                );
+            });
+
             // Solicitar lista inicial de usuarios al conectar
             webSocketService.send({
                 type: 'get_user_list'
+            });
+
+            // Solicitar listas iniciales
+            webSocketService.send({ type: 'get_friend_list' });
+            webSocketService.send({ type: 'get_friend_requests' });
+
+            // Solicitar listas iniciales con el tipo correcto
+            webSocketService.send({ type: 'get_pending_requests' });
+            webSocketService.send({ type: 'get_sent_requests' });
+            webSocketService.send({ type: 'get_friend_list' });
+
+            // Manejar errores de WebSocket
+            webSocketService.on('error', (data) => {
+                console.error('Error del servidor:', data.message);
+                // Aquí podrías mostrar un toast o notificación al usuario
+            });
+
+            // Manejar actualización de amigos
+            webSocketService.on('friend_list_update', (data) => {
+                console.log('Lista de amigos actualizada:', data);
+                this.friendList.updateFriendsList(data);
+                // Actualizar también UserList con la nueva lista de amigos
+                if (data.friends) {
+                    const currentUserId = parseInt(localStorage.getItem('user_id'));
+                    const friendIds = data.friends.map(f => 
+                        f.user1_id === currentUserId ? f.user2_id : f.user1_id
+                    );
+                    this.userList.setCurrentFriends(new Set(friendIds));
+                }
+            });
+
+            // Solicitar datos iniciales con el tipo correcto
+            webSocketService.send({ type: 'request_friend_list' });
+            webSocketService.send({ type: 'request_pending_requests' });
+            webSocketService.send({ type: 'request_sent_requests' });
+
+            // Manejar respuestas a solicitudes de amistad
+            webSocketService.on('friend_request_response', (data) => {
+                console.log('Respuesta de solicitud de amistad:', data);
+                if (data.success) {
+                    const isAccepted = data.status === 'accepted';
+                    this.userList.handleFriendRequestResponse(data.user_id, isAccepted);
+                    
+                    // Actualizar listas
+                    webSocketService.send({ type: 'get_friend_list' });
+                    webSocketService.send({ type: 'get_sent_requests' });
+                }
             });
 
             // Configurar cambio de tabs
@@ -394,7 +538,7 @@ export class ChatWidget {
         if (lastState === 'false') {
             this.isMinimized = false;
             this.container.querySelector('.cw-widget').classList.add('visible');
-            this.resetUnreadCount(); // Si el chat estaba abierto, resetear notificaciones
+            this.resetUnreadCount();
         }
     }
 }
