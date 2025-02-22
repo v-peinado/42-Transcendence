@@ -1,0 +1,210 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2821
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 AppleColorEmoji;\f1\froman\fcharset0 Times-Bold;\f2\froman\fcharset0 Times-Roman;
+\f3\fmodern\fcharset0 Courier;\f4\fnil\fcharset0 HelveticaNeue;\f5\fmodern\fcharset0 Courier-Bold;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue0;\red179\green179\blue179;
+\red109\green109\blue109;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c0\c84706;\cssrgb\c75294\c75294\c75294;
+\cssrgb\c50196\c50196\c50196;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid1\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\paperw11900\paperh16840\margl1440\margr1440\vieww16700\viewh12120\viewkind0
+\deftab720
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs36 \cf0 \expnd0\expndtw0\kerning0
+\uc0\u55357 \u56633 
+\f1\b  1. Subir un archivo con magic numbers falsos\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Puedes crear un archivo manualmente y cambiar sus 
+\f1\b primeros bytes
+\f2\b0  para que no coincidan con su tipo real.\
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0\fs28 \cf0 \uc0\u55357 \u57056 
+\f1\b  Ejemplo 1: Falsificar una imagen PNG\
+\pard\pardeftab720\partightenfactor0
+
+\f3\b0\fs26 \cf0 bash\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \
+echo -ne '\\xFF\\xD8\\xFF' > fake.png  # Escribe el magic number de un JPEG\
+cat real.png >> fake.png             # A\'f1ade una imagen PNG real\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\fs24 \cf0 \uc0\u55357 \u56633 
+\f2  
+\f1\b Explicaci\'f3n:
+\f2\b0  Esto crea un archivo 
+\f3\fs26 fake.png
+\f2\fs24  que tiene un header de JPEG pero contenido PNG.\
+
+\f0 \uc0\u10145 \u65039 
+\f2  
+\f1\b Sube este archivo
+\f2\b0  a tu aplicaci\'f3n y revisa si ModSecurity lo rechaza.\
+\pard\pardeftab720\partightenfactor0
+\cf5 \
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs36 \cf0 \uc0\u55357 \u56633 
+\f1\b  2. Cambiar la extensi\'f3n sin modificar el contenido\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Algunos sistemas solo verifican la 
+\f1\b extensi\'f3n del archivo
+\f2\b0 , pero no el contenido real.\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 bash\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \
+mv imagen.jpg imagen.php\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\fs24 \cf0 \uc0\u10145 \u65039 
+\f2  Si puedes subirlo sin problema, significa que no se est\'e1n verificando los 
+\f1\b magic numbers
+\f2\b0 .\
+\pard\pardeftab720\partightenfactor0
+\cf5 \
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs36 \cf0 \uc0\u55357 \u56633 
+\f1\b  3. Subir un archivo Polyglot (mezcla de formatos)\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Los 
+\f1\b archivos polyglot
+\f2\b0  contienen contenido v\'e1lido para m\'e1s de un tipo de archivo. Puedes probar con un 
+\f1\b PHP dentro de una imagen
+\f2\b0 :\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 bash\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \
+echo '<?php echo "Hacked!"; ?>' > shell.php\
+cat imagen.jpg >> shell.php\
+mv shell.php imagen.jpg\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\fs24 \cf0 \uc0\u55357 \u56633 
+\f2  
+\f1\b Objetivo:
+\f2\b0  Ver si tu servidor ejecuta c\'f3digo PHP escondido dentro de un archivo aparentemente inofensivo.\
+
+\f0 \uc0\u10145 \u65039 
+\f2  
+\f1\b Si la subida es exitosa, revisa que ModSecurity y tu backend no permitan que se ejecute como PHP.
+\f2\b0 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs36 \cf0 \uc0\u55357 \u56633 
+\f1\b  4. Subir un archivo corrupto\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Prueba subir un archivo da\'f1ado para ver si ModSecurity o tu backend lo rechazan:\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 bash\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \
+dd if=/dev/urandom of=corrupt.jpg bs=512 count=10\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\fs24 \cf0 \uc0\u55357 \u56633 
+\f2  
+\f1\b Explicaci\'f3n:
+\f2\b0  Esto genera un archivo aleatorio (
+\f3\fs26 corrupt.jpg
+\f2\fs24 ), que probablemente no tenga un formato v\'e1lido.\
+
+\f0 \uc0\u10145 \u65039 
+\f2  Si ModSecurity est\'e1 bien configurado, deber\'eda rechazarlo.\
+\pard\pardeftab720\partightenfactor0
+\cf5 \
+\pard\pardeftab720\sa298\partightenfactor0
+
+\f0\fs36 \cf0 \uc0\u55357 \u56633 
+\f1\b  5. Usar 
+\f5\fs39 file
+\f1\fs36  para verificar lo que detecta el sistema\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Despu\'e9s de crear los archivos, puedes ver c\'f3mo tu sistema los clasifica con:\
+\pard\pardeftab720\partightenfactor0
+
+\f3\fs26 \cf0 bash\
+\pard\pardeftab720\partightenfactor0
+
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \
+file fake.png\
+file imagen.jpg\
+file corrupt.jpg\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\fs24 \cf0 \uc0\u55357 \u56633 
+\f2  
+\f1\b Si ModSecurity hace una validaci\'f3n similar, estos archivos deber\'edan ser rechazados.
+\f2\b0 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0\fs28 \cf0 \uc0\u55357 \u56524 
+\f1\b  \'bfQu\'e9 hacer si ModSecurity no los bloquea?\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f2\b0\fs24 \cf0 Si tu test 
+\f1\b pasa y el archivo se sube correctamente
+\f2\b0 , revisa que ModSecurity tenga activadas estas reglas:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+\ls1\ilvl0
+\f1\b \cf0 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+Activar detecci\'f3n de magic numbers
+\f2\b0 \uc0\u8232 Usa reglas como:\u8232 
+\f3\fs26 apache\uc0\u8232 
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \uc0\u8232 \u8232 \u8232 SecRule FILES_TMPNAMES "@inspectFile /usr/bin/file -b --mime-type" "chain,id:1012,msg:'Archivo con tipo MIME sospechoso'"\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf0 \kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+SecRule MATCHED_VAR "!^image/(png|jpeg)|application/pdf$" "deny,status:403"\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 {\listtext	3	}\expnd0\expndtw0\kerning0
+\uc0\u8232 \u8232 
+\f2\fs24 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+\ls1\ilvl0
+\f1\b \cf0 \kerning1\expnd0\expndtw0 {\listtext	4	}\expnd0\expndtw0\kerning0
+Activar reglas OWASP CRS (si usas el conjunto de reglas de ModSecurity)
+\f2\b0 \uc0\u8232 Si est\'e1s usando 
+\f1\b OWASP Core Rule Set (CRS)
+\f2\b0 , habilita la regla 
+\f3\fs26 REQUEST-920-PROTOCOL-ENFORCEMENT.conf
+\f2\fs24 .\
+\ls1\ilvl0
+\f1\b \kerning1\expnd0\expndtw0 {\listtext	5	}\expnd0\expndtw0\kerning0
+Revisar logs de ModSecurity
+\f2\b0 \uc0\u8232 Mira si ModSecurity est\'e1 registrando el intento de ataque:\u8232 
+\f3\fs26 bash\uc0\u8232 
+\f4\fs22 \cf3 \cb4 CopiarEditar
+\f3\fs26 \cf0 \cb1 \uc0\u8232 \u8232 \u8232 tail -f /var/log/modsec_audit.log\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf0 \kerning1\expnd0\expndtw0 {\listtext	6	}\expnd0\expndtw0\kerning0
+\uc0\u8232 \u8232 
+\f2\fs24 \
+\pard\pardeftab720\sa240\partightenfactor0
+\cf0 \
+}
