@@ -99,7 +99,7 @@ class WebSocketService {
             return;
         }
 
-        let formattedMessage = {};  // Cambiado para ser más simple
+        let formattedMessage = {};
 
         switch (message.type) {
             case 'send_friend_request':
