@@ -173,9 +173,39 @@ export class ChatWidget {
                 </button>
             `;
 
-            // Inicializar UserList
+            // Inicializar UserList y configurar eventos de usuarios
             this.userList = new UserList(this.container);
             
+            // Añadir callback para el chat privado
+            this.userList.onUserChat((userId, username) => {
+                // Aquí puedes manejar el inicio de un chat privado si lo deseas
+                console.log('Solicitud de chat privado:', userId, username);
+            });
+
+            // Suscribirse a eventos de WebSocket
+            webSocketService.on('user_list', (data) => {
+                console.log('Lista de usuarios recibida en widget:', data);
+                this.userList.updateList(data);
+            });
+
+            webSocketService.on('user_status', (data) => {
+                console.log('Estado de usuario actualizado:', data);
+                this.userList.updateUserStatus(data.user_id, data.is_online);
+            });
+
+            webSocketService.on('friend_request_response', (data) => {
+                console.log('Respuesta de solicitud de amistad:', data);
+                // Actualizar la lista de usuarios si es necesario
+                if (data.success) {
+                    this.userList.updateSentRequests(data.sent_requests || []);
+                }
+            });
+
+            // Solicitar lista inicial de usuarios al conectar
+            webSocketService.send({
+                type: 'get_user_list'
+            });
+
             // Configurar cambio de tabs
             const tabButtons = this.container.querySelectorAll('.cw-tab-btn');
             tabButtons.forEach(button => {

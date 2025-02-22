@@ -17,20 +17,56 @@ export class UserList {
     }
 
     updateList(data) {
+        console.log('Actualizando lista de usuarios:', data);
         this.lastUserData = data;
-        this.usersList.innerHTML = '';
         
-        // Mostrar estado vacío si no hay usuarios o solo está el usuario actual
-        if (!data.users?.length || data.users.length === 1) {
-            this.showEmptyState();
+        // Asegurarse de que usersList existe
+        const usersList = this.container.querySelector('#widget-users-list');
+        if (!usersList) {
+            console.error('No se encontró el contenedor de usuarios');
             return;
         }
         
-        data.users.forEach(user => {
-            if (user.id === parseInt(localStorage.getItem('user_id'))) return;
+        usersList.innerHTML = '';
+        
+        // Mostrar estado vacío si no hay usuarios
+        if (!data.users?.length || data.users.length === 1) {
+            usersList.innerHTML = `
+                <div class="cw-empty-state">
+                    <i class="fas fa-users-slash fa-2x mb-2"></i>
+                    <p>No hay otros usuarios conectados</p>
+                </div>
+            `;
+            return;
+        }
 
-            const userDiv = this.createUserElement(user);
-            this.usersList.appendChild(userDiv);
+        // Filtrar el usuario actual
+        const currentUserId = parseInt(localStorage.getItem('user_id'));
+        const otherUsers = data.users.filter(user => user.id !== currentUserId);
+
+        // Crear elementos para cada usuario
+        otherUsers.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'cw-user-item';
+            userElement.innerHTML = `
+                <div class="cw-user-info">
+                    <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
+                    <span class="cw-username">${user.username}</span>
+                </div>
+                <div class="cw-user-actions">
+                    <button class="cw-chat-btn" title="Chat privado">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                </div>
+            `;
+
+            // Añadir eventos
+            const chatButton = userElement.querySelector('.cw-chat-btn');
+            chatButton.addEventListener('click', () => {
+                this.onChatCallback?.(user.id, user.username);
+            });
+
+            usersList.appendChild(userElement);
         });
     }
 

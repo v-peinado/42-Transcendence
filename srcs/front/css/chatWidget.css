@@ -74,7 +74,7 @@
 
 .cw-minimize-btn {
     padding: 15px;
-    background: none;
+    background: rgba(59, 130, 246, 0);
     border: none;
     color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
@@ -198,10 +198,10 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 58px;
-    height: 58px;
+    width: 64px;  /* Aumentado de 58px */
+    height: 64px; /* Aumentado de 58px */
     border-radius: 50%;
-    background: rgba(59, 130, 246, 0.9);
+    background: rgba(59, 130, 246, 0);
     border: none;
     z-index: 1001;
     cursor: pointer;
@@ -209,7 +209,7 @@
     align-items: center;
     justify-content: center;
     color: white;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0);;
     transition: all 0.3s ease;
 }
 
@@ -218,10 +218,17 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
+.cw-toggle-btn i {
+    font-size: 32px; /* Aumentado de 24px */
+    color: rgba(255, 255, 255, 0.9);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
 .cw-notification {
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: -3px;    /* Ajustado para el nuevo tamaño */
+    right: -3px;  /* Ajustado para el nuevo tamaño */
     background: #dc3545;
     color: white;
     border-radius: 10px;
@@ -255,6 +262,65 @@
     background: rgba(15, 23, 42, 0.6);
     border-radius: 8px;
     border: 1px solid rgba(66, 153, 225, 0.15);
+}
+
+/* Estilos para la lista de usuarios */
+.cw-user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.cw-user-item:hover {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+.cw-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cw-user-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6c757d;
+}
+
+.cw-user-status.online {
+    background: #28a745;
+    box-shadow: 0 0 5px #28a745;
+}
+
+.cw-username {
+    color: white;
+    font-size: 0.95rem;
+}
+
+.cw-user-actions button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cw-user-actions button:hover {
+    color: white;
+    transform: scale(1.1);
+}
+
+.cw-empty-state {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 20px;
 }
 
 /* Scrollbar */
