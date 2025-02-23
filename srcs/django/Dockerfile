@@ -12,5 +12,4 @@ COPY . .
 COPY django-entrypoint.py /app/
 RUN chmod +x /app/django-entrypoint.py
 
-# Iniciar la aplicación
 CMD ["python", "django-entrypoint.py"]
