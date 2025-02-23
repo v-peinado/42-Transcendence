@@ -122,8 +122,10 @@ class ProfileService:
                 profile_image = files["profile_image"]
 
             if profile_image:
-                if profile_image.size > 5 * 1024 * 1024:  # 5MB
-                    raise ValidationError("La imagen no debe exceder 5MB")
+                if profile_image.size > 2 * 1024 * 1024:
+                    error_msg = f"User {user.id} attempted to upload oversized image: {profile_image.size / (1024*1024):.2f}MB (max: 2MB)"
+                    logger.warning(error_msg)
+                    raise ValidationError("La imagen no debe exceder 2MB")
 
                 valid_extensions = ["jpg", "jpeg", "png", "gif"]
                 ext = profile_image.name.split(".")[-1].lower()
