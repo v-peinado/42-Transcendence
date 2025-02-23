@@ -42,3 +42,13 @@ JWT_EXPIRATION_TIME=3600                   # Expiration time in seconds
 VAULT_ROOT_TOKEN=your-vault-token          # Vault root token
 #VAULT_LOG_TOKENS=true                     # Enable token logs (development only)
 
+# SSL Certificate Configuration
+SSL_COUNTRY=ES                             # Country code (2 letters)
+SSL_STATE=Madrid                           # State/Province
+SSL_LOCALITY=Madrid                        # City/Locality
+SSL_ORGANIZATION=42                        # Organization name
+SSL_ORGANIZATIONAL_UNIT=42Madrid           # Organization unit
+SSL_COMMON_NAME=localhost                  # Common Name (domain)
+SSL_DAYS=365                              # Certificate validity in days
+SSL_KEY_SIZE=2048                         # Key size in bits (min 2048)
+

@@ -27,14 +27,10 @@ RUN apt-get update && \
 	/etc/nginx \
 	/var/cache/nginx \
 	/var/log/nginx \
-	/usr/share/nginx/html && \
-	rm -f /docker-entrypoint.d/10-generate-certificate.sh
+	/usr/share/nginx/html
 
 COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
-COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
-
-RUN chmod +x /docker-entrypoint.d/20-generate-ssl.sh
 
 EXPOSE 8443
 
