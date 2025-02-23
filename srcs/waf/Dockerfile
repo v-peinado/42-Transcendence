@@ -75,8 +75,7 @@ RUN chmod +x \
 	ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf && \
 	chmod 644 /etc/nginx/modsecurity.d/* \
 	/etc/nginx/modsecurity/rules/* \
-	/etc/modsecurity/crs/* && \
-	/usr/local/bin/generate-ssl.sh
+	/etc/modsecurity/crs/*
 
 # Environment variables
 ENV MODSECURITY=On \

@@ -75,9 +75,12 @@ services:
         source: django_media
         target: /usr/share/nginx/html/media:rw
       - django_static:/usr/share/nginx/html/static:ro
-      - ssl_certs:/tmp/ssl:rw
+      - ssl_certs:/tmp/ssl:ro
     depends_on:
-      - web
+      ssl-manager:
+        condition: service_completed_successfully
+      web:
+        condition: service_started
     restart: always
     healthcheck:
       test: [ "CMD", "curl", "-k", "--fail", "https://localhost:8443/health" ]
@@ -105,6 +108,9 @@ services:
     env_file:
       - .env
     restart: always
+    depends_on:
+      ssl-manager:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -133,6 +139,17 @@ services:
     networks:
       - app-network
     restart: always
+
+  ssl-manager:
+    build:
+      context: .
+      dockerfile: ssl/Dockerfile
+    volumes:
+      - ssl_certs:/ssl:rw
+    env_file:
+      - .env
+    networks:
+      - transcendence-backend
 
 volumes:
   django_media:

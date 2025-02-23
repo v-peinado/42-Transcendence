@@ -1,29 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 
-# DISCLAIMER
-# This script generates self-signed SSL certificates for development and
-# academic purposes only. These certificates are NOT suitable for production
-# use. This is part of the 42 School curriculum project and should only be
-# used in a controlled development environment.
-
-set -e  					# Exit on error
-trap 'cleanup' EXIT		# Clean up on exit
+set -e
+trap 'cleanup' EXIT
 
 # Color definitions for messages
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-# Configuration variables
-SSL_DIR="/tmp/ssl"
+# Directories
+SSL_DIR="/ssl"
 KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
 CONF_FILE="${SSL_DIR}/openssl.cnf"
 
-# Cleanup function executed on script exit
 cleanup() {
     if [ $? -ne 0 ]; then
-        rm -f "$KEY_FILE" "$CERT_FILE" "$CONF_FILE"
+        rm -f "$CONF_FILE"
         log_error "Script terminated with errors"
     fi
 }
@@ -38,15 +31,59 @@ log_error() {
     printf "${RED}[ERROR]${NC} %s\n" "$1" >&2
 }
 
-# Create SSL directory and certificate configuration
-create_ssl_directory() {
-    log_info "Creating directories..."
-    install -d -m 755 "$SSL_DIR" || {
-        log_error "Could not create $SSL_DIR"
-        return 1
-    }
+# Validate required environment variables
+validate_env_vars() {
+    local required_vars=(
+        "SSL_COUNTRY"
+        "SSL_STATE"
+        "SSL_LOCALITY"
+        "SSL_ORGANIZATION"
+        "SSL_ORGANIZATIONAL_UNIT"
+        "SSL_COMMON_NAME"
+        "SSL_DAYS"
+        "SSL_KEY_SIZE"
+    )
 
-    # Create certificate configuration
+    local missing_vars=()
+    for var in "${required_vars[@]}"; do
+        if [ -z "${!var}" ]; then
+            missing_vars+=("$var")
+        fi
+    done
+
+    if [ ${#missing_vars[@]} -ne 0 ]; then
+        log_error "The following environment variables are required but not defined:"
+        for var in "${missing_vars[@]}"; do
+            log_error "- $var"
+        done
+        return 1
+    fi
+
+    # Validate numeric values
+    if ! [[ "$SSL_DAYS" =~ ^[0-9]+$ ]]; then
+        log_error "SSL_DAYS must be a positive integer"
+        return 1
+    fi
+
+    if ! [[ "$SSL_KEY_SIZE" =~ ^[0-9]+$ ]]; then
+        log_error "SSL_KEY_SIZE must be a positive integer"
+        return 1
+    fi
+
+    if [ "$SSL_KEY_SIZE" -lt 2048 ]; then
+        log_error "SSL_KEY_SIZE must be at least 2048 bits for security"
+        return 1
+    fi
+
+    return 0
+}
+
+create_ssl_config() {
+    if ! validate_env_vars; then
+        log_error "SSL Configuration failed: invalid environment variables"
+        return 1
+    fi
+
     cat > "$CONF_FILE" << EOF
 [req]
 distinguished_name = req_distinguished_name
@@ -54,12 +91,12 @@ x509_extensions = v3_req
 prompt = no
 
 [req_distinguished_name]
-C = ES
-ST = Madrid
-L = Madrid
-O = 42
-OU = 42Madrid
-CN = localhost
+C = ${SSL_COUNTRY}
+ST = ${SSL_STATE}
+L = ${SSL_LOCALITY}
+O = ${SSL_ORGANIZATION}
+OU = ${SSL_ORGANIZATIONAL_UNIT}
+CN = ${SSL_COMMON_NAME}
 
 [v3_req]
 basicConstraints = CA:FALSE
@@ -72,42 +109,88 @@ IP.1 = 127.0.0.1
 EOF
 }
 
-# Generate self-signed SSL certificates
 generate_certificates() {
     log_info "Generating SSL certificates..."
     
     # Clean up previous certificates if they exist
     rm -f "$CERT_FILE" "$KEY_FILE"
     
-    # Generate self-signed SSL certificates
-    openssl req -x509 -nodes \
-        -days 365 \
-        -newkey rsa:2048 \
+    # Generate certificate
+    if ! openssl req -x509 \
+        -nodes \
+        -days "${SSL_DAYS}" \
+        -newkey "rsa:${SSL_KEY_SIZE}" \
         -keyout "$KEY_FILE" \
         -out "$CERT_FILE" \
         -config "$CONF_FILE" \
-        -extensions v3_req \
-        -copy_extensions=copy || return 1
+        -extensions v3_req 2>/tmp/openssl.err; then
+        log_error "Error generating certificates:"
+        cat /tmp/openssl.err >&2
+        rm -f /tmp/openssl.err
+        return 1
+    fi
+    rm -f /tmp/openssl.err
+
+    if ! chmod 644 "$CERT_FILE" 2>/dev/null; then
+        log_error "Error setting permissions for $CERT_FILE"
+        return 1
+    fi
+
+    if ! chmod 600 "$KEY_FILE" 2>/dev/null; then
+        log_error "Error setting permissions for $KEY_FILE"
+        return 1
+    fi
     
-    # Set appropriate permissions
-    chmod 644 "$CERT_FILE"
-    chmod 600 "$KEY_FILE"
+    # Store in Vault if configured
+    if [ -n "$VAULT_ADDR" ]; then
+        if [ -z "$VAULT_ROOT_TOKEN" ]; then
+            log_error "VAULT_ROOT_TOKEN is not defined"
+            return 1
+        fi
+        
+        cert_data=$(base64 -w 0 "$CERT_FILE")
+        key_data=$(base64 -w 0 "$KEY_FILE")
+        
+        curl -k -H "X-Vault-Token: ${VAULT_ROOT_TOKEN}" \
+             -X PUT \
+             -d "{\"data\": {\"ssl_certificate\": \"${cert_data}\", \"ssl_certificate_key\": \"${key_data}\"}}" \
+             "${VAULT_ADDR}/v1/secret/data/nginx/ssl"
+    fi
     
-    # Verify certificates were generated successfully
+    # Verify certificates
     if ! { [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; }; then
         log_error "Certificate verification failed"
         return 1
     fi
+
+    # Verify certificate validity
+    if ! openssl x509 -in "$CERT_FILE" -noout -text >/dev/null 2>&1; then
+        log_error "Generated certificate is not valid"
+        return 1
+    fi
     
     log_info "Certificates generated successfully"
+    return 0
 }
 
-# Main function - Script entry point
 main() {
     log_info "Starting SSL configuration..."
-    create_ssl_directory && generate_certificates
+    
+    if ! mkdir -p "$SSL_DIR" 2>/dev/null; then
+        log_error "Could not create directory $SSL_DIR"
+        exit 1
+    fi
+
+    if ! create_ssl_config; then
+        exit 1
+    fi
+
+    if ! generate_certificates; then
+        exit 1
+    fi
+
     log_info "SSL configuration completed"
-	log_info "We are using self-signed certificates for development/academic purposes only"
+    log_info "NOTE: We are using self-signed certificates for development/academic purposes only"
 }
 
 main
