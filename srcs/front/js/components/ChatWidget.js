@@ -28,14 +28,8 @@ export class ChatWidget {
     }
 
     async syncUserData() {
-        if (ChatWidget.syncPromise) {
-            console.log('Sincronización en curso, esperando...');
-            return ChatWidget.syncPromise;
-        }
+        if (ChatWidget.syncPromise) return ChatWidget.syncPromise;
 
-        console.log('Iniciando sincronización de datos de usuario...');
-        
-        // Añadir un timeout para la sincronización
         const timeout = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Timeout en sincronización')), 5000);
         });
@@ -52,32 +46,25 @@ export class ChatWidget {
                 }
 
                 const userData = await response.json();
-                console.log('Datos de usuario recibidos:', userData);
-                
                 if (!userData || !userData.id) {
                     throw new Error('Datos de usuario inválidos');
                 }
 
                 localStorage.setItem('user_id', userData.id);
                 localStorage.setItem('username', userData.username);
-                
-                console.log('Sincronización completada - ID:', userData.id, 'Username:', userData.username);
                 return userData;
 
             } catch (error) {
                 console.error('Error en sincronización:', error);
-                // Intentar usar datos existentes si están disponibles
                 const existingId = localStorage.getItem('user_id');
                 const existingUsername = localStorage.getItem('username');
                 
                 if (existingId && existingUsername) {
-                    console.log('Usando datos existentes:', { id: existingId, username: existingUsername });
                     return { id: existingId, username: existingUsername };
                 }
                 throw error;
             } finally {
                 ChatWidget.syncPromise = null;
-                console.log('Proceso de sincronización finalizado');
             }
         })();
 
@@ -96,17 +83,13 @@ export class ChatWidget {
     }
 
     static async validateAuth() {
-        if (localStorage.getItem('isAuthenticated') !== 'true') {
-            console.log('Usuario no autenticado');
-            return false;
-        }
+        if (localStorage.getItem('isAuthenticated') !== 'true') return false;
         
         try {
             const profile = await AuthService.getUserProfile();
             if (profile?.id) {
                 localStorage.setItem('user_id', profile.id.toString());
                 localStorage.setItem('username', profile.username);
-                console.log('Perfil de usuario cargado:', profile);
                 return true;
             }
             return false;
@@ -118,7 +101,6 @@ export class ChatWidget {
 
     async mount() {
         try {
-            // Verificar perfil antes de montar
             if (!localStorage.getItem('user_id')) {
                 if (!await ChatWidget.validateAuth()) {
                     console.error('No se pudo validar la autenticación');
@@ -126,145 +108,20 @@ export class ChatWidget {
                 }
             }
 
-            console.log('Montando chat con ID de usuario:', localStorage.getItem('user_id'));
-            
             // Crear el contenedor del widget
             this.container = document.createElement('div');
-            this.container.className = 'cw-container';  // Cambiado de chat-widget-container a cw-container
-            
-            // Crear la estructura completa del widget
-            this.container.innerHTML = `
-                <div class="cw-widget">
-                    <div class="cw-content">
-                        <header class="cw-header">
-                            <nav class="cw-tabs">
-                                <button class="cw-tab-btn cw-active" data-tab="chat" title="Chat general">
-                                    <i class="fas fa-comments"></i>
-                                </button>
-                                <button class="cw-tab-btn" data-tab="users" title="Lista de usuarios">
-                                    <i class="fas fa-users"></i>
-                                </button>
-                                <button class="cw-tab-btn" data-tab="friends" title="Lista de amigos">
-                                    <i class="fas fa-user-friends"></i>
-                                </button>
-                                <button class="cw-tab-btn" data-tab="requests" title="Solicitudes de amistad">
-                                    <i class="fas fa-user-plus"></i>
-                                    <span class="cw-requests-badge"></span>
-                                </button>
-                            </nav>
-                            <button class="cw-minimize-btn" title="Minimizar">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                        </header>
-                        
-                        <div class="cw-tab-content">
-                            <div id="chat-tab" class="cw-tab-pane cw-active">
-                                <div id="widget-messages" class="cw-messages"></div>
-                                <div class="cw-input-container">
-                                    <div class="cw-input-wrapper">
-                                        <button class="cw-emoji-btn" title="Emojis">
-                                            <i class="far fa-smile"></i>
-                                        </button>
-                                        <div class="cw-emoji-picker">
-                                            ${this.getCommonEmojis()}
-                                        </div>
-                                        <input type="text" 
-                                            id="widget-message-input" 
-                                            class="cw-input" 
-                                            placeholder="Escribe un mensaje..." 
-                                            autocomplete="off">
-                                        <button type="submit" 
-                                                id="widget-send-button" 
-                                                class="cw-send-btn">
-                                            <i class="fas fa-paper-plane"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="users-tab" class="cw-tab-pane">
-                                <div id="widget-users-list" class="cw-users-list"></div>
-                            </div>
+            this.container.className = 'cw-container';
 
-                            <div id="friends-tab" class="cw-tab-pane">
-                                <div id="widget-friends-list" class="cw-users-list"></div>
-                            </div>
+            // Cargar el HTML del widget
+            const response = await fetch('/views/components/ChatWidget.html');
+            const html = await response.text();
+            this.container.innerHTML = html;
 
-                            <div id="requests-tab" class="cw-tab-pane">
-                                <div id="widget-requests-list" class="cw-users-list"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <button class="cw-toggle-btn">
-                    <i class="fas fa-comments"></i>
-                    <span class="cw-notification"></span>
-                </button>
-            `;
-
-            this.container.innerHTML += `
-                <style>
-                    .cw-block-notification {
-                        position: fixed;
-                        bottom: 80px;
-                        right: 20px;
-                        z-index: 10000;
-                        animation: slideIn 0.3s ease-out;
-                    }
-
-                    .cw-block-msg {
-                        background-color: #ff4444;
-                        color: white;
-                        padding: 12px 20px;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                        font-size: 14px;
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                    }
-
-                    .cw-block-msg i {
-                        font-size: 16px;
-                    }
-
-                    .fade-out {
-                        opacity: 0;
-                        transition: opacity 0.5s ease-out;
-                    }
-
-                    @keyframes slideIn {
-                        from {
-                            transform: translateY(100%);
-                            opacity: 0;
-                        }
-                        to {
-                            transform: translateY(0);
-                            opacity: 1;
-                        }
-                    }
-
-                    .cw-message-system {
-                        text-align: center;
-                        margin: 10px 0;
-                    }
-                    
-                    .cw-system-message {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 8px;
-                        background-color: #ff44442e;
-                        color: #ff4444;
-                        padding: 8px 16px;
-                        border-radius: 16px;
-                        font-size: 13px;
-                    }
-                    
-                    .cw-system-message i {
-                        font-size: 14px;
-                    }
-                </style>
-            `;
+            // Cargar los emojis en el picker después de que el HTML esté cargado
+            const emojiPicker = this.container.querySelector('.cw-emoji-picker');
+            if (emojiPicker) {
+                emojiPicker.innerHTML = this.getCommonEmojis();
+            }
 
             // Inicializar componentes (eliminar duplicados y configurar correctamente)
             this.userList = new UserList(this.container);
@@ -273,12 +130,10 @@ export class ChatWidget {
 
             // Configurar callbacks inmediatamente después de inicializar
             this.userList.onUserChat((userId, username) => {
-                console.log('Callback de chat recibido para:', userId, username);
                 this.privateChat.createPrivateChat(userId, username);
             });
 
             this.friendList.onChat((userId, username) => {
-                console.log('Callback de chat de amigo recibido para:', userId, username);
                 this.privateChat.createPrivateChat(userId, username);
             });
 
@@ -381,10 +236,8 @@ export class ChatWidget {
 
             const userId = localStorage.getItem('user_id');
             if (!userId) {
-                console.error('ID de usuario no encontrado, reintentando sincronización...');
                 await this.syncUserData();
                 if (!localStorage.getItem('user_id')) {
-                    console.error('No se pudo obtener el ID de usuario');
                     return;
                 }
             }
@@ -398,7 +251,6 @@ export class ChatWidget {
                 username: localStorage.getItem('username')
             };
 
-            console.log('Enviando mensaje con datos:', messageData);
             webSocketService.send(messageData);
             messageInput.value = '';
         };
@@ -490,10 +342,7 @@ export class ChatWidget {
     }
 
     setupWebSocketListeners() {
-        // Chat messages (un solo listener)
         webSocketService.on('chat_message', (data) => {
-            console.log('Mensaje recibido:', data);
-            // Marcar si es un mensaje nuevo o del historial
             const isNewMessage = !data.timestamp || data.timestamp >= this.lastMessageTimestamp;
             
             if (data.channel_name?.startsWith('dm_')) {
@@ -505,9 +354,6 @@ export class ChatWidget {
 
         // Modificar el listener de blocked
         webSocketService.on('blocked', (data) => {
-            console.log('Evento de bloqueo recibido:', data);
-            
-            // Si soy yo el bloqueado
             if (data.blocked_user_id === parseInt(localStorage.getItem('user_id'))) {
                 blockService.handleBlockedUsers({
                     type: 'blocked_by',
@@ -519,20 +365,17 @@ export class ChatWidget {
                 this.privateChat.closeChat(data.user_id);
             }
             
-            // Actualizar la lista de usuarios
             this.userList.updateList(this.userList.lastUserData);
         });
 
         // Private channels
         webSocketService.on('private_channels', (data) => {
-            console.log('Canales privados recibidos:', data);
             if (data.channels) {
                 data.channels.forEach(channel => {
                     const otherUser = channel.members.find(m => 
                         m.id !== parseInt(localStorage.getItem('user_id'))
                     );
                     if (otherUser) {
-                        // Solo crear el chat si no existe
                         if (!this.privateChat.activeChats.has(otherUser.id)) {
                             this.privateChat.createPrivateChat(otherUser.id, otherUser.username);
                         }
@@ -569,22 +412,18 @@ export class ChatWidget {
 
         // Friend requests events
         webSocketService.on('pending_friend_requests', (data) => {
-            console.log('Solicitudes pendientes recibidas:', data);
             this.friendList.updatePendingRequests(data);
         });
 
         webSocketService.on('sent_friend_requests', (data) => {
-            console.log('Solicitudes enviadas:', data);
             this.userList.updateSentRequests(data.pending || []);
         });
 
         webSocketService.on('friend_request_response', (data) => {
-            console.log('Respuesta de solicitud de amistad:', data);
             if (data.success) {
                 const isAccepted = data.status === 'accepted';
                 this.userList.handleFriendRequestResponse(data.user_id, isAccepted);
                 
-                // Actualizar listas después de responder a una solicitud
                 webSocketService.send({ type: 'get_friend_list' });
                 webSocketService.send({ type: 'get_pending_requests' });
                 webSocketService.send({ type: 'get_sent_requests' });
@@ -605,12 +444,10 @@ export class ChatWidget {
 
         // Añadir listener para usuarios bloqueados
         webSocketService.on('blocked_users', (data) => {
-            console.log('Lista de usuarios bloqueados recibida:', data);
             blockService.handleBlockedUsersList(data.blocked_users);
         });
 
         webSocketService.on('unblocked', (data) => {
-            console.log('Usuario desbloqueado:', data);
             blockService.handleBlockedUsers({
                 type: 'unblocked',
                 user_id: data.user_id,
@@ -633,7 +470,6 @@ export class ChatWidget {
 
             document.body.appendChild(notification);
 
-            // Remover la notificación después de 5 segundos
             setTimeout(() => {
                 notification.classList.add('fade-out');
                 setTimeout(() => notification.remove(), 500);
@@ -649,10 +485,8 @@ export class ChatWidget {
             { type: 'get_sent_requests' }
         ];
 
-        // Enviar solicitudes con un pequeño retraso entre ellas
         requests.forEach((request, index) => {
             setTimeout(() => {
-                console.log('Solicitando datos:', request.type);
                 webSocketService.send(request);
             }, index * 100);
         });
@@ -678,7 +512,6 @@ export class ChatWidget {
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // Solo incrementar para mensajes nuevos de otros usuarios cuando está minimizado
             if (this.isMinimized && 
                 data.user_id !== parseInt(localStorage.getItem('user_id')) && 
                 isNewMessage) {
@@ -717,7 +550,6 @@ export class ChatWidget {
         }
     }
 
-    // Añadir método para inicializar el estado del widget
     initializeWidgetState() {
         const lastState = localStorage.getItem('chat_minimized');
         if (lastState === 'false') {
@@ -725,19 +557,16 @@ export class ChatWidget {
             const chatWidget = this.container.querySelector('.cw-widget');
             chatWidget.classList.add('visible');
             chatWidget.style.display = 'block';
-            // Resetear contador y localStorage
             this.unreadCount = 0;
             localStorage.setItem('chat_unread_count', '0');
             this.updateNotificationBadge();
             
-            // Actualizar el botón de toggle
             const toggleBtn = this.container.querySelector('.cw-toggle-btn');
             toggleBtn.querySelector('i').classList.remove('fa-comments');
             toggleBtn.querySelector('i').classList.add('fa-times');
         }
     }
 
-    // Añadir método para los emojis comunes
     getCommonEmojis() {
         const emojis = ['😊', '😂', '❤️', '👍', '😅', '🎉', '🤔', '😎', 
                         '😍', '👋', '🤗', '👌', '🙌', '✨', '💪', '🤝'];
