@@ -7,7 +7,6 @@ import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetVie
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
 import { NotFoundView } from '/js/views/NotFoundView.js';
-import { ChatView } from '/js/views/chat/ChatView.js';
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
 import { loadHTML, replaceContent } from '/js/utils/htmlLoader.js';
@@ -95,8 +94,6 @@ class Router {
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
         '/gdpr-settings/': GDPRSettingsView,
-        '/chat': ChatView,
-        '/chat/': ChatView,
         '/game': GameView,
         '/game/': GameView,
         '/game/:id': GameMatchView,  // Definición de ruta con parámetro
@@ -296,7 +293,7 @@ class Router {
         }
 
         // Verificar rutas protegidas
-        if ((path.startsWith('/profile') || path.startsWith('/chat') || path.startsWith('/game')) && 
+        if ((path.startsWith('/profile') || path.startsWith('/game')) && 
             localStorage.getItem('isAuthenticated') !== 'true') {
             window.location.href = '/login';
             return;
