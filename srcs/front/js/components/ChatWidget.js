@@ -17,9 +17,14 @@ export class ChatWidget {
         ChatWidget.instance = this;
         
         this.container = null;
-        this.isMinimized = true;
-        this.unreadCount = parseInt(localStorage.getItem('chat_unread_count') || '0');
+        this.isMinimized = localStorage.getItem('chat_minimized') !== 'false';
         
+        // Restaurar el contador solo si el widget está minimizado
+        this.unreadCount = this.isMinimized ? 
+            parseInt(localStorage.getItem('chat_unread_count') || '0') : 
+            0;
+
+        this.lastMessageTimestamp = Date.now();
     }
 
     async syncUserData() {
@@ -191,6 +196,70 @@ export class ChatWidget {
                 </button>
             `;
 
+            this.container.innerHTML += `
+                <style>
+                    .cw-block-notification {
+                        position: fixed;
+                        bottom: 80px;
+                        right: 20px;
+                        z-index: 10000;
+                        animation: slideIn 0.3s ease-out;
+                    }
+
+                    .cw-block-msg {
+                        background-color: #ff4444;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                        font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+
+                    .cw-block-msg i {
+                        font-size: 16px;
+                    }
+
+                    .fade-out {
+                        opacity: 0;
+                        transition: opacity 0.5s ease-out;
+                    }
+
+                    @keyframes slideIn {
+                        from {
+                            transform: translateY(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateY(0);
+                            opacity: 1;
+                        }
+                    }
+
+                    .cw-message-system {
+                        text-align: center;
+                        margin: 10px 0;
+                    }
+                    
+                    .cw-system-message {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        background-color: #ff44442e;
+                        color: #ff4444;
+                        padding: 8px 16px;
+                        border-radius: 16px;
+                        font-size: 13px;
+                    }
+                    
+                    .cw-system-message i {
+                        font-size: 14px;
+                    }
+                </style>
+            `;
+
             // Inicializar componentes (eliminar duplicados y configurar correctamente)
             this.userList = new UserList(this.container);
             this.friendList = new FriendList(this.container);
@@ -220,6 +289,23 @@ export class ChatWidget {
             this.requestInitialData();
 
             document.body.appendChild(this.container);
+            
+            // Mostrar widget si estaba abierto y actualizar UI
+            if (!this.isMinimized) {
+                const chatWidget = this.container.querySelector('.cw-widget');
+                chatWidget.classList.add('visible');
+                chatWidget.style.display = 'block';
+                this.resetUnreadCount();
+                
+                const toggleBtn = this.container.querySelector('.cw-toggle-btn');
+                if (toggleBtn) {
+                    toggleBtn.querySelector('i').classList.remove('fa-comments');
+                    toggleBtn.querySelector('i').classList.add('fa-times');
+                }
+            } else {
+                // Actualizar badge si hay notificaciones pendientes
+                this.updateNotificationBadge();
+            }
 
         } catch (error) {
             console.error('Error durante el montaje del chat:', error);
@@ -235,7 +321,11 @@ export class ChatWidget {
             'sent_friend_requests',
             'user_list',
             'user_status',
-            'error'
+            'error',
+            'blocked',
+            'unblocked',
+            'blocked_users',
+            'blocked_notification'
         ].forEach(event => webSocketService.off(event));
     }
 
@@ -255,11 +345,9 @@ export class ChatWidget {
             toggleBtn.querySelector('i').classList.toggle('fa-times');
             
             if (!this.isMinimized) {
-                // Asegurar que el widget sea visible
                 chatWidget.style.display = 'block';
                 this.resetUnreadCount();
             } else {
-                // Asegurar que el widget esté oculto
                 chatWidget.style.display = 'none';
             }
             
@@ -369,11 +457,34 @@ export class ChatWidget {
         // Chat messages (un solo listener)
         webSocketService.on('chat_message', (data) => {
             console.log('Mensaje recibido:', data);
+            // Marcar si es un mensaje nuevo o del historial
+            const isNewMessage = !data.timestamp || data.timestamp >= this.lastMessageTimestamp;
+            
             if (data.channel_name?.startsWith('dm_')) {
                 this.privateChat.handlePrivateMessage(data);
             } else {
-                this.handleGeneralChatMessage(data);
+                this.handleGeneralChatMessage(data, isNewMessage);
             }
+        });
+
+        // Modificar el listener de blocked
+        webSocketService.on('blocked', (data) => {
+            console.log('Evento de bloqueo recibido:', data);
+            
+            // Si soy yo el bloqueado
+            if (data.blocked_user_id === parseInt(localStorage.getItem('user_id'))) {
+                blockService.handleBlockedUsers({
+                    type: 'blocked_by',
+                    user_id: data.user_id
+                });
+            }
+            
+            if (this.privateChat.activeChats.has(data.user_id)) {
+                this.privateChat.closeChat(data.user_id);
+            }
+            
+            // Actualizar la lista de usuarios
+            this.userList.updateList(this.userList.lastUserData);
         });
 
         // Private channels
@@ -462,60 +573,35 @@ export class ChatWidget {
             blockService.handleBlockedUsersList(data.blocked_users);
         });
 
-        webSocketService.on('blocked', (data) => {
-            console.log('Usuario bloqueado:', data);
-            blockService.blockUser(data.user_id);
-            // Si hay un chat abierto con este usuario, cerrarlo
-            if (this.privateChat.activeChats.has(data.user_id)) {
-                this.privateChat.closeChat(data.user_id);
-            }
-        });
-
         webSocketService.on('unblocked', (data) => {
             console.log('Usuario desbloqueado:', data);
-            const unblockData = {
+            blockService.handleBlockedUsers({
                 type: 'unblocked',
                 user_id: data.user_id,
                 username: data.username
-            };
-            blockService.handleBlockedUsers(unblockData);
+            });
             this.userList.updateList(this.userList.lastUserData);
-        });
-
-        webSocketService.on('blocked_users', (data) => {
-            console.log('Lista de usuarios bloqueados/bloqueantes:', data);
-            blockService.handleBlockedUsers(data);
-            // Actualizar la UI
-            this.userList.updateList(this.userList.lastUserData);
-        });
-
-        webSocketService.on('blocked', (data) => {
-            console.log('Usuario bloqueado:', data);
-            if (this.privateChat.activeChats.has(data.user_id)) {
-                this.privateChat.closeChat(data.user_id);
-            }
-            this.userList.updateList(this.userList.lastUserData);
-        });
-
-        // Actualizar el manejo de eventos de bloqueo
-        webSocketService.on('blocked_users', (data) => {
-            console.log('Lista de usuarios bloqueados recibida:', data);
-            blockService.handleBlockedUsersList(data);
-            this.userList.updateList(this.userList.lastUserData);
-        });
-
-        webSocketService.on('blocked', (data) => {
-            console.log('Estado de bloqueo actualizado:', data);
-            // Recargar la lista completa de usuarios bloqueados
             webSocketService.send({ type: 'get_blocked_users' });
-            this.userList.updateList(this.userList.lastUserData);
         });
 
-        webSocketService.on('unblocked', (data) => {
-            console.log('Estado de bloqueo actualizado:', data);
-            // Recargar la lista completa de usuarios bloqueados
-            webSocketService.send({ type: 'get_blocked_users' });
-            this.userList.updateList(this.userList.lastUserData);
+        // Añadir listener para notificaciones de bloqueo
+        webSocketService.on('blocked_notification', (data) => {
+            const notification = document.createElement('div');
+            notification.className = 'cw-block-notification';
+            notification.innerHTML = `
+                <div class="cw-block-msg">
+                    <i class="fas fa-ban"></i>
+                    <span>Has sido bloqueado por ${data.blocker_username}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Remover la notificación después de 5 segundos
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
         });
     }
 
@@ -536,18 +622,16 @@ export class ChatWidget {
         });
     }
 
-    handleGeneralChatMessage(data) {
-        // Mover aquí la lógica existente para mensajes del chat general
+    handleGeneralChatMessage(data, isNewMessage = true) {
         const messageContent = data.message || data.content;
         if (!messageContent) return;
         
         const messageElement = document.createElement('div');
-        messageElement.className = `cw-message ${
-            data.user_id === parseInt(localStorage.getItem('user_id')) 
-                ? 'cw-message-my' 
-                : 'cw-message-other'
-        }`;
+        const messageClass = data.user_id === parseInt(localStorage.getItem('user_id')) 
+            ? 'cw-message cw-message-my' 
+            : 'cw-message cw-message-other';
         
+        messageElement.className = messageClass;
         messageElement.innerHTML = `
             <span class="cw-message-username">${data.username}</span>
             ${messageContent}
@@ -557,24 +641,27 @@ export class ChatWidget {
         if (messagesContainer) {
             messagesContainer.appendChild(messageElement);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
 
-        if (this.isMinimized) {
-            this.incrementUnreadCount();
+            // Solo incrementar para mensajes nuevos de otros usuarios cuando está minimizado
+            if (this.isMinimized && 
+                data.user_id !== parseInt(localStorage.getItem('user_id')) && 
+                isNewMessage) {
+                this.incrementUnreadCount();
+            }
         }
     }
 
     incrementUnreadCount() {
         this.unreadCount++;
-        // Guardar en localStorage
-        localStorage.setItem('chat_unread_count', this.unreadCount.toString());
+        if (this.isMinimized) {
+            localStorage.setItem('chat_unread_count', this.unreadCount.toString());
+        }
         this.updateNotificationBadge();
     }
 
     resetUnreadCount() {
         this.unreadCount = 0;
-        // Limpiar en localStorage
-        localStorage.setItem('chat_unread_count', '0');
+        localStorage.removeItem('chat_unread_count');
         this.updateNotificationBadge();
     }
 
@@ -599,8 +686,18 @@ export class ChatWidget {
         const lastState = localStorage.getItem('chat_minimized');
         if (lastState === 'false') {
             this.isMinimized = false;
-            this.container.querySelector('.cw-widget').classList.add('visible');
-            this.resetUnreadCount();
+            const chatWidget = this.container.querySelector('.cw-widget');
+            chatWidget.classList.add('visible');
+            chatWidget.style.display = 'block';
+            // Resetear contador y localStorage
+            this.unreadCount = 0;
+            localStorage.setItem('chat_unread_count', '0');
+            this.updateNotificationBadge();
+            
+            // Actualizar el botón de toggle
+            const toggleBtn = this.container.querySelector('.cw-toggle-btn');
+            toggleBtn.querySelector('i').classList.remove('fa-comments');
+            toggleBtn.querySelector('i').classList.add('fa-times');
         }
     }
 }

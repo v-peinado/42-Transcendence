@@ -19,6 +19,24 @@ export class UserList {
             console.log('Estado de bloqueo cambiado:', event.detail);
             this.handleBlockStatusChange(event.detail);
         });
+
+        const styles = document.createElement('style');
+        styles.textContent = `
+            .cw-user-info.disabled {
+                opacity: 0.6;
+                background-color: #f8f8f8;
+                border-left: 3px solid #ff4444;
+                padding: 8px;
+                pointer-events: none;
+            }
+            
+            .cw-blocked-text {
+                color: #ff4444;
+                font-size: 0.85em;
+                margin-left: 8px;
+            }
+        `;
+        container.appendChild(styles);
     }
 
     loadSavedState() {
@@ -102,24 +120,40 @@ export class UserList {
     createUserElement(user) {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
-        const blockReason = blockService.getBlockReason(userId);
+        const isBlocked = blockService.hasBlockedUser(userId);
+        const isBlockedByUser = blockService.isBlockedByUser(userId);
         
         const userElement = document.createElement('div');
-        userElement.className = `cw-user-item ${isFriend ? 'is-friend' : ''} ${blockReason ? `is-${blockReason}` : ''}`;
+        userElement.className = 'cw-user-item';
         userElement.dataset.userId = userId;
-        
+
+        // Mostrar como deshabilitado si el usuario nos ha bloqueado
+        if (isBlockedByUser) {
+            userElement.innerHTML = `
+                <div class="cw-user-info disabled">
+                    <span class="cw-username">
+                        ${user.username}
+                        <i class="fas fa-lock text-danger"></i>
+                        <span class="text-muted">(Te ha bloqueado)</span>
+                    </span>
+                </div>
+            `;
+            userElement.style.pointerEvents = 'none';
+            userElement.style.opacity = '0.6';
+            userElement.style.backgroundColor = '#f5f5f5';
+            return userElement;
+        }
+
+        // Usuario normal o bloqueado por nosotros
         userElement.innerHTML = `
             <div class="cw-user-info">
                 <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
-                <span class="cw-username">
-                    ${user.username}
-                    ${isFriend ? '<i class="fas fa-star friend-star" title="Amigo"></i>' : ''}
-                    ${blockReason === 'blocked' ? '<i class="fas fa-ban text-danger" title="Bloqueado por ti"></i>' : ''}
-                    ${blockReason === 'blockedBy' ? '<i class="fas fa-lock text-warning" title="Te ha bloqueado"></i>' : ''}
-                </span>
+                <span class="cw-username">${user.username}</span>
+                ${isFriend ? '<i class="fas fa-star friend-star"></i>' : ''}
+                ${isBlocked ? '<i class="fas fa-ban text-danger"></i>' : ''}
             </div>
             <div class="cw-user-actions">
-                ${this.createUserActions(user, blockReason)}
+                ${this.createUserActions(user)}
             </div>
         `;
 

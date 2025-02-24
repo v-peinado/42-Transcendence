@@ -28,11 +28,14 @@ class BlockService {
     blockUser(userId) {
         this.blockedUsers.add(userId);
         this.saveBlockedState();
+        
+        // Volver al mensaje simple de bloqueo
         webSocketService.send({
             type: 'block_user',
             user_id: userId
         });
-        console.log('Usuario bloqueado:', userId); // Debug
+        
+        console.log('Usuario bloqueado:', userId);
         this.notifyBlockUpdate(userId, 'blocked');
     }
 
@@ -51,6 +54,10 @@ class BlockService {
         if (data.type === 'unblocked') {
             this.blockedUsers.delete(data.user_id);
             this.blockedByUsers.delete(data.user_id);
+        } else if (data.type === 'blocked_by') {
+            // Nuevo: cuando alguien nos bloquea
+            this.blockedByUsers.add(data.user_id);
+            console.log('Has sido bloqueado por:', data.user_id);
         } else {
             // Actualizar listas de bloqueados
             this.blockedUsers = new Set(data.blocking?.map(user => user.id) || []);
