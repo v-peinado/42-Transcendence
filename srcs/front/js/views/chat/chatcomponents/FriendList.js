@@ -77,7 +77,7 @@ export class FriendList {
             });
 
             removeBtn.addEventListener('click', () => {
-                const friendshipId = friend.id;
+                const friendshipId = friend.id;  // Obtiene el ID directamente del objeto friend
                 friendService.deleteFriendship(friendshipId);
                 friendElement.remove();
             });

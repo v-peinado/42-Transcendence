@@ -165,7 +165,7 @@ export class UserList {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
         const hasSentRequest = this.sentRequests.has(userId);
-        
+    
         // Si el otro usuario nos ha bloqueado
         if (blockService.isBlockedByUser(userId)) {
             return `
@@ -175,11 +175,10 @@ export class UserList {
                     <span class="cw-block-hint">No podrás enviarle mensajes ni verlo en línea</span>
                 </div>`;
         }
-
+    
         // Determinar si el usuario está bloqueado
         const isBlocked = blockService.hasBlockedUser(userId);
-        console.log(`Estado de bloqueo para ${user.username}:`, isBlocked); // Debug
-
+    
         return `
             <div class="cw-user-actions-group">
                 ${!isBlocked ? `
@@ -196,11 +195,7 @@ export class UserList {
                                 <i class="fas fa-clock"></i>
                             </span>
                         `}
-                    ` : `
-                        <button class="cw-friend-remove" title="Eliminar amigo">
-                            <i class="fas fa-user-minus"></i>
-                        </button>
-                    `}
+                    ` : ''}
                     <button class="cw-block-btn" title="Bloquear usuario">
                         <i class="fas fa-ban"></i>
                     </button>
@@ -282,11 +277,24 @@ export class UserList {
 
         if (removeFriendBtn) {
             removeFriendBtn.addEventListener('click', () => {
-                const friendship = this.currentFriendships?.find(f => 
-                    (f.user1_id === userId || f.user2_id === userId)
+                // Obtener la amistad directamente de lastUserData.friends
+                const friendship = this.lastUserData.friends.find(f => 
+                    (parseInt(f.user1_id) === userId || parseInt(f.user2_id) === userId)
                 );
+                
                 if (friendship) {
+                    console.log('Eliminando amistad:', friendship);
                     friendService.deleteFriendship(friendship.id);
+                    
+                    // Actualizar UI y estado
+                    removeFriendBtn.closest('.cw-user-item').remove();
+                    this.currentFriends.delete(userId);
+                    this.saveState();
+                    
+                    // Forzar actualización de las listas
+                    webSocketService.send({ type: 'get_friend_list' });
+                } else {
+                    console.error('No se encontró la amistad para:', userId);
                 }
             });
         }
