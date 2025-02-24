@@ -459,7 +459,7 @@ export class ChatWidget {
         // Añadir listener para usuarios bloqueados
         webSocketService.on('blocked_users', (data) => {
             console.log('Lista de usuarios bloqueados recibida:', data);
-            blockService.handleBlockedUsers(data.blocked_users);
+            blockService.handleBlockedUsersList(data.blocked_users);
         });
 
         webSocketService.on('blocked', (data) => {
@@ -500,7 +500,7 @@ export class ChatWidget {
         // Actualizar el manejo de eventos de bloqueo
         webSocketService.on('blocked_users', (data) => {
             console.log('Lista de usuarios bloqueados recibida:', data);
-            blockService.handleBlockedUsers(data);
+            blockService.handleBlockedUsersList(data);
             this.userList.updateList(this.userList.lastUserData);
         });
 

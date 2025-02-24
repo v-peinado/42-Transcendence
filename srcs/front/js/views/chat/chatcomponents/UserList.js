@@ -204,45 +204,23 @@ export class UserList {
 
     attachUserEventListeners(userElement, user) {
         const userId = parseInt(user.id);
-
-        // Block/Unblock buttons
+        
+        // Manejar botón de bloqueo
         const blockBtn = userElement.querySelector('.cw-block-btn');
-        const unblockBtn = userElement.querySelector('.cw-unblock-btn');
-
         if (blockBtn) {
             blockBtn.addEventListener('click', () => {
+                blockBtn.style.display = 'none';
                 blockService.blockUser(userId);
-                userElement.classList.add('is-blocked');
-                userElement.querySelector('.cw-user-actions').innerHTML = `
-                    <div class="cw-user-actions-group">
-                        <button class="cw-unblock-btn" title="Desbloquear usuario">
-                            <i class="fas fa-unlock"></i>
-                        </button>
-                    </div>
-                `;
-                // Re-adjuntar los event listeners
-                this.attachUserEventListeners(userElement, user);
-            });
+            }, { once: true });
         }
 
+        // Manejar botón de desbloqueo
+        const unblockBtn = userElement.querySelector('.cw-unblock-btn');
         if (unblockBtn) {
             unblockBtn.addEventListener('click', () => {
+                unblockBtn.style.display = 'none';
                 blockService.unblockUser(userId);
-                userElement.classList.remove('is-blocked');
-                userElement.querySelector('.cw-user-actions').innerHTML = `
-                    <div class="cw-user-actions-group">
-                        <button class="cw-chat-btn" title="Chat privado">
-                            <i class="fas fa-comment"></i>
-                        </button>
-                        ${this.createFriendButtons(user)}
-                        <button class="cw-block-btn" title="Bloquear usuario">
-                            <i class="fas fa-ban"></i>
-                        </button>
-                    </div>
-                `;
-                // Re-adjuntar los event listeners
-                this.attachUserEventListeners(userElement, user);
-            });
+            }, { once: true });
         }
 
         // Chat button
@@ -278,6 +256,102 @@ export class UserList {
                 }
             });
         }
+    }
+
+    updateUserBlockState(userElement, isBlocked) {
+        // Actualizar clase
+        userElement.classList.toggle('is-blocked', isBlocked);
+        
+        // Actualizar icono
+        const username = userElement.querySelector('.cw-username');
+        const existingIcon = username.querySelector('.fas.fa-ban');
+        
+        if (isBlocked && !existingIcon) {
+            username.insertAdjacentHTML('beforeend', 
+                '<i class="fas fa-ban text-danger" title="Bloqueado por ti"></i>');
+        } else if (!isBlocked && existingIcon) {
+            existingIcon.remove();
+        }
+        
+        // Actualizar botones
+        const actionsContainer = userElement.querySelector('.cw-user-actions');
+        const userId = parseInt(userElement.dataset.userId);
+        const user = this.lastUserData.users.find(u => u.id === userId);
+        
+        if (user) {
+            actionsContainer.innerHTML = this.createUserActions(user, isBlocked ? 'blocked' : null);
+            this.attachUserEventListeners(userElement, user);
+        }
+    }
+
+    updateButtonState(userElement, isBlocked) {
+        const userId = parseInt(userElement.dataset.userId);
+        const user = this.lastUserData.users.find(u => u.id === userId);
+        
+        if (!user) return;
+
+        // Actualizar el estado visual inmediatamente
+        userElement.classList.toggle('is-blocked', isBlocked);
+        
+        // Actualizar los iconos
+        const usernameSpan = userElement.querySelector('.cw-username');
+        const blockIcon = usernameSpan.querySelector('.fas.fa-ban');
+        
+        if (isBlocked && !blockIcon) {
+            usernameSpan.insertAdjacentHTML('beforeend', 
+                '<i class="fas fa-ban text-danger" title="Bloqueado por ti"></i>'
+            );
+        } else if (!isBlocked && blockIcon) {
+            blockIcon.remove();
+        }
+
+        // Actualizar los botones
+        const actionsContainer = userElement.querySelector('.cw-user-actions');
+        actionsContainer.innerHTML = this.createUserActions(user, isBlocked ? 'blocked' : null);
+        
+        // Re-adjuntar event listeners
+        this.attachUserEventListeners(userElement, user);
+    }
+
+    getBlockedUserHTML(user) {
+        return `
+            <div class="cw-user-info">
+                <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
+                <span class="cw-username">
+                    ${user.username}
+                    <i class="fas fa-ban text-danger" title="Bloqueado por ti"></i>
+                </span>
+            </div>
+            <div class="cw-user-actions">
+                <div class="cw-user-actions-group">
+                    <button class="cw-unblock-btn" title="Desbloquear usuario">
+                        <i class="fas fa-unlock"></i>
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    getUnblockedUserHTML(user) {
+        const isFriend = this.currentFriends.has(parseInt(user.id));
+        return `
+            <div class="cw-user-info">
+                <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
+                <span class="cw-username">
+                    ${user.username}
+                    ${isFriend ? '<i class="fas fa-star friend-star" title="Amigo"></i>' : ''}
+                </span>
+            </div>
+            <div class="cw-user-actions">
+                <div class="cw-user-actions-group">
+                    <button class="cw-chat-btn" title="Chat privado">
+                        <i class="fas fa-comment"></i>
+                    </button>
+                    ${this.createFriendButtons(user)}
+                    <button class="cw-block-btn" title="Bloquear usuario">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                </div>
+            </div>`;
     }
 
     // Añadir método para manejar respuestas a solicitudes
@@ -432,27 +506,20 @@ export class UserList {
     }
 
     handleBlockStatusChange(detail) {
-        const { userId, action, isBlocked, isBlockedBy } = detail;
-        const userElement = this.container.querySelector(`[data-user-id="${userId}"]`);
-        
+        if (!detail?.userId) return;
+
+        const userElement = this.container.querySelector(`[data-user-id="${detail.userId}"]`);
         if (!userElement) return;
 
-        // Actualizar clases CSS
-        userElement.classList.toggle('is-blocked', isBlocked);
-        userElement.classList.toggle('is-blockedBy', isBlockedBy);
-
-        // Actualizar acciones
-        const actionsContainer = userElement.querySelector('.cw-user-actions');
-        const user = this.lastUserData.users.find(u => u.id === userId);
-        
+        // Actualizar UI directamente
+        const user = this.lastUserData.users.find(u => u.id === detail.userId);
         if (user) {
-            actionsContainer.innerHTML = this.createUserActions(user, blockService.getBlockReason(userId));
+            userElement.innerHTML = detail.isBlocked ? 
+                this.getBlockedUserHTML(user) : 
+                this.getUnblockedUserHTML(user);
+                
+            // Re-adjuntar listeners
             this.attachUserEventListeners(userElement, user);
         }
-
-        // Forzar actualización visual
-        userElement.style.animation = 'none';
-        userElement.offsetHeight; // Trigger reflow
-        userElement.style.animation = null;
     }
 }
