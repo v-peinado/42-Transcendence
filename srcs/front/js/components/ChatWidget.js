@@ -162,6 +162,12 @@ export class ChatWidget {
                                 <div id="widget-messages" class="cw-messages"></div>
                                 <div class="cw-input-container">
                                     <div class="cw-input-wrapper">
+                                        <button class="cw-emoji-btn" title="Emojis">
+                                            <i class="far fa-smile"></i>
+                                        </button>
+                                        <div class="cw-emoji-picker">
+                                            ${this.getCommonEmojis()}
+                                        </div>
                                         <input type="text" 
                                             id="widget-message-input" 
                                             class="cw-input" 
@@ -451,6 +457,36 @@ export class ChatWidget {
                 }
             }
         });
+
+        // Emoji picker functionality
+        const emojiBtn = this.container.querySelector('.cw-emoji-btn');
+        const emojiPicker = this.container.querySelector('.cw-emoji-picker');
+        const input = this.container.querySelector('#widget-message-input');
+
+        if (emojiBtn && emojiPicker && input) {
+            emojiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                emojiPicker.classList.toggle('visible');
+            });
+
+            emojiPicker.addEventListener('click', (e) => {
+                if (e.target.classList.contains('cw-emoji-item')) {
+                    const emoji = e.target.dataset.emoji;
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+                    input.focus();
+                    input.selectionStart = input.selectionEnd = start + emoji.length;
+                    emojiPicker.classList.remove('visible');
+                }
+                e.stopPropagation();
+            });
+
+            // Cerrar el picker al hacer click fuera
+            document.addEventListener('click', () => {
+                emojiPicker.classList.remove('visible');
+            });
+        }
     }
 
     setupWebSocketListeners() {
@@ -699,5 +735,14 @@ export class ChatWidget {
             toggleBtn.querySelector('i').classList.remove('fa-comments');
             toggleBtn.querySelector('i').classList.add('fa-times');
         }
+    }
+
+    // Añadir método para los emojis comunes
+    getCommonEmojis() {
+        const emojis = ['😊', '😂', '❤️', '👍', '😅', '🎉', '🤔', '😎', 
+                        '😍', '👋', '🤗', '👌', '🙌', '✨', '💪', '🤝'];
+        return emojis.map(emoji => 
+            `<div class="cw-emoji-item" data-emoji="${emoji}">${emoji}</div>`
+        ).join('');
     }
 }
