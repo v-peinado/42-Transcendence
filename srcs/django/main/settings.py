@@ -13,6 +13,12 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from django.core.management.utils import get_random_secret_key
+import logging
+from django.core.signing import Signer
+from cryptography.fernet import Fernet
+import base64
+
+logger = logging.getLogger(__name__)
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -233,3 +239,18 @@ LOGGING = {
         "level": "INFO",
     },
 }
+
+# Generate encryption key for email encryption using Fernet before starting the Django app
+# The key is used to encrypt email addresses in the database
+# The key is generated using the Django Signer class
+try:
+    signer = Signer()
+    key_base = signer.sign(SECRET_KEY).encode()
+    key_32 = base64.urlsafe_b64encode(key_base[:32].ljust(32, b'0'))
+    ENCRYPTION_KEY = key_32
+    logger.info("ENCRYPTION_KEY generated successfully")
+except Exception as e:
+    logger.error(f"Error generating ENCRYPTION_KEY: {str(e)}")
+    # Generate a fallback key if the main key generation fails
+    ENCRYPTION_KEY = Fernet.generate_key()
+    logger.info("Generated fallback ENCRYPTION_KEY")

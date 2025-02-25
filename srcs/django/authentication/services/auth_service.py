@@ -25,9 +25,10 @@ class AuthenticationService:
     @staticmethod
     def register_user(username, email, password):
         """Basic user registration"""
+        # The mail will be encrypted in the save() method
         user = CustomUser.objects.create_user(
             username=username.lower(),
-            email=email.lower(),
+            email=email.lower(),  # It will be encrypted in the save() method
             password=password,
             is_active=False,
         )

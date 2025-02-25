@@ -1,16 +1,6 @@
-{% autoescape off %}
 Hola {{ user.username }},
 
-¡Bienvenido a PongOrama! Tu cuenta ha sido creada exitosamente{% if user.is_fortytwo_user %} usando tu cuenta de 42{% endif %}.
-
-Detalles de tu cuenta:
-- Usuario: {{ user.username }}
-- Email: {{ user.email }}
-{% if not user.is_fortytwo_user %}
-- Método de registro: Manual
-{% else %}
-- Método de registro: Intra 42
-{% endif %}
+¡Bienvenido a PongOrama! Tu cuenta ha sido creada exitosamente.
 
 Si no has sido tú quien ha creado esta cuenta, por favor contacta inmediatamente con nuestro equipo de soporte.
 
@@ -18,4 +8,3 @@ Si no has sido tú quien ha creado esta cuenta, por favor contacta inmediatament
 
 Saludos,
 El equipo de PongOrama
-{% endautoescape %}

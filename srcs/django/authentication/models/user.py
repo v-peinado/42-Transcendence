@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
+from cryptography.fernet import Fernet
+import logging
 
+logger = logging.getLogger(__name__)
 
 class CustomUser(AbstractUser):
     DEFAULT_PROFILE_IMAGE = (
@@ -41,6 +45,38 @@ class CustomUser(AbstractUser):
             if self.is_fortytwo_user
             else self.get_profile_image_url()
         )
+
+    @property
+    def decrypted_email(self):
+        """Returns the decrypted email for use in the application"""
+        try:
+            if not hasattr(settings, 'ENCRYPTION_KEY'):
+                logger.error("ENCRYPTION_KEY not found in settings")
+                return self.email
+                
+            if self.email:
+                if self.email.startswith('gAAAAAB'):  # If it's encrypted (Fernet - gAAAAAB)
+                    cipher_suite = Fernet(settings.ENCRYPTION_KEY)
+                    return cipher_suite.decrypt(self.email.encode()).decode()
+                return self.email  # If it's not encrypted
+        except Exception as e:
+            logger.error(f"Error decrypting email for user {self.id}: {str(e)}")
+            return self.email
+        return None
+
+    def save(self, *args, **kwargs):
+        if self.email and not self.email.startswith('gAAAAAB'):
+            try:
+                if not hasattr(settings, 'ENCRYPTION_KEY'):
+                    logger.error("ENCRYPTION_KEY not found in settings")
+                    super().save(*args, **kwargs)
+                    return
+                    
+                cipher_suite = Fernet(settings.ENCRYPTION_KEY)
+                self.email = cipher_suite.encrypt(self.email.encode()).decode()
+            except Exception as e:
+                logger.error(f"Error encrypting email for user {self.id}: {str(e)}")
+        super().save(*args, **kwargs)
 
     def anonymize(self):
         self.username = f"deleted_user_{self.id}"
