@@ -68,6 +68,12 @@ export class PrivateChat {
     }
 
     createPrivateChat(userId, username) {
+        // Si estaba en la lista de cerrados, quitarlo
+        if (this.closedChats.has(userId)) {
+            this.closedChats.delete(userId);
+            this.saveClosedChats();
+        }
+
         // Verificar bloqueos antes de crear el chat
         if (blockService.isBlocked(userId)) {
             console.log('Chat bloqueado:', userId);
@@ -77,96 +83,127 @@ export class PrivateChat {
         const currentUserId = parseInt(localStorage.getItem('user_id'));
         const channelName = `dm_${Math.min(currentUserId, userId)}_${Math.max(currentUserId, userId)}`;
         
-        // Si el chat está marcado como cerrado, no crearlo automáticamente
-        if (this.closedChats.has(userId)) {
-            console.log('Chat está marcado como cerrado:', userId);
-            return;
-        }
-
-        // Si el chat ya existe, solo mostrarlo
-        if (this.activeChats.has(userId)) {
-            this.showChat(userId);
-            return;
-        }
-
-        // Crear nuevo contenedor de chat
-        const chatContainer = document.createElement('div');
-        chatContainer.className = 'cw-tab-pane';
-        chatContainer.id = `private-chat-${userId}`;
+        // Verificar si el chat ya existe en el DOM
+        let chatContainer = this.container.querySelector(`#private-chat-${userId}`);
         
-        chatContainer.innerHTML = `
-            <div class="cw-private-chat-header">
-                <span class="cw-username">${username}</span>
-                <button class="cw-close-chat" title="Cerrar chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="cw-messages"></div>
-            <div class="cw-input-container">
-                <div class="cw-input-wrapper">
-                    <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
-                    <button class="cw-send-btn">
-                        <i class="fas fa-paper-plane"></i>
+        if (!chatContainer) {
+            // Crear nuevo contenedor de chat solo si no existe
+            chatContainer = document.createElement('div');
+            chatContainer.className = 'cw-tab-pane';
+            chatContainer.id = `private-chat-${userId}`;
+            
+            chatContainer.innerHTML = `
+                <div class="cw-private-chat-header">
+                    <span class="cw-username">${username}</span>
+                    <button class="cw-close-chat" title="Cerrar chat">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-            </div>
-        `;
+                <div class="cw-messages"></div>
+                <div class="cw-input-container">
+                    <div class="cw-input-wrapper">
+                        <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
+                        <button class="cw-send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
 
-        // Añadir el chat al DOM
-        this.container.querySelector('.cw-tab-content').appendChild(chatContainer);
-        
-        // Guardar referencia del chat activo
-        this.activeChats.set(userId, { channelName, username });
-        
-        // Configurar listeners
-        this.setupChatListeners(chatContainer, userId, channelName);
-        
-        // Mostrar el chat y notificar al servidor
+            // Asegurarse de que el contenedor se añade al DOM
+            const tabContent = this.container.querySelector('.cw-tab-content');
+            if (tabContent) {
+                tabContent.appendChild(chatContainer);
+            } else {
+                console.error('No se encontró el contenedor .cw-tab-content');
+                return;
+            }
+            
+            // Configurar listeners
+            this.setupChatListeners(chatContainer, userId, channelName);
+        }
+
+        // Guardar referencia del chat activo si no existe
+        if (!this.activeChats.has(userId)) {
+            this.activeChats.set(userId, { channelName, username });
+            
+            // Suscribirse al canal
+            webSocketService.send({
+                type: 'subscribe_to_channel',
+                channel_name: channelName
+            });
+
+            // Solicitar historial
+            webSocketService.send({
+                type: 'request_chat_history',
+                channel_name: channelName
+            });
+        }
+
+        // Mostrar el chat
         this.showChat(userId);
         this.notifyServerNewChat(userId);
         
-        // Suscribirse al canal después de crear el chat
-        webSocketService.send({
-            type: 'subscribe_to_channel',
-            channel_name: channelName
-        });
-
-        // Solicitar historial inmediatamente
-        webSocketService.send({
-            type: 'request_chat_history',
-            channel_name: channelName
-        });
-
-        // Mostrar el chat inmediatamente
-        this.showChat(userId);
-        
-        // Guardar estado
+        // Guardar estado y actualizar pestañas
         this.saveChatsState();
         this.updatePrivateTabs();
     }
 
     showChat(userId) {
+        console.log('Mostrando chat:', userId);
+        
         // Ocultar todos los chats y el chat general
-        this.container.querySelectorAll('.cw-tab-pane').forEach(pane => 
-            pane.classList.remove('cw-active'));
+        this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
+            pane.classList.remove('cw-active');
+            pane.style.display = 'none';
+        });
         
         // Mostrar el chat privado
         const chatContainer = this.container.querySelector(`#private-chat-${userId}`);
         if (chatContainer) {
             chatContainer.classList.add('cw-active');
-            // Cargar historial si existe
+            chatContainer.style.display = 'flex';
             this.loadChatHistory(userId);
-            // Enfocar input
-            chatContainer.querySelector('.cw-input').focus();
+            chatContainer.querySelector('.cw-input')?.focus();
+            
+            this.activePrivateChat = userId;
+            this.updatePrivateTabs();
+        } else {
+            console.error('No se encontró el contenedor del chat:', userId);
         }
-        this.activePrivateChat = userId;
-        this.updatePrivateTabs();
     }
 
     showGeneralChat() {
-        this.container.querySelectorAll('.cw-tab-pane').forEach(pane => 
-            pane.classList.remove('cw-active'));
-        this.container.querySelector('#chat-tab').classList.add('cw-active');
+        // Restaurar el estado original del widget
+        this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
+            // Primero quitamos la clase active de todos
+            pane.classList.remove('cw-active');
+            
+            // Si es un chat privado, lo ocultamos
+            if (pane.id.startsWith('private-chat-')) {
+                pane.style.display = 'none';
+            } else {
+                // Para los paneles principales (chat, users, friends, requests)
+                // restauramos su visibilidad normal
+                pane.style.removeProperty('display');
+            }
+        });
+
+        // Mostrar el chat general y activar su botón
+        const chatTab = this.container.querySelector('#chat-tab');
+        const chatBtn = this.container.querySelector('[data-tab="chat"]');
+        
+        if (chatTab && chatBtn) {
+            chatTab.classList.add('cw-active');
+            chatBtn.classList.add('cw-active');
+        }
+
+        // Asegurarnos de que los botones del header funcionen
+        this.container.querySelectorAll('.cw-tab-btn').forEach(btn => {
+            const originalClickListener = btn.onclick;
+            btn.onclick = originalClickListener;
+        });
+        
         this.activePrivateChat = null;
         this.updatePrivateTabs();
     }
@@ -316,10 +353,11 @@ export class PrivateChat {
     }
 
     closeChat(userId) {
-        // Notificar al servidor primero
+        console.log('Cerrando chat:', userId);
+        
+        // Notificar al servidor
         const chatData = this.activeChats.get(userId);
         if (chatData) {
-            console.log('Cerrando chat:', chatData);
             webSocketService.send({
                 type: 'delete_private_channel',
                 user1_id: Math.min(parseInt(localStorage.getItem('user_id')), userId),
@@ -329,19 +367,22 @@ export class PrivateChat {
             });
         }
 
-        // Limpieza local
+        // Eliminar el contenedor físicamente
         const chatContainer = this.container.querySelector(`#private-chat-${userId}`);
         if (chatContainer) {
             chatContainer.remove();
-            this.activeChats.delete(userId);
-            this.saveChatsState();
-            
-            if (this.activePrivateChat === userId) {
-                this.showGeneralChat();
-            } else {
-                this.updatePrivateTabs();
-            }
         }
+
+        // Eliminar todas las referencias
+        this.activeChats.delete(userId);
+        this.closedChats.add(userId);
+        
+        // Siempre volver al chat general al cerrar
+        this.showGeneralChat();
+        
+        // Actualizar estado
+        this.saveClosedChats();
+        this.saveChatsState();
     }
 
     // Métodos para persistencia
@@ -352,10 +393,15 @@ export class PrivateChat {
             const closedChats = new Set(JSON.parse(localStorage.getItem('closedChats') || '[]'));
             
             this.messageHistory = new Map(Object.entries(savedHistory));
+            this.closedChats = closedChats;
+            
+            // Limpiar cualquier chat existente primero
+            this.container.querySelectorAll('.cw-tab-pane[id^="private-chat-"]').forEach(el => el.remove());
+            this.activeChats.clear();
             
             // Solo recrear los chats que no están cerrados
             savedChats.forEach(chat => {
-                if (!closedChats.has(chat.userId)) {
+                if (!this.closedChats.has(chat.userId)) {
                     this.createPrivateChatSilent(chat.userId, chat.username);
                 }
             });
