@@ -234,9 +234,11 @@ class MailSendingService:
         """Send warning email about account deletion due to inactivity"""
         try:
             subject = "Tu cuenta será eliminada por inactividad"
+            # Convertimos los segundos a días para el mensaje
+            days_remaining = round(settings.INACTIVITY_WARNING / 86400)  # 86400 segundos = 1 día
             context = {
                 "user": user,
-                "days_remaining": settings.INACTIVITY_WARNING_DAYS,
+                "days_remaining": days_remaining,
                 "login_url": f"{settings.SITE_URL}/login"
             }
             html_message = render_to_string(
