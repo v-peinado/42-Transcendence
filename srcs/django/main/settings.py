@@ -256,6 +256,11 @@ except Exception as e:
     logger.info("Generated fallback ENCRYPTION_KEY")
     
 # GDPR and Inactivity Settings
-EMAIL_VERIFICATION_TIMEOUT_HOURS = 1  # Time to verify email after registration
-INACTIVITY_THRESHOLD_DAYS = 60  # Maximum days of inactivity before deletion
-INACTIVITY_WARNING_DAYS = 15    # Days before deletion to send warning
+# EMAIL_VERIFICATION_TIMEOUT_HOURS = 1  # Time to verify email after registration
+# INACTIVITY_THRESHOLD_DAYS = 60  # Maximum days of inactivity before deletion
+# INACTIVITY_WARNING_DAYS = 15    # Days before deletion to send warning
+
+# # Test mode settings
+EMAIL_VERIFICATION_TIMEOUT_HOURS = 60/3600  # sec
+INACTIVITY_THRESHOLD_DAYS = 20/86400  # sec
+INACTIVITY_WARNING_DAYS = 30/86400    # sec
