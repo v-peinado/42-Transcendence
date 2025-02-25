@@ -91,18 +91,25 @@ class Command(BaseCommand):
         self.stdout.write('\n=== Phase 2: Testing Deletion ===')
         user.refresh_from_db()
         
-        # Force conditions for immediate deletion
-        user.last_login = timezone.now() - timedelta(seconds=settings.INACTIVITY_THRESHOLD * 2)
+        # Forzar condiciones para eliminación inmediata
+        deletion_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_THRESHOLD * 2)
+        warning_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_WARNING * 2)
+        
+        user.last_login = deletion_time
         user.inactivity_notified = True
-        user.inactivity_notification_date = timezone.now() - timedelta(
-            seconds=settings.INACTIVITY_WARNING * 2
-        )
+        user.inactivity_notification_date = warning_time
         user.save()
         
-        # Wait for changes to take effect
-        time.sleep(1)
+        self.stdout.write(
+            f"Set user for deletion:\n"
+            f"- Current time: {timezone.now()}\n"
+            f"- Last login: {user.last_login}\n"
+            f"- Notification date: {user.inactivity_notification_date}\n"
+            f"- Threshold: {settings.INACTIVITY_THRESHOLD} seconds\n"
+            f"- Warning: {settings.INACTIVITY_WARNING} seconds"
+        )
         
-        # Execute final cleanup
+        # Ejecutar limpieza final
         self.stdout.write('Executing final cleanup...')
         GDPRService.cleanup_inactive_users()
         

@@ -73,53 +73,64 @@ class GDPRService:
     def cleanup_inactive_users():
         """Cleanup inactive users based on configured thresholds"""
         try:
-            # Cleanup unverified users
-            unverified_threshold = timezone.now() - timezone.timedelta(
+            logger.info("Starting cleanup process...")
+            current_time = timezone.now()
+
+            # 1. Cleanup unverified users
+            unverified_threshold = current_time - timezone.timedelta(
                 seconds=settings.EMAIL_VERIFICATION_TIMEOUT
             )
             unverified_users = CustomUser.objects.filter(
                 email_verified=False,
                 date_joined__lt=unverified_threshold
-            )
+            ).exclude(is_superuser=True)
             
             for user in unverified_users:
                 logger.info(f"Deleting unverified user {user.username} registered at {user.date_joined}")
                 GDPRService.delete_user_data(user)
 
-            # Notify users approaching inactivity threshold
-            warning_threshold = timezone.now() - timezone.timedelta(
-                seconds=(settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING)
+            # 2. First notify users approaching inactivity threshold
+            warning_threshold = current_time - timezone.timedelta(
+                seconds=settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             )
             users_to_notify = CustomUser.objects.filter(
                 is_active=True,
                 email_verified=True,
                 inactivity_notified=False,
                 last_login__lt=warning_threshold
-            )
+            ).exclude(is_superuser=True)
 
             for user in users_to_notify:
-                if user.should_notify_inactivity():
-                    logger.info(f"Sending inactivity warning to user {user.username}")
-                    MailSendingService.send_inactivity_warning(user)
-                    user.inactivity_notified = True
-                    user.inactivity_notification_date = timezone.now()
-                    user.save()
+                logger.info(f"Sending inactivity warning to user {user.username}")
+                MailSendingService.send_inactivity_warning(user)
+                user.inactivity_notified = True
+                user.inactivity_notification_date = current_time
+                user.save()
 
-            # Delete inactive users
-            inactive_threshold = timezone.now() - timezone.timedelta(
+            # 3. Delete inactive users who were notified and warning period expired
+            deletion_threshold = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_THRESHOLD
             )
+            warning_expiry = current_time - timezone.timedelta(
+                seconds=settings.INACTIVITY_WARNING
+            )
+            
             inactive_users = CustomUser.objects.filter(
                 is_active=True,
-                last_login__lt=inactive_threshold,
                 inactivity_notified=True,
-                inactivity_notification_date__lt=timezone.now() - timezone.timedelta(seconds=settings.INACTIVITY_WARNING)
-            )
+                last_login__lt=deletion_threshold,
+                inactivity_notification_date__lt=warning_expiry
+            ).exclude(is_superuser=True)
 
+            logger.info(f"Found {inactive_users.count()} users to delete")
             for user in inactive_users:
-                if user.is_inactive_for_too_long():
-                    logger.info(f"Deleting inactive user {user.username}, last login: {user.last_login}")
-                    GDPRService.delete_user_data(user)
+                logger.info(
+                    f"Deleting user {user.username}:\n"
+                    f"- Last login: {user.last_login}\n"
+                    f"- Notification date: {user.inactivity_notification_date}\n"
+                    f"- Current time: {current_time}"
+                )
+                GDPRService.delete_user_data(user)
 
         except Exception as e:
             logger.error(f"Error in cleanup_inactive_users: {str(e)}")
