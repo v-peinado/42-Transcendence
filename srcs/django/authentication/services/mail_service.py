@@ -7,6 +7,9 @@ from authentication.models import CustomUser
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
 import jwt
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EmailVerificationService:
@@ -225,3 +228,31 @@ class MailSendingService:
             return True
         except Exception as e:
             raise Exception(f"Error al enviar email de reset: {str(e)}")
+
+    @staticmethod
+    def send_inactivity_warning(user):
+        """Send warning email about account deletion due to inactivity"""
+        try:
+            subject = "Tu cuenta será eliminada por inactividad"
+            context = {
+                "user": user,
+                "days_remaining": settings.INACTIVITY_WARNING_DAYS,
+                "login_url": f"{settings.SITE_URL}/login"
+            }
+            html_message = render_to_string(
+                "authentication/inactivity_warning_email.html", context
+            )
+            plain_message = strip_tags(html_message)
+
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error sending inactivity warning: {str(e)}")
+            raise

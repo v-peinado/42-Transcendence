@@ -254,3 +254,8 @@ except Exception as e:
     # Generate a fallback key if the main key generation fails
     ENCRYPTION_KEY = Fernet.generate_key()
     logger.info("Generated fallback ENCRYPTION_KEY")
+    
+# GDPR and Inactivity Settings
+EMAIL_VERIFICATION_TIMEOUT_HOURS = 1  # Time to verify email after registration
+INACTIVITY_THRESHOLD_DAYS = 60  # Maximum days of inactivity before deletion
+INACTIVITY_WARNING_DAYS = 15    # Days before deletion to send warning
