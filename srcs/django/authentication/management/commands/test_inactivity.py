@@ -138,8 +138,3 @@ Current user state:
         
         self.stdout.write(self.style.SUCCESS('\n=== Tests Completed ===\n'))
         
-		# Steps to use this command:
-		# 1. docker exec -it srcs-web-1 /bin/bash
-		# 2. python manage.py test_inactivity
-        # 3. exit
-        # 4. make view-users

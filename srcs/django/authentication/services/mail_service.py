@@ -250,7 +250,7 @@ class MailSendingService:
                 subject,
                 plain_message,
                 settings.DEFAULT_FROM_EMAIL,
-                [user.email],
+                [user.decrypted_email],
                 html_message=html_message,
                 fail_silently=False,
             )
