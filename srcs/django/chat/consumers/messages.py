@@ -104,7 +104,7 @@ class MessagesConsumer:
         logger.info(f"Loading unarchived messages for user {user_id}")
         channels = await self.get_user_channels(user_id)
         for channel_name in channels:
-            messages = await self.get_unarchived_messages(channel_name)
+            messages = await self.get_unarchived_messages_filtered(user_id, channel_name)
             logger.info(f"Loading {len(messages)} unarchived messages for channel {channel_name}")
             for message in messages:
                 logger.info(f"Sending message: {message.content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}")
@@ -117,6 +117,23 @@ class MessagesConsumer:
                     "timestamp": message.timestamp.isoformat()
                 }))
                 #await asyncio.sleep(0.1)  # Añadir un pequeño retraso de 100ms
+
+    @database_sync_to_async
+    def get_unarchived_messages_filtered(self, user_id, channel_name):
+        from .blockusers import BlockedUser  # Importar aquí para evitar importación circular
+        
+        # Obtener IDs de usuarios bloqueados
+        blocked_users = BlockedUser.objects.filter(
+            blocker_id=user_id
+        ).values_list('blocked_id', flat=True)
+        
+        # Filtrar mensajes excluyendo los de usuarios bloqueados
+        return list(Message.objects.filter(
+            channel_name=channel_name,
+            is_archived=False
+        ).exclude(
+            user_id__in=blocked_users
+        ).order_by('timestamp'))
 
     @database_sync_to_async
     def get_unarchived_messages(self, channel_name):

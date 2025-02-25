@@ -392,7 +392,15 @@ export class PrivateChat {
             const savedHistory = JSON.parse(localStorage.getItem('chatHistory') || '{}');
             const closedChats = new Set(JSON.parse(localStorage.getItem('closedChats') || '[]'));
             
-            this.messageHistory = new Map(Object.entries(savedHistory));
+            // Filtrar mensajes de usuarios bloqueados antes de cargar el historial
+            const filteredHistory = {};
+            for (const [channelName, messages] of Object.entries(savedHistory)) {
+                filteredHistory[channelName] = messages.filter(msg => 
+                    !blockService.isBlocked(parseInt(msg.user_id))
+                );
+            }
+            
+            this.messageHistory = new Map(Object.entries(filteredHistory));
             this.closedChats = closedChats;
             
             // Limpiar cualquier chat existente primero
@@ -401,7 +409,7 @@ export class PrivateChat {
             
             // Solo recrear los chats que no están cerrados
             savedChats.forEach(chat => {
-                if (!this.closedChats.has(chat.userId)) {
+                if (!this.closedChats.has(chat.userId) && !blockService.isBlocked(chat.userId)) {
                     this.createPrivateChatSilent(chat.userId, chat.username);
                 }
             });
@@ -424,6 +432,13 @@ export class PrivateChat {
     }
 
     addMessageToHistory(channelName, message) {
+        // Solo añadir al historial si el usuario no está bloqueado
+        const messageUserId = parseInt(message.user_id);
+        if (blockService.isBlocked(messageUserId)) {
+            console.log('Mensaje de usuario bloqueado no guardado en historial:', messageUserId);
+            return;
+        }
+
         if (!this.messageHistory.has(channelName)) {
             this.messageHistory.set(channelName, []);
         }
@@ -441,7 +456,14 @@ export class PrivateChat {
         if (chatContainer) {
             const messagesContainer = chatContainer.querySelector('.cw-messages');
             messagesContainer.innerHTML = '';
-            history.forEach(msg => this.addMessageToChat(userId, msg));
+            
+            // Filtrar mensajes de usuarios bloqueados
+            const filteredHistory = history.filter(msg => {
+                const messageUserId = parseInt(msg.user_id);
+                return !blockService.isBlocked(messageUserId);
+            });
+
+            filteredHistory.forEach(msg => this.addMessageToChat(userId, msg));
         }
     }
 
