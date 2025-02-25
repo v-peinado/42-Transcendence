@@ -9,6 +9,7 @@ export class PrivateChat {
         this.closedChats = new Set(this.loadClosedChats()); // Añadir esto
         this.loadSavedChats();
         this.initializePrivateTabs();
+        this.setupMainTabsListeners(); // Añadir esta línea
 
         document.addEventListener('block-status-changed', () => {
             this.handleBlockStatusChange();
@@ -152,15 +153,15 @@ export class PrivateChat {
     showChat(userId) {
         console.log('Mostrando chat:', userId);
         
-        // Ocultar todos los chats y el chat general
-        this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
-            pane.classList.remove('cw-active');
-            pane.style.display = 'none';
-        });
-        
-        // Mostrar el chat privado
+        // Mostrar el chat privado seleccionado
         const chatContainer = this.container.querySelector(`#private-chat-${userId}`);
         if (chatContainer) {
+            // Ocultar todos los paneles primero
+            this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
+                pane.classList.remove('cw-active');
+                pane.style.display = 'none';
+            });
+            
             chatContainer.classList.add('cw-active');
             chatContainer.style.display = 'flex';
             this.loadChatHistory(userId);
@@ -168,6 +169,9 @@ export class PrivateChat {
             
             this.activePrivateChat = userId;
             this.updatePrivateTabs();
+
+            // Mantener activos los listeners de las pestañas principales
+            this.setupMainTabsListeners();
         } else {
             console.error('No se encontró el contenedor del chat:', userId);
         }
@@ -176,17 +180,8 @@ export class PrivateChat {
     showGeneralChat() {
         // Restaurar el estado original del widget
         this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
-            // Primero quitamos la clase active de todos
             pane.classList.remove('cw-active');
-            
-            // Si es un chat privado, lo ocultamos
-            if (pane.id.startsWith('private-chat-')) {
-                pane.style.display = 'none';
-            } else {
-                // Para los paneles principales (chat, users, friends, requests)
-                // restauramos su visibilidad normal
-                pane.style.removeProperty('display');
-            }
+            pane.style.display = 'none';
         });
 
         // Mostrar el chat general y activar su botón
@@ -196,16 +191,90 @@ export class PrivateChat {
         if (chatTab && chatBtn) {
             chatTab.classList.add('cw-active');
             chatBtn.classList.add('cw-active');
+            chatTab.style.display = 'flex';
         }
-
-        // Asegurarnos de que los botones del header funcionen
-        this.container.querySelectorAll('.cw-tab-btn').forEach(btn => {
-            const originalClickListener = btn.onclick;
-            btn.onclick = originalClickListener;
-        });
         
         this.activePrivateChat = null;
         this.updatePrivateTabs();
+        this.enableMainTabs();
+    }
+
+    enableMainTabs() {
+        this.container.querySelectorAll('.cw-tab-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                
+                // Desactivar todos los paneles y botones
+                this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
+                    pane.classList.remove('cw-active');
+                    pane.style.display = 'none';
+                });
+                
+                this.container.querySelectorAll('.cw-tab-btn').forEach(b => 
+                    b.classList.remove('cw-active')
+                );
+                
+                // Activar el panel y botón seleccionados
+                const tabId = `${btn.getAttribute('data-tab')}-tab`;
+                const targetPane = this.container.querySelector(`#${tabId}`);
+                if (targetPane) {
+                    targetPane.classList.add('cw-active');
+                    targetPane.style.display = 'flex';
+                }
+                btn.classList.add('cw-active');
+                
+                // Asegurarse de que los chats privados estén ocultos
+                this.container.querySelectorAll('.cw-tab-pane[id^="private-chat-"]').forEach(pane => {
+                    pane.style.display = 'none';
+                });
+                
+                // Reset del estado del chat privado activo
+                this.activePrivateChat = null;
+                this.updatePrivateTabs();
+            };
+        });
+    }
+
+    setupMainTabsListeners() {
+        // Configurar los listeners de las pestañas principales
+        this.container.querySelectorAll('.cw-tab-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                
+                // Ocultar todos los paneles
+                this.container.querySelectorAll('.cw-tab-pane').forEach(pane => {
+                    pane.classList.remove('cw-active');
+                    pane.style.display = 'none';
+                });
+                
+                // Desactivar todos los botones
+                this.container.querySelectorAll('.cw-tab-btn').forEach(b => 
+                    b.classList.remove('cw-active')
+                );
+                
+                // Activar el panel y botón seleccionados
+                const tabId = `${btn.getAttribute('data-tab')}-tab`;
+                const targetPane = this.container.querySelector(`#${tabId}`);
+                if (targetPane) {
+                    targetPane.classList.add('cw-active');
+                    targetPane.style.display = 'flex';
+                }
+                btn.classList.add('cw-active');
+                
+                // Ocultar el chat privado si está activo
+                if (this.activePrivateChat) {
+                    const activeChat = this.container.querySelector(`#private-chat-${this.activePrivateChat}`);
+                    if (activeChat) {
+                        activeChat.style.display = 'none';
+                        activeChat.classList.remove('cw-active');
+                    }
+                }
+                
+                // No resetear el estado del chat privado activo
+                // Solo actualizar las pestañas
+                this.updatePrivateTabs();
+            };
+        });
     }
 
     setupChatListeners(chatContainer, userId, channelName) {
@@ -257,27 +326,43 @@ export class PrivateChat {
             return;
         }
 
-        // Guardar mensaje en el historial sin importar si el chat está abierto o no
+        // Crear un ID único para el mensaje basado en su contenido y timestamp
+        const messageId = `${channel_name}-${data.timestamp || Date.now()}-${message || data.content}`;
+        
+        // Verificar si el mensaje ya ha sido procesado
+        if (this.processedMessages?.has(messageId)) {
+            return;
+        }
+
+        // Marcar el mensaje como procesado
+        if (!this.processedMessages) {
+            this.processedMessages = new Set();
+        }
+        this.processedMessages.add(messageId);
+
+        // Guardar mensaje en el historial
         this.addMessageToHistory(channel_name, {
-            content: message,
+            content: message || data.content,
             user_id: parseInt(user_id),
             username,
-            timestamp: new Date().toISOString()
+            timestamp: data.timestamp || new Date().toISOString(),
+            messageId
         });
 
         // Si el chat está abierto, mostrar el mensaje
         if (this.activeChats.has(otherUserId)) {
             this.addMessageToChat(otherUserId, {
-                content: message,
+                content: message || data.content,
                 user_id: parseInt(user_id),
-                username
+                username,
+                messageId
             });
         }
 
         // Emitir evento de notificación si el chat no está activo
         if (!this.container.querySelector(`#private-chat-${otherUserId}`)?.classList.contains('cw-active')) {
             const event = new CustomEvent('new-private-message', {
-                detail: { userId: otherUserId, username, message }
+                detail: { userId: otherUserId, username, message: message || data.content }
             });
             document.dispatchEvent(event);
         }
@@ -457,13 +542,17 @@ export class PrivateChat {
             const messagesContainer = chatContainer.querySelector('.cw-messages');
             messagesContainer.innerHTML = '';
             
-            // Filtrar mensajes de usuarios bloqueados
-            const filteredHistory = history.filter(msg => {
-                const messageUserId = parseInt(msg.user_id);
-                return !blockService.isBlocked(messageUserId);
+            // Filtrar mensajes duplicados usando messageId
+            const processedIds = new Set();
+            const uniqueMessages = history.filter(msg => {
+                if (!msg.messageId || processedIds.has(msg.messageId)) {
+                    return false;
+                }
+                processedIds.add(msg.messageId);
+                return !blockService.isBlocked(parseInt(msg.user_id));
             });
 
-            filteredHistory.forEach(msg => this.addMessageToChat(userId, msg));
+            uniqueMessages.forEach(msg => this.addMessageToChat(userId, msg));
         }
     }
 
