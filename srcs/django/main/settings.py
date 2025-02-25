@@ -260,7 +260,9 @@ except Exception as e:
 # INACTIVITY_THRESHOLD_DAYS = 60  # Maximum days of inactivity before deletion
 # INACTIVITY_WARNING_DAYS = 15    # Days before deletion to send warning
 
-# # Test mode settings
-EMAIL_VERIFICATION_TIMEOUT_HOURS = 60/3600  # sec
-INACTIVITY_THRESHOLD_DAYS = 20/86400  # sec
-INACTIVITY_WARNING_DAYS = 30/86400    # sec
+# GDPR and Inactivity Settings - Time units in seconds for testing
+TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
+EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
+INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
+INACTIVITY_WARNING = 15 * TIME_MULTIPLIER       # 15 seconds/days
+TASK_CHECK_INTERVAL = 10  # seconds - how often Celery checks for inactive users

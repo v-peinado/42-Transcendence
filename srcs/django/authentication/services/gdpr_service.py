@@ -1,9 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
-from ..models import CustomUser
-from .mail_service import MailSendingService
 import logging
+from authentication.models import CustomUser
+from .mail_service import MailSendingService
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +71,12 @@ class GDPRService:
 
     @staticmethod
     def cleanup_inactive_users():
-        """
-        Cleanup inactive users based on configured thresholds
-        """
+        """Cleanup inactive users based on configured thresholds"""
         try:
             # Cleanup unverified users
-            unverified_threshold = timezone.now() - timezone.timedelta(hours=settings.EMAIL_VERIFICATION_TIMEOUT_HOURS)
+            unverified_threshold = timezone.now() - timezone.timedelta(
+                seconds=settings.EMAIL_VERIFICATION_TIMEOUT
+            )
             unverified_users = CustomUser.objects.filter(
                 email_verified=False,
                 date_joined__lt=unverified_threshold
@@ -87,11 +87,14 @@ class GDPRService:
                 GDPRService.delete_user_data(user)
 
             # Notify users approaching inactivity threshold
+            warning_threshold = timezone.now() - timezone.timedelta(
+                seconds=(settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING)
+            )
             users_to_notify = CustomUser.objects.filter(
                 is_active=True,
                 email_verified=True,
                 inactivity_notified=False,
-                last_login__lt=timezone.now() - timezone.timedelta(days=settings.INACTIVITY_THRESHOLD_DAYS - settings.INACTIVITY_WARNING_DAYS)
+                last_login__lt=warning_threshold
             )
 
             for user in users_to_notify:
@@ -103,12 +106,14 @@ class GDPRService:
                     user.save()
 
             # Delete inactive users
-            inactive_threshold = timezone.now() - timezone.timedelta(days=settings.INACTIVITY_THRESHOLD_DAYS)
+            inactive_threshold = timezone.now() - timezone.timedelta(
+                seconds=settings.INACTIVITY_THRESHOLD
+            )
             inactive_users = CustomUser.objects.filter(
                 is_active=True,
                 last_login__lt=inactive_threshold,
                 inactivity_notified=True,
-                inactivity_notification_date__lt=timezone.now() - timezone.timedelta(days=settings.INACTIVITY_WARNING_DAYS)
+                inactivity_notification_date__lt=timezone.now() - timezone.timedelta(seconds=settings.INACTIVITY_WARNING)
             )
 
             for user in inactive_users:

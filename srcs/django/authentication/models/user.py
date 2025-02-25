@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from cryptography.fernet import Fernet
 import logging
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +30,6 @@ class CustomUser(AbstractUser):
     last_2fa_time = models.DateTimeField(null=True)
     pending_email = models.EmailField(blank=True, null=True)
     pending_email_token = models.CharField(max_length=255, blank=True, null=True)
-    inactivity_notified = models.BooleanField(default=False)
-    inactivity_notification_date = models.DateTimeField(null=True, blank=True)
 
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, "url"):
@@ -94,15 +91,15 @@ class CustomUser(AbstractUser):
         if not self.last_login:
             return False
         
-        inactive_days = (timezone.now() - self.last_login).days
-        return inactive_days >= settings.INACTIVITY_THRESHOLD_DAYS
+        inactive_seconds = (timezone.now() - self.last_login).total_seconds()
+        return inactive_seconds >= settings.INACTIVITY_THRESHOLD
     
     def should_notify_inactivity(self):
         if not self.last_login or self.inactivity_notified:
             return False
             
-        inactive_days = (timezone.now() - self.last_login).days
-        return inactive_days >= (settings.INACTIVITY_THRESHOLD_DAYS - settings.INACTIVITY_WARNING_DAYS)
+        inactive_seconds = (timezone.now() - self.last_login).total_seconds()
+        return inactive_seconds >= (settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING)
 
     class Meta:
         verbose_name = "Usuario"
