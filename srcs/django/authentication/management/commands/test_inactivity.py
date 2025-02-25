@@ -72,12 +72,12 @@ class Command(BaseCommand):
         self.stdout.write('\n=== Phase 1: Testing Notification ===')
         # Set last login to trigger warning but not deletion
         user.last_login = timezone.now() - timedelta(
-            seconds=settings.INACTIVITY_THRESHOLD - (settings.INACTIVITY_WARNING / 2)
+            seconds=settings.INACTIVITY_THRESHOLD - (settings.INACTIVITY_WARNING / 2)	# Halfway between warning and deletion time to trigger notification
         )
-        user.save()
+        user.save()	# Save user to trigger notification
         
-        mail.outbox = []
-        GDPRService.cleanup_inactive_users()
+        mail.outbox = []	
+        GDPRService.cleanup_inactive_users()	# Trigger cleanup to send warning email (first time we call it)
         
         # Verify notification email
         if len(mail.outbox) > 0:
@@ -91,14 +91,14 @@ class Command(BaseCommand):
         self.stdout.write('\n=== Phase 2: Testing Deletion ===')
         user.refresh_from_db()
         
-        # Forzar condiciones para eliminación inmediata
-        deletion_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_THRESHOLD * 2)
-        warning_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_WARNING * 2)
+        # Force user to be deleted by setting last login past deletion time
+        deletion_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_THRESHOLD * 2)	# Past deletion time to trigger deletion
+        warning_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_WARNING * 2)	# Past warning time to trigger deletion
         
-        user.last_login = deletion_time
-        user.inactivity_notified = True
-        user.inactivity_notification_date = warning_time
-        user.save()
+        user.last_login = deletion_time	# Set last login to trigger deletion
+        user.inactivity_notified = True	# Set notification flag to trigger deletion
+        user.inactivity_notification_date = warning_time	
+        user.save()	# Save user to trigger deletion
         
         self.stdout.write(
             f"Set user for deletion:\n"
@@ -109,7 +109,7 @@ class Command(BaseCommand):
             f"- Warning: {settings.INACTIVITY_WARNING} seconds"
         )
         
-        # Ejecutar limpieza final
+        # Trigger cleanup to delete user after saving changes (second time we call it) 
         self.stdout.write('Executing final cleanup...')
         GDPRService.cleanup_inactive_users()
         
