@@ -57,18 +57,22 @@ export class UserList {
 
     updateSentRequests(requests) {
         console.log('Actualizando solicitudes enviadas:', requests);
-        // Limpiar las solicitudes actuales
         this.sentRequests.clear();
-        // Añadir las nuevas solicitudes si existen
+        
         if (Array.isArray(requests)) {
+            // Almacenar los IDs de las solicitudes en un Map para acceso rápido
+            this.sentRequestsData = new Map();
+            
             requests.forEach(req => {
                 if (req.to_user_id) {
                     this.sentRequests.add(req.to_user_id);
+                    // Guardar el objeto completo de la solicitud
+                    this.sentRequestsData.set(parseInt(req.to_user_id), req);
                 }
             });
         }
+        
         this.saveState();
-        // Actualizar la vista
         this.updateList(this.lastUserData);
     }
 
@@ -165,6 +169,7 @@ export class UserList {
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
         const hasSentRequest = this.sentRequests.has(userId);
+        const requestData = this.sentRequestsData?.get(userId);
     
         // Si el otro usuario nos ha bloqueado
         if (blockService.isBlockedByUser(userId)) {
@@ -191,9 +196,11 @@ export class UserList {
                                 <i class="fas fa-user-plus"></i>
                             </button>
                         ` : `
-                            <span class="cw-request-pending" title="Solicitud enviada">
+                            <button class="cw-cancel-request" 
+                                   title="Cancelar solicitud" 
+                                   data-request-id="${requestData?.request_id || requestData?.id}">
                                 <i class="fas fa-clock"></i>
-                            </span>
+                            </button>
                         `}
                     ` : ''}
                     <button class="cw-block-btn" title="Bloquear usuario">
@@ -298,6 +305,66 @@ export class UserList {
                 }
             });
         }
+
+        // Modificar el manejador del botón de cancelar solicitud
+        const cancelRequestBtn = userElement.querySelector('.cw-cancel-request');
+        if (cancelRequestBtn) {
+            cancelRequestBtn.addEventListener('click', async () => {
+                const requestId = cancelRequestBtn.dataset.requestId;
+                if (requestId) {
+                    console.log('Cancelando solicitud:', requestId);
+                    
+                    // Enviar la cancelación
+                    webSocketService.send({
+                        type: 'reject_friend_request',
+                        request_id: requestId
+                    });
+
+                    // Actualizar estado local
+                    this.sentRequests.delete(user.id);
+                    this.sentRequestsData?.delete(user.id);
+                    this.saveState();
+
+                    // Actualizar UI
+                    const actionsContainer = userElement.querySelector('.cw-user-actions');
+                    actionsContainer.innerHTML = this.createUserActions(user);
+                    this.attachUserEventListeners(userElement, user);
+                } else {
+                    console.error('No se encontró el ID de la solicitud en el botón');
+                }
+            });
+        }
+    }
+
+    async findSentRequest(userId) {
+        return new Promise((resolve) => {
+            const handler = (event) => {
+                if (typeof event === 'object') {
+                    console.log('Recibiendo respuesta de solicitudes enviadas:', event);
+                    const pending = event.pending || [];
+                    const request = pending.find(req => 
+                        parseInt(req.to_user_id) === parseInt(userId)
+                    );
+                    
+                    if (request) {
+                        console.log('Solicitud encontrada:', request);
+                        webSocketService.off('sent_friend_requests', handler);
+                        resolve(request);
+                    }
+                }
+            };
+
+            // Registrar el listener y enviar la solicitud
+            webSocketService.on('sent_friend_requests', handler);
+            webSocketService.send({ type: 'get_sent_requests' });
+
+            // Timeout de seguridad
+            setTimeout(() => {
+                webSocketService.off('sent_friend_requests', handler);
+                console.log('Timeout al buscar solicitud');
+                resolve(null);
+            }, 3000);
+        });
     }
 
     updateUserBlockState(userElement, isBlocked) {

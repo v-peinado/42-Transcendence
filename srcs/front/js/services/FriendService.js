@@ -16,9 +16,13 @@ class FriendService {
     }
 
     rejectFriendRequest(requestId) {
-        webSocketService.send({
-            type: 'reject_friend_request',
-            request_id: requestId
+        return new Promise((resolve) => {
+            console.log('Rechazando/Cancelando solicitud:', requestId);
+            webSocketService.send({
+                type: 'reject_friend_request',
+                request_id: requestId
+            });
+            resolve();
         });
     }
 
@@ -26,6 +30,17 @@ class FriendService {
         webSocketService.send({
             type: 'delete_friendship',
             friendship_id: friendshipId
+        });
+    }
+
+    cancelFriendRequest(requestId) {
+        return new Promise((resolve) => {
+            console.log('Enviando cancelación de solicitud:', requestId);
+            webSocketService.send({
+                type: 'reject_friend_request',
+                request_id: requestId
+            });
+            resolve();
         });
     }
 }
