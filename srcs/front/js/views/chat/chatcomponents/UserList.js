@@ -10,6 +10,12 @@ export class UserList {
         this.sentRequests = new Set(); // Añadir esta línea
         this.requestsContainer = container.querySelector('#requests-container');
         this.friendsContainer = container.querySelector('#friends-container');
+        this.onlineUsers = new Set();
+
+        // Suscribirse a eventos de WebSocket
+        webSocketService.on('user_online', (data) => this.handleUserStatus(data.user_id, true));
+        webSocketService.on('user_offline', (data) => this.handleUserStatus(data.user_id, false));
+        webSocketService.on('online_users', (data) => this.handleOnlineUsersList(data.users));
         
         // Cargar estado guardado
         this.loadSavedState();
@@ -151,7 +157,7 @@ export class UserList {
         // Usuario normal o bloqueado por nosotros
         userElement.innerHTML = `
             <div class="cw-user-info">
-                <span class="cw-user-status ${user.is_online ? 'online' : 'offline'}"></span>
+                <span class="cw-user-status online"></span> <!-- Siempre online porque está en la lista -->
                 <span class="cw-username">${user.username}</span>
                 ${isFriend ? '<i class="fas fa-star friend-star"></i>' : ''}
                 ${isBlocked ? '<i class="fas fa-ban text-danger"></i>' : ''}
@@ -630,5 +636,51 @@ export class UserList {
             // Re-adjuntar listeners
             this.attachUserEventListeners(userElement, user);
         }
+    }
+
+    handleUserStatus(userId, isOnline) {
+        console.log('Actualizando estado de usuario:', userId, isOnline); // Log añadido
+        if (isOnline) {
+            this.onlineUsers.add(userId);
+        } else {
+            this.onlineUsers.delete(userId);
+        }
+        this.updateUserStatus(userId, isOnline);
+    }
+
+    handleOnlineUsersList(users) {
+        // Limpiar lista actual
+        this.onlineUsers.clear();
+        
+        // Añadir nuevos usuarios online
+        users.forEach(userId => this.onlineUsers.add(userId));
+        
+        // Actualizar todos los indicadores
+        this.updateAllStatuses();
+    }
+
+    updateUserStatus(userId, isOnline) {
+        const userElement = this.container.querySelector(`[data-user-id="${userId}"]`);
+        if (userElement) {
+            const statusDot = userElement.querySelector('.cw-user-status');
+            if (statusDot) {
+                console.log('Actualizando dot de usuario:', userId, isOnline); // Log añadido
+                statusDot.classList.toggle('online', isOnline);
+            }
+        }
+    }
+
+    updateAllStatuses() {
+        this.container.querySelectorAll('.cw-user-item').forEach(userElement => {
+            const userId = parseInt(userElement.dataset.userId);
+            const statusDot = userElement.querySelector('.cw-user-status');
+            if (statusDot) {
+                statusDot.classList.toggle('online', this.onlineUsers.has(userId));
+            }
+        });
+    }
+
+    isUserOnline(userId) {
+        return this.onlineUsers.has(userId);
     }
 }

@@ -38,6 +38,12 @@ class WebSocketService {
                 this.socket.onopen = () => {
                     console.log('WebSocket conectado');
                     this.isConnecting = false;
+                    
+                    // Solicitar lista de usuarios online al conectar
+                    this.send({
+                        type: 'request_online_users'
+                    });
+
                     // Procesar mensajes en cola
                     while (this.messageQueue.length > 0) {
                         const message = this.messageQueue.shift();

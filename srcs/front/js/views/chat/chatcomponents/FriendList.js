@@ -11,15 +11,29 @@ export class FriendList {
         // Estado
         this.currentUserId = parseInt(localStorage.getItem('user_id'));
         this.onChatCallback = null;
+        this.onlineUsers = new Set(); // Añadir esto
+
+        // Suscribirse a eventos de usuarios conectados
+        webSocketService.on('user_list', (data) => {
+            this.onlineUsers = new Set(data.users.map(u => parseInt(u.id)));
+            this.updateAllFriendsStatus();
+        });
+
+        webSocketService.on('user_online', (data) => {
+            this.onlineUsers.add(parseInt(data.user_id));
+            this.updateFriendStatus(parseInt(data.user_id), true);
+        });
+
+        webSocketService.on('user_offline', (data) => {
+            this.onlineUsers.delete(parseInt(data.user_id));
+            this.updateFriendStatus(parseInt(data.user_id), false);
+        });
     }
 
     updateFriendsList(data) {
-        console.log('Actualizando lista de amigos:', data);
+        console.log('Actualizando lista de amigos con data:', data); // Debug
         const friendsList = this.container.querySelector('#widget-friends-list');
-        if (!friendsList) {
-            console.error('No se encontró el contenedor de amigos');
-            return;
-        }
+        if (!friendsList) return;
 
         friendsList.innerHTML = '';
         
@@ -33,30 +47,24 @@ export class FriendList {
             return;
         }
 
+        // Crear Set con los IDs de usuarios conectados
+        const onlineUsers = new Set((data.users || []).map(u => parseInt(u.id)));
+
         data.friends.forEach(friend => {
-            // Extraer correctamente el ID y username del amigo
             const isFriendUser1 = friend.user1_id === this.currentUserId;
-            const friendId = isFriendUser1 ? friend.user2_id : friend.user1_id;
-            // Corregido: usar user2__username en lugar de user2_username
+            const friendId = parseInt(isFriendUser1 ? friend.user2_id : friend.user1_id);
             const friendUsername = isFriendUser1 ? friend.user2__username : friend.user1__username;
 
-            console.log('Procesando amigo:', {
-                friendId,
-                friendUsername,
-                rawData: friend
-            });
-
-            if (!friendUsername) {
-                console.error('Username indefinido para amigo:', friend);
-                return;
-            }
+            // Usar this.onlineUsers en lugar de data.users
+            const isOnline = this.onlineUsers.has(friendId);
+            console.log(`Amigo ${friendUsername} (${friendId}) online:`, isOnline, 'onlineUsers:', this.onlineUsers);
 
             const friendElement = document.createElement('div');
             friendElement.className = 'cw-user-item';
-            friendElement.dataset.userId = friendId; // Añadido para facilitar búsqueda
+            friendElement.dataset.userId = friendId;
             friendElement.innerHTML = `
                 <div class="cw-user-info">
-                    <span class="cw-user-status ${friend.is_online ? 'online' : 'offline'}"></span>
+                    <span class="cw-user-status${isOnline ? ' online' : ''}"></span>
                     <span class="cw-username">${friendUsername}</span>
                 </div>
                 <div class="cw-user-actions">
@@ -136,7 +144,6 @@ export class FriendList {
             requestElement.dataset.requestId = requestId;
             requestElement.innerHTML = `
                 <div class="cw-user-info">
-                    <span class="cw-user-status offline"></span>
                     <span class="cw-username">${request.from_user_username}</span>
                     <small class="cw-request-text">quiere ser tu amigo</small>
                 </div>
@@ -270,9 +277,21 @@ export class FriendList {
     updateFriendStatus(friendId, isOnline) {
         const friendItem = this.friendsList.querySelector(`[data-user-id="${friendId}"]`);
         if (friendItem) {
-            const statusDot = friendItem.querySelector('.user-status');
-            statusDot?.classList.toggle('user-online', isOnline);
-            statusDot?.classList.toggle('user-offline', !isOnline);
+            const statusDot = friendItem.querySelector('.cw-user-status'); // Cambiado de .user-status a .cw-user-status
+            statusDot?.classList.toggle('online', isOnline);
         }
+    }
+
+    // Añadir este nuevo método para actualizar todos los estados
+    updateAllFriendsStatus() {
+        const friendElements = this.container.querySelectorAll('.cw-user-item');
+        friendElements.forEach(element => {
+            const friendId = parseInt(element.dataset.userId);
+            const statusDot = element.querySelector('.cw-user-status');
+            if (statusDot) {
+                const isOnline = this.onlineUsers.has(friendId);
+                statusDot.classList.toggle('online', isOnline);
+            }
+        });
     }
 }
