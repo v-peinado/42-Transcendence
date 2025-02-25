@@ -89,39 +89,7 @@ export class PrivateChat {
         
         if (!chatContainer) {
             // Crear nuevo contenedor de chat solo si no existe
-            chatContainer = document.createElement('div');
-            chatContainer.className = 'cw-tab-pane';
-            chatContainer.id = `private-chat-${userId}`;
-            
-            chatContainer.innerHTML = `
-                <div class="cw-private-chat-header">
-                    <span class="cw-username">${username}</span>
-                    <button class="cw-close-chat" title="Cerrar chat">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="cw-messages"></div>
-                <div class="cw-input-container">
-                    <div class="cw-input-wrapper">
-                        <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
-                        <button class="cw-send-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // Asegurarse de que el contenedor se añade al DOM
-            const tabContent = this.container.querySelector('.cw-tab-content');
-            if (tabContent) {
-                tabContent.appendChild(chatContainer);
-            } else {
-                console.error('No se encontró el contenedor .cw-tab-content');
-                return;
-            }
-            
-            // Configurar listeners
-            this.setupChatListeners(chatContainer, userId, channelName);
+            chatContainer = this.createChatInterface(userId, username, channelName);
         }
 
         // Guardar referencia del chat activo si no existe
@@ -166,7 +134,7 @@ export class PrivateChat {
             chatContainer.style.display = 'flex';
             this.loadChatHistory(userId);
             chatContainer.querySelector('.cw-input')?.focus();
-            
+                        
             this.activePrivateChat = userId;
             this.updatePrivateTabs();
 
@@ -187,7 +155,7 @@ export class PrivateChat {
         // Mostrar el chat general y activar su botón
         const chatTab = this.container.querySelector('#chat-tab');
         const chatBtn = this.container.querySelector('[data-tab="chat"]');
-        
+           
         if (chatTab && chatBtn) {
             chatTab.classList.add('cw-active');
             chatBtn.classList.add('cw-active');
@@ -222,7 +190,7 @@ export class PrivateChat {
                     targetPane.style.display = 'flex';
                 }
                 btn.classList.add('cw-active');
-                
+                     
                 // Asegurarse de que los chats privados estén ocultos
                 this.container.querySelectorAll('.cw-tab-pane[id^="private-chat-"]').forEach(pane => {
                     pane.style.display = 'none';
@@ -281,6 +249,34 @@ export class PrivateChat {
         const input = chatContainer.querySelector('.cw-input');
         const sendBtn = chatContainer.querySelector('.cw-send-btn');
         const closeBtn = chatContainer.querySelector('.cw-close-chat');
+        const emojiBtn = chatContainer.querySelector('.cw-emoji-btn');
+        const emojiPicker = chatContainer.querySelector('.cw-emoji-picker');
+
+        // Configurar emoji picker
+        if (emojiBtn && emojiPicker) {
+            emojiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                emojiPicker.classList.toggle('visible');
+            });
+
+            emojiPicker.addEventListener('click', (e) => {
+                if (e.target.classList.contains('cw-emoji-item')) {
+                    const emoji = e.target.dataset.emoji;
+                    const start = input.selectionStart;
+                    const end = input.selectionEnd;
+                    input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+                    input.focus();
+                    input.selectionStart = input.selectionEnd = start + emoji.length;
+                    emojiPicker.classList.remove('visible');
+                }
+                e.stopPropagation();
+            });
+
+            // Cerrar el picker al hacer click fuera
+            document.addEventListener('click', () => {
+                emojiPicker.classList.remove('visible');
+            });
+        }
 
         const sendMessage = () => {
             const content = input.value.trim();
@@ -295,8 +291,6 @@ export class PrivateChat {
             };
 
             webSocketService.send(messageData);
-            
-            // Añadir mensaje al historial
             this.addMessageToHistory(channelName, messageData);
             input.value = '';
         };
@@ -317,8 +311,7 @@ export class PrivateChat {
         
         // Extraer IDs del nombre del canal
         const [_, id1, id2] = channel_name.match(/dm_(\d+)_(\d+)/);
-        const otherUserId = parseInt(id1) === parseInt(localStorage.getItem('user_id')) ? 
-            parseInt(id2) : parseInt(id1);
+        const otherUserId = parseInt(id1) === parseInt(localStorage.getItem('user_id')) ? parseInt(id2) : parseInt(id1);
 
         // No procesar mensajes si el usuario está bloqueado
         if (blockService.isBlocked(otherUserId)) {
@@ -328,7 +321,7 @@ export class PrivateChat {
 
         // Crear un ID único para el mensaje basado en su contenido y timestamp
         const messageId = `${channel_name}-${data.timestamp || Date.now()}-${message || data.content}`;
-        
+
         // Verificar si el mensaje ya ha sido procesado
         if (this.processedMessages?.has(messageId)) {
             return;
@@ -362,57 +355,10 @@ export class PrivateChat {
         // Emitir evento de notificación si el chat no está activo
         if (!this.container.querySelector(`#private-chat-${otherUserId}`)?.classList.contains('cw-active')) {
             const event = new CustomEvent('new-private-message', {
-                detail: { userId: otherUserId, username, message: message || data.content }
+                detail: { otherUserId, username, message: message || data.content }
             });
             document.dispatchEvent(event);
         }
-    }
-
-    createPrivateChatSilent(userId, username) {
-        const currentUserId = parseInt(localStorage.getItem('user_id'));
-        const channelName = `dm_${Math.min(currentUserId, userId)}_${Math.max(currentUserId, userId)}`;
-        
-        // Crear y ocultar el chat
-        const chatContainer = document.createElement('div');
-        chatContainer.className = 'cw-tab-pane';
-        chatContainer.id = `private-chat-${userId}`;
-        chatContainer.style.display = 'none';  // Ocultar el chat
-        
-        chatContainer.innerHTML = `
-            <div class="cw-private-chat-header">
-                <span class="cw-username">${username}</span>
-                <button class="cw-close-chat" title="Cerrar chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="cw-messages"></div>
-            <div class="cw-input-container">
-                <div class="cw-input-wrapper">
-                    <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
-                    <button class="cw-send-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Añadir al DOM pero mantenerlo oculto
-        this.container.querySelector('.cw-tab-content').appendChild(chatContainer);
-        
-        // Guardar referencia
-        this.activeChats.set(userId, { channelName, username });
-        
-        // Configurar listeners pero mantener oculto
-        this.setupChatListeners(chatContainer, userId, channelName);
-        
-        // Suscribirse al canal
-        webSocketService.send({
-            type: 'subscribe_to_channel',
-            channel_name: channelName
-        });
-        
-        this.saveChatsState();
-        this.updatePrivateTabs();
     }
 
     addMessageToChat(userId, message) {
@@ -432,7 +378,7 @@ export class PrivateChat {
             <span class="cw-message-username">${message.username}</span>
             ${message.content || message.message}
         `;
-        
+
         messagesContainer.appendChild(messageElement);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -476,7 +422,7 @@ export class PrivateChat {
             const savedChats = JSON.parse(localStorage.getItem('activeChats') || '[]');
             const savedHistory = JSON.parse(localStorage.getItem('chatHistory') || '{}');
             const closedChats = new Set(JSON.parse(localStorage.getItem('closedChats') || '[]'));
-            
+
             // Filtrar mensajes de usuarios bloqueados antes de cargar el historial
             const filteredHistory = {};
             for (const [channelName, messages] of Object.entries(savedHistory)) {
@@ -491,7 +437,7 @@ export class PrivateChat {
             // Limpiar cualquier chat existente primero
             this.container.querySelectorAll('.cw-tab-pane[id^="private-chat-"]').forEach(el => el.remove());
             this.activeChats.clear();
-            
+            this.showGeneralChat();
             // Solo recrear los chats que no están cerrados
             savedChats.forEach(chat => {
                 if (!this.closedChats.has(chat.userId) && !blockService.isBlocked(chat.userId)) {
@@ -509,7 +455,7 @@ export class PrivateChat {
             username: data.username,
             channelName: data.channelName
         }));
-        
+
         const historyToSave = Object.fromEntries(this.messageHistory);
         
         localStorage.setItem('activeChats', JSON.stringify(chatsToSave));
@@ -541,7 +487,7 @@ export class PrivateChat {
         if (chatContainer) {
             const messagesContainer = chatContainer.querySelector('.cw-messages');
             messagesContainer.innerHTML = '';
-            
+
             // Filtrar mensajes duplicados usando messageId
             const processedIds = new Set();
             const uniqueMessages = history.filter(msg => {
@@ -588,7 +534,7 @@ export class PrivateChat {
     // Método para manejar la lista de canales privados (similar a chat.html)
     handlePrivateChannelList(channels) {
         console.log('Recibiendo lista de canales privados:', channels);
-        
+
         // Limpiar chats que ya no existen en el servidor
         const activeChannelIds = new Set(channels.map(channel => {
             const otherUser = channel.members.find(m => 
@@ -639,7 +585,7 @@ export class PrivateChat {
     createPrivateChat(userId, username) {
         const currentUserId = parseInt(localStorage.getItem('user_id'));
         const channelName = `dm_${Math.min(currentUserId, userId)}_${Math.max(currentUserId, userId)}`;
-        
+
         // Si ya existe el chat en activeChats, solo abrirlo
         if (this.activeChats.has(userId)) {
             this.openExistingChat(userId);
@@ -648,31 +594,8 @@ export class PrivateChat {
 
         // Si no existe, crear nuevo
         // Crear nuevo contenedor de chat
-        const chatContainer = document.createElement('div');
-        chatContainer.className = 'cw-tab-pane';
-        chatContainer.id = `private-chat-${userId}`;
-        
-        chatContainer.innerHTML = `
-            <div class="cw-private-chat-header">
-                <span class="cw-username">${username}</span>
-                <button class="cw-close-chat" title="Cerrar chat">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="cw-messages"></div>
-            <div class="cw-input-container">
-                <div class="cw-input-wrapper">
-                    <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
-                    <button class="cw-send-btn">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+        const chatContainer = this.createChatInterface(userId, username, channelName);
 
-        // Añadir el chat al DOM
-        this.container.querySelector('.cw-tab-content').appendChild(chatContainer);
-        
         // Guardar referencia del chat activo
         this.activeChats.set(userId, { channelName, username });
         
@@ -688,19 +611,6 @@ export class PrivateChat {
             type: 'subscribe_to_channel',
             channel_name: channelName
         });
-
-        // Solicitar historial inmediatamente
-        webSocketService.send({
-            type: 'request_chat_history',
-            channel_name: channelName
-        });
-
-        // Mostrar el chat inmediatamente
-        this.showChat(userId);
-        
-        // Guardar estado
-        this.saveChatsState();
-        this.updatePrivateTabs();
     }
 
     openExistingChat(userId) {
@@ -715,5 +625,61 @@ export class PrivateChat {
         // Mostrar el chat y cargar mensajes
         this.showChat(userId);
         this.loadChatHistory(userId);
+
+        // Solicitar historial inmediatamente
+        webSocketService.send({
+            type: 'request_chat_history',
+            channel_name: chatData.channelName
+        });
+
+        // Guardar estado
+        this.saveChatsState();
+        this.updatePrivateTabs();
+    }
+
+    createChatInterface(userId, username, channelName) {
+        const chatContainer = document.createElement('div');
+        chatContainer.className = 'cw-tab-pane';
+        chatContainer.id = `private-chat-${userId}`;
+        
+        chatContainer.innerHTML = `
+            <div class="cw-private-chat-header">
+                <span class="cw-username">${username}</span>
+                <button class="cw-close-chat" title="Cerrar chat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="cw-messages"></div>
+            <div class="cw-input-container">
+                <div class="cw-input-wrapper">
+                    <button class="cw-emoji-btn" title="Emojis">
+                        <i class="far fa-smile"></i>
+                    </button>
+                    <div class="cw-emoji-picker"></div>
+                    <input type="text" class="cw-input" placeholder="Escribe un mensaje...">
+                    <button class="cw-send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Cargar emojis en el picker
+        const emojiPicker = chatContainer.querySelector('.cw-emoji-picker');
+        if (emojiPicker) {
+            emojiPicker.innerHTML = this.getCommonEmojis();
+        }
+
+        this.container.querySelector('.cw-tab-content').appendChild(chatContainer);
+        this.setupChatListeners(chatContainer, userId, channelName);
+        return chatContainer;
+    }
+
+    getCommonEmojis() {
+        const emojis = ['😊', '😂', '❤️', '👍', '😅', '🎉', '🤔', '😎', 
+                       '😍', '👋', '🤗', '👌', '🙌', '✨', '💪', '🤝'];
+        return emojis.map(emoji => 
+            `<div class="cw-emoji-item" data-emoji="${emoji}">${emoji}</div>`
+        ).join('');
     }
 }
