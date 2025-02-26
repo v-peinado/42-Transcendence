@@ -74,7 +74,26 @@ class GDPRService:
         try:
             current_time = timezone.now()
             
-            # First, get users with active sessions and exclude them
+            # 1. Clean unverified users
+            verification_threshold = current_time - timezone.timedelta(
+                seconds=settings.EMAIL_VERIFICATION_TIMEOUT
+            )
+            
+            unverified_users = CustomUser.objects.filter(
+                is_active=False,
+                email_verified=False,
+                date_joined__lt=verification_threshold
+            ).exclude(is_superuser=True)
+
+            for user in unverified_users:
+                logger.info(
+                    f"Deleting unverified user {user.username}:\n"
+                    f"- Joined date: {user.date_joined}\n"
+                    f"- Current time: {current_time}"
+                )
+                cls.delete_user_data(user)  # Using the existing delete_user_data method
+
+            # 2. Process inactive verified users
             active_sessions = UserSession.objects.filter(
                 last_activity__gt=current_time - timezone.timedelta(seconds=settings.INACTIVITY_THRESHOLD)
             ).values_list('user_id', flat=True).distinct()
@@ -91,7 +110,7 @@ class GDPRService:
                 email_verified=True
             )
 
-            # Notify users approaching inactivity threshold
+            # 3. Notify users approaching inactivity threshold
             warning_threshold = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             )
@@ -108,7 +127,7 @@ class GDPRService:
                 user.inactivity_notification_date = current_time
                 user.save()
 
-            # Delete inactive users who were notified and warning period expired
+            # 4. Delete inactive users who were notified and warning period expired
             deletion_threshold = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_THRESHOLD
             )

@@ -182,19 +182,19 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Nuevas configuraciones de Celery 6.0
+# Celery configuration for handling connection retries
 CELERY_BROKER_CONNECTION_RETRY = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
 CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
 CELERY_WORKER_SEND_TASK_EVENTS = False
 
-# Nuevas configuraciones de Celery para manejar permisos
+# Celery security configuration
 CELERY_SECURITY_CONFIG = {
     'C_FORCE_ROOT': True,
 }
 
-# Configuración del worker
+# Worker configuration
 CELERY_WORKER_CONFIG = {
     'worker_hijack_root_logger': False,
     'worker_max_tasks_per_child': 50,
@@ -202,17 +202,17 @@ CELERY_WORKER_CONFIG = {
     'task_track_started': True,
 }
 
-# Configuración del beat
+# Beat configuration for periodic tasks
 CELERY_BEAT_CONFIG = {
     'scheduler': 'django_celery_beat.schedulers:DatabaseScheduler',
-    'max_interval': 300,  # 5 minutos máximo entre chequeos
+    'max_interval': 300,  # 5 minutes
 }
 
-# Configuración de tareas periódicas de Celery
+# Celery periodic tasks configuration
 CELERY_BEAT_SCHEDULE = {
     'cleanup-inactive-users': {
         'task': 'authentication.tasks.cleanup_inactive_users',
-        'schedule': TASK_CHECK_INTERVAL,  # Usa el intervalo definido en las configuraciones GDPR
+        'schedule': TASK_CHECK_INTERVAL,
     },
 }
 
@@ -310,7 +310,7 @@ LOGGING = {
         "main.vault": {
             "handlers": ["console"],
             "level": "INFO",
-            "propagate": False,  # Custom logger for vault app
+            "propagate": False,
         },
     },
     "root": {
@@ -319,7 +319,8 @@ LOGGING = {
     },
 }
 
-# Encryption key settings
+# Encryption key settings for GDPR compliance
+# The key is used to encrypt and decrypt sensitive user data
 ENCRYPTION_KEY_PATH = os.path.join(BASE_DIR, '.encryption_key')
 
 try:
