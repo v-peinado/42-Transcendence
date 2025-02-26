@@ -69,9 +69,28 @@ class GDPRService:
         except Exception as e:
             raise ValidationError(f"Error al eliminar usuario: {str(e)}")
 
-    @staticmethod
-    def cleanup_inactive_users():
-        """Cleanup inactive users based on configured thresholds"""
+    @classmethod
+    def cleanup_inactive_users(cls):
+        """Clean up inactive users based on settings criteria"""
+        logger.info("Starting cleanup process...")
+        
+        # Get current time for comparison
+        current_time = timezone.now()
+        
+        # Log thresholds for debugging
+        logger.info(f"Checking users with settings:"
+                   f"\n- Inactivity threshold: {settings.INACTIVITY_THRESHOLD} seconds"
+                   f"\n- Warning time: {settings.INACTIVITY_WARNING} seconds"
+                   f"\n- Current time: {current_time}")
+        
+        # Get users to delete
+        users_to_delete = cls._get_users_to_delete()
+        logger.info(f"Found {len(users_to_delete)} users to delete")
+        
+        if users_to_delete:
+            for user in users_to_delete:
+                logger.info(f"Deleting user {user.username} (last login: {user.last_login})")
+                
         try:
             logger.info("Starting cleanup process...")
             current_time = timezone.now()

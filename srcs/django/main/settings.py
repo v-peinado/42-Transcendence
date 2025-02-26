@@ -159,6 +159,13 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# GDPR and Inactivity Settings - Time units in seconds for testing
+TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
+EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
+INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
+INACTIVITY_WARNING = 15 * TIME_MULTIPLIER       # 15 seconds/days
+TASK_CHECK_INTERVAL = 10  # seconds - how often Celery checks for inactive users
+
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
@@ -166,6 +173,14 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Configuración de tareas periódicas de Celery
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-inactive-users': {
+        'task': 'authentication.tasks.cleanup_inactive_users',
+        'schedule': TASK_CHECK_INTERVAL,  # Usa el intervalo definido en las configuraciones GDPR
+    },
+}
 
 # Static and media files (images, videos, etc.)
 # In production, these files should be served by NGINX
@@ -263,10 +278,3 @@ except Exception as e:
     # Generate a fallback key if the main key generation fails
     ENCRYPTION_KEY = Fernet.generate_key()
     logger.info("Generated fallback ENCRYPTION_KEY")
-
-# GDPR and Inactivity Settings - Time units in seconds for testing
-TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
-EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
-INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
-INACTIVITY_WARNING = 15 * TIME_MULTIPLIER       # 15 seconds/days
-TASK_CHECK_INTERVAL = 10  # seconds - how often Celery checks for inactive users

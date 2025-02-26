@@ -19,18 +19,40 @@ def cleanup_inactive_users():
         logger.error(f"Error in cleanup_inactive_users task: {str(e)}")
         raise
 
-# Configure task schedule (this is a Celery setting for periodic maintenance tasks)
-# The cleanup_inactive_users task is scheduled to run daily (every 24 hours)
-# The task is executed by the Celery worker (celery is in import statement)
-CELERY_BEAT_SCHEDULE = {
-    'cleanup-inactive-users': {
-        'task': 'authentication.tasks.cleanup_inactive_users',
-        'schedule': settings.TASK_CHECK_INTERVAL,
-    },
-}
+# To see celery tasks in action:
 
-    
-# Tasks are used to perform background operations in Django. 
-# They are defined as functions and are executed by the Celery worker. 
-# The task is scheduled to run daily through the CELERY_BEAT_SCHEDULE setting in settings.py. 
-# The task calls the cleanup_inactive_users method from the GDPRService class, which handles the deletion of inactive users.
+# 1. Create a new user:
+# Open a terminal and run the following commands:
+
+	# docker exec -it srcs-web-1 python manage.py shell
+
+	# from django.utils import timezone
+	# from authentication.models import CustomUser
+	# from datetime import timedelta
+
+	# user = CustomUser.objects.create_user(
+	#     username='test_celery',
+	#     email='test@celery.com',
+	#     password='test123'
+	# )
+	# user.email_verified = True
+	# user.is_active = True
+	# user.last_login = timezone.now() - timedelta(seconds=70)  # Más del umbral de 60 segundos
+	# user.inactivity_notified = True
+	# user.inactivity_notification_date = timezone.now() - timedelta(seconds=20)  # Pasado el período de advertencia
+	# user.save()
+
+# 2. Run the Celery worker: in a terminal:
+#	docker exec -it srcs-web-1 celery -A main worker -l INFO
+
+# 3. Run the Celery beat scheduler: in a new terminal:
+#	docker exec -it srcs-web-1 celery -A main beat -l INFO
+
+# 4. Trigger the task: in a new terminal:
+#	docker exec -it srcs-web-1 python manage.py shell
+#	from authentication.tasks import cleanup_inactive_users
+#	cleanup_inactive_users.delay()
+
+# 5. Check logs in the worker terminal
+
+# 6. Check the database to see if the user was deleted
