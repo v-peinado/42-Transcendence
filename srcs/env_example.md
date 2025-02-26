@@ -2,9 +2,9 @@
 # Copy this file as .env and fill in the values
 
 # PostgreSQL Configuration
-SQL_ENGINE=django.db.backends.postgresql    # Database engine
-POSTGRES_DB=transcendence                   # Database name
-POSTGRES_USER=usuario                       # PostgreSQL user
+SQL_ENGINE=django.db.backends.postgresql   # Database engine
+POSTGRES_DB=transcendence                  # Database name
+POSTGRES_USER=usuario                      # PostgreSQL user
 POSTGRES_PASSWORD=contraseña               # PostgreSQL password
 SQL_HOST=db                                # Database host
 SQL_PORT=5432                              # PostgreSQL port
@@ -49,6 +49,8 @@ SSL_LOCALITY=Madrid                        # City/Locality
 SSL_ORGANIZATION=42                        # Organization name
 SSL_ORGANIZATIONAL_UNIT=42Madrid           # Organization unit
 SSL_COMMON_NAME=localhost                  # Common Name (domain)
-SSL_DAYS=365                              # Certificate validity in days
-SSL_KEY_SIZE=2048                         # Key size in bits (min 2048)
+SSL_DAYS=365                               # Certificate validity in days
+SSL_KEY_SIZE=2048                          # Key size in bits (min 2048)
 
+# Celery Configuration
+CELERY_USER=celeryuser                     # Celery secret key
