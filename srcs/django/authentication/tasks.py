@@ -21,26 +21,13 @@ def cleanup_inactive_users():
 
 # To see celery tasks in action:
 
-# 1. Create a new user:
-# Open a terminal and run the following commands:
+# 0. Put test settings in settings.py
+# 	- INACTIVITY_THRESHOLD = 60
+# 	- INACTIVITY_WARNING = 15
+# 	- TIME_MULTIPLIER = 1
+# 	- TASK_CHECK_INTERVAL = 5
 
-	# docker exec -it srcs-web-1 python manage.py shell
-
-	# from django.utils import timezone
-	# from authentication.models import CustomUser
-	# from datetime import timedelta
-
-	# user = CustomUser.objects.create_user(
-	#     username='test_celery',
-	#     email='test@celery.com',
-	#     password='test123'
-	# )
-	# user.email_verified = True
-	# user.is_active = True
-	# user.last_login = timezone.now() - timedelta(seconds=70)  # Más del umbral de 60 segundos
-	# user.inactivity_notified = True
-	# user.inactivity_notification_date = timezone.now() - timedelta(seconds=20)  # Pasado el período de advertencia
-	# user.save()
+# 1. Create a new user
 
 # 2. Run the Celery worker: in a terminal:
 #	docker exec -it srcs-web-1 celery -A main worker -l INFO

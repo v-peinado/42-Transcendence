@@ -83,14 +83,22 @@ class GDPRService:
                    f"\n- Warning time: {settings.INACTIVITY_WARNING} seconds"
                    f"\n- Current time: {current_time}")
         
-        # Get users to delete
-        users_to_delete = cls._get_users_to_delete()
-        logger.info(f"Found {len(users_to_delete)} users to delete")
+        # Get users that might be deleted (for logging purposes)
+        deletion_threshold = current_time - timezone.timedelta(
+            seconds=settings.INACTIVITY_THRESHOLD
+        )
+        warning_expiry = current_time - timezone.timedelta(
+            seconds=settings.INACTIVITY_WARNING
+        )
+        potential_deletions = CustomUser.objects.filter(
+            is_active=True,
+            inactivity_notified=True,
+            last_login__lt=deletion_threshold,
+            inactivity_notification_date__lt=warning_expiry
+        ).exclude(is_superuser=True)
         
-        if users_to_delete:
-            for user in users_to_delete:
-                logger.info(f"Deleting user {user.username} (last login: {user.last_login})")
-                
+        logger.info(f"Found {potential_deletions.count()} potential users to delete")
+        
         try:
             logger.info("Starting cleanup process...")
             current_time = timezone.now()
