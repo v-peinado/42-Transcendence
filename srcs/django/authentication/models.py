@@ -4,7 +4,7 @@ from django.db import models
 
 class UserSession(models.Model):
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
-    session = models.ForeignKey('sessions.Session', on_delete=models.CASCADE)  # Corregido para usar el modelo correcto de sesión
+    session = models.ForeignKey('sessions.Session', on_delete=models.CASCADE)
     last_activity = models.DateTimeField(default=timezone.now)
 
     class Meta:

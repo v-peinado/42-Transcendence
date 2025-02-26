@@ -21,12 +21,6 @@ def cleanup_inactive_users():
 
 # To see celery tasks in action:
 
-# 0. Put test settings in settings.py
-# 	- INACTIVITY_THRESHOLD = 60
-# 	- INACTIVITY_WARNING = 15
-# 	- TIME_MULTIPLIER = 1
-# 	- TASK_CHECK_INTERVAL = 5
-
 # 1. Create a new user
 
 # 2. Run the Celery worker: in a terminal:

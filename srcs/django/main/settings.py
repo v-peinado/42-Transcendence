@@ -269,18 +269,27 @@ LOGGING = {
     },
 }
 
-# Generate encryption key for email 
-# encryption using Fernet (before starting the Django app)
-# The key is used to encrypt email addresses in the database
-# The key is generated using the Django Signer class
+# Encryption key settings
+ENCRYPTION_KEY_PATH = os.path.join(BASE_DIR, '.encryption_key')
+
 try:
-    signer = Signer()
-    key_base = signer.sign(SECRET_KEY).encode()
-    key_32 = base64.urlsafe_b64encode(key_base[:32].ljust(32, b'0'))
-    ENCRYPTION_KEY = key_32
-    logger.info("ENCRYPTION_KEY generated successfully")
+    if os.path.exists(ENCRYPTION_KEY_PATH):
+        # If key exists, load it
+        with open(ENCRYPTION_KEY_PATH, 'rb') as key_file:
+            ENCRYPTION_KEY = key_file.read()
+            logger.info("Loaded existing ENCRYPTION_KEY")
+    else:
+        # Generate new key if it doesn't exist
+        signer = Signer()
+        key_base = signer.sign(SECRET_KEY).encode()
+        ENCRYPTION_KEY = base64.urlsafe_b64encode(key_base[:32].ljust(32, b'0'))
+        
+        # Save key for future use
+        with open(ENCRYPTION_KEY_PATH, 'wb') as key_file:
+            key_file.write(ENCRYPTION_KEY)
+        logger.info("Generated and saved new ENCRYPTION_KEY")
+        
 except Exception as e:
-    logger.error(f"Error generating ENCRYPTION_KEY: {str(e)}")
-    # Generate a fallback key if the main key generation fails
+    logger.error(f"Error handling ENCRYPTION_KEY: {str(e)}")
     ENCRYPTION_KEY = Fernet.generate_key()
-    logger.info("Generated fallback ENCRYPTION_KEY")
+    logger.info("Using fallback ENCRYPTION_KEY")

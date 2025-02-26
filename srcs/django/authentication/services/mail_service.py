@@ -238,9 +238,19 @@ class MailSendingService:
     def send_inactivity_warning(user):
         """Send warning email about account deletion due to inactivity"""
         try:
+            # First verify we can get the email
+            try:
+                recipient_email = user.decrypted_email
+                if not recipient_email:
+                    raise ValueError("Email desencriptado está vacío")
+            except Exception as e:
+                logger.error(f"Error desencriptando email para usuario {user.id}: {str(e)}")
+                # Usar email encriptado como fallback
+                recipient_email = user.email
+                logger.warning(f"Usando email encriptado como fallback para usuario {user.id}")
+
             subject = "Tu cuenta será eliminada por inactividad"
-            # Convert seconds to days for user-friendly message
-            days_remaining = round(settings.INACTIVITY_WARNING / 86400)  # 86400 seconds in a day
+            days_remaining = round(settings.INACTIVITY_WARNING / 86400)
             context = {
                 "user": user,
                 "days_remaining": days_remaining,
@@ -255,11 +265,13 @@ class MailSendingService:
                 subject,
                 plain_message,
                 settings.DEFAULT_FROM_EMAIL,
-                [user.decrypted_email],
+                [recipient_email],
                 html_message=html_message,
                 fail_silently=False,
             )
+            logger.info(f"Correo de inactividad enviado a {user.username}")
             return True
+                
         except Exception as e:
-            logger.error(f"Error sending inactivity warning: {str(e)}")
+            logger.error(f"Error enviando advertencia de inactividad: {str(e)}")
             raise
