@@ -13,6 +13,12 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from django.core.management.utils import get_random_secret_key
+import logging
+from django.core.signing import Signer
+from cryptography.fernet import Fernet
+import base64
+
+logger = logging.getLogger(__name__)
 
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -64,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # User authentication middleware
     "django.contrib.messages.middleware.MessageMiddleware",  # Message handling middleware
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
+    'authentication.middleware.UpdateLastActivityMiddleware',
 ]
 
 # CORS and Security configuration
@@ -153,6 +160,62 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# GDPR and Inactivity Settings - Time units in seconds for testing
+# In production, these values should be set to days
+TIME_MULTIPLIER = 86400  # 1 for testing (seconds), 86400 for production (days)
+
+EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
+INACTIVITY_THRESHOLD = 120 * TIME_MULTIPLIER     # 120 seconds/days
+INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
+TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER       # 2 seconds/days
+SESSION_ACTIVITY_CHECK = 1 * TIME_MULTIPLIER  # 1 seconds/days
+
+# Session settings for user activity tracking (middleware)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = INACTIVITY_THRESHOLD * 2  # Double the inactivity threshold
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Nuevas configuraciones de Celery 6.0
+CELERY_BROKER_CONNECTION_RETRY = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
+CELERY_WORKER_SEND_TASK_EVENTS = False
+
+# Nuevas configuraciones de Celery para manejar permisos
+CELERY_SECURITY_CONFIG = {
+    'C_FORCE_ROOT': True,
+}
+
+# Configuración del worker
+CELERY_WORKER_CONFIG = {
+    'worker_hijack_root_logger': False,
+    'worker_max_tasks_per_child': 50,
+    'worker_prefetch_multiplier': 1,
+    'task_track_started': True,
+}
+
+# Configuración del beat
+CELERY_BEAT_CONFIG = {
+    'scheduler': 'django_celery_beat.schedulers:DatabaseScheduler',
+    'max_interval': 300,  # 5 minutos máximo entre chequeos
+}
+
+# Configuración de tareas periódicas de Celery
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-inactive-users': {
+        'task': 'authentication.tasks.cleanup_inactive_users',
+        'schedule': TASK_CHECK_INTERVAL,  # Usa el intervalo definido en las configuraciones GDPR
+    },
+}
+
 # Static and media files (images, videos, etc.)
 # In production, these files should be served by NGINX
 # and will be configured in the Nginx configuration file (comment or remove these lines)
@@ -161,6 +224,28 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Static files configuration
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static_custom"),
+]
+
+# Configuración específica para archivos admin
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static_collected")
+ADMIN_MEDIA_PREFIX = '/static/admin/'
+
+# Establecer prioridad de archivos estáticos
+STATICFILES_APPS_ORDER = [
+    'django.contrib.admin',
+    'jazzmin',
+    # resto de apps...
+]
 
 # Custom authentication configuration with CustomUser model defined in authentication.models
 # We use CustomUser model instead of Django's default user model because we've added additional fields
@@ -233,3 +318,28 @@ LOGGING = {
         "level": "INFO",
     },
 }
+
+# Encryption key settings
+ENCRYPTION_KEY_PATH = os.path.join(BASE_DIR, '.encryption_key')
+
+try:
+    if os.path.exists(ENCRYPTION_KEY_PATH):
+        # If key exists, load it
+        with open(ENCRYPTION_KEY_PATH, 'rb') as key_file:
+            ENCRYPTION_KEY = key_file.read()
+            logger.info("Loaded existing ENCRYPTION_KEY")
+    else:
+        # Generate new key if it doesn't exist
+        signer = Signer()
+        key_base = signer.sign(SECRET_KEY).encode()
+        ENCRYPTION_KEY = base64.urlsafe_b64encode(key_base[:32].ljust(32, b'0'))
+        
+        # Save key for future use
+        with open(ENCRYPTION_KEY_PATH, 'wb') as key_file:
+            key_file.write(ENCRYPTION_KEY)
+        logger.info("Generated and saved new ENCRYPTION_KEY")
+        
+except Exception as e:
+    logger.error(f"Error handling ENCRYPTION_KEY: {str(e)}")
+    ENCRYPTION_KEY = Fernet.generate_key()
+    logger.info("Using fallback ENCRYPTION_KEY")

@@ -1,0 +1,15 @@
+{% autoescape off %}
+Hola {{ user.username }},
+
+Tu cuenta en PongOrama ha estado inactiva durante un largo período. Para evitar su eliminación automática, debes iniciar
+sesión en los próximos {{ days_remaining }} días.
+
+Para mantener tu cuenta activa, por favor inicia sesión en:
+{{ login_url }}
+
+Si no inicias sesión en este plazo, tu cuenta y todos tus datos serán eliminados permanentemente por motivos de
+privacidad y seguridad.
+
+Saludos,
+El equipo de PongOrama
+{% endautoescape %}

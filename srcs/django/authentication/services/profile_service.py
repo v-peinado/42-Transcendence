@@ -207,7 +207,6 @@ class ProfileService:
         if not user.is_authenticated:
             raise ValidationError("Usuario no autenticado")
 
-        # CBuilt profile image URL
         profile_image_url = None
         if user.profile_image:
             profile_image_url = f"{settings.SITE_URL}{settings.MEDIA_URL}{user.profile_image}"
@@ -215,7 +214,7 @@ class ProfileService:
         data = {
             "id": user.id,
             "username": user.username,
-            "email": user.email,
+            "email": user.decrypted_email,
             "is_active": user.is_active,
             "email_verified": user.email_verified,
             "date_joined": user.date_joined.isoformat(),
@@ -224,7 +223,6 @@ class ProfileService:
             "profile_image": profile_image_url,
             "fortytwo_image": user.fortytwo_image,
         }
-        # print("DEBUG - Profile data:", data)
         return data
 
     @staticmethod

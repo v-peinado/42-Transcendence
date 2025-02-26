@@ -7,6 +7,9 @@ from authentication.models import CustomUser
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
 import jwt
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EmailVerificationService:
@@ -38,7 +41,7 @@ class EmailVerificationService:
         ):
             raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
-            raise ValidationError(f"Error al verificar email: {str(e)}")
+            raise ValidationError(f"Error sending verification email: {str(e)}")
 
     @staticmethod
     def verify_email_change(uidb64, token):
@@ -66,7 +69,7 @@ class EmailVerificationService:
             return user
 
         except Exception as e:
-            raise ValueError(f"Error de verificación: {str(e)}")
+            raise ValueError(f"Error sending email change: {str(e)}")
 
 
 class MailSendingService:
@@ -80,6 +83,7 @@ class MailSendingService:
                 "domain": settings.SITE_URL,
                 "uid": token["uid"],
                 "token": token["token"],
+                "email": user.decrypted_email,
             }
             html_message = render_to_string(
                 "authentication/email_verification.html", context
@@ -90,29 +94,37 @@ class MailSendingService:
                 subject,
                 plain_message,
                 settings.DEFAULT_FROM_EMAIL,
-                [user.email],
+                [user.decrypted_email],  
                 html_message=html_message,
                 fail_silently=False,
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar email de verificación: {str(e)}")
+            raise Exception(f"Error sending verification email: {str(e)}")
 
     @staticmethod
     def send_welcome_email(user):
-        subject = "¡Bienvenido a PongOrama!"
-        context = {"user": user}
-        html_message = render_to_string("authentication/welcome_email.html", context)
-        plain_message = strip_tags(html_message)
+        """Send welcome email to new user"""
+        try:
+            subject = "¡Bienvenido a PongOrama!"
+            context = {
+                "user": user,
+                "email": user.decrypted_email,  
+            }
+            html_message = render_to_string("authentication/welcome_email.html", context)
+            plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.decrypted_email],  
+                html_message=html_message,
+                fail_silently=False,
+            )
+            return True 
+        except Exception as e:
+            raise Exception(f"Error sending welcome email: {str(e)}")
 
     @staticmethod
     def send_password_changed_notification(user, is_reset=False):
@@ -135,7 +147,7 @@ class MailSendingService:
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar notificación: {str(e)}")
+            raise Exception(f"Error sending password change notification: {str(e)}")
 
     @staticmethod
     def send_email_change_verification(user, verification_data):
@@ -167,7 +179,7 @@ class MailSendingService:
             return True
         except Exception as e:
             raise Exception(
-                f"Error al enviar email de verificación de cambio: {str(e)}"
+                f"Error sending email change verification email: {str(e)}"
             )
 
     @staticmethod
@@ -192,7 +204,7 @@ class MailSendingService:
             return True
         except Exception as e:
             raise Exception(
-                f"Error al enviar confirmación de cambio de email: {str(e)}"
+                f"Error sending email change confirmation email: {str(e)}"
             )
 
     @staticmethod
@@ -220,4 +232,46 @@ class MailSendingService:
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar email de reset: {str(e)}")
+            raise Exception(f"Error sending password reset email: {str(e)}")
+
+    @staticmethod
+    def send_inactivity_warning(user, connection=None):
+        """Send warning email about account deletion due to inactivity"""
+        try:
+            try:
+                recipient_email = user.decrypted_email
+                if not recipient_email:
+                    raise ValueError("Email desencriptado está vacío")
+            except Exception as e:
+                logger.error(f"Error desencriptando email para usuario {user.id}: {str(e)}")
+                recipient_email = user.email
+                logger.warning(f"Usando email encriptado como fallback para usuario {user.id}")
+
+            subject = "Tu cuenta será eliminada por inactividad"
+            days_remaining = round(settings.INACTIVITY_WARNING / 86400)
+            context = {
+                "user": user,
+                "days_remaining": days_remaining,
+                "login_url": f"{settings.SITE_URL}/login"
+            }
+            html_message = render_to_string(
+                "authentication/inactivity_warning_email.html", context
+            )
+            plain_message = strip_tags(html_message)
+
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [recipient_email],
+                html_message=html_message,
+                fail_silently=False,
+                connection=connection 
+            )
+
+            logger.info(f"Correo de inactividad enviado a {user.username}")
+            return True
+                
+        except Exception as e:
+            logger.error(f"Error enviando advertencia de inactividad: {str(e)}")
+            raise
