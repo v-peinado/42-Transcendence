@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.conf import settings
 from cryptography.fernet import Fernet
 import logging
-from django.utils import timezone  # Añade esta línea
+from django.utils import timezone
+
 
 logger = logging.getLogger(__name__)
 

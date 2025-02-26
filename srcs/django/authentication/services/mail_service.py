@@ -41,7 +41,7 @@ class EmailVerificationService:
         ):
             raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
-            raise ValidationError(f"Error al verificar email: {str(e)}")
+            raise ValidationError(f"Error sending verification email: {str(e)}")
 
     @staticmethod
     def verify_email_change(uidb64, token):
@@ -69,7 +69,7 @@ class EmailVerificationService:
             return user
 
         except Exception as e:
-            raise ValueError(f"Error de verificación: {str(e)}")
+            raise ValueError(f"Error sending email change: {str(e)}")
 
 
 class MailSendingService:
@@ -100,26 +100,31 @@ class MailSendingService:
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar email de verificación: {str(e)}")
+            raise Exception(f"Error sending verification email: {str(e)}")
 
     @staticmethod
     def send_welcome_email(user):
-        subject = "¡Bienvenido a PongOrama!"
-        context = {
-            "user": user,
-            "email": user.decrypted_email,  
-        }
-        html_message = render_to_string("authentication/welcome_email.html", context)
-        plain_message = strip_tags(html_message)
+        """Send welcome email to new user"""
+        try:
+            subject = "¡Bienvenido a PongOrama!"
+            context = {
+                "user": user,
+                "email": user.decrypted_email,  
+            }
+            html_message = render_to_string("authentication/welcome_email.html", context)
+            plain_message = strip_tags(html_message)
 
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.decrypted_email],  
-            html_message=html_message,
-            fail_silently=False,
-        )
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.decrypted_email],  
+                html_message=html_message,
+                fail_silently=False,
+            )
+            return True 
+        except Exception as e:
+            raise Exception(f"Error sending welcome email: {str(e)}")
 
     @staticmethod
     def send_password_changed_notification(user, is_reset=False):
@@ -142,7 +147,7 @@ class MailSendingService:
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar notificación: {str(e)}")
+            raise Exception(f"Error sending password change notification: {str(e)}")
 
     @staticmethod
     def send_email_change_verification(user, verification_data):
@@ -174,7 +179,7 @@ class MailSendingService:
             return True
         except Exception as e:
             raise Exception(
-                f"Error al enviar email de verificación de cambio: {str(e)}"
+                f"Error sending email change verification email: {str(e)}"
             )
 
     @staticmethod
@@ -199,7 +204,7 @@ class MailSendingService:
             return True
         except Exception as e:
             raise Exception(
-                f"Error al enviar confirmación de cambio de email: {str(e)}"
+                f"Error sending email change confirmation email: {str(e)}"
             )
 
     @staticmethod
@@ -227,15 +232,15 @@ class MailSendingService:
             )
             return True
         except Exception as e:
-            raise Exception(f"Error al enviar email de reset: {str(e)}")
+            raise Exception(f"Error sending password reset email: {str(e)}")
 
     @staticmethod
     def send_inactivity_warning(user):
         """Send warning email about account deletion due to inactivity"""
         try:
             subject = "Tu cuenta será eliminada por inactividad"
-            # Convertimos los segundos a días para el mensaje
-            days_remaining = round(settings.INACTIVITY_WARNING / 86400)  # 86400 segundos = 1 día
+            # Convert seconds to days for user-friendly message
+            days_remaining = round(settings.INACTIVITY_WARNING / 86400)  # 86400 seconds in a day
             context = {
                 "user": user,
                 "days_remaining": days_remaining,

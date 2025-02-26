@@ -3,7 +3,7 @@ import django.utils.timezone
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('authentication', '0004_customuser_fortytwo_image'),  # Actualizado a la última migración
+        ('authentication', '0004_customuser_fortytwo_image'),
     ]
 
     operations = [

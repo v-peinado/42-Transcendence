@@ -240,7 +240,8 @@ LOGGING = {
     },
 }
 
-# Generate encryption key for email encryption using Fernet before starting the Django app
+# Generate encryption key for email 
+# encryption using Fernet (before starting the Django app)
 # The key is used to encrypt email addresses in the database
 # The key is generated using the Django Signer class
 try:
@@ -254,11 +255,6 @@ except Exception as e:
     # Generate a fallback key if the main key generation fails
     ENCRYPTION_KEY = Fernet.generate_key()
     logger.info("Generated fallback ENCRYPTION_KEY")
-    
-# GDPR and Inactivity Settings
-# EMAIL_VERIFICATION_TIMEOUT_HOURS = 1  # Time to verify email after registration
-# INACTIVITY_THRESHOLD_DAYS = 60  # Maximum days of inactivity before deletion
-# INACTIVITY_WARNING_DAYS = 15    # Days before deletion to send warning
 
 # GDPR and Inactivity Settings - Time units in seconds for testing
 TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
