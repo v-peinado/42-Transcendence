@@ -161,14 +161,16 @@ USE_I18N = True
 USE_TZ = True
 
 # GDPR and Inactivity Settings - Time units in seconds for testing
-TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
+# In production, these values should be set to days
+TIME_MULTIPLIER = 86400  # 1 for testing (seconds), 86400 for production (days)
+
 EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
 INACTIVITY_THRESHOLD = 120 * TIME_MULTIPLIER     # 120 seconds/days
 INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
-TASK_CHECK_INTERVAL = 20  # seconds - how often Celery checks for inactive users
-SESSION_ACTIVITY_CHECK = 10  # seconds - how often middleware updates last_activity
+TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER       # 2 seconds/days
+SESSION_ACTIVITY_CHECK = 1 * TIME_MULTIPLIER  # 1 seconds/days
 
-# Session settings
+# Session settings for user activity tracking (middleware)
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = INACTIVITY_THRESHOLD * 2  # Double the inactivity threshold
 
@@ -179,6 +181,32 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Nuevas configuraciones de Celery 6.0
+CELERY_BROKER_CONNECTION_RETRY = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_BROKER_CONNECTION_MAX_RETRIES = 10
+CELERY_WORKER_ENABLE_REMOTE_CONTROL = False
+CELERY_WORKER_SEND_TASK_EVENTS = False
+
+# Nuevas configuraciones de Celery para manejar permisos
+CELERY_SECURITY_CONFIG = {
+    'C_FORCE_ROOT': True,
+}
+
+# Configuración del worker
+CELERY_WORKER_CONFIG = {
+    'worker_hijack_root_logger': False,
+    'worker_max_tasks_per_child': 50,
+    'worker_prefetch_multiplier': 1,
+    'task_track_started': True,
+}
+
+# Configuración del beat
+CELERY_BEAT_CONFIG = {
+    'scheduler': 'django_celery_beat.schedulers:DatabaseScheduler',
+    'max_interval': 300,  # 5 minutos máximo entre chequeos
+}
 
 # Configuración de tareas periódicas de Celery
 CELERY_BEAT_SCHEDULE = {
@@ -196,6 +224,28 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Static files configuration
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static_custom"),
+]
+
+# Configuración específica para archivos admin
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static_collected")
+ADMIN_MEDIA_PREFIX = '/static/admin/'
+
+# Establecer prioridad de archivos estáticos
+STATICFILES_APPS_ORDER = [
+    'django.contrib.admin',
+    'jazzmin',
+    # resto de apps...
+]
 
 # Custom authentication configuration with CustomUser model defined in authentication.models
 # We use CustomUser model instead of Django's default user model because we've added additional fields

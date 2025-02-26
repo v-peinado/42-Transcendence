@@ -1,7 +1,6 @@
 import os
 from celery import Celery
-import logging
-from logging.handlers import RotatingFileHandler
+from django.conf import settings
 
 # Configure the environment for django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')
@@ -9,38 +8,24 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'main.settings')
 # Create the Celery application
 app = Celery('main')
 
-# Config redis as broker and result backend
-app.conf.broker_url = 'redis://redis:6379/0'
-app.conf.result_backend = 'redis://redis:6379/0'
-
-# Configure Celery app with proper scheduler file location
-app.conf.update(
-    beat_schedule_filename='/var/lib/celery/celerybeat-schedule',
-    broker_connection_retry_on_startup=True  # Fix deprecation warning
-)
-
 # Load configuration from Django settings
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Configure logging for Celery to use same handler as Django
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
+# Aplicar configuraciones de seguridad
+app.conf.update(**settings.CELERY_SECURITY_CONFIG)
 
-# Get both loggers and configure them
-celery_logger = logging.getLogger('celery')
-django_logger = logging.getLogger('django')
+# Aplicar configuraciones del worker
+app.conf.update(**settings.CELERY_WORKER_CONFIG)
 
-celery_logger.addHandler(console_handler)
-django_logger.addHandler(console_handler)
+# Aplicar configuraciones del beat
+app.conf.update(**settings.CELERY_BEAT_CONFIG)
 
-celery_logger.setLevel(logging.INFO)
-django_logger.setLevel(logging.INFO)
-
-# Ensure the loggers propagate to the root logger
-celery_logger.propagate = True
-django_logger.propagate = True
+# Configuración específica para Celery 6.0
+app.conf.update(
+    broker_connection_retry_on_startup=True,
+    worker_enable_remote_control=False,
+    worker_send_task_events=False,
+)
 
 # Search for tasks in Django applications
 app.autodiscover_tasks()
