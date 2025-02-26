@@ -61,6 +61,7 @@ def run_command(command):
 
 
 def main():
+    """Main function to start Django and Celery"""
     try:
         # Get environment variables
         db_host = os.getenv("SQL_HOST", "db")
@@ -85,10 +86,28 @@ def main():
         if not run_command("python manage.py migrate --no-input"):
             print("Warning: Failed to apply migrations")
 
-        # Start Daphne server
-        if not run_command("daphne -b 0.0.0.0 -p 8000 main.asgi:application"):
-            sys.exit(1)
+        # Start Celery worker in background
+        celery_worker = subprocess.Popen(
+            ["celery", "-A", "main", "worker", "--loglevel=info"],
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
+        
+        # Start Celery beat in background
+        celery_beat = subprocess.Popen(
+            ["celery", "-A", "main", "beat", "--loglevel=info"],
+            stdout=sys.stdout,
+            stderr=sys.stderr
+        )
 
+        # Start Django server (this will block)
+        os.execvp("python", ["python", "manage.py", "runserver", "0.0.0.0:8000"])
+
+    except KeyboardInterrupt:
+        print("Stopping services...")
+        celery_worker.terminate()
+        celery_beat.terminate()
+        sys.exit(0)
     except Exception as e:
         print(f"Unexpected error: {e}")
         sys.exit(1)

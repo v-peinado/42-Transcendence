@@ -70,7 +70,7 @@ class GDPRService:
             raise ValidationError(f"Error al eliminar usuario: {str(e)}")
 
     @classmethod
-    def cleanup_inactive_users(cls):
+    def cleanup_inactive_users(cls, email_connection=None):
         try:
             current_time = timezone.now()
             
@@ -103,7 +103,7 @@ class GDPRService:
 
             for user in users_to_notify:
                 logger.info(f"Sending inactivity warning to user {user.username}")
-                MailSendingService.send_inactivity_warning(user)
+                MailSendingService.send_inactivity_warning(user, connection=email_connection)
                 user.inactivity_notified = True
                 user.inactivity_notification_date = current_time
                 user.save()

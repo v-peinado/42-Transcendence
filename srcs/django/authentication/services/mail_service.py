@@ -235,17 +235,15 @@ class MailSendingService:
             raise Exception(f"Error sending password reset email: {str(e)}")
 
     @staticmethod
-    def send_inactivity_warning(user):
+    def send_inactivity_warning(user, connection=None):
         """Send warning email about account deletion due to inactivity"""
         try:
-            # First verify we can get the email
             try:
                 recipient_email = user.decrypted_email
                 if not recipient_email:
                     raise ValueError("Email desencriptado está vacío")
             except Exception as e:
                 logger.error(f"Error desencriptando email para usuario {user.id}: {str(e)}")
-                # Usar email encriptado como fallback
                 recipient_email = user.email
                 logger.warning(f"Usando email encriptado como fallback para usuario {user.id}")
 
@@ -268,7 +266,9 @@ class MailSendingService:
                 [recipient_email],
                 html_message=html_message,
                 fail_silently=False,
+                connection=connection 
             )
+
             logger.info(f"Correo de inactividad enviado a {user.username}")
             return True
                 
