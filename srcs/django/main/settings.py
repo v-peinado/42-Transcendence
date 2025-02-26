@@ -159,6 +159,14 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
 # Static and media files (images, videos, etc.)
 # In production, these files should be served by NGINX
 # and will be configured in the Nginx configuration file (comment or remove these lines)

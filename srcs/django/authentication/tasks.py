@@ -33,4 +33,4 @@ CELERY_BEAT_SCHEDULE = {
 # Tasks are used to perform background operations in Django. 
 # They are defined as functions and are executed by the Celery worker. 
 # The task is scheduled to run daily through the CELERY_BEAT_SCHEDULE setting in settings.py. 
-# The task calls the cleanup_inactive_users method from the GDPRService class, which handles the deletion of inactive users. 
+# The task calls the cleanup_inactive_users method from the GDPRService class, which handles the deletion of inactive users.
