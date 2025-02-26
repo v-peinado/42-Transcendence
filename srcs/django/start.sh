@@ -6,7 +6,7 @@ while [ ! -f /tmp/ssl/django_token ]; do
     sleep 2
 done
 
-# Verificar que el usuario existe sin mostrar detalles sensibles
+# Verify required system user exists before starting services
 if ! id -u "${CELERY_USER}" >/dev/null 2>&1; then
     echo "Error: Required system user not found"
     exit 1
@@ -31,15 +31,15 @@ python manage.py collectstatic --noinput --clear
 # Create directories for celery with minimal logging
 echo "Info: Setting up Celery environment..."
 mkdir -p /var/lib/celery
-chown -R ${CELERY_USER}:${CELERY_USER} /var/lib/celery
+chown -R "${CELERY_USER}":"${CELERY_USER}" /var/lib/celery
 
 # Environment variables for Celery 
 export CELERYBEAT_SCHEDULE_FILENAME=/var/lib/celery/celerybeat-schedule
 
 # Initialize Celery services
 echo "Info: Starting Celery services..."
-su -m ${CELERY_USER} -c "celery -A main worker --loglevel=info" &
-su -m ${CELERY_USER} -c "celery -A main beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule" &
+su -m "${CELERY_USER}" -c "celery -A main worker --loglevel=info" &
+su -m "${CELERY_USER}" -c "celery -A main beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule" &
 
 # Start Daphne server
 daphne -b 0.0.0.0 -p 8000 main.asgi:application
