@@ -15,6 +15,7 @@ import logging
 import os
 from pathlib import Path
 import time
+from authentication.models import UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -228,9 +229,18 @@ class ProfileService:
     @staticmethod
     def delete_user_account(user, password=None):
         """Manages account deletion"""
-        if not user.is_fortytwo_user:
-            if not password or not user.check_password(password):
-                raise ValidationError("Contraseña incorrecta")
-
-        GDPRService.delete_user_data(user)
-        return True
+        try:
+            if not user.is_fortytwo_user:
+                if not password or not user.check_password(password):
+                    raise ValidationError("Contraseña incorrecta")
+            
+            # First delete user sessions
+            UserSession.objects.filter(user=user).delete()
+            
+            # Then we delete the user data
+            GDPRService.delete_user_data(user)
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error deleting user account: {str(e)}")
+            raise ValidationError(f"Error al eliminar la cuenta: {str(e)}")
