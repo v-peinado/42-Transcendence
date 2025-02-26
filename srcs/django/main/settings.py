@@ -70,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # User authentication middleware
     "django.contrib.messages.middleware.MessageMiddleware",  # Message handling middleware
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
+    'authentication.middleware.UpdateLastActivityMiddleware',
 ]
 
 # CORS and Security configuration
@@ -162,9 +163,14 @@ USE_TZ = True
 # GDPR and Inactivity Settings - Time units in seconds for testing
 TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
 EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
-INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
-INACTIVITY_WARNING = 15 * TIME_MULTIPLIER       # 15 seconds/days
-TASK_CHECK_INTERVAL = 10  # seconds - how often Celery checks for inactive users
+INACTIVITY_THRESHOLD = 120 * TIME_MULTIPLIER     # 120 seconds/days
+INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
+TASK_CHECK_INTERVAL = 20  # seconds - how often Celery checks for inactive users
+SESSION_ACTIVITY_CHECK = 10  # seconds - how often middleware updates last_activity
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = INACTIVITY_THRESHOLD * 2  # Double the inactivity threshold
 
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://redis:6379/0'

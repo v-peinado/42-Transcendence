@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
 import logging
-from authentication.models import CustomUser
+from authentication.models import CustomUser, UserSession 
 from .mail_service import MailSendingService
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class GDPRService:
         return {
             "personal_info": {
                 "username": user.username,
-                "email": user.email,
+                "email": user.decrypted_email,
                 "date_joined": user.date_joined,
                 "last_login": user.last_login,
                 "is_active": user.is_active,
@@ -71,61 +71,35 @@ class GDPRService:
 
     @classmethod
     def cleanup_inactive_users(cls):
-        """Clean up inactive users based on settings criteria"""
-        logger.info("Starting cleanup process...")
-        
-        # Get current time for comparison
-        current_time = timezone.now()
-        
-        # Log thresholds for debugging
-        logger.info(f"Checking users with settings:"
-                   f"\n- Inactivity threshold: {settings.INACTIVITY_THRESHOLD} seconds"
-                   f"\n- Warning time: {settings.INACTIVITY_WARNING} seconds"
-                   f"\n- Current time: {current_time}")
-        
-        # Get users that might be deleted (for logging purposes)
-        deletion_threshold = current_time - timezone.timedelta(
-            seconds=settings.INACTIVITY_THRESHOLD
-        )
-        warning_expiry = current_time - timezone.timedelta(
-            seconds=settings.INACTIVITY_WARNING
-        )
-        potential_deletions = CustomUser.objects.filter(
-            is_active=True,
-            inactivity_notified=True,
-            last_login__lt=deletion_threshold,
-            inactivity_notification_date__lt=warning_expiry
-        ).exclude(is_superuser=True)
-        
-        logger.info(f"Found {potential_deletions.count()} potential users to delete")
-        
         try:
-            logger.info("Starting cleanup process...")
             current_time = timezone.now()
-
-            # 1. Cleanup unverified users
-            unverified_threshold = current_time - timezone.timedelta(
-                seconds=settings.EMAIL_VERIFICATION_TIMEOUT
-            )
-            unverified_users = CustomUser.objects.filter(
-                email_verified=False,
-                date_joined__lt=unverified_threshold
-            ).exclude(is_superuser=True)
             
-            for user in unverified_users:
-                logger.info(f"Deleting unverified user {user.username} registered at {user.date_joined}")
-                GDPRService.delete_user_data(user)
+            # First, get users with active sessions and exclude them
+            active_sessions = UserSession.objects.filter(
+                last_activity__gt=current_time - timezone.timedelta(seconds=settings.INACTIVITY_THRESHOLD)
+            ).values_list('user_id', flat=True).distinct()
 
-            # 2. First notify users approaching inactivity threshold
+            logger.info(f"Found {len(active_sessions)} active user sessions to exclude from cleanup")
+
+            # Base queryset excluding active users
+            base_query = CustomUser.objects.exclude(
+                id__in=active_sessions
+            ).exclude(
+                is_superuser=True
+            ).filter(
+                is_active=True,
+                email_verified=True
+            )
+
+            # Notify users approaching inactivity threshold
             warning_threshold = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             )
-            users_to_notify = CustomUser.objects.filter(
-                is_active=True,
-                email_verified=True,
-                inactivity_notified=False,
-                last_login__lt=warning_threshold
-            ).exclude(is_superuser=True)
+            
+            users_to_notify = base_query.filter(
+                last_login__lt=warning_threshold,
+                inactivity_notified=False
+            )
 
             for user in users_to_notify:
                 logger.info(f"Sending inactivity warning to user {user.username}")
@@ -134,20 +108,26 @@ class GDPRService:
                 user.inactivity_notification_date = current_time
                 user.save()
 
-            # 3. Delete inactive users who were notified and warning period expired
+            # Delete inactive users who were notified and warning period expired
             deletion_threshold = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_THRESHOLD
             )
             warning_expiry = current_time - timezone.timedelta(
                 seconds=settings.INACTIVITY_WARNING
             )
-            
-            inactive_users = CustomUser.objects.filter(
-                is_active=True,
-                inactivity_notified=True,
+
+            inactive_users = base_query.filter(
                 last_login__lt=deletion_threshold,
+                inactivity_notified=True,
                 inactivity_notification_date__lt=warning_expiry
-            ).exclude(is_superuser=True)
+            )
+
+            # Double check for active sessions before deletion
+            inactive_users = inactive_users.exclude(
+                id__in=UserSession.objects.filter(
+                    last_activity__gt=deletion_threshold
+                ).values_list('user_id', flat=True)
+            )
 
             logger.info(f"Found {inactive_users.count()} users to delete")
             for user in inactive_users:
@@ -157,7 +137,7 @@ class GDPRService:
                     f"- Notification date: {user.inactivity_notification_date}\n"
                     f"- Current time: {current_time}"
                 )
-                GDPRService.delete_user_data(user)
+                cls.delete_user_data(user)
 
         except Exception as e:
             logger.error(f"Error in cleanup_inactive_users: {str(e)}")
