@@ -70,7 +70,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # User authentication middleware
     "django.contrib.messages.middleware.MessageMiddleware",  # Message handling middleware
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Clickjacking protection middleware
-    'authentication.middleware.UpdateLastActivityMiddleware',
+    'authentication.middleware.UserSessionMiddleware',  # User activity tracking middleware
 ]
 
 # CORS and Security configuration

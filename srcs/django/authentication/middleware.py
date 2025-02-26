@@ -20,30 +20,30 @@ Current behavior:
 
 from django.utils import timezone
 from django.conf import settings
-from authentication.models import UserSession, CustomUser
+from authentication.models import UserSession
+import logging
 
-class UpdateLastActivityMiddleware:
+logger = logging.getLogger(__name__)
+
+class UserSessionMiddleware:
+    """Track user activity and update session data"""
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
-        
-        if request.user.is_authenticated and request.session.session_key:
-            current_time = timezone.now()
-            
-            # Always update session activity to keep it active
-            UserSession.objects.update_or_create(
-                user=request.user,
-                session_id=request.session.session_key,
-                defaults={'last_activity': current_time}
-            )
+        try:
+            if request.user.is_authenticated and not request.path.endswith('/delete-account/'):
+                UserSession.objects.update_or_create(
+                    user=request.user,
+                    defaults={
+                        'last_activity': timezone.now(),
+                        'session_id': request.session.session_key
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Error in UserSessionMiddleware: {str(e)}")
 
-            # Also update user's last activity and reset inactivity flags
-            CustomUser.objects.filter(id=request.user.id).update(
-                last_login=current_time,
-                inactivity_notified=False,
-                inactivity_notification_date=None
-            )
-        
+        response = self.get_response(request)
         return response
+
+UpdateLastActivityMiddleware = UserSessionMiddleware
