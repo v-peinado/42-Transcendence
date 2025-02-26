@@ -11,13 +11,13 @@ app = Celery('main')
 # Load configuration from Django settings
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Aplicar configuraciones de seguridad
+# Security configuration
 app.conf.update(**settings.CELERY_SECURITY_CONFIG)
 
-# Aplicar configuraciones del worker
+# Worker configuration
 app.conf.update(**settings.CELERY_WORKER_CONFIG)
 
-# Aplicar configuraciones del beat
+# Aply the configuration for the beat
 app.conf.update(**settings.CELERY_BEAT_CONFIG)
 
 # Configuración específica para Celery 6.0
