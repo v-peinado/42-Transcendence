@@ -63,8 +63,13 @@ store_secrets() {
         JWT_EXPIRATION_TIME="${JWT_EXPIRATION_TIME:-3600}" >/dev/null 2>&1 && \
         log_secret "django/jwt"
 
+    # GDPR encryption key
+    vault kv put secret/django/gdpr \
+        ENCRYPTION_KEY="${ENCRYPTION_KEY}" >/dev/null 2>&1 && \
+        log_secret "django/gdpr"
+
     # Verify all secrets were stored
-    for path in "database" "oauth" "email" "settings" "jwt"; do
+    for path in "database" "oauth" "email" "settings" "jwt" "gdpr"; do
         if ! vault kv get secret/django/${path} >/dev/null 2>&1; then
             log "ERROR" "Failed to verify secret: django/${path}"
             return 1

@@ -4,8 +4,8 @@
 # PostgreSQL Configuration
 SQL_ENGINE=django.db.backends.postgresql   # Database engine
 POSTGRES_DB=transcendence                  # Database name
-POSTGRES_USER=usuario                      # PostgreSQL user
-POSTGRES_PASSWORD=contraseña               # PostgreSQL password
+POSTGRES_USER=your_username                # PostgreSQL user
+POSTGRES_PASSWORD=your_password            # PostgreSQL password
 SQL_HOST=db                                # Database host
 SQL_PORT=5432                              # PostgreSQL port
 
@@ -13,16 +13,18 @@ SQL_PORT=5432                              # PostgreSQL port
 DJANGO_SECRET_KEY=your-secret-key-here     # Django secret key (must be unique)
 DJANGO_ALLOWED_HOSTS=localhost             # Allowed hosts, comma separated
 
-# 42 Authentication
-# Get these credentials at https://profile.intra.42.fr/oauth/applications
+# GDPR Configuration
+ENCRYPTION_KEY=your-32-bytes-base64-key    # GDPR Email Encryption Key (32 bytes base64-encoded)
+
+# 42 OAuth Web Application
 FORTYTWO_CLIENT_ID=your-client-id          # 42 OAuth client ID
 FORTYTWO_CLIENT_SECRET=your-client-secret  # 42 OAuth client secret
 FORTYTWO_REDIRECT_URI=https://localhost:8445/login/  # OAuth redirect URI
 
-# 42 API
-FORTYTWO_API_UID=your-api-uid              # 42 API UID
-FORTYTWO_API_SECRET=your-api-secret        # 42 API secret
-FORTYTWO_API_URL=your-api-url              # 42 API base URL
+# 42 API Configuration
+FORTYTWO_API_UID=your-api-uid              # 42 API UID (same as client ID)
+FORTYTWO_API_SECRET=your-api-secret        # 42 API secret (same as client secret)
+FORTYTWO_API_URL=your-api-url              # 42 API redirect URL
 
 # Email Configuration (SendGrid)
 EMAIL_HOST=smtp.sendgrid.net               # SMTP host
@@ -36,10 +38,10 @@ SITE_URL=https://localhost:8443            # Site base URL
 # JWT Configuration
 JWT_SECRET_KEY=your-jwt-secret             # JWT secret key
 JWT_ALGORITHM=HS256                        # JWT encryption algorithm
-JWT_EXPIRATION_TIME=3600                   # Expiration time in seconds
+JWT_EXPIRATION_TIME=3600                   # Token expiration time in seconds
 
 # Vault Configuration (development only)
-VAULT_ROOT_TOKEN=your-vault-token          # Vault root token
+#VAULT_ROOT_TOKEN=myroot                   # Vault root token (uncomment for development)
 #VAULT_LOG_TOKENS=true                     # Enable token logs (development only)
 
 # SSL Certificate Configuration
@@ -53,4 +55,4 @@ SSL_DAYS=365                               # Certificate validity in days
 SSL_KEY_SIZE=2048                          # Key size in bits (min 2048)
 
 # Celery Configuration
-CELERY_USER=celeryuser                     # Celery secret key
+CELERY_USER=celeryuser                     # Celery user

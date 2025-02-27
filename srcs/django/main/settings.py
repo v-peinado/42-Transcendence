@@ -14,9 +14,7 @@ from pathlib import Path
 import os
 from django.core.management.utils import get_random_secret_key
 import logging
-from django.core.signing import Signer
-from cryptography.fernet import Fernet
-import base64
+from main.encryption import get_encryption_key
 
 logger = logging.getLogger(__name__)
 
@@ -279,6 +277,9 @@ ACCOUNT_EMAIL_VERIFICATION = (
     "mandatory"  # Email address verification is required to activate the account
 )
 
+# Encryption key settings for GDPR compliance
+ENCRYPTION_KEY = get_encryption_key()
+
 # Frontend settings
 FRONTEND_URL = "https://localhost:8445"
 SITE_URL = FRONTEND_URL
@@ -318,29 +319,3 @@ LOGGING = {
         "level": "INFO",
     },
 }
-
-# Encryption key settings for GDPR compliance
-# The key is used to encrypt and decrypt sensitive user data
-ENCRYPTION_KEY_PATH = os.path.join(BASE_DIR, '.encryption_key')
-
-try:
-    if os.path.exists(ENCRYPTION_KEY_PATH):
-        # If key exists, load it
-        with open(ENCRYPTION_KEY_PATH, 'rb') as key_file:
-            ENCRYPTION_KEY = key_file.read()
-            logger.info("Loaded existing ENCRYPTION_KEY")
-    else:
-        # Generate new key if it doesn't exist
-        signer = Signer()
-        key_base = signer.sign(SECRET_KEY).encode()
-        ENCRYPTION_KEY = base64.urlsafe_b64encode(key_base[:32].ljust(32, b'0'))
-        
-        # Save key for future use
-        with open(ENCRYPTION_KEY_PATH, 'wb') as key_file:
-            key_file.write(ENCRYPTION_KEY)
-        logger.info("Generated and saved new ENCRYPTION_KEY")
-        
-except Exception as e:
-    logger.error(f"Error handling ENCRYPTION_KEY: {str(e)}")
-    ENCRYPTION_KEY = Fernet.generate_key()
-    logger.info("Using fallback ENCRYPTION_KEY")
