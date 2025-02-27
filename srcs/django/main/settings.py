@@ -319,17 +319,50 @@ LOGGING = {
 
 # Encryption key settings for GDPR compliance
 try:
+    # First try to get from Vault
     from main.vault import VaultClient
     vault = VaultClient()
     gdpr_secrets = vault.get_secrets('django/gdpr')
+    
     if gdpr_secrets and 'ENCRYPTION_KEY' in gdpr_secrets:
-        ENCRYPTION_KEY = gdpr_secrets['ENCRYPTION_KEY'].encode()
-        logger.info("Loaded ENCRYPTION_KEY from Vault")
+        key = gdpr_secrets['ENCRYPTION_KEY']
+        # Asegurarse de que la clave esté en el formato correcto
+        if not key.endswith('='):
+            key += '=' * (-len(key) % 4)  # Añadir padding si falta
+        ENCRYPTION_KEY = key.encode()
+        logger.info("Successfully loaded ENCRYPTION_KEY from Vault")
     else:
-        raise ValueError("ENCRYPTION_KEY not found in Vault secrets")
+        # If not in Vault, try environment variable
+        env_key = os.environ.get('ENCRYPTION_KEY')
+        if env_key:
+            if not env_key.endswith('='):
+                env_key += '=' * (-len(env_key) % 4)  # Añadir padding si falta
+            ENCRYPTION_KEY = env_key.encode()
+            logger.warning("Using ENCRYPTION_KEY from environment (Vault not available)")
+        else:
+            raise ValueError("ENCRYPTION_KEY not found in Vault or environment")
+
+    # Validate the key format
+    try:
+        Fernet(ENCRYPTION_KEY)
+        logger.info("ENCRYPTION_KEY validation successful")
+    except Exception as e:
+        # Si la clave no es válida, intentar generar una nueva
+        if DEBUG:
+            ENCRYPTION_KEY = Fernet.generate_key()
+            logger.warning("Generated new ENCRYPTION_KEY in DEBUG mode")
+            try:
+                # Intentar guardar la nueva clave en Vault
+                vault.client.secrets.kv.v2.create_or_update_secret(
+                    path='django/gdpr',
+                    secret=dict(ENCRYPTION_KEY=ENCRYPTION_KEY.decode()),
+                    mount_point='secret'
+                )
+            except Exception as ve:
+                logger.error(f"Failed to save new key to Vault: {ve}")
+        else:
+            raise ValueError(f"Invalid ENCRYPTION_KEY format and not in DEBUG mode")
+
 except Exception as e:
-    logger.warning(f"Could not load ENCRYPTION_KEY from Vault: {e}")
-    # Fallback to environment variable or generate new key
-    env_key = os.environ.get('ENCRYPTION_KEY', '')
-    ENCRYPTION_KEY = env_key.encode() if env_key else Fernet.generate_key()
-    logger.info("Using fallback ENCRYPTION_KEY")
+    logger.critical(f"Failed to set up ENCRYPTION_KEY: {e}")
+    raise SystemExit("Cannot start without valid ENCRYPTION_KEY")
