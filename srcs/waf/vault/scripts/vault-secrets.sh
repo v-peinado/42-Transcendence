@@ -64,16 +64,16 @@ store_secrets() {
         log_secret "django/jwt"
 
     # GDPR encryption key
-    generate_fernet_key() {
-        # Generate 32 bytes of random data and encode in base64
-        openssl rand -base64 32 | tr '+/' '-_' | tr -d '='
-    }
+    # generate_fernet_key() {
+    #     # Generate 32 bytes of random data and encode in base64
+    #     openssl rand -base64 32 | tr '+/' '-_' | tr -d '='
+    # }
 
-    if [[ ! "${ENCRYPTION_KEY}" ]]; then
-        # Generate a valid Fernet key if not provided
-        ENCRYPTION_KEY=$(generate_fernet_key)
-        log_message "Generated new Fernet key for GDPR encryption"
-    fi
+    # if [[ ! "${ENCRYPTION_KEY}" ]]; then
+    #     # Generate a valid Fernet key if not provided
+    #     ENCRYPTION_KEY=$(generate_fernet_key)
+    #     log_message "Generated new Fernet key for GDPR encryption"
+    # fi
 
     # Store the GDPR encryption key
     vault kv put secret/django/gdpr \

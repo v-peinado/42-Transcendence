@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 from django.core.management.utils import get_random_secret_key
 import logging
-from cryptography.fernet import Fernet
+from main.encryption import get_encryption_key
 
 logger = logging.getLogger(__name__)
 
@@ -277,6 +277,9 @@ ACCOUNT_EMAIL_VERIFICATION = (
     "mandatory"  # Email address verification is required to activate the account
 )
 
+# Encryption key settings for GDPR compliance
+ENCRYPTION_KEY = get_encryption_key()
+
 # Frontend settings
 FRONTEND_URL = "https://localhost:8445"
 SITE_URL = FRONTEND_URL
@@ -316,53 +319,3 @@ LOGGING = {
         "level": "INFO",
     },
 }
-
-# Encryption key settings for GDPR compliance
-try:
-    # First try to get from Vault
-    from main.vault import VaultClient
-    vault = VaultClient()
-    gdpr_secrets = vault.get_secrets('django/gdpr')
-    
-    if gdpr_secrets and 'ENCRYPTION_KEY' in gdpr_secrets:
-        key = gdpr_secrets['ENCRYPTION_KEY']
-        # Ensure key is properly padded
-        if not key.endswith('='):
-            key += '=' * (-len(key) % 4)  # Añadir padding si falta
-        ENCRYPTION_KEY = key.encode()
-        logger.info("Successfully loaded ENCRYPTION_KEY from Vault")
-    else:
-        # If not in Vault, try environment variable
-        env_key = os.environ.get('ENCRYPTION_KEY')
-        if env_key:
-            if not env_key.endswith('='):
-                env_key += '=' * (-len(env_key) % 4)  # Add padding if missing
-            ENCRYPTION_KEY = env_key.encode()
-            logger.warning("Using ENCRYPTION_KEY from environment (Vault not available)")
-        else:
-            raise ValueError("ENCRYPTION_KEY not found in Vault or environment")
-
-    # Validate the key format
-    try:
-        Fernet(ENCRYPTION_KEY)
-        logger.info("ENCRYPTION_KEY validation successful")
-    except Exception as e:
-        # If the key is invalid, generate a new one in DEBUG mode
-        if DEBUG:
-            ENCRYPTION_KEY = Fernet.generate_key()
-            logger.warning("Generated new ENCRYPTION_KEY in DEBUG mode")
-            try:
-                # Try to save the new key to Vault
-                vault.client.secrets.kv.v2.create_or_update_secret(
-                    path='django/gdpr',
-                    secret=dict(ENCRYPTION_KEY=ENCRYPTION_KEY.decode()),
-                    mount_point='secret'
-                )
-            except Exception as ve:
-                logger.error(f"Failed to save new key to Vault: {ve}")
-        else:
-            raise ValueError(f"Invalid ENCRYPTION_KEY format and not in DEBUG mode")
-
-except Exception as e:
-    logger.critical(f"Failed to set up ENCRYPTION_KEY: {e}")
-    raise SystemExit("Cannot start without valid ENCRYPTION_KEY")
