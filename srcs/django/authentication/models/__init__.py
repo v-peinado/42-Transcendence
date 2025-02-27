@@ -1,4 +1,4 @@
-from .user import CustomUser, PreviousPassword
-from .session import UserSession
+from authentication.models.user import CustomUser, PreviousPassword
+from authentication.models.session import UserSession
 
-__all__ = ['CustomUser', 'UserSession', 'PreviousPassword']
+__all__ = ['CustomUser', 'PreviousPassword', 'UserSession']
