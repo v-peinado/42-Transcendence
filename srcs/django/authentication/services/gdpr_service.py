@@ -41,14 +41,12 @@ class GDPRService:
             # Generate anonymous data
             anon_username = f"deleted_user_{user.id}"
             anon_email = f"deleted_{user.id}@deleted.local"
+            anon_password = "pbkdf2_sha256$deleted_password"
             
-            # Generate new hash for anonymized email
-            anon_email_hash = hashlib.sha256(anon_email.encode()).hexdigest()
-
-            # Save anonymous data
+            # Update only existing fields
             user.username = anon_username
             user.email = anon_email
-            user.email_hash = anon_email_hash  # Assuming you have this field
+            user.password = anon_password
             user.first_name = "Deleted"
             user.last_name = "User"
             user.profile_image = None
@@ -57,10 +55,22 @@ class GDPRService:
             user.two_factor_enabled = False
             user.two_factor_secret = None
             user.deleted_at = timezone.now()
-            user.save()
+            user.fortytwo_id = None
+            user.pending_email = None
+            user.pending_email_token = None
+            
+            # Save only the fields that exist in the model
+            user.save(update_fields=[
+                'email', 'username', 'password', 'first_name', 
+                'last_name', 'profile_image', 'fortytwo_image', 
+                'is_active', 'two_factor_enabled', 'two_factor_secret', 
+                'deleted_at', 'fortytwo_id', 'pending_email', 
+                'pending_email_token'
+            ])
 
             return True
         except Exception as e:
+            logger.error(f"Error in anonymize_user: {str(e)}")
             raise ValidationError(f"Error anonymizing user: {str(e)}")
 
     @staticmethod

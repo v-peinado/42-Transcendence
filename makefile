@@ -54,16 +54,18 @@ view-users:
 			echo "\n$(COLOR_GREEN)Lista de usuarios:$(COLOR_RESET)"; \
 			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" srcs-db-1 psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
 				-c "SELECT u.id, u.username, \
-					CASE WHEN u.email LIKE 'gAAAAAB%' \
-						THEN 'Enc: ' || substr(u.email, 1, 20) || '...' \
-						ELSE u.email \
-					END as email_info, \
-					u.is_active \
-					FROM authentication_customuser u \
-					ORDER BY u.id;" || \
-			( \
-				echo "$(COLOR_RED)Error: No se pudo consultar la base de datos$(COLOR_RESET)" \
-			); \
+						CASE \
+							WHEN u.username LIKE 'deleted_user_%' THEN 'anonymized@deleted.local' \
+							WHEN u.email LIKE 'gAAAAAB%' THEN 'Enc: ' || substr(u.email, 1, 20) || '...' \
+							ELSE u.email \
+						END as email_info, \
+						substr(u.password, 1, 20) || '...' as password_hash, \
+						u.is_active \
+						FROM authentication_customuser u \
+						ORDER BY u.id;" || \
+				( \
+					echo "$(COLOR_RED)Error: No se pudo consultar la base de datos$(COLOR_RESET)" \
+				); \
 		fi; \
 	fi
 

@@ -150,10 +150,10 @@ USE_TZ = True
 
 # GDPR and Inactivity Settings - Time units in seconds for testing
 # In production, these values should be set to days
-TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
+TIME_MULTIPLIER = 86400  # 1 for testing (seconds), 86400 for production (days)
 
 EMAIL_VERIFICATION_TIMEOUT = 10 * TIME_MULTIPLIER  # 1 second/day
-INACTIVITY_THRESHOLD = 120 * TIME_MULTIPLIER     # 120 seconds/days
+INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
 INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
 TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER       # 2 seconds/days
 SESSION_ACTIVITY_CHECK = 1 * TIME_MULTIPLIER  # 1 seconds/days
