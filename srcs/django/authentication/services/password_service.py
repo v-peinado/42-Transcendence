@@ -124,8 +124,10 @@ class PasswordService:
         if CustomUser.objects.filter(username=username.lower()).exists():
             raise ValidationError(f"El nombre de usuario '{username}' ya está en uso")
 
-        # Verify if email is already taken
-        if CustomUser.objects.filter(email=email.lower()).exists():
+        # Verify if email is already taken using hash comparison
+        temp_user = CustomUser(email=email.lower())
+        email_hash = temp_user._generate_email_hash(email.lower())
+        if CustomUser.objects.filter(email_hash=email_hash).exists():
             raise ValidationError(f"El email '{email}' ya está registrado")
 
         # Validate length of username

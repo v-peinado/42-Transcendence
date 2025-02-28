@@ -4,11 +4,13 @@ from django.conf import settings
 from cryptography.fernet import Fernet
 import logging
 from django.utils import timezone
+import hashlib
 
 
 logger = logging.getLogger(__name__)
 
 class CustomUser(AbstractUser):
+    id = models.AutoField(primary_key=True)
     DEFAULT_PROFILE_IMAGE = (
         "https://ui-avatars.com/api/?name={}&background=random&length=2"
     )
@@ -34,6 +36,7 @@ class CustomUser(AbstractUser):
     pending_email_token = models.CharField(max_length=255, blank=True, null=True)
     inactivity_notified = models.BooleanField(default=False)
     inactivity_notification_date = models.DateTimeField(null=True, blank=True)
+    email_hash = models.CharField(max_length=64, db_index=True, unique=True, null=True)
 
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, "url"):
@@ -68,6 +71,13 @@ class CustomUser(AbstractUser):
             return self.email
         return None
 
+    def _generate_email_hash(self, email):
+        """Generate a deterministic hash for email comparison"""
+        if not email:
+            return None
+        normalized_email = email.lower().strip()
+        return hashlib.sha256(normalized_email.encode()).hexdigest()
+
     def save(self, *args, **kwargs):
         if self.email and not self.email.startswith('gAAAAAB'):
             try:
@@ -75,6 +85,9 @@ class CustomUser(AbstractUser):
                     logger.error("ENCRYPTION_KEY not found in settings")
                     super().save(*args, **kwargs)
                     return
+                    
+                # Generate hash before encryption
+                self.email_hash = self._generate_email_hash(self.email)
                     
                 cipher_suite = Fernet(settings.ENCRYPTION_KEY)
                 self.email = cipher_suite.encrypt(self.email.encode()).decode()
