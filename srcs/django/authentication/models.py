@@ -1,11 +1,4 @@
-from django.contrib.sessions.models import Session
-from django.utils import timezone
-from django.db import models
+from authentication.models.user import CustomUser, PreviousPassword
+from authentication.models.session import UserSession
 
-class UserSession(models.Model):
-    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
-    session = models.ForeignKey('sessions.Session', on_delete=models.CASCADE)
-    last_activity = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        unique_together = ('user', 'session')
+__all__ = ['CustomUser', 'PreviousPassword', 'UserSession']
