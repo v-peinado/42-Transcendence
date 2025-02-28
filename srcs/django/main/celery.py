@@ -25,6 +25,10 @@ app.conf.update(
     broker_connection_retry_on_startup=True,
     worker_enable_remote_control=False,
     worker_send_task_events=False,
+    task_send_sent_event=False,
+    worker_log_format='[%(asctime)s: %(levelname)s] %(message)s',
+    worker_task_log_format='[%(asctime)s: %(levelname)s] %(task_name)s - %(message)s',
+    worker_redirect_stdouts_level='ERROR',
 )
 
 # Search for tasks in Django applications

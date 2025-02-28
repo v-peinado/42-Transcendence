@@ -32,7 +32,6 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 # Define installed applications in the project
 INSTALLED_APPS = [
     "daphne",
-    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -47,15 +46,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "game",
 ]
-
-# Jazzmin configuration (custom admin panel based on Django Admin)
-JAZZMIN_SETTINGS = {
-    "site_title": "Pong Admin",
-    "site_header": "Pong Administration",
-    "welcome_sign": "Welcome to the Admin Panel",
-    "show_ui_builder": True,
-    "changeform_format": "horizontal_tabs",
-}
 
 # Middleware configuration (intermediaries through which requests pass between client and application)
 # Middleware executes in top-down order and is defined by default in Django
@@ -160,9 +150,9 @@ USE_TZ = True
 
 # GDPR and Inactivity Settings - Time units in seconds for testing
 # In production, these values should be set to days
-TIME_MULTIPLIER = 86400  # 1 for testing (seconds), 86400 for production (days)
+TIME_MULTIPLIER = 1  # 1 for testing (seconds), 86400 for production (days)
 
-EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER  # 1 second/day
+EMAIL_VERIFICATION_TIMEOUT = 10 * TIME_MULTIPLIER  # 1 second/day
 INACTIVITY_THRESHOLD = 120 * TIME_MULTIPLIER     # 120 seconds/days
 INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
 TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER       # 2 seconds/days
@@ -198,12 +188,16 @@ CELERY_WORKER_CONFIG = {
     'worker_max_tasks_per_child': 50,
     'worker_prefetch_multiplier': 1,
     'task_track_started': True,
+    'worker_log_format': '[%(asctime)s: %(levelname)s] %(message)s',
+    'worker_task_log_format': '[%(asctime)s: %(levelname)s] %(task_name)s - %(message)s',
+    'worker_redirect_stdouts_level': 'ERROR',
 }
 
 # Beat configuration for periodic tasks
 CELERY_BEAT_CONFIG = {
     'scheduler': 'django_celery_beat.schedulers:DatabaseScheduler',
     'max_interval': 300,  # 5 minutes
+    'loglevel': 'WARNING',
 }
 
 # Celery periodic tasks configuration
@@ -233,16 +227,14 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static_custom"),
 ]
 
-# Configuración específica para archivos admin
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static_collected")
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
-# Establecer prioridad de archivos estáticos
+# Eliminar o simplificar a solo Django admin
 STATICFILES_APPS_ORDER = [
     'django.contrib.admin',
-    'jazzmin',
-    # resto de apps...
 ]
 
 # Custom authentication configuration with CustomUser model defined in authentication.models

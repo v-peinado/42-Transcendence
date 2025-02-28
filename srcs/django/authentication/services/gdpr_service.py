@@ -78,8 +78,8 @@ class GDPRService:
         try:
             current_time = timezone.now()
             
-            # Modify queries to exclude already deleted users
-            base_query = CustomUser.objects.filter(deleted_at__isnull=True)
+            # Modify queries to use is_active instead of deleted_at
+            base_query = CustomUser.objects.filter(is_active=True)
             
             # 1. Clean unverified users
             verification_threshold = current_time - timezone.timedelta(

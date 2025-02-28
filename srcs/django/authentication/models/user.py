@@ -37,6 +37,7 @@ class CustomUser(AbstractUser):
     inactivity_notified = models.BooleanField(default=False)
     inactivity_notification_date = models.DateTimeField(null=True, blank=True)
     email_hash = models.CharField(max_length=64, db_index=True, unique=True, null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     def get_profile_image_url(self):
         if self.profile_image and hasattr(self.profile_image, "url"):
