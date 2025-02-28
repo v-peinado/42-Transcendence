@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
 import logging
+import hashlib
 from authentication.models import CustomUser, UserSession 
 from .mail_service import MailSendingService
 
@@ -39,11 +40,15 @@ class GDPRService:
         try:
             # Generate anonymous data
             anon_username = f"deleted_user_{user.id}"
-            anon_email = f"deleted_{user.id}@anonymous.com"
+            anon_email = f"deleted_{user.id}@deleted.local"
+            
+            # Generate new hash for anonymized email
+            anon_email_hash = hashlib.sha256(anon_email.encode()).hexdigest()
 
-            # Save anonymous data to user after deleting sensitive data
+            # Save anonymous data
             user.username = anon_username
             user.email = anon_email
+            user.email_hash = anon_email_hash  # Assuming you have this field
             user.first_name = "Deleted"
             user.last_name = "User"
             user.profile_image = None
@@ -51,35 +56,37 @@ class GDPRService:
             user.is_active = False
             user.two_factor_enabled = False
             user.two_factor_secret = None
+            user.deleted_at = timezone.now()
             user.save()
 
             return True
         except Exception as e:
-            raise ValidationError(f"Error al anonimizar usuario: {str(e)}")
+            raise ValidationError(f"Error anonymizing user: {str(e)}")
 
     @staticmethod
     def delete_user_data(user):
-        """Permanently deletes user's account"""
+        """Soft deletes user's account by anonymizing their data"""
         try:
-            # First anonymize user data
+            # Now we just call anonymize_user
             GDPRService.anonymize_user(user)
-            # Then delete user
-            user.delete()
             return True
         except Exception as e:
-            raise ValidationError(f"Error al eliminar usuario: {str(e)}")
+            raise ValidationError(f"Error deleting user: {str(e)}")
 
     @classmethod
     def cleanup_inactive_users(cls, email_connection=None):
         try:
             current_time = timezone.now()
             
+            # Modify queries to exclude already deleted users
+            base_query = CustomUser.objects.filter(deleted_at__isnull=True)
+            
             # 1. Clean unverified users
             verification_threshold = current_time - timezone.timedelta(
                 seconds=settings.EMAIL_VERIFICATION_TIMEOUT
             )
             
-            unverified_users = CustomUser.objects.filter(
+            unverified_users = base_query.filter(
                 is_active=False,
                 email_verified=False,
                 date_joined__lt=verification_threshold
@@ -101,7 +108,7 @@ class GDPRService:
             logger.info(f"Found {len(active_sessions)} active user sessions to exclude from cleanup")
 
             # Base queryset excluding active users
-            base_query = CustomUser.objects.exclude(
+            base_query = base_query.exclude(
                 id__in=active_sessions
             ).exclude(
                 is_superuser=True
