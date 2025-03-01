@@ -148,15 +148,25 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# GDPR and Inactivity Settings - Time units in seconds for testing
-# In production, these values should be set to days
+# GDPR and Inactivity Settings
 TIME_MULTIPLIER = 86400  # 1 for testing (seconds), 86400 for production (days)
+TEST_MODE = 'False'  # Set to 'True' for testing, 'False' for production
 
-EMAIL_VERIFICATION_TIMEOUT = 10 * TIME_MULTIPLIER  # 1 second/day
-INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER     # 60 seconds/days
-INACTIVITY_WARNING = 30 * TIME_MULTIPLIER       # 30 seconds/days
-TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER       # 2 seconds/days
-SESSION_ACTIVITY_CHECK = 1 * TIME_MULTIPLIER  # 1 seconds/days
+# Safety margins for time checks (in seconds)
+SAFETY_MARGIN = 2 if TEST_MODE else 300  # 2 seconds in test mode, 5 minutes in production
+
+if TEST_MODE == 'True':	# Test mode settings in seconds
+    EMAIL_VERIFICATION_TIMEOUT = 10        
+    INACTIVITY_WARNING = 40            
+    INACTIVITY_THRESHOLD = 60          
+    TASK_CHECK_INTERVAL = 5              
+    SESSION_ACTIVITY_CHECK = 2           
+else:	# Production mode settings in days
+    EMAIL_VERIFICATION_TIMEOUT = 1 * TIME_MULTIPLIER
+    INACTIVITY_WARNING = 53 * TIME_MULTIPLIER
+    INACTIVITY_THRESHOLD = 60 * TIME_MULTIPLIER
+    TASK_CHECK_INTERVAL = 2 * TIME_MULTIPLIER
+    SESSION_ACTIVITY_CHECK = 1 * TIME_MULTIPLIER
 
 # Session settings for user activity tracking (middleware)
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'

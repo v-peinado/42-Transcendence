@@ -235,43 +235,56 @@ class MailSendingService:
             raise Exception(f"Error sending password reset email: {str(e)}")
 
     @staticmethod
-    def send_inactivity_warning(user, connection=None):
-        """Send warning email about account deletion due to inactivity"""
+    def send_inactivity_warning(user, remaining_days=0, time_unit='days', connection=None):
+        """
+        Sends an inactivity warning email to the user.
+        
+        This email notifies users that their account will be deleted due to
+        inactivity if they don't log in within the specified time period.
+        
+        Args:
+            user: User to send the message to
+            remaining_days: Days remaining before deletion
+            time_unit: Time unit (days, seconds, etc.)
+            connection: Optional SMTP connection
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
         try:
-            try:
-                recipient_email = user.decrypted_email
-                if not recipient_email:
-                    raise ValueError("Email desencriptado está vacío")
-            except Exception as e:
-                logger.error(f"Error desencriptando email para usuario {user.id}: {str(e)}")
-                recipient_email = user.email
-                logger.warning(f"Usando email encriptado como fallback para usuario {user.id}")
+            if not user.email:
+                logger.warning(f"No email address for user {user.username}")
+                return False
 
-            subject = "Tu cuenta será eliminada por inactividad"
-            days_remaining = round(settings.INACTIVITY_WARNING / 86400)
+            subject = "Your account will be deleted due to inactivity"
             context = {
                 "user": user,
-                "days_remaining": days_remaining,
-                "login_url": f"{settings.SITE_URL}/login"
+                "days_remaining": remaining_days,
+                "time_unit": time_unit,
+                "login_url": f"{settings.FRONTEND_URL}/login"
             }
-            html_message = render_to_string(
-                "authentication/inactivity_warning_email.html", context
-            )
+            
+            # Use the template for HTML and plain text versions
+            html_message = render_to_string('authentication/inactivity_warning_email.html', context)
             plain_message = strip_tags(html_message)
 
-            send_mail(
-                subject,
-                plain_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [recipient_email],
-                html_message=html_message,
-                fail_silently=False,
-                connection=connection 
+            # Send the email
+            from django.core.mail import EmailMultiAlternatives
+            
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.decrypted_email],
+                connection=connection,
             )
-
-            logger.info(f"Correo de inactividad enviado a {user.username}")
+            
+            email.attach_alternative(html_message, "text/html")
+            email.send()
+            
+            logger.info(f"Inactivity email sent to {user.username}")
             return True
-                
+            
         except Exception as e:
-            logger.error(f"Error enviando advertencia de inactividad: {str(e)}")
-            raise
+            logger.error(f"Error sending inactivity email to {user.username}: {str(e)}")
+            return False

@@ -5,8 +5,9 @@ from .token_service import TokenService
 from .password_service import PasswordService
 from .two_factor_service import TwoFactorService
 from authentication.forms.auth_forms import RegistrationForm
-from django.contrib.auth import authenticate, login as auth_login, logout
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.utils.html import escape
+from django.utils import timezone
 from authentication.models import PreviousPassword
 from .rate_limit_service import RateLimitService
 import logging
@@ -48,16 +49,16 @@ class AuthenticationService:
         is_limited, remaining_time = rate_limiter.is_rate_limited(ip, 'login')
         if is_limited:
             logger.warning(f"Rate limit exceeded for IP {ip} on login")
-            raise ValidationError(f"Demasiados intentos. Por favor espera {remaining_time} segundos")
+            raise ValidationError(f"Too many attempts. Please wait {remaining_time} seconds")
 
         user = authenticate(request, username=username.strip().lower(), password=password)
 
         if not user:
             logger.warning(f"Failed login attempt for user {username} from IP {ip}")
-            raise ValidationError("Usuario o contraseña incorrectos")
+            raise ValidationError("Incorrect username or password")
 
         if not user.email_verified:
-            raise ValidationError("Por favor verifica tu email para activar tu cuenta")
+            raise ValidationError("Please verify your email to activate your account")
 
         # Reset rate limit on successful login
         rate_limiter.reset_limit(ip, 'login')
@@ -121,13 +122,26 @@ class AuthenticationService:
 
     @staticmethod
     def logout_user(request):
-        """
-        Logs out the current user
-        Raises ValidationError if no user is authenticated
-        """
-        if request.user.is_authenticated:
-            logout(request)
-            # Clear session ressidue data
-            request.session.flush()
+        """Logs out the user and clears their session."""
+        try:
+            # Update last_login to record this activity before session is destroyed
+            if request.user.is_authenticated:
+                # Record logout activity as last_login to maintain
+                # activity history even after the session is destroyed
+                request.user.last_login = timezone.now()
+                request.user.save(update_fields=['last_login'])
+                
+                # Ensure no inactivity notification flags remain
+                if request.user.inactivity_notified:
+                    request.user.inactivity_notified = False
+                    request.user.inactivity_notification_date = None
+                    request.user.save(update_fields=['inactivity_notified', 'inactivity_notification_date'])
+                    
+                logger.info(f"User {request.user.username} logged out. Last login updated to prevent immediate inactivity warning.")
+                
+            # Proceed with logout
+            auth_logout(request)  # Changed to auth_logout to avoid confusion
             return True
-        raise ValidationError(AuthenticationService.MESSAGES["no_session"])
+        except Exception as e:
+            logger.error(f"Error in logout_user: {str(e)}")
+            raise ValidationError("Error logging out")

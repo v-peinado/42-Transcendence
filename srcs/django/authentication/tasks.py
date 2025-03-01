@@ -12,11 +12,13 @@ def cleanup_inactive_users():
     This task runs according to TASK_CHECK_INTERVAL (in settings.py)
     """
     try:
-        logger.info("Starting inactive users cleanup task")
-        GDPRService.cleanup_inactive_users()
-        logger.info("Inactive users cleanup task completed successfully")
+        logger.info("🔄 ====== STARTING CLEANUP TASK ======")
+        result = GDPRService.cleanup_inactive_users()
+        logger.info(f"✅ Task completed - Users deleted: {result}")
+        logger.info("======= END OF CLEANUP TASK =======\n")
     except Exception as e:
-        logger.error(f"Error in cleanup_inactive_users task: {str(e)}")
+        logger.error(f"❌ Task failed: {str(e)}")
+        logger.info("======= END OF CLEANUP TASK =======\n")
         raise
 
 # To see celery tasks in action:

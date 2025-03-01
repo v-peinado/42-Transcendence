@@ -1,10 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
+from datetime import timedelta
 import logging
 import hashlib
-from authentication.models import CustomUser, UserSession 
-from .mail_service import MailSendingService
+from authentication.models import CustomUser
 
 logger = logging.getLogger(__name__)
 
@@ -59,13 +59,15 @@ class GDPRService:
             user.pending_email = None
             user.pending_email_token = None
             
+            user.email_hash = None
+            
             # Save only the fields that exist in the model
             user.save(update_fields=[
                 'email', 'username', 'password', 'first_name', 
                 'last_name', 'profile_image', 'fortytwo_image', 
                 'is_active', 'two_factor_enabled', 'two_factor_secret', 
                 'deleted_at', 'fortytwo_id', 'pending_email', 
-                'pending_email_token'
+                'pending_email_token', 'email_hash'
             ])
 
             return True
@@ -85,96 +87,58 @@ class GDPRService:
 
     @classmethod
     def cleanup_inactive_users(cls, email_connection=None):
-        try:
-            current_time = timezone.now()
-            
-            # Modify queries to use is_active instead of deleted_at
-            base_query = CustomUser.objects.filter(is_active=True)
-            
-            # 1. Clean unverified users
-            verification_threshold = current_time - timezone.timedelta(
-                seconds=settings.EMAIL_VERIFICATION_TIMEOUT
+        """
+        Delegates to CleanupService.cleanup_inactive_users
+        
+        This method is kept for backward compatibility.
+        New code should use CleanupService directly.
+        """
+        from authentication.services.cleanup_service import CleanupService
+        return CleanupService.cleanup_inactive_users(email_connection)
+
+    @staticmethod
+    def cleanup_unverified_users(max_verification_age=None):
+        """
+        Delete unverified users that haven't completed email verification.
+        
+        Args:
+            max_verification_age (int): Maximum time in seconds to wait for email verification
+        """
+        if max_verification_age is None:
+            max_verification_age = getattr(settings, 'EMAIL_VERIFICATION_TIMEOUT', 86400)  # Default: 1 day
+        
+        current_time = timezone.now()
+        cutoff_date = current_time - timedelta(seconds=max_verification_age)
+        
+        # Find unverified users who have exceeded the maximum verification time
+        # and who are NOT already anonymized users (starting with "deleted_user_")
+        unverified_users = CustomUser.objects.filter(
+            email_verified=False,
+            is_active=False,
+            date_joined__lt=cutoff_date
+        ).exclude(
+            username__startswith='deleted_user_'
+        )
+        
+        deleted_count = 0
+        
+        # Process each unverified user
+        for user in unverified_users:
+            logger.info(
+                f"🔥 Deleting unverified user {user.username}:\n"
+                f"- Registration date: {user.date_joined}\n"
+                f"- Cutoff date: {cutoff_date}\n"
+                f"- Current time: {current_time}"
             )
-            
-            unverified_users = base_query.filter(
-                is_active=False,
-                email_verified=False,
-                date_joined__lt=verification_threshold
-            ).exclude(is_superuser=True)
-
-            for user in unverified_users:
-                logger.info(
-                    f"Deleting unverified user {user.username}:\n"
-                    f"- Joined date: {user.date_joined}\n"
-                    f"- Current time: {current_time}"
-                )
-                cls.delete_user_data(user)  # Using the existing delete_user_data method
-
-            # 2. Process inactive verified users
-            active_sessions = UserSession.objects.filter(
-                last_activity__gt=current_time - timezone.timedelta(seconds=settings.INACTIVITY_THRESHOLD)
-            ).values_list('user_id', flat=True).distinct()
-
-            logger.info(f"Found {len(active_sessions)} active user sessions to exclude from cleanup")
-
-            # Base queryset excluding active users
-            base_query = base_query.exclude(
-                id__in=active_sessions
-            ).exclude(
-                is_superuser=True
-            ).filter(
-                is_active=True,
-                email_verified=True
-            )
-
-            # 3. Notify users approaching inactivity threshold
-            warning_threshold = current_time - timezone.timedelta(
-                seconds=settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
-            )
-            
-            users_to_notify = base_query.filter(
-                last_login__lt=warning_threshold,
-                inactivity_notified=False
-            )
-
-            for user in users_to_notify:
-                logger.info(f"Sending inactivity warning to user {user.username}")
-                MailSendingService.send_inactivity_warning(user, connection=email_connection)
-                user.inactivity_notified = True
-                user.inactivity_notification_date = current_time
-                user.save()
-
-            # 4. Delete inactive users who were notified and warning period expired
-            deletion_threshold = current_time - timezone.timedelta(
-                seconds=settings.INACTIVITY_THRESHOLD
-            )
-            warning_expiry = current_time - timezone.timedelta(
-                seconds=settings.INACTIVITY_WARNING
-            )
-
-            inactive_users = base_query.filter(
-                last_login__lt=deletion_threshold,
-                inactivity_notified=True,
-                inactivity_notification_date__lt=warning_expiry
-            )
-
-            # Double check for active sessions before deletion
-            inactive_users = inactive_users.exclude(
-                id__in=UserSession.objects.filter(
-                    last_activity__gt=deletion_threshold
-                ).values_list('user_id', flat=True)
-            )
-
-            logger.info(f"Found {inactive_users.count()} users to delete")
-            for user in inactive_users:
-                logger.info(
-                    f"Deleting user {user.username}:\n"
-                    f"- Last login: {user.last_login}\n"
-                    f"- Notification date: {user.inactivity_notification_date}\n"
-                    f"- Current time: {current_time}"
-                )
-                cls.delete_user_data(user)
-
-        except Exception as e:
-            logger.error(f"Error in cleanup_inactive_users: {str(e)}")
-            raise
+            try:
+                # Use delete_user_data for consistency with the rest of the system
+                GDPRService.delete_user_data(user)
+                deleted_count += 1
+            except Exception as e:
+                logger.error(f"Error deleting unverified user {user.username}: {str(e)}")
+        
+        # Only log if there's something to report
+        if deleted_count > 0:
+            logger.info(f"🧹 Deleted {deleted_count} unverified users past verification time")
+        
+        return deleted_count
