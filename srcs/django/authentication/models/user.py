@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.apps import apps
 from cryptography.fernet import Fernet
 import logging
 from django.utils import timezone
@@ -105,19 +106,63 @@ class CustomUser(AbstractUser):
         self.is_active = False
         self.save()
 
-    def is_inactive_for_too_long(self):
-        if not self.last_login:
-            return False
+    def get_last_activity(self):
+        """
+        Returns the most recent activity time from last_login, sessions or date_joined.
         
-        inactive_seconds = (timezone.now() - self.last_login).total_seconds()
-        return inactive_seconds >= settings.INACTIVITY_THRESHOLD
-    
+        This method determines the user's most recent activity by comparing:
+        - Last login timestamp
+        - Session activity records
+        - Account creation date (as fallback)
+        
+        Returns:
+            datetime: The most recent timestamp of user activity
+        """
+        UserSession = apps.get_model('authentication', 'UserSession')
+        
+        # If user has never logged in, use date_joined
+        last_activity = self.last_login or self.date_joined
+        
+        # Consider active sessions
+        active_session = UserSession.objects.filter(
+            user=self
+        ).order_by('-last_activity').first()
+        
+        if active_session and active_session.last_activity > last_activity:
+            return active_session.last_activity
+        
+        return last_activity
+
     def should_notify_inactivity(self):
-        if not self.last_login or self.inactivity_notified:
+        """
+        Check if user should receive inactivity warning.
+        
+        Returns:
+            bool: True if user should be notified, False otherwise
+        """
+        if self.inactivity_notified or not self.last_login:
             return False
             
-        inactive_seconds = (timezone.now() - self.last_login).total_seconds()
-        return inactive_seconds >= (settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING)
+        last_activity = self.get_last_activity()
+        inactive_seconds = (timezone.now() - last_activity).total_seconds()
+        return inactive_seconds >= settings.INACTIVITY_WARNING
+
+    def is_inactive_for_too_long(self):
+        """
+        Check if user should be deleted due to inactivity.
+        
+        Returns:
+            bool: True if user should be deleted, False otherwise
+        """
+        if not self.inactivity_notified or not self.inactivity_notification_date:
+            return False
+
+        current_time = timezone.now()
+        warning_age = (current_time - self.inactivity_notification_date).total_seconds()
+        total_inactive = (current_time - self.get_last_activity()).total_seconds()
+
+        return (warning_age >= settings.INACTIVITY_WARNING and 
+                total_inactive >= settings.INACTIVITY_THRESHOLD)
 
     class Meta:
         verbose_name = "Usuario"

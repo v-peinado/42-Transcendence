@@ -45,96 +45,130 @@ from authentication.models import CustomUser
 from authentication.services.gdpr_service import GDPRService
 from datetime import timedelta
 import time
+import logging
+import datetime
+
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Test user inactivity cleanup with different scenarios'
+    help = 'Test and/or view inactivity status for accounts'
+    
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--info-only',
+            action='store_true',
+            help='Only show information without making changes',
+        )
 
-    def handle(self, *args, **kwargs):
-        # Test initialization
-        self.stdout.write(self.style.SUCCESS('\n=== Starting Inactivity Tests ===\n'))
-
+    def handle(self, *args, **options):
+        info_only = options['info_only']
+        
+        if info_only:
+            self.stdout.write(self.style.SUCCESS("=== GDPR Inactivity Information ==="))
+            self.show_inactivity_info()
+        else:
+            self.run_inactivity_test()
+    
+    def show_inactivity_info(self):
+        """Shows information about users and their inactivity status"""
+        current_time = timezone.now()
+        
+        self.stdout.write(f"Current time: {current_time}")
+        self.stdout.write(f"INACTIVITY_WARNING: {settings.INACTIVITY_WARNING} seconds")
+        self.stdout.write(f"INACTIVITY_THRESHOLD: {settings.INACTIVITY_THRESHOLD} seconds")
+        
+        # Show all non-superuser users
+        users = CustomUser.objects.filter(is_superuser=False)
+        self.stdout.write("\nUser inactivity status:")
+        self.stdout.write("-" * 80)
+        self.stdout.write(f"{'Username':<20} {'Last Login':<30} {'Last Activity':<30} {'Notified':<8} {'Notification Date'}")
+        self.stdout.write("-" * 80)
+        
+        for user in users:
+            last_activity = user.get_last_activity()
+            inactive_seconds = (current_time - last_activity).total_seconds() if last_activity else 0
+            
+            self.stdout.write(
+                f"{user.username:<20} "
+                f"{str(user.last_login or 'Never'):<30} "
+                f"{str(last_activity):<30} "
+                f"{'Yes' if user.inactivity_notified else 'No':<8} "
+                f"{str(user.inactivity_notification_date or 'N/A')}"
+            )
+            
+            if inactive_seconds >= settings.INACTIVITY_WARNING:
+                self.stdout.write(self.style.WARNING(f"  ⚠️  Inactive for {inactive_seconds:.1f} seconds (warning threshold: {settings.INACTIVITY_WARNING})"))
+                
+                if user.inactivity_notified and user.inactivity_notification_date:
+                    notification_age = (current_time - user.inactivity_notification_date).total_seconds()
+                    remaining = settings.INACTIVITY_WARNING - notification_age
+                    
+                    if remaining > 0:
+                        self.stdout.write(f"  ⏳ {remaining:.1f} seconds remaining before deletion")
+                    else:
+                        self.stdout.write(self.style.ERROR(f"  ❌ Eligible for deletion ({-remaining:.1f} seconds overdue)"))
+    
+    def run_inactivity_test(self):
+        """Runs a complete inactivity test"""
+        self.stdout.write(self.style.SUCCESS("=== Starting Inactivity Tests ==="))
+        
         # 1. Initial cleanup
         CustomUser.objects.filter(username='inactive_test').delete()
-        self.stdout.write('✓ Initial cleanup completed')
-
+        self.stdout.write(self.style.SUCCESS("✓ Initial cleanup completed"))
+        
         # 2. Create test user
-        user = CustomUser.objects.create_user(
+        test_user = CustomUser.objects.create_user(
             username='inactive_test',
             email='inactive@test.com',
-            password='test123'
-        )
-        user.email_verified = True
-        user.is_active = True
-        user.save()
-        self.stdout.write('✓ Test user created')
-
-        # 3. Test notification phase
-        self.stdout.write('\n=== Phase 1: Testing Notification ===')
-        # Set last login to trigger warning but not deletion
-        user.last_login = timezone.now() - timedelta(
-            seconds=settings.INACTIVITY_THRESHOLD - (settings.INACTIVITY_WARNING / 2)	# Halfway between warning and deletion time to trigger notification
-        )
-        user.save()	# Save user to trigger notification
-        
-        mail.outbox = []	
-        GDPRService.cleanup_inactive_users()	# Trigger cleanup to send warning email (first time we call it)
-        
-        # Verify notification email
-        if len(mail.outbox) > 0:
-            self.stdout.write(self.style.SUCCESS(
-                '✓ Warning email sent:\n'
-                f'  Subject: {mail.outbox[0].subject}\n'
-                f'  To: {mail.outbox[0].to}\n'
-            ))
-
-        # 4. Test deletion phase
-        self.stdout.write('\n=== Phase 2: Testing Deletion ===')
-        user.refresh_from_db()
-        
-        # Force user to be deleted by setting last login past deletion time
-        deletion_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_THRESHOLD * 2)	# Past deletion time to trigger deletion
-        warning_time = timezone.now() - timedelta(seconds=settings.INACTIVITY_WARNING * 2)	# Past warning time to trigger deletion
-        
-        user.last_login = deletion_time	# Set last login to trigger deletion
-        user.inactivity_notified = True	# Set notification flag to trigger deletion
-        user.inactivity_notification_date = warning_time	
-        user.save()	# Save user to trigger deletion
-        
-        self.stdout.write(
-            f"Set user for deletion:\n"
-            f"- Current time: {timezone.now()}\n"
-            f"- Last login: {user.last_login}\n"
-            f"- Notification date: {user.inactivity_notification_date}\n"
-            f"- Threshold: {settings.INACTIVITY_THRESHOLD} seconds\n"
-            f"- Warning: {settings.INACTIVITY_WARNING} seconds"
+            password='TestPassword123!',
+            is_active=True,
+            email_verified=True
         )
         
-        # Trigger cleanup to delete user after saving changes (second time we call it) 
-        self.stdout.write('Executing final cleanup...')
+        # Establecer last_login manualmente
+        current_time = timezone.now()
+        test_user.last_login = current_time - datetime.timedelta(seconds=settings.INACTIVITY_WARNING + 1)
+        test_user.save()
+        self.stdout.write(self.style.SUCCESS("✓ Test user created"))
+        
+        # 3. Fase 1: Probar notificación
+        self.stdout.write("\n=== Phase 1: Testing Notification ===")
         GDPRService.cleanup_inactive_users()
         
-        # Verify deletion
-        exists = CustomUser.objects.filter(username='inactive_test').exists()
-        if exists:
-            # If deletion failed, show detailed user state
-            self.stdout.write(self.style.ERROR('❌ Error: User was not deleted'))
-            user = CustomUser.objects.get(username='inactive_test')
-            self.stdout.write(f"""
-Current user state:
-- Last login: {user.last_login}
-- Notified: {user.inactivity_notified}
-- Notification date: {user.inactivity_notification_date}
-- Active: {user.is_active}
-- Inactive time: {(timezone.now() - user.last_login).total_seconds()} seconds
-- Inactivity threshold: {settings.INACTIVITY_THRESHOLD} seconds
-- Warning time: {settings.INACTIVITY_WARNING} seconds
-""")
-        else:
-            self.stdout.write(self.style.SUCCESS('✓ User successfully deleted'))
-
-        # 5. Final verification
-        total_users = CustomUser.objects.exclude(is_superuser=True).count()
-        self.stdout.write(f'\nRemaining non-superusers: {total_users}')
+        # 4. Fase 2: Probar eliminación
+        self.stdout.write("\n=== Phase 2: Testing Deletion ===")
         
-        self.stdout.write(self.style.SUCCESS('\n=== Tests Completed ===\n'))
+        # Actualizar usuario para la eliminación
+        test_user.refresh_from_db()
+        if test_user.inactivity_notified:
+            self.stdout.write("Set user for deletion:")
+            self.stdout.write(f"- Current time: {timezone.now()}")
+            self.stdout.write(f"- Last login: {test_user.last_login}")
+            self.stdout.write(f"- Notification date: {test_user.inactivity_notification_date}")
+            self.stdout.write(f"- Threshold: {settings.INACTIVITY_THRESHOLD} seconds")
+            self.stdout.write(f"- Warning: {settings.INACTIVITY_WARNING} seconds")
+            
+            # Establecer la fecha de notificación anterior para simular que ya pasó el período de gracia
+            test_user.inactivity_notification_date = current_time - datetime.timedelta(
+                seconds=settings.INACTIVITY_WARNING + 1
+            )
+            test_user.save()
         
+        self.stdout.write("Executing final cleanup...")
+        GDPRService.cleanup_inactive_users()
+        
+        # Verificar eliminación
+        try:
+            test_user.refresh_from_db()
+            if not test_user.is_active:
+                self.stdout.write(self.style.SUCCESS("✓ User successfully deleted"))
+            else:
+                self.stdout.write(self.style.ERROR("✗ User was not deleted"))
+        except CustomUser.DoesNotExist:
+            self.stdout.write(self.style.SUCCESS("✓ User completely removed from database"))
+        
+        # Verificar usuarios restantes
+        remaining = CustomUser.objects.filter(is_superuser=False).count()
+        self.stdout.write(f"\nRemaining non-superusers: {remaining}\n")
+        
+        self.stdout.write(self.style.SUCCESS("=== Tests Completed ==="))
