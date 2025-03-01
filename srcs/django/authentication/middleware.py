@@ -75,5 +75,5 @@ class UserSessionMiddleware:
         except Exception as e:
             logger.error(f"Error updating user activity: {str(e)}")
 
-# Alias para compatibilidad hacia atrás
+# Alias for UserSessionMiddleware for consistency
 UpdateLastActivityMiddleware = UserSessionMiddleware
