@@ -27,7 +27,7 @@ urlpatterns = [
     path("", include("authentication.web.urls")),
     # Admin panel
     path("admin/", admin.site.urls),
-    # API de tournament
+    # API tournament
     path('api/tournament/', include('tournament.urls')),
     # API endpoints (production)
     path("api/", include("authentication.api.urls")),
@@ -35,7 +35,7 @@ urlpatterns = [
     path("chat/", views.chat, name="chat"),
     # Game
     path("game/", include("game.urls")),
-    # API de dashboard
+    # API dashboard
     path('api/dashboard/', include('dashboard.urls')),
 ]
 
