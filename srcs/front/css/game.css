@@ -1,0 +1,851 @@
+/* Game Container & Layout */
+.game-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    gap: 40px;
+}
+
+.game-wrapper {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-container {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+    margin: 0;
+    background: rgba(33, 37, 41, 0.95);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+    padding: 10px;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    border-radius: 15px;
+    background: rgba(16, 19, 34, 0.95);
+    margin-top: 20px;
+}
+
+/* Game Header & Scores */
+.minimal-header {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    z-index: 10;
+}
+
+.players-header {
+    position: absolute;
+    top: 30px; /* Alineado con los números */
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 40px; /* Espacio en los laterales */
+    z-index: 9;
+}
+
+.player-name-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+}
+
+.player-name-display:hover {
+    opacity: 1;
+}
+
+.player-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.player-controls {
+    display: flex;
+    gap: 2px;
+}
+
+.control-key {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    padding: 1px 3px;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.player-score {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 4rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 
+        0 0 10px rgba(255, 255, 255, 0.2),
+        0 0 20px rgba(255, 255, 255, 0.1);
+    min-width: 120px; /* Aumentado de 80px a 120px para más espacio */
+    text-align: center;
+    margin: 0 20px; /* Añadido margen a los lados */
+}
+
+.score-divider {
+    width: 2px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    margin: 0 20px; /* Añadido margen a los lados */
+}
+
+/* Game Header adicional */
+.game-header {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
+    z-index: 10;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);
+}
+
+/* Control Info */
+.control-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+    margin: 0 30px; /* Añadido margen a los lados */
+}
+
+.control-info:hover {
+    opacity: 1;
+}
+
+.control-info .player-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px; /* Añadido espacio debajo del nombre */
+}
+
+.control-info .keys {
+    display: flex;
+    gap: 4px;
+}
+
+.control-info .key {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+}
+
+/* Control Info adicional */
+.player-info {
+    text-align: center;
+    min-width: 150px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+/* Controles permanentes que faltaban */
+.control-side {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.6);
+    transition: opacity 0.3s ease;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    backdrop-filter: blur(5px);
+}
+
+.control-side.left { left: 20px; }
+.control-side.right { right: 20px; }
+
+.control-side:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Countdown */
+.countdown {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 
+        0 0 20px rgba(79, 172, 254, 0.5),
+        0 0 40px rgba(79, 172, 254, 0.3);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.countdown[textContent="GO!"] {
+    color: #4facfe;
+    font-size: 10rem;
+    text-shadow: 
+        0 0 30px rgba(79, 172, 254, 0.7),
+        0 0 50px rgba(79, 172, 254, 0.5);
+}
+
+/* Game Over Screen */
+.game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.game-over-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.result-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.result-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.result-icon i {
+    animation: scaleIn 0.5s ease-out;
+}
+
+.victory .result-icon i {
+    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.defeat .result-icon i {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    opacity: 0.9;
+}
+
+.victory-title {
+    font-size: 2.5rem;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: slideUp 0.5s ease-out;
+}
+
+.score-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+}
+
+.score-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.player-column {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.player-avatar {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.player-name {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+}
+
+.score {
+    font-size: 2.5rem;
+    font-weight: bold;
+    font-family: 'Roboto Mono', monospace;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.score-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.2rem;
+}
+
+.actions-container {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Victory/Defeat Styles */
+.victory-title {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+}
+
+.defeat-title {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
+}
+
+.final-score {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.score-separator {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+
+/* Ajustes de pantalla completa */
+.game-wrapper.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: rgba(16, 19, 34, 1);
+    margin: 0;
+    padding: 20px;
+}
+
+.game-wrapper.fullscreen #gameCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Animations */
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Overlay de controles temporal */
+.controls-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeInOut 3s ease-in-out forwards;
+    z-index: 5;
+}
+
+.control-hint {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.control-hint.left {
+    left: 40px;
+}
+
+.control-hint.right {
+    right: 40px;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes countdownPulse {
+    0% { 
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+    100% { 
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+
+.countdown-pulse {
+    animation: countdownPulse 0.8s ease-in-out;
+}
+
+/* Mejoras adicionales del Game Over */
+.winner-text {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.winner-text.victory {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(79, 172, 254, 0.5);
+}
+
+.winner-text.defeat {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 10px rgba(255, 107, 107, 0.5);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1400px) {
+    .game-wrapper {
+        width: 800px;
+        height: 480px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .game-section {
+        gap: 20px;
+    }
+
+    .game-wrapper {
+        width: 600px;
+        height: 360px;
+    }
+
+    .game-container {
+        width: 90%;
+        height: auto;
+        aspect-ratio: 16/9;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-section {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .game-over-content {
+        padding: 2rem;
+    }
+
+    .game-over-content h2 {
+        font-size: 2rem;
+    }
+
+    .final-score {
+        font-size: 2rem;
+        padding: 1rem;
+    }
+
+    .player-score {
+        font-size: 3rem;
+        min-width: 80px; /* Reducido en móviles */
+        margin: 0 10px; /* Reducido en móviles */
+    }
+
+    .score-divider {
+        height: 40px;
+        margin: 0 10px; /* Reducido en móviles */
+    }
+
+    .minimal-header {
+        top: 30px; /* Mantener la misma posición en móvil */
+    }
+
+    .players-header {
+        padding: 0 20px;
+    }
+
+    .player-name {
+        font-size: 0.7rem;
+    }
+
+    .control-key {
+        font-size: 0.6rem;
+    }
+
+    .control-info .key {
+        width: 20px;
+        height: 20px;
+        font-size: 0.6rem;
+    }
+}
+
+/* Nuevo estilo para controles laterales */
+.side-control {
+    position: absolute;
+    top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.side-control:hover {
+    opacity: 1;
+}
+
+.side-control.left {
+    left: 40px;
+}
+
+.side-control.right {
+    right: 40px;
+}
+
+.side-control .player-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.side-control .control-keys {
+    display: flex;
+    gap: 4px;
+}
+
+.side-control .key {
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+}
+
+/* Limpiar estilos anteriores que no necesitamos */
+.game-header,
+.players-header,
+.control-info {
+    display: none;
+}
+
+/* Ajustes responsive */
+@media (max-width: 768px) {
+    .side-control {
+        top: 20px;
+    }
+
+    .side-control.left {
+        left: 20px;
+    }
+
+    .side-control.right {
+        right: 20px;
+    }
+
+    .side-control .key {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
+
+    .side-control .player-name {
+        font-size: 0.7rem;
+    }
+}
+
+/* Match Found Modal */
+.match-found-screen {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.match-found-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.modal-title i {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.modal-title h2 {
+    font-size: 2rem;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.players-vs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 2rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+}
+
+.player-card {
+    text-align: center;
+    flex: 1;
+}
+
+.player-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(145deg, #2a2d3a 0%, #1f222e 100%);
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-avatar i {
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.player-card h3 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.vs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 2rem;
+}
+
+.vs-text {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4facfe;
+    margin-bottom: 0.5rem;
+}
+
+.vs-line {
+    width: 2px;
+    height: 60px;
+    background: linear-gradient(to bottom, 
+        transparent 0%,
+        #4facfe 50%,
+        transparent 100%);
+}
+
+.controls-info {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.controls-info h4 {
+    color: #4facfe;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.keys {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+    margin-bottom: 1rem;
+}
+
+.controls-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+
