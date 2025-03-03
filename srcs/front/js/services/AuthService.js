@@ -48,19 +48,6 @@ class AuthService {
     
     static requestPasswordReset = AuthPassword.requestPasswordReset;
     static resetPassword = AuthPassword.resetPassword;
-
-    static async getUserId() {
-        try {
-            const userInfo = await this.getUserProfile();
-            if (userInfo && userInfo.id) {
-                return userInfo.id.toString();
-            }
-            throw new Error('No user ID available');
-        } catch (error) {
-            console.error('Error getting user ID:', error);
-            return null;
-        }
-    }
 }
 
 export default AuthService;

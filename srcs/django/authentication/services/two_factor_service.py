@@ -9,55 +9,54 @@ from datetime import datetime, timedelta
 import secrets
 import random
 
+
 class TwoFactorService:
     @staticmethod
     def generate_2fa_code(user):
-        """Genera un código 2FA temporal usando JWT"""
+        """Generates a temporary 2FA code using JWT"""
         try:
-            # Verificar si el usuario es válido
+            # Check if user is valid
             if not user:
                 raise ValueError("Usuario no proporcionado")
-                
-            # Si nos pasan un ID en lugar del objeto usuario
+
+            # If we get an ID instead of a user object
             if not isinstance(user, CustomUser):
                 try:
                     user = CustomUser.objects.get(id=user)
                 except CustomUser.DoesNotExist:
                     raise ValueError("Usuario no encontrado")
 
-            # Generar código 2FA de 6 dígitos
+            # Generate 6-digit 2FA code
             code = str(random.randint(100000, 999999))
-            
-            # Crear payload JWT
+
+            # Create JWT payload
             payload = {
-                'user_id': user.id,
-                'code': code,
-                'exp': datetime.utcnow() + timedelta(minutes=5),  # 5 minutos de validez
-                'iat': datetime.utcnow(),
-                'type': '2fa'
+                "user_id": user.id,
+                "code": code,
+                "exp": datetime.utcnow() + timedelta(minutes=5),
+                "iat": datetime.utcnow(),
+                "type": "2fa",
             }
-            
-            # Generar token JWT
+
+            # Generate JWT token
             token = jwt.encode(
-                payload,
-                settings.JWT_SECRET_KEY,
-                algorithm=settings.JWT_ALGORITHM
+                payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
             )
-            
-            # Guardar código y timestamp
+
+            # Save code and timestamp
             user.last_2fa_code = code
             user.last_2fa_time = timezone.now()
             user.save()
-            
+
             return code
-            
+
         except Exception as e:
             raise ValueError(f"Error al generar código 2FA: {str(e)}")
 
     @staticmethod
     def verify_2fa_code(user, code):
-        """Verifica si el código 2FA es válido usando JWT"""
-        # Verificar que user sea un objeto CustomUser
+        """Verifies if the 2FA code is valid using JWT"""
+        # Verify that user is a CustomUser object
         if not isinstance(user, CustomUser):
             try:
                 user = CustomUser.objects.get(id=user)
@@ -66,53 +65,50 @@ class TwoFactorService:
         try:
             if not user.two_factor_secret or not code:
                 return False
-            
-            # Verificar tiempo de expiración
+
+            # Check expiration time
             time_diff = timezone.now() - user.last_2fa_time
-            if time_diff.total_seconds() > 300:  # 5 minutos
+            if time_diff.total_seconds() > 300:  # 5 minutes
                 return False
-            
+
             return user.last_2fa_code == code
-            
+
         except Exception:
             return False
 
     @staticmethod
     def send_2fa_code(user, code):
-        """Envía el código 2FA por email"""
-        subject = 'Tu código de verificación PongOrama'
-        context = {
-            'user': user,
-            'code': code
-        }
-        html_message = render_to_string('authentication/2fa_email.html', context)
-        
+        """Sends the 2FA code via email"""
+        subject = "Tu código de verificación PongOrama"
+        context = {"user": user, "code": code}
+        html_message = render_to_string("authentication/2fa_email.html", context)
+
         send_mail(
             subject,
             strip_tags(html_message),
             settings.DEFAULT_FROM_EMAIL,
             [user.decrypted_email],
             html_message=html_message,
-            fail_silently=False
+            fail_silently=False,
         )
 
     @staticmethod
     def enable_2fa(user):
-        """Habilita 2FA para un usuario"""
+        """Enables 2FA for a user"""
         try:
             user.two_factor_secret = secrets.token_hex(16)
-            
+
             user.two_factor_enabled = True
             user.save()
-            
+
             return True
-            
+
         except Exception as e:
             raise ValueError(f"Error al activar 2FA: {str(e)}")
 
     @staticmethod
     def disable_2fa(user):
-        """Deshabilita 2FA para un usuario"""
+        """Disables 2FA for a user"""
         user.two_factor_enabled = False
         user.two_factor_secret = None
         user.save()
@@ -120,17 +116,17 @@ class TwoFactorService:
 
     @staticmethod
     def verify_session(user_id, user_authenticated):
-        """Verifica la validez de la sesión para 2FA"""
+        """Verifies the validity of the session for 2FA"""
         try:
             if not user_id or not user_authenticated:
                 return False, None
-            
+
             user = CustomUser.objects.get(id=user_id)
             if not user.two_factor_enabled:
                 return False, None
-                
+
             return True, user
-            
+
         except CustomUser.DoesNotExist:
             return False, None
         except Exception:
@@ -138,14 +134,14 @@ class TwoFactorService:
 
     @staticmethod
     def clean_session_keys(session):
-        """Limpia las claves de sesión relacionadas con 2FA"""
+        """Cleans session keys related to 2FA"""
         keys_to_remove = [
-            'pending_user_id',
-            'user_authenticated',
-            'fortytwo_user',
-            'manual_user'
+            "pending_user_id",
+            "user_authenticated",
+            "fortytwo_user",
+            "manual_user",
         ]
-        
+
         for key in keys_to_remove:
             if key in session:
                 del session[key]

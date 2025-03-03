@@ -129,18 +129,6 @@ body #app .hero-section {
     z-index: -1;
 }
 
-/* Estilos específicos para los tabs del perfil */
-.profile-section .tab-content {
-    display: none;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.profile-section .tab-content.active {
-    display: block;
-    opacity: 1;
-}
-
 /* Profile tabs */
 .profile-tabs {
     border-bottom: none !important;
@@ -909,86 +897,6 @@ body #app .hero-section {
     width: 1rem;
     height: 1rem;
     background-size: 1rem;
-}
-
-/* Profile específico */
-.profile-view .nav-tabs {
-    border-bottom: none !important;
-    margin-bottom: 2rem;
-    gap: 0.5rem;
-    position: relative;
-    padding: 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-}
-
-.profile-view .nav-link {
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 500;
-    padding: 1rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    background: transparent;
-}
-
-.profile-view .nav-link:hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.profile-view .nav-link.active {
-    color: white;
-    background: rgba(13, 110, 253, 0.15);
-    box-shadow: 
-        0 0 0 1px rgba(13, 110, 253, 0.2),
-        0 4px 12px rgba(13, 110, 253, 0.1);
-}
-
-.profile-view .tab-content {
-    background: rgba(33, 37, 41, 0.95);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0 0 1rem 1rem;
-    padding: 2rem;
-}
-
-/* Chat específico */
-.chat-view .nav-tabs {
-    border: none;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background: rgba(30, 41, 59, 0.4);
-    border-radius: 8px;
-}
-
-.chat-view .nav-link {
-    color: rgba(255, 255, 255, 0.7);
-    padding: 0.75rem 1rem;
-    border: none;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    background: rgba(15, 23, 42, 0.3);
-    margin-right: 0.5rem;
-}
-
-.chat-view .nav-link:hover {
-    color: white;
-    background: rgba(66, 153, 225, 0.15);
-}
-
-.chat-view .nav-link.active {
-    color: white;
-    background: rgba(66, 153, 225, 0.2);
-    box-shadow: 0 0 15px rgba(66, 153, 225, 0.2);
-}
-
-.chat-view .tab-content {
-    background: rgba(30, 41, 59, 0.4);
-    border: 1px solid rgba(66, 153, 225, 0.1);
-    border-radius: 8px;
-    padding: 1rem;
 }
 
 /* Responsive adjustments */

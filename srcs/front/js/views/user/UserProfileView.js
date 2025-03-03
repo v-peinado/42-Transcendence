@@ -120,12 +120,6 @@ export async function UserProfileView() {
         errorDiv.textContent = `Error cargando el perfil: ${error.message}`;
         app.appendChild(errorDiv);
     }
-
-    console.log('Templates disponibles:', {
-        userInfoTemplate: document.getElementById('userInfoTemplate'),
-        profileModals: document.getElementById('profileModals'),
-        alertTemplate: document.getElementById('alertTemplate')
-    });
 }
 
 function cleanupTemplates() {
@@ -139,40 +133,27 @@ function cleanupTemplates() {
     });
 }
 
+// Función auxiliar para inicializar pestañas
 function initializeTabs() {
-    const tabs = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
-    
-    tabs.forEach(tab => {
-        const targetId = tab.getAttribute('data-bs-target');
-        
+    const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabElements.forEach(tab => {
+        const tabTrigger = new bootstrap.Tab(tab);
         tab.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // Remover clases active de todos los tabs y panes
-            document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(p => {
-                p.classList.remove('active', 'show');
-                p.style.display = 'none';
+            const targetId = tab.dataset.bsTarget;
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active', 'show');
             });
-            
-            // Activar el tab actual
+            document.querySelector(targetId).classList.add('active', 'show');
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
             tab.classList.add('active');
-            
-            // Activar el panel correspondiente
-            const targetPane = document.querySelector(targetId);
-            if (targetPane) {
-                targetPane.classList.add('active', 'show');
-                targetPane.style.display = 'block';
-            }
         });
     });
-
-    const firstTab = tabs[0];
-    if (firstTab) {
-        firstTab.click();
-    }
 }
 
+// Función auxiliar para mostrar errores
 function showErrorMessage(container, error) {
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-danger m-3';
@@ -267,15 +248,19 @@ function setupProfileEvents() {
         }
     });
 
+    // Event listener para mostrar modal de eliminar cuenta
     document.getElementById('deleteAccountBtn')?.addEventListener('click', async () => {
         try {
+            // 1. Obtener información del usuario
             const userInfo = await AuthService.getUserProfile();
             
+            // 2. Obtener y clonar el template
             const template = document.getElementById('profileModals');
             if (!template) {
                 throw new Error('Template de modales no encontrado');
             }
 
+            // 3. Verificar si el modal ya existe en el DOM
             let modalElement = document.getElementById('deleteAccountModal');
             if (!modalElement) {
                 const modalContent = template.content.cloneNode(true);

@@ -5,29 +5,33 @@ from django.contrib import messages
 from ...services.gdpr_service import GDPRService
 import json
 
+
 @login_required
 def gdpr_settings(request):
-    """Vista para configuración GDPR"""
-    return render(request, 'authentication/gdpr_settings.html')
+    """GDPR settings view"""
+    return render(request, "authentication/gdpr_settings.html")
+
 
 @login_required
 def export_personal_data(request):
-    """Vista para exportar datos personales"""
+    """View for exporting personal data"""
     try:
-        # Obtener datos del usuario usando el servicio GDPR
+        # Get user data using GDPR service
         data = GDPRService.export_user_data(request.user)
-        
-        # Preparar respuesta JSON para descarga
+
+        # Prepare JSON response for download
         response = HttpResponse(
-            json.dumps(data, indent=4, default=str),
-            content_type='application/json'
+            json.dumps(data, indent=4, default=str), content_type="application/json"
         )
-        response['Content-Disposition'] = f'attachment; filename="{request.user.username}_data.json"'
+        response["Content-Disposition"] = (
+            f'attachment; filename="{request.user.username}_data.json"'
+        )
         return response
     except Exception as e:
         messages.error(request, f"Error al exportar datos: {str(e)}")
-        return redirect('gdpr_settings')
+        return redirect("gdpr_settings")
+
 
 def privacy_policy(request):
-    """Vista para mostrar política de privacidad"""
-    return render(request, 'authentication/privacy_policy.html')
+    """View to display privacy policy"""
+    return render(request, "authentication/privacy_policy.html")

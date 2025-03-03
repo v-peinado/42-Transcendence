@@ -221,14 +221,19 @@ async function handleFormSubmit(e) {
         }
         
         if (result.status === 'pending_2fa') {
-            handlePending2FA(username);
+            sessionStorage.setItem('pendingAuth', 'true');
+            sessionStorage.setItem('pendingUsername', username);
+            const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+            modal.show();
+            document.getElementById('code').value = '';
+            document.getElementById('code').focus();
             return;
         }
 
-        showError(result.message || 'Error en el inicio de sesión');
+        showError('Ha ocurrido un error inesperado');
     } catch (error) {
         console.error('Error en login:', error);
-        alertDiv.innerHTML = error.message;
+        showError(error.message || 'Ha ocurrido un error inesperado');
     }
 }
 

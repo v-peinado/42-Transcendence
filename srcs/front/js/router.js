@@ -1,17 +1,16 @@
+// Importar solo los módulos que existen por ahora
 import { LoginView } from '/js/views/auth/LoginView.js';
 import { RegisterView } from '/js/views/auth/RegisterView.js';
-import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';
-import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';
-import { UserProfileView } from '/js/views/user/UserProfileView.js';
+import { VerifyEmailView } from '/js/views/auth/VerifyEmailView.js';  // Nuevo
+import { VerifyEmailChangeView } from '/js/views/auth/VerifyEmailChangeView.js';  // Nueva importación
+import { UserProfileView } from '/js/views/user/UserProfileView.js';  // Mantener solo UserProfileView
 import { RequestPasswordResetView } from '/js/views/auth/RequestPasswordResetView.js';
 import { ResetPasswordView } from '/js/views/auth/ResetPasswordView.js';
 import { GDPRSettingsView } from '/js/views/user/GDPRSettingsView.js';
-import { NotFoundView } from '/js/views/NotFoundView.js';
+import { NotFoundView } from '/js/views/NotFoundView.js';  // Añadir esta importación al inicio con las otras
 import AuthService from '/js/services/AuthService.js';
 import { getNavbarHTML } from '/js/components/Navbar.js';
 import { loadHTML, replaceContent } from '/js/utils/htmlLoader.js';
-import GameView from './views/game/GameView.js';
-import { GameMatchView } from '/js/views/game/GameMatchView.js';
 
 class Router {
     constructor() {
@@ -85,19 +84,16 @@ class Router {
         },
         '/login': LoginView,
         '/register': RegisterView,
-        '/verify-email/:uid/:token': VerifyEmailView,
-        '/verify-email-change/:uid/:token': VerifyEmailChangeView,
-        '/verify-email-change/:uid/:token/': VerifyEmailChangeView,
-        '/profile': UserProfileView,
-        '/profile/': UserProfileView,
+        '/verify-email/:uid/:token': VerifyEmailView,  // Nueva ruta para verificación
+        '/verify-email-change/:uid/:token': VerifyEmailChangeView,  // Añadir esta ruta
+        '/verify-email-change/:uid/:token/': VerifyEmailChangeView,  // Añadir slash final
+        '/profile': UserProfileView,  // Mantener solo la ruta de profile
+        '/profile/': UserProfileView, // Con slash final también
         '/reset_password': RequestPasswordResetView,
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
         '/gdpr-settings/': GDPRSettingsView,
-        '/game': GameView,
-        '/game/': GameView,
-        '/game/:id': GameMatchView,  // Definición de ruta con parámetro
-        '/404': NotFoundView,
+        '/404': NotFoundView,  // Reemplazar la función anónima existente con NotFoundView
     };
 
     async renderHomePage(isAuthenticated, userInfo = null) {
@@ -148,19 +144,12 @@ class Router {
     async handleLogout() {
         try {
             await AuthService.logout();
-            // Desconectar WebSocket antes de limpiar
-            webSocketService.disconnect();
-            // Limpiar todo
-            localStorage.clear();
-            sessionStorage.clear();
-            // Limpiar cookies
-            document.cookie.split(';').forEach(cookie => {
-                const name = cookie.split('=')[0].trim();
-                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-            });
-            window.location.href = '/';
         } catch (error) {
             console.error('Error en logout:', error);
+        } finally {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
         }
     }
 
@@ -245,22 +234,13 @@ class Router {
     }
 
     async handleRoute() {
-        const path = window.location.pathname + window.location.search;
-        console.log('Manejando ruta completa:', path);
-
+        const path = window.location.pathname + window.location.search;  // Incluir query params
+        console.log('Manejando ruta completa:', path);  // Debug
+        
         // Reset data-page attribute
         document.body.removeAttribute('data-page');
-
-        // Manejar rutas de juego específicamente
-        if (path.startsWith('/game/')) {
-            const gameMatch = path.match(/^\/game\/(\d+)$/);
-            if (gameMatch) {
-                const gameId = gameMatch[1];
-                console.log('Cargando partida:', gameId);
-                await GameMatchView(gameId);
-                return;
-            }
-        }
+        
+        console.log('Ruta actual:', path);
 
         // Manejar login con código de 42
         if (path.startsWith('/login') && path.includes('code=')) {
@@ -268,7 +248,7 @@ class Router {
             return;
         }
 
-        // Manejar verificación de email
+        // Manejar verificación de email sin redirección automática
         if (path.includes('/verify-email/')) {
             const parts = path.split('/verify-email/')[1].split('/');
             if (parts.length >= 2) {
@@ -280,12 +260,12 @@ class Router {
             }
         }
 
-        // Verificar cambio de email
+        // Manejar verificación de cambio de email sin redirección automática
         if (path.includes('/verify-email-change/')) {
             const parts = path.split('/verify-email-change/')[1].split('/');
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
-                const token = parts[1];
+                const token = parts[1];  // Quitar el replace('/', '') porque necesitamos el slash
                 console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
                 return;
@@ -293,21 +273,32 @@ class Router {
         }
 
         // Verificar rutas protegidas
-        if ((path.startsWith('/profile') || path.startsWith('/game')) && 
-            localStorage.getItem('isAuthenticated') !== 'true') {
+        if (path.startsWith('/profile') && localStorage.getItem('isAuthenticated') !== 'true') {
             window.location.href = '/login';
             return;
         }
 
-        const normalizedPath = path.split('?')[0];
+        // Verificar autenticación pendiente para rutas protegidas
+        if (path.startsWith('/profile')) {
+            if (sessionStorage.getItem('pendingAuth') === 'true') {
+                // Redirigir de vuelta al login si hay auth pendiente
+                window.location.replace('/login');
+                return;
+            }
+            if (localStorage.getItem('isAuthenticated') !== 'true') {
+                window.location.replace('/login');
+                return;
+            }
+        }
+
+        const normalizedPath = path.split('?')[0];  // Eliminar query params para matching
         const route = this.routes[normalizedPath] || this.routes['/404'];
         
         if (typeof route === 'function') {
-            try {
+            if (route.constructor.name === 'AsyncFunction') {
                 await route();
-            } catch (error) {
-                console.error('Error al cargar la ruta:', error);
-                this.routes['/404']();
+            } else {
+                route();
             }
         }
     }
