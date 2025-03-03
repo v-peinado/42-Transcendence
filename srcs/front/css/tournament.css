@@ -1,0 +1,463 @@
+/* Estilos base de la lista de torneos */
+.tournament-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+    margin: -0.5rem;
+}
+
+.tournament-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.tournament-item:hover {
+    transform: translateX(5px);
+    background: rgba(var(--neon-color-rgb), 0.1);
+    border-color: var(--neon-color);
+    box-shadow: 0 0 15px rgba(var(--neon-color-rgb), 0.2);
+}
+
+.tournament-item:last-child {
+    margin-bottom: 0;
+}
+
+.tournament-item .glowing-text {
+    font-size: 1rem;
+    color: var(--neon-color);
+}
+
+.tournament-item .tournament-badge {
+    background: rgba(var(--neon-color-rgb), 0.2);
+    color: var(--neon-color);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.tournament-item .tournament-text-dim {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+.tournament-item .actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tournament-item .game-button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* Modal y overlay - Simplificado */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+}
+
+.game-modal {
+    position: fixed;
+    top: 60%;  /* Aumentado a 60% */
+    left: 50%;
+    transform: translate(-50%, -40%);  /* Ajustado para compensar */
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    background: #1a1e2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    padding: 1.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--neon-color-rgb), 0.5) rgba(255, 255, 255, 0.1);
+}
+
+.game-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.game-modal::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin: 10px;
+}
+
+.game-modal::-webkit-scrollbar-thumb {
+    background: rgba(var(--neon-color-rgb), 0.5);
+    border-radius: 4px;
+    border: 2px solid #1a1e2e;
+}
+
+.game-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--neon-color-rgb), 0.7);
+}
+
+.game-modal.show {
+    display: block;
+    animation: modalSlideIn 0.3s ease forwards;
+}
+
+/* Formulario - Simplificado */
+.tournament-form {
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tournament-form .modal-title {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+.tournament-form .form-group {
+    margin-bottom: 0;  /* Eliminamos el margen bottom por defecto */
+}
+
+.tournament-form .form-label {
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+    opacity: 0.95;
+}
+
+.tournament-form input,
+.tournament-form select,
+.custom-input,
+.form-select {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.tournament-form input:focus,
+.tournament-form select:focus,
+.custom-input:focus,
+.form-select:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--neon-color);
+    box-shadow: 0 0 0 2px rgba(var(--neon-color-rgb), 0.2);
+    outline: none;
+}
+
+/* Ajuste para los botones del formulario */
+.tournament-form .d-flex {
+    margin-top: 0.5rem; /* Añadido margen superior más pequeño */
+}
+
+.tournament-form .game-button {
+    padding: 0.4rem 1rem; /* Ajustado para botones más grandes */
+    font-size: 1rem; /* Aumentado de 0.9rem */
+}
+
+/* Estilo para el contenedor de jugadores */
+#tournament-players .mb-3 {
+    margin-bottom: 0.5rem !important; /* Reducido */
+}
+
+#tournament-players input {
+    margin-top: 0.25rem; /* Espaciado reducido */
+}
+
+/* Notificaciones */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    background: rgba(33, 37, 41, 0.95);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.alert-success {
+    background: rgba(40, 167, 69, 0.95);
+}
+
+.notification.alert-error {
+    background: rgba(220, 53, 69, 0.95);
+}
+
+/* Botón de crear torneo */
+.game-mode-card.clickable {
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-mode-card.clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(var(--neon-color-rgb), 0.3);
+}
+
+.game-mode-card.clickable:active {
+    transform: translateY(-2px);
+}
+
+/* Animaciones */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -43%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -40%);
+    }
+}
+
+/* Media queries */
+@media (max-width: 992px) {
+    .game-modes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-height: 700px) {
+    .game-modal {
+        top: 0;
+        transform: translate(-50%, 0);
+        margin-top: 5rem; /* Espacio para el navbar */
+        height: auto;
+        max-height: calc(100vh - 6rem); /* Altura máxima considerando márgenes */
+        overflow-y: auto;
+    }
+}
+
+/* Ajustes para el layout del formulario */
+.flex-1 {
+    flex: 1;
+}
+
+.form-row {
+    width: 100%;
+}
+
+.players-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Estilos para la lista de torneos en espera */
+#tournaments-pending .card-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#tournaments-pending-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 300px;
+    margin-top: 1rem;
+    padding-right: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--neon-color-rgb), 0.5) rgba(255, 255, 255, 0.1);
+}
+
+#tournaments-pending-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#tournaments-pending-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+#tournaments-pending-list::-webkit-scrollbar-thumb {
+    background: rgba(var(--neon-color-rgb), 0.5);
+    border-radius: 3px;
+}
+
+#tournaments-pending-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--neon-color-rgb), 0.7);
+}
+
+/* Estilos para el contador de torneos pendientes */
+.pending-count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.count-badge {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--neon-color);
+    text-shadow: 0 0 10px rgba(var(--neon-color-rgb), 0.5);
+}
+
+.detail-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Estilos para el modal de torneos pendientes */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header .modal-subtitle {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover {
+    color: var(--neon-color);
+}
+
+.pending-tournaments-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pending-tournament-item {
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0%, rgba(var(--neon-color-rgb), 0.05) 100%);
+    border: 1px solid rgba(var(--neon-color-rgb), 0.1);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.pending-tournament-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--neon-color-rgb), 0.3);
+    box-shadow: 0 4px 15px rgba(var(--neon-color-rgb), 0.1);
+}
+
+.pending-tournament-item .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.pending-tournament-item .title-section {
+    flex: 1;
+}
+
+.pending-tournament-item .title {
+    font-size: 1.4rem;
+    color: var(--neon-color);
+    margin: 0;
+    text-shadow: 0 0 10px rgba(var(--neon-color-rgb), 0.3);
+}
+
+.pending-tournament-item .tournament-info {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.pending-tournament-item .info-badge {
+    background: rgba(var(--neon-color-rgb), 0.1);
+    color: var(--neon-color);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pending-tournament-item .participants {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.pending-tournament-item .participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.pending-tournament-item .participant {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.pending-tournament-item .participant-number {
+    color: var(--neon-color);
+    font-weight: bold;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.pending-tournament-item .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pending-tournament-item .game-button {
+    padding: 0.5rem 1.25rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pending-tournament-item .game-button.primary-sm {
+    background: rgba(var(--neon-color-rgb), 0.2);
+    border: 1px solid var(--neon-color);
+}
+
+.pending-tournament-item .game-button.primary-sm:hover {
+    background: rgba(var(--neon-color-rgb), 0.3);
+    transform: translateY(-2px);
+}

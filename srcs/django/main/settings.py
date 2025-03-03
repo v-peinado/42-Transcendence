@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "tournament",
     "corsheaders",
     "game",
+    "dashboard",
 ]
 
 # Middleware configuration (intermediaries through which requests pass between client and application)

@@ -2,7 +2,6 @@ import asyncio
 from channels.db import database_sync_to_async
 from django.db import transaction
 
-
 class GameStateHandler:
     """Game state updates handler"""
 

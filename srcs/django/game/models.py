@@ -8,13 +8,13 @@ class GameConfig(AppConfig):  # App configuration
     name = "game"
 
 
-class Game(models.Model):  # Database model:
-    created_at = models.DateTimeField(auto_now_add=True)  # Creation date
-    started_at = models.DateTimeField(null=True)  # Start date
+class Game(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
     finished_at = models.DateTimeField(null=True)
-    player1 = models.ForeignKey(  # Player 1
-        settings.AUTH_USER_MODEL,  # User model
-        on_delete=models.CASCADE,  # Cascade deletion (if user is deleted, game is deleted)
+    player1 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
         related_name="games_as_player1",
     )
     player2 = models.ForeignKey(
@@ -23,23 +23,27 @@ class Game(models.Model):  # Database model:
         related_name="games_as_player2",
         null=True,
     )
-    score_player1 = models.IntegerField(default=0)  # Players' scores
+    score_player1 = models.IntegerField(default=0)
     score_player2 = models.IntegerField(default=0)
-    winner = models.ForeignKey(  # Winning player
+    winner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="games_won",
         null=True,
     )
-    status = models.CharField(  # Game status
+    status = models.CharField(
         max_length=20,
         choices=[
             ("WAITING", "Waiting for players"),
+            ("MATCHED", "Matched"),
             ("PLAYING", "In progress"),
             ("FINISHED", "Finished"),
         ],
         default="WAITING",
     )
+    # Campos para marcar que cada jugador se ha unido (listo)
+    player1_ready = models.BooleanField(default=False)
+    player2_ready = models.BooleanField(default=False)
 
-    class Meta:  # Metaclass
-        ordering = ["-created_at"]  # Order by creation date
+    class Meta:
+        ordering = ["-created_at"]

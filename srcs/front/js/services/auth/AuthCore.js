@@ -39,7 +39,11 @@ export class AuthCore {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
                 
-                // Añadir esta línea para guardar el estado del 2FA
+                // Solo añadir esta línea para el ID de usuario
+                if (data.user_id) {
+                    localStorage.setItem('user_id', data.user_id.toString());
+                }
+                
                 if (data.two_factor_enabled) {
                     localStorage.setItem('two_factor_enabled', 'true');
                 }
@@ -60,6 +64,18 @@ export class AuthCore {
             }
             throw error;
         }
+    }
+
+    formatErrorMessage(message) {
+        return `
+            <div class="alert alert-danger fade show d-flex align-items-center">
+                <i class="fas fa-triangle-exclamation fa-shake"></i>
+                <div class="ms-2">
+                    <h6 class="alert-heading mb-1">¡Error!</h6>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
     }
 
     static async logout() {
@@ -96,3 +112,5 @@ export class AuthCore {
         }
     }
 }
+
+export default new AuthCore();

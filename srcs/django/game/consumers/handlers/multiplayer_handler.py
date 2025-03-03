@@ -1,6 +1,7 @@
 import asyncio
 from channels.db import database_sync_to_async
 from django.db import transaction
+from game.models import Game
 
 
 class MultiplayerHandler:
@@ -8,49 +9,44 @@ class MultiplayerHandler:
 
     @staticmethod
     async def handle_player_join(consumer, game):
-        """Start or join multiplayer game"""
-        if game.status != "WAITING":  # When trying to join after game has started
-            raise ValueError("Cannot join a game that has already started")
-
-        player1 = await database_sync_to_async(getattr)(
-            game, "player1"
-        )  # Player 1 is the game creator
-
-        if player1 == consumer.user:  # If current user is player 1
+        # Determinar el rol del jugador y marcarlo como listo
+        if game.player1 == consumer.user:
             consumer.side = "left"
-        else:  # If current user is player 2
+            await MultiplayerHandler.mark_player_ready(game, role="player1")
+        else:
             consumer.side = "right"
+            # Si por alguna razón aún no se ha asignado player2, se asigna ahora
+            if game.player2 != consumer.user:
+                await MultiplayerHandler.set_player2(game, consumer.user)
+            await MultiplayerHandler.mark_player_ready(game, role="player2")
 
-            @database_sync_to_async
-            def update_game():
-                with transaction.atomic():  # Operation is atomic (all or nothing)
-                    game.refresh_from_db()  # Refresh game from database
-                    game.player2 = consumer.user  # Set player 2 as current user
-                    game.status = "PLAYING"  # Set game status to 'PLAYING'
-                    game.save()  # Save game to database
-                return game  # Return updated game
-
-            await update_game()
-
-            # Notify both players about game start
+        # Obtener el juego actualizado para ver si ambos jugadores están listos
+        updated_game = await MultiplayerHandler.get_game(game.id)
+        if (updated_game.player1_ready and updated_game.player2_ready) and (updated_game.status != "PLAYING"):
+            # Actualizamos el estado a PLAYING
+            updated_game = await MultiplayerHandler.update_game_status(updated_game, "PLAYING")
+            # Notificamos a ambos jugadores que la partida inicia
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {
                     "type": "game_start",
-                    "player1": player1.username,
-                    "player2": consumer.user.username,
-                    "player1_id": player1.id,
-                    "player2_id": consumer.user.id,
+                    "player1": updated_game.player1.username,
+                    "player2": updated_game.player2.username,
+                    "player1_id": updated_game.player1.id,
+                    "player2_id": updated_game.player2.id,
+                    "game_id": updated_game.id,
                 },
             )
-
+            # Iniciamos el countdown y arrancamos el game loop
             consumer.game_state.status = "countdown"
             await consumer.game_state.start_countdown()
             asyncio.create_task(consumer.game_loop())
-
+            
     @staticmethod
     async def handle_player_disconnect(consumer):
         """Handle player disconnection (desertion)"""
+        if consumer.game_state.status == "finished":
+            return
         if hasattr(consumer, "side"):
             winner_side = (
                 "right" if consumer.side == "left" else "left"
@@ -85,3 +81,31 @@ class MultiplayerHandler:
                     },
                 },
             )
+            
+    @staticmethod
+    @database_sync_to_async
+    def mark_player_ready(game, role):
+        if role == "player1":
+            game.player1_ready = True
+        elif role == "player2":
+            game.player2_ready = True
+        game.save()
+
+    @staticmethod
+    @database_sync_to_async
+    def set_player2(game, user):
+        if game.player2 != user:
+            game.player2 = user
+            game.save()
+
+    @staticmethod
+    @database_sync_to_async
+    def update_game_status(game, status):
+        game.status = status
+        game.save()
+        return game
+
+    @staticmethod
+    @database_sync_to_async
+    def get_game(game_id):
+        return Game.objects.select_related("player1", "player2").get(id=game_id)

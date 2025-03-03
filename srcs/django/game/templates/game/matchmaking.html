@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matchmaking</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Matchmaking</h1>
+        <p>Waiting for another player...</p>
+    </div>
+    <script>
+        class GameService {
+            static joinMatchmaking() {
+                const socket = new WebSocket(`ws://${window.location.host}/ws/matchmaking/`);
+        
+                socket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    console.log('Matched Matchmaking:', data);
+                    if (data.status === 'matched') {
+                        // Esperamos 3 segundos antes de redirigir a la página del juego
+                        //setTimeout(() => {
+                            window.location.href = `/game/game/${data.game_id}/`;
+                        //}, 3000); // 3000 milisegundos = 3 segundos
+                    }
+                };
+        
+                socket.onclose = function(event) {
+                    console.log('WebSocket closed:', event);
+                };
+        
+                return socket;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            GameService.joinMatchmaking();
+        });
+    </script>
+</body>
+</html>

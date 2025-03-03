@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tournament Menu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <link href="/css/styles.css" rel="stylesheet" />
+  <style>
+    /* Estilos para el canvas del juego */
+    canvas {
+      border: 1px solid #000;
+      background-color: rgb(85, 5, 45);
+    }
+    /* Estilo principal de la página */
+    h1 {
+      color: rgb(28, 42, 236);
+      font-size: 3rem;
+      font-family: 'roboto';
+    }
+    #welcomeMessage {
+      margin-bottom: 20px;
+    }
+    #createTournamentBtn {
+      margin-bottom: 20px;
+    }
+    /* Secciones de nombres y scores (ocultas por defecto; se muestran solo en partida) */
+    #playerNames, #scores {
+      display: none;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+    }
+    #playerNames p, #scores p {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #343a40;
+      margin: 0.5rem 0;
+    }
+    /* Contenedor principal para la UI del match (enfrentamiento actual, anuncios, etc.) */
+    #matchPlayers {
+      font-size: 2rem;
+      color: #fff;
+      background-color: #007bff;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    /* Encabezado cuando el torneo finaliza */
+    #matchPlayers h3 {
+      margin: 0;
+      font-size: 2.5rem;
+      color: #ffcc00;
+    }
+    /* Contenedor para la lista de partidos pendientes del torneo (opcional) */
+    #tournamentPendingMatches {
+      display: none;
+      margin-top: 10px;
+      font-size: 1.2rem;
+      color: #007bff;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <!-- Sección de formularios: creación de torneo, agregar participantes, etc. -->
+    <div id="welcomeMessage" class="mb-3"></div>
+    <h1>Tournament Menu</h1>
+    <button id="createTournamentBtn" class="btn btn-primary mb-3">Create Tournament</button>
+    <div id="createTournamentForm" class="mb-3" style="display: none;">
+      <h2>Create Tournament</h2>
+      <form id="tournamentForm">
+        <div class="mb-3">
+          <label for="tournamentName" class="form-label">Tournament Name</label>
+          <input type="text" class="form-control" id="tournamentName" required />
+        </div>
+        <div class="mb-3">
+          <label for="maxMatchPoints" class="form-label">Max Match Points</label>
+          <input type="number" class="form-control" id="maxMatchPoints" required />
+        </div>
+        <div class="mb-3">
+          <label for="numberOfPlayers" class="form-label">Number of Players</label>
+          <input type="number" class="form-control" id="numberOfPlayers" required />
+        </div>
+        <button type="submit" class="btn btn-success">Next</button>
+        <button type="button" id="cancelTournamentBtn" class="btn btn-secondary">Cancel</button>
+      </form>
+    </div>
+    <div id="addParticipantsForm" class="mb-3" style="display: none;">
+      <h2>Add Participants</h2>
+      <form id="participantForm">
+        <div class="mb-3">
+          <label for="participantName" class="form-label">Participant Name</label>
+          <input type="text" class="form-control" id="participantName" required />
+        </div>
+        <button type="submit" class="btn btn-success">Add Participant</button>
+        <button type="button" id="createTournamentFinalBtn" class="btn btn-primary" style="display: none;">Create Tournament</button>
+        <button type="button" id="cancelParticipantsBtn" class="btn btn-secondary">Cancel</button>
+      </form>
+      <p id="participantsCount" class="mt-3">0 / 0 participantes</p>
+      <ul id="participantsList" class="list-group mt-3"></ul>
+    </div>
+    <!-- Listados de torneos jugados y pendientes (se actualizan mediante llamadas a la API sin recargar la página) -->
+    <h2>Played Tournaments</h2>
+    <ul id="playedTournamentsList" class="list-group mb-3"></ul>
+    <h2>Pending Tournaments</h2>
+    <ul id="pendingTournamentsList" class="list-group"></ul>
+    <!-- UI para el match en curso (enfrentamiento actual, resultados, anuncios, etc.) -->  
+    <div id="matchPlayers"></div>
+    <!-- Sección para mostrar los nombres de los jugadores (solo durante la partida) -->  
+    <div id="playerNames">
+      <p id="player1Name"></p>
+      <p id="player2Name"></p>
+    </div>
+    <!-- Sección para mostrar los puntajes (solo durante la partida) -->  
+    <div id="scores">
+      <p id="player1Score"></p>
+      <p id="player2Score"></p>
+    </div>
+    <!-- Contenedor para la lista de partidos pendientes del torneo (opcional) -->  
+    <div id="tournamentPendingMatches"></div>
+    <!-- Canvas del juego (inicialmente oculto) -->  
+    <canvas id="canvasId" width="1000" height="600" style="display: none;"></canvas>
+  </div>
+
+  <script>
+    // Referencia global para actualizar la UI sin recargar la página
+    let tournamentMenuInstance;
+
+    /*------------------------------------------------------------------*/
+    /*  SERVICES: Clases para llamadas a la API                         */
+    /*------------------------------------------------------------------*/
+    class UserService {
+      static async fetchCurrentUser() {
+        const response = await fetch('/api/tournament/current_user/');
+        return response.json();
+      }
+    }
+
+    class TournamentService {
+      static API_URL = '/api/tournament';
+
+      static async fetchPlayedTournaments() {
+        const response = await fetch(`${this.API_URL}/played_tournaments/`);
+        return response.json();
+      }
+
+      static async startMatchNotification(matchId) {
+        const response = await fetch(`${this.API_URL}/start_match_notification/${matchId}/`, {
+          method: 'POST'
+        });
+        return response.json();
+      }
+
+      static async fetchPendingTournaments() {
+        const response = await fetch(`${this.API_URL}/pending_tournaments/`);
+        return response.json();
+      }
+
+      static async fetchTournament(tournamentId) {
+        const response = await fetch(`${this.API_URL}/tournament_detail/${tournamentId}/`);
+        return response.json();
+      }
+
+      static async fetchTournamentMatches(tournamentId) {
+        const response = await fetch(`${this.API_URL}/tournament_matches/${tournamentId}/`);
+        return response.json();
+      }
+
+      static async updateMatch(matchId, player1Points, player2Points) {
+        const response = await fetch(`${this.API_URL}/start_match/${matchId}/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player1Points, player2Points })
+        });
+        return response.json();
+      }
+
+      static async startTournament(tournamentId) {
+        const response = await fetch(`${this.API_URL}/start_tournament/${tournamentId}/`, {
+          method: 'POST'
+        });
+        return response.json();
+      }
+
+      static async determineWinner(tournamentId) {
+        const response = await fetch(`${this.API_URL}/determine_winner/${tournamentId}/`, {
+            method: 'POST'
+        });
+        return response.json();
+      }
+
+      static async getWinner(tournamentId) {
+        const response = await fetch(`${this.API_URL}/get_winner/${tournamentId}/`, {
+            method: 'GET'
+        });
+        return response.json();
+      }
+
+      static async createTournament(data) {
+        const response = await fetch(`${this.API_URL}/create_tournament/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        return response.json();
+      }
+
+      static async deleteTournament(tournamentId) {
+        const response = await fetch(`${this.API_URL}/delete_tournament/${tournamentId}/`, {
+          method: 'DELETE'
+        });
+        return response.json();
+      }
+    }
+
+    /*------------------------------------------------------------------*/
+    /*  TOURNAMENT MENU CLASS - Gestión de la interfaz principal de torneos  */
+    /*------------------------------------------------------------------*/
+    class TournamentMenu {
+      constructor() {
+        this.welcomeMessageContainer = document.getElementById('welcomeMessage');
+        this.createTournamentBtn = document.getElementById('createTournamentBtn');
+        this.cancelTournamentBtn = document.getElementById('cancelTournamentBtn');
+        this.tournamentForm = document.getElementById('tournamentForm');
+        this.createTournamentForm = document.getElementById('createTournamentForm');
+        this.addParticipantsForm = document.getElementById('addParticipantsForm');
+        this.participantForm = document.getElementById('participantForm');
+        this.participantNameInput = document.getElementById('participantName');
+        this.participantsList = document.getElementById('participantsList');
+        this.createTournamentFinalBtn = document.getElementById('createTournamentFinalBtn');
+        this.cancelParticipantsBtn = document.getElementById('cancelParticipantsBtn');
+        this.participantsCount = document.getElementById('participantsCount');
+        this.playedTournamentsList = document.getElementById('playedTournamentsList');
+        this.pendingTournamentsList = document.getElementById('pendingTournamentsList');
+
+        this.participants = [];
+        this.maxParticipants = 0;
+
+        this.init();
+      }
+
+      async init() {
+        // Asignar eventos a botones y formularios
+        this.createTournamentBtn.addEventListener('click', () => this.showCreateTournamentForm());
+        this.cancelTournamentBtn.addEventListener('click', () => this.hideCreateTournamentForm());
+
+        this.tournamentForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          this.maxParticipants = parseInt(document.getElementById('numberOfPlayers').value);
+          this.showAddParticipantsForm();
+        });
+
+        this.participantForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const participantName = this.participantNameInput.value;
+          this.addParticipant(participantName);
+        });
+
+        this.createTournamentFinalBtn.addEventListener('click', async () => {
+          const data = {
+            name: document.getElementById('tournamentName').value,
+            max_match_points: document.getElementById('maxMatchPoints').value,
+            number_of_players: this.maxParticipants,
+            participants: this.participants
+          };
+          const response = await TournamentService.createTournament(data);
+          if (response.error) {
+            console.error(response.error);
+          } else {
+            this.hideAddParticipantsForm();
+            this.loadTournaments();
+          }
+        });
+
+        this.cancelParticipantsBtn.addEventListener('click', () => this.hideAddParticipantsForm());
+
+        const currentUser = await UserService.fetchCurrentUser();
+        this.renderWelcomeMessage(currentUser);
+        this.loadTournaments();
+      }
+
+      showCreateTournamentForm() {
+        this.createTournamentForm.style.display = 'block';
+      }
+
+      hideCreateTournamentForm() {
+        this.createTournamentForm.style.display = 'none';
+      }
+
+      showAddParticipantsForm() {
+        this.createTournamentForm.style.display = 'none';
+        this.addParticipantsForm.style.display = 'block';
+        UserService.fetchCurrentUser().then(user => {
+          if (!this.participants.includes(user.username)) {
+            this.addParticipant(user.username);
+          }
+        });
+      }
+
+      hideAddParticipantsForm() {
+        this.addParticipantsForm.style.display = 'none';
+        this.participants = [];
+        this.participantsList.innerHTML = '';
+        this.participantNameInput.disabled = false;
+        this.createTournamentFinalBtn.style.display = 'none';
+      }
+
+      addParticipant(name) {
+        if (this.participants.length < this.maxParticipants) {
+          this.participants.push(name);
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.textContent = name;
+          this.participantsList.appendChild(li);
+          this.participantNameInput.value = '';
+          this.updateParticipantsCount();
+          if (this.participants.length === this.maxParticipants) {
+            this.participantNameInput.disabled = true;
+            this.createTournamentFinalBtn.style.display = 'block';
+          }
+        }
+      }
+
+      updateParticipantsCount() {
+        this.participantsCount.textContent = `${this.participants.length} / ${this.maxParticipants} participantes`;
+      }
+
+      renderWelcomeMessage(user) {
+        this.welcomeMessageContainer.innerHTML = `<h1>Hola, ${user.username}</h1>
+          <p>Esta página es para crear y monitorear tus torneos.</p>`;
+      }
+
+      async loadTournaments() {
+        const playedTournaments = await TournamentService.fetchPlayedTournaments();
+        this.renderPlayedTournaments(playedTournaments);
+        const pendingTournaments = await TournamentService.fetchPendingTournaments();
+        this.renderPendingTournaments(pendingTournaments);
+      }
+
+      renderPlayedTournaments(tournaments) {
+        this.playedTournamentsList.innerHTML = '';
+        tournaments.forEach(tournament => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.innerHTML = `<h5>${tournament.name}</h5>
+            <p>Participants: ${tournament.participants.map(p => p.username).join(', ')}</p>
+            <p>Winner: ${tournament.winner ? tournament.winner.username : 'TBD'}</p>
+            <button class="btn btn-danger" onclick="TournamentService.deleteTournament(${tournament.id}).then(() => { window.tournamentMenuInstance.loadTournaments(); })">Delete</button>`;
+          this.playedTournamentsList.appendChild(li);
+        });
+      }
+
+      renderPendingTournaments(tournaments) {
+        this.pendingTournamentsList.innerHTML = '';
+        tournaments.forEach(tournament => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item';
+          li.innerHTML = `<h5>${tournament.name}</h5>
+            <p>Creator: ${tournament.creator.username}</p>
+            <p>Max Match Points: ${tournament.max_match_points}</p>
+            <p>Participants: ${tournament.participants.map(p => p.username).join(', ')}</p>
+            <p>Pending Matches: ${tournament.pending_matches.map(m => `${m.player1.username} vs ${m.player2.username}`).join(', ')}</p>`;
+          const startBtn = document.createElement('button');
+          startBtn.textContent = 'Start Tournament';
+          startBtn.className = 'btn btn-primary';
+          startBtn.addEventListener('click', () => new Tournament(tournament.id));
+          li.appendChild(startBtn);
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'Delete';
+          deleteBtn.className = 'btn btn-danger ms-2';
+          deleteBtn.addEventListener('click', () => {
+            TournamentService.deleteTournament(tournament.id).then(() => this.loadTournaments());
+          });
+          li.appendChild(deleteBtn);
+          this.pendingTournamentsList.appendChild(li);
+        });
+      }
+    }
+    
+    /*------------------------------------------------------------------*/
+    /*  TOURNAMENT CLASS - Lógica del torneo (partidas, transición, etc.)    */
+    /*------------------------------------------------------------------*/
+    class Tournament {
+      constructor(tournamentId) {
+        this.tournamentId = tournamentId;
+        this.currentMatchIndex = 0;
+        this.matches = [];
+        this.maxMatchPoints = 0;
+        this.init();
+      }
+    
+      async init() {
+        const response = await TournamentService.startTournament(this.tournamentId);
+        if (response.message) {
+          this.matches = await TournamentService.fetchTournamentMatches(this.tournamentId);
+          const tournamentDetail = await TournamentService.fetchTournament(this.tournamentId);
+          this.maxMatchPoints = tournamentDetail.max_match_points;
+          // Filtrar solo partidos no jugados
+          this.matches = this.matches.filter(match => !match.played);
+          if (this.matches.length > 0) {
+            this.startMatch(this.matches[this.currentMatchIndex]);
+          } else {
+            this.showTournamentFinishedUI();
+          }
+        } else {
+          console.error('Error al iniciar el torneo');
+        }
+      }
+    
+      // Muestra la partida actual y reinicia la UI de nombres y scores.
+      // Los contenedores de nombres y scores se muestran SOLO durante la partida.
+      startMatch(match) {
+        const matchContainer = document.getElementById('matchPlayers');
+        matchContainer.innerHTML = '';
+        const header = document.createElement('h2');
+        header.textContent = `${match.player1.username} vs ${match.player2.username}`;
+        matchContainer.appendChild(header);
+        // Mostrar nombres y scores SOLO durante la partida
+        document.getElementById('playerNames').style.display = 'block';
+        document.getElementById('player1Name').textContent = `Player 1 (Left): ${match.player1.username}`;
+        document.getElementById('player2Name').textContent = `Player 2 (Right): ${match.player2.username}`;
+        document.getElementById('scores').style.display = 'block';
+        document.getElementById('player1Score').textContent = 'Score: 0';
+        document.getElementById('player2Score').textContent = 'Score: 0';
+        // Botón para iniciar la partida
+        const startMatchBtn = document.createElement('button');
+        startMatchBtn.textContent = 'Start Match';
+        startMatchBtn.className = 'btn btn-success mt-3';
+        startMatchBtn.id = 'startMatchBtn';
+        startMatchBtn.addEventListener('click', () => {
+          startMatchBtn.remove();
+          TournamentService.startMatchNotification(match.id);
+          this.launchGame(match);
+        });
+        matchContainer.appendChild(startMatchBtn);
+      }
+    
+      // Lanza el juego: se muestra el canvas y se crea la instancia de Game.
+      // Al finalizar, se ocultan los contenedores de nombres y scores, y se muestra el resultado.
+      launchGame(match) {
+        const canvas = document.getElementById('canvasId');
+        canvas.style.display = 'block';
+        const game = new Game(canvas, match, this.maxMatchPoints, (player1Points, player2Points, winner) => {
+          canvas.style.display = 'none';
+          TournamentService.updateMatch(match.id, player1Points, player2Points);
+          // Ocultar nombres y scores al finalizar la partida
+          document.getElementById('playerNames').style.display = 'none';
+          document.getElementById('scores').style.display = 'none';
+          document.getElementById('player1Score').textContent = '';
+          document.getElementById('player2Score').textContent = '';
+          this.showMatchResult(match, player1Points, player2Points, winner);
+        });
+        
+        // ¡Importante! Llamar explícitamente a start()
+        game.start();
+        
+        return game;
+      }
+    
+      // Muestra el resultado de la partida y un botón "Aceptar" que actualiza la lista de torneos sin recargar la página completa.
+      showMatchResult(match, player1Points, player2Points, winner) {
+        let winningPlayer, losingPlayer;
+        if (winner === 'Player1') {
+          winningPlayer = match.player1.username;
+          losingPlayer = match.player2.username;
+        } else {
+          winningPlayer = match.player2.username;
+          losingPlayer = match.player1.username;
+        }
+        const matchContainer = document.getElementById('matchPlayers');
+        matchContainer.innerHTML = `<h3>Match Finished!</h3>
+          <p>${winningPlayer} defeated ${losingPlayer} with score ${player1Points} - ${player2Points}</p>`;
+        const acceptBtn = document.createElement('button');
+        acceptBtn.textContent = 'Aceptar';
+        acceptBtn.className = 'btn btn-success mt-3';
+        acceptBtn.addEventListener('click', () => {
+          acceptBtn.remove();
+          // Actualizamos la lista de torneos sin recargar la página completa
+          if (window.tournamentMenuInstance) {
+            window.tournamentMenuInstance.loadTournaments();
+          }
+          this.showNextMatchAnnouncement();
+        });
+        matchContainer.appendChild(acceptBtn);
+      }
+    
+      // Anuncia el siguiente partido; si hay más, se inicia la siguiente partida; si no, se muestra que el torneo finalizó.
+      showNextMatchAnnouncement() {
+        if (this.currentMatchIndex + 1 < this.matches.length) {
+          const nextMatch = this.matches[this.currentMatchIndex + 1];
+          const matchContainer = document.getElementById('matchPlayers');
+          matchContainer.innerHTML = `<h3>Next Match</h3>
+            <p>${nextMatch.player1.username} vs ${nextMatch.player2.username}</p>`;
+          const acceptBtn = document.createElement('button');
+          acceptBtn.textContent = 'Aceptar';
+          acceptBtn.className = 'btn btn-success mt-3';
+          acceptBtn.addEventListener('click', () => {
+            acceptBtn.remove();
+            this.currentMatchIndex++;
+            this.startMatch(this.matches[this.currentMatchIndex]);
+          });
+          matchContainer.appendChild(acceptBtn);
+        } else {
+          this.showTournamentFinishedUI();
+        }
+      }
+    
+      // Cuando el torneo ha finalizado, se muestra un mensaje y un botón "Aceptar" que actualiza la lista de torneos sin recargar la página completa.
+      async showTournamentFinishedUI() {
+        const matchContainer = document.getElementById('matchPlayers');
+        await TournamentService.determineWinner(this.tournamentId);
+        const winnerData =  await TournamentService.getWinner(this.tournamentId);
+        matchContainer.innerHTML = `<h3>Tournament finished! The winner is ${winnerData.winner}</h3>`;
+        const reloadBtn = document.createElement('button');
+        reloadBtn.textContent = 'Aceptar';
+        reloadBtn.className = 'btn btn-success mt-3';
+        reloadBtn.addEventListener('click', () => {
+          if (window.tournamentMenuInstance) {
+            window.location.reload();
+          }
+        });
+        matchContainer.appendChild(reloadBtn);
+      }
+    }
+    
+    /*------------------------------------------------------------------*/
+    /*  CLASSES FOR GAME, PADDLE, AND BALL                                */
+    /*------------------------------------------------------------------*/
+     class Ball {
+      constructor(pos, vel, rad) {
+        this.pos = pos;
+        this.vel = vel;
+        this.rad = rad;
+      }
+    
+      update() {
+        this.pos.x += this.vel.x;
+        this.pos.y += this.vel.y;
+      }
+    
+      draw(ctx) {
+        ctx.fillStyle = 'green';
+        ctx.strokeStyle = 'green';
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.rad, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    
+      collisionWithEdges(canvas) {
+        if (this.pos.y + this.rad >= canvas.height) {
+          this.pos.y = canvas.height - this.rad;
+          this.vel.y *= -1;
+        } else if (this.pos.y - this.rad <= 0) {
+          this.pos.y = this.rad;
+          this.vel.y *= -1;
+        }
+      }
+    
+      collisionWithPaddle(paddle) {
+        // Calcular la distancia entre el centro de la pelota y el centro de la pala
+        let dx = Math.abs(this.pos.x - paddle.pos.x - paddle.width / 2);
+        let dy = Math.abs(this.pos.y - paddle.pos.y - paddle.height / 2);
+    
+        // Si se detecta colisión
+        if (dx <= (this.rad + paddle.width / 2) && dy <= (this.rad + paddle.height / 2)) {
+          if (dx > paddle.width / 2) {
+            // Colisión en los laterales: usar la lógica de ángulo de rebote
+            let relativeIntersectY = this.pos.y - (paddle.pos.y + paddle.height / 2);
+            let normalizedIntersect = relativeIntersectY / (paddle.height / 2);
+            let bounceAngle = normalizedIntersect * (Math.PI / 4);  // máximo 45 grados
+    
+            // Usar la velocidad actual para mantener la magnitud
+            let speed = Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y);
+    
+            if (this.vel.x < 0) {
+              this.vel.x = speed * Math.cos(bounceAngle);
+              this.vel.y = speed * Math.sin(bounceAngle);
+              this.pos.x = paddle.pos.x + paddle.width + this.rad;
+            } else {
+              this.vel.x = -speed * Math.cos(bounceAngle);
+              this.vel.y = speed * Math.sin(bounceAngle);
+              this.pos.x = paddle.pos.x - this.rad;
+            }
+          } else if (dy > paddle.height / 2) {
+            // Colisión en la parte superior o inferior: invertir velocidad vertical
+            this.vel.y *= -1;
+            if (this.pos.y < paddle.pos.y) {
+              this.pos.y = paddle.pos.y - this.rad;
+            } else {
+              this.pos.y = paddle.pos.y + paddle.height + this.rad;
+            }
+          } else {
+            // Colisión en la esquina: invertir ambas velocidades
+            this.vel.x *= -1;
+            this.vel.y *= -1;
+            if (this.pos.x < paddle.pos.x) {
+              this.pos.x = paddle.pos.x - this.rad;
+            } else if (this.pos.x > paddle.pos.x + paddle.width) {
+              this.pos.x = paddle.pos.x + paddle.width + this.rad;
+            }
+            if (this.pos.y < paddle.pos.y) {
+              this.pos.y = paddle.pos.y - this.rad;
+            } else if (this.pos.y > paddle.pos.y + paddle.height) {
+              this.pos.y = paddle.pos.y + paddle.height + this.rad;
+            }
+          }
+        }
+      }
+    }
+    
+    // Paddle.js
+     class Paddle {
+      constructor(pos, vel, width, height, isLeft) {
+        this.pos = pos;
+        // Si vel no se proporciona, usar un valor predeterminado
+        this.vel = vel || { x: 0, y: 7 };
+        this.width = width;
+        this.height = height;
+        this.isLeft = isLeft;
+        this.score = 0;
+        this.targetY = pos.y + height / 2; // Para IA
+      }
+    
+      update(keys, KEY_W, KEY_S, KEY_UP, KEY_DOWN) {
+        const speed = this.vel.y; // Usar la velocidad del objeto
+        
+        if (this.isLeft) {
+          if (keys[KEY_W]) this.pos.y -= speed;
+          if (keys[KEY_S]) this.pos.y += speed;
+        } else {
+          if (keys[KEY_UP]) this.pos.y -= speed;
+          if (keys[KEY_DOWN]) this.pos.y += speed;
+        }
+      }
+    
+      draw(ctx) {
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(this.pos.x, this.pos.y, this.width, this.height);
+      }
+    
+      collisionWithEdges(canvas) {
+        if (this.pos.y < 0) this.pos.y = 0;
+        if (this.pos.y + this.height > canvas.height) this.pos.y = canvas.height - this.height;
+      }
+    }
+    
+    // Game.js
+     class Game {
+      constructor(canvas, param2, param3, param4) {
+        // Detectar qué versión de la llamada estamos utilizando
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        
+        // Configuración predeterminada
+        this.keys = {};
+        this.lastAIUpdate = 0;
+        this.AI_INTERVAL = 1000;
+        this.animationFrameId = null;
+        this.gameEnded = false;
+        this.KEY_UP = 38;
+        this.KEY_DOWN = 40;
+        this.KEY_W = 87;
+        this.KEY_S = 83;
+        
+        // Caso 1: new Game(canvas, match, maxPoints, onGameEnd)
+        if (param2 && typeof param2 === 'object' && param2.id !== undefined) {
+          // Es el caso de torneo con match - aquí se establece la detección del objeto match
+          this.match = param2;
+          this.maxPoints = param3 || 10;
+          this.onGameEnd = param4;
+          this.isSinglePlayer = false;
+          this.difficulty = {
+            BALL_SPEED: 7,
+            PLAYER_SPEED: 7,
+            RANDOMNESS: 50,
+            MISS_CHANCE: 0.1,
+            AI_REACTION_DELAY: 200
+          };
+        } 
+        // Caso 2: new Game(canvas, isSinglePlayer, difficulty, maxPoints, onGameEnd)
+        else if (typeof param2 === 'boolean' || param2 === undefined) {
+          this.isSinglePlayer = param2 || false;
+          this.difficulty = param3 || {
+            BALL_SPEED: 7,
+            PLAYER_SPEED: 7,
+            RANDOMNESS: 50,
+            MISS_CHANCE: 0.1,
+            AI_REACTION_DELAY: 200
+          };
+          this.maxPoints = typeof param4 === 'number' ? param4 : 10;
+          this.onGameEnd = typeof param4 === 'function' ? param4 : null;
+        }
+        // Caso 3: new Game(canvas, options)
+        else if (typeof param2 === 'object') {
+          const options = param2;
+          this.isSinglePlayer = options.isSinglePlayer || false;
+          this.difficulty = options.difficulty || {
+            BALL_SPEED: 7,
+            PLAYER_SPEED: 7,
+            RANDOMNESS: 50,
+            MISS_CHANCE: 0.1,
+            AI_REACTION_DELAY: 200
+          };
+          this.maxPoints = options.maxPoints || 10;
+          this.onGameEnd = options.onGameEnd || null;
+          this.match = options.match || null;
+        }
+    
+        // Inicializar objetos del juego
+        const ballSpeed = this.difficulty.BALL_SPEED || 7;
+        
+        this.ball = new Ball(
+          { x: canvas.width / 2, y: canvas.height / 2 },
+          { x: ballSpeed, y: ballSpeed },
+          10
+        );
+        
+        const playerSpeed = this.difficulty.PLAYER_SPEED || 7;
+        
+        this.paddle1 = new Paddle(
+          { x: 10, y: canvas.height / 2 - 80 },
+          { x: 0, y: playerSpeed },
+          10,
+          160,
+          true
+        );
+        
+        this.paddle2 = new Paddle(
+          { x: canvas.width - 20, y: canvas.height / 2 - 80 },
+          { x: 0, y: playerSpeed },
+          10,
+          160,
+          false
+        );
+    
+        // Eventos de teclado
+        window.addEventListener('keydown', (e) => {
+          this.keys[e.keyCode] = true;
+        });
+    
+        window.addEventListener('keyup', (e) => {
+          this.keys[e.keyCode] = false;
+        });
+        
+        // Vincular el método loop
+        this.loop = this.loop.bind(this);
+      }
+    
+      simulateKeyDown(keyCode) {
+        const event = new KeyboardEvent('keydown', { keyCode });
+        window.dispatchEvent(event);
+      }
+    
+      simulateKeyUp(keyCode) {
+        const event = new KeyboardEvent('keyup', { keyCode });
+        window.dispatchEvent(event);
+      }
+    
+      player2AI(timestamp) {
+        if (timestamp - this.lastAIUpdate >= this.AI_INTERVAL) {
+          this.lastAIUpdate = timestamp;
+    
+          let predictedY = this.predictBallY();
+    
+          const randomness = Math.random() * this.difficulty.RANDOMNESS - (this.difficulty.RANDOMNESS / 2);
+          let targetY = predictedY + randomness;
+    
+          if (Math.random() < this.difficulty.MISS_CHANCE) {
+            targetY = Math.random() * this.canvas.height;
+          }
+          this.paddle2.targetY = targetY;
+    
+          const paddleCenter = this.paddle2.pos.y + this.paddle2.height / 2;
+          if (paddleCenter < this.paddle2.targetY - 5) {
+            this.simulateKeyDown(this.KEY_DOWN);
+            this.simulateKeyUp(this.KEY_UP);
+          } else if (paddleCenter > this.paddle2.targetY + 5) {
+            this.simulateKeyDown(this.KEY_UP);
+            this.simulateKeyUp(this.KEY_DOWN);
+          } else {
+            this.simulateKeyUp(this.KEY_UP);
+            this.simulateKeyUp(this.KEY_DOWN);
+          }
+    
+          setTimeout(() => {
+            this.simulateKeyUp(this.KEY_UP);
+            this.simulateKeyUp(this.KEY_DOWN);
+          }, this.difficulty.AI_REACTION_DELAY + Math.random() * 200);
+        }
+      }
+    
+      paddleUpdate(paddle) {
+        const paddleCenter = paddle.pos.y + paddle.height / 2;
+        const speed = paddle.vel.y;
+    
+        if (paddleCenter < paddle.targetY - 5) {
+          paddle.pos.y += speed;
+        } else if (paddleCenter > paddle.targetY + 5) {
+          paddle.pos.y -= speed;
+        }
+        paddle.pos.y = Math.max(0, Math.min(this.canvas.height - paddle.height, paddle.pos.y));
+      }
+    
+      predictBallY() {
+        if (this.ball.vel.x <= 0) {
+          return this.ball.pos.y;
+        }
+        
+        let tempBall = {
+          pos: { x: this.ball.pos.x, y: this.ball.pos.y },
+          vel: { x: this.ball.vel.x, y: this.ball.vel.y },
+          rad: this.ball.rad
+        };
+        
+        let maxIterations = 500;
+        let iterations = 0;
+        
+        while (tempBall.pos.x < this.paddle2.pos.x && iterations < maxIterations) {
+          tempBall.pos.x += tempBall.vel.x;
+          tempBall.pos.y += tempBall.vel.y;
+          iterations++;
+          
+          if (tempBall.pos.y + tempBall.rad >= this.canvas.height) {
+            tempBall.pos.y = this.canvas.height - tempBall.rad;
+            tempBall.vel.y *= -1;
+          } else if (tempBall.pos.y - tempBall.rad <= 0) {
+            tempBall.pos.y = tempBall.rad;
+            tempBall.vel.y *= -1;
+          }
+        }
+        
+        if (iterations === maxIterations) {
+          console.warn("predictBallY reached maximum iterations.");
+        }
+    
+        const errorMargin = 15;
+        const randomError = (Math.random() * 2 * errorMargin) - errorMargin;
+        let predictedY = tempBall.pos.y + randomError;
+    
+        predictedY = Math.max(this.ball.rad, Math.min(this.canvas.height - this.ball.rad, predictedY));
+    
+        return predictedY;
+      }
+    
+      respawnBall() {
+        this.ball.pos.x = this.canvas.width / 2;
+        this.ball.pos.y = Math.random() * this.canvas.height;
+        this.ball.vel.x *= -1;
+        // Randomizar la dirección vertical al respawn
+        if (Math.random() > 0.5) {
+          this.ball.vel.y *= -1;
+        }
+      }
+    
+      increaseScore() {
+        if (this.ball.pos.x <= -this.ball.rad) {
+          this.paddle2.score++;
+          this.respawnBall();
+        }
+        if (this.ball.pos.x >= this.canvas.width + this.ball.rad) {
+          this.paddle1.score++;
+          this.respawnBall();
+        }
+      }
+    
+      updateScores() {
+        // Comprobar si existen los elementos antes de actualizar
+        const player1ScoreEl = document.getElementById('player1Score');
+        const player2ScoreEl = document.getElementById('player2Score');
+        
+        if (player1ScoreEl) player1ScoreEl.textContent = this.paddle1.score;
+        if (player2ScoreEl) player2ScoreEl.textContent = this.paddle2.score;
+      }
+    
+      checkGameEnd() {
+        if (this.paddle1.score >= this.maxPoints) {
+          this.stopGameAndFinish(this.paddle1.score, this.paddle2.score, 'Player1');
+        } else if (this.paddle2.score >= this.maxPoints) {
+          this.stopGameAndFinish(this.paddle1.score, this.paddle2.score, 'Player2');
+        }
+      }
+    
+      stopGameAndFinish(player1Points, player2Points, winner) {
+        if (this.gameEnded) return;
+        
+        this.gameEnded = true;
+        cancelAnimationFrame(this.animationFrameId);
+        
+        if (this.onGameEnd) {
+          this.onGameEnd(player1Points, player2Points, winner);
+        } else {
+          // Si no hay onGameEnd pero estamos en un torneo
+          if (this.match) {
+            console.log(`Match ${this.match.id} terminado: ${player1Points}-${player2Points}`);
+          } else {
+            // Anunciar el ganador y redirigir al menú de elección de tipo de juego
+            const message = document.createElement('div');
+            message.textContent = `${winner} wins! Redirecting to the game selection menu...`;
+            message.style.position = 'absolute';
+            message.style.top = '50%';
+            message.style.left = '50%';
+            message.style.transform = 'translate(-50%, -50%)';
+            message.style.backgroundColor = 'white';
+            message.style.padding = '20px';
+            message.style.border = '1px solid black';
+            document.body.appendChild(message);
+
+            setTimeout(() => {
+              window.location.href = '/index.html'; // Cambia esta URL a la del menú de elección de tipo de juego
+            }, 3000); // Redirigir después de 3 segundos
+          }
+        }
+      }
+    
+      update(timestamp) {
+        this.ball.update();
+        this.paddle1.update(this.keys, this.KEY_W, this.KEY_S, this.KEY_UP, this.KEY_DOWN);
+    
+        if (this.isSinglePlayer) {
+          this.player2AI(timestamp);
+          this.paddleUpdate(this.paddle2);
+        } else {
+          this.paddle2.update(this.keys, this.KEY_W, this.KEY_S, this.KEY_UP, this.KEY_DOWN);
+        }
+    
+        // Colisiones
+        this.ball.collisionWithEdges(this.canvas);
+        this.ball.collisionWithPaddle(this.paddle1);
+        this.ball.collisionWithPaddle(this.paddle2);
+        this.paddle1.collisionWithEdges(this.canvas);
+        this.paddle2.collisionWithEdges(this.canvas);
+        
+        // Lógica del juego
+        this.increaseScore();
+        this.updateScores();
+        this.checkGameEnd();
+      }
+    
+      draw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ball.draw(this.ctx);
+        this.paddle1.draw(this.ctx);
+        this.paddle2.draw(this.ctx);
+      }
+    
+      loop(timestamp) {
+        this.update(timestamp);
+        this.draw();
+        if (!this.gameEnded) {
+          this.animationFrameId = requestAnimationFrame(this.loop);
+        }
+      }
+    
+      start() {
+        // Si no se llamó explícitamente con start(), iniciar automáticamente
+        this.animationFrameId = requestAnimationFrame(this.loop);
+        return this; // Para encadenar métodos
+      }
+    
+      stop() {
+        cancelAnimationFrame(this.animationFrameId);
+        this.gameEnded = true;
+        return this; // Para encadenar métodos
+      }
+    
+      reset() {
+        this.gameEnded = false;
+        this.paddle1.score = 0;
+        this.paddle2.score = 0;
+        this.respawnBall();
+        this.updateScores();
+        return this; // Para encadenar métodos
+      }
+    }
+    
+    // Al cargar el DOM, se crea una instancia global de TournamentMenu para actualizar la UI sin recargar la página completa
+    document.addEventListener('DOMContentLoaded', () => {
+      window.tournamentMenuInstance = new TournamentMenu();
+    });
+  </script>
+</body>
+</html>
+
