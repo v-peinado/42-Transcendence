@@ -17,7 +17,8 @@ class UsersConsumer:
             user_instance = await database_sync_to_async(User.objects.get)(id=user_id)
             user_list.append({
                 'id': user_instance.id,
-                'username': user_instance.username
+                'username': user_instance.username,
+                'is_online': True
             })
 
         # Enviar la lista al grupo
