@@ -118,7 +118,6 @@ class MessagesConsumer:
                 }))
                 #await asyncio.sleep(0.1)  # Añadir un pequeño retraso de 100ms
 
-
     @database_sync_to_async
     def get_unarchived_messages(self, channel_name):
         return list(Message.objects.filter(channel_name=channel_name, is_archived=False).order_by('timestamp'))

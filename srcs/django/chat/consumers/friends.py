@@ -27,6 +27,7 @@ class FriendRequestsConsumer:
        
         # Actualizar al receptor sobre la nueva solicitud pendiente
         await self.notify_pending_requests(to_user_id)
+        await self.notify_pending_requests(from_user.id, sent=True)
 
     async def accept_friend_request(self, data):
         request_id = data.get('request_id')
@@ -48,7 +49,7 @@ class FriendRequestsConsumer:
         to_user = await self.get_user_by_id(friend_request.to_user_id)
 
         # Notificar a ambos usuarios sobre la aceptación
-        await self.notify_pending_requests(from_user.id)
+        await self.notify_pending_requests(from_user.id, sent=True)
         await self.notify_pending_requests(to_user.id)
 
         # Actualización de la lista de amistades
@@ -62,7 +63,7 @@ class FriendRequestsConsumer:
             return
 
         friend_request = await self.get_friend_request(request_id)
-        if friend_request.to_user_id != self.user_id:
+        if friend_request.to_user_id != self.user_id and friend_request.from_user_id != self.user_id:
             await self.send_error('No tienes permiso para rechazar esta solicitud.')
             return
 
@@ -73,8 +74,8 @@ class FriendRequestsConsumer:
         to_user = await self.get_user_by_id(friend_request.to_user_id)
 
         # Notificar al emisor y receptor sobre la eliminación de la solicitud
-        await self.notify_pending_requests(from_user.id)
-        await self.notify_pending_requests(to_user.id)
+        await self.notify_pending_requests(from_user.id, sent=True)
+        await self.notify_pending_requests(to_user.id)   
         
     # FLUJO DE EVENTOS:       
     # Envió de Datos:
@@ -89,31 +90,44 @@ class FriendRequestsConsumer:
     # El cliente WebSocket recibe el mensaje JSON con las solicitudes pendientes y
     # puede actualizar la interfaz de usuario en consecuencia.
 
-    async def notify_pending_requests(self, user_id):
-        # Obtener las solicitudes pendientes del usuario identificado por user_id
-        pending_data = await self.get_pending_requests_data(user_id)
-        # Crearemos una lista de diccrionarios de solicitudes pendientes
+    async def notify_pending_requests(self, user_id, sent=False):
+        if sent:
+            # Obtener las solicitudes enviadas por el usuario identificado por user_id
+            pending_data = await self.get_sent_requests_data(user_id)
+        else:
+            # Obtener las solicitudes recibidas por el usuario identificado por user_id
+            pending_data = await self.get_pending_requests_data(user_id)
+        
+        # Crear una lista de diccionarios de solicitudes pendientes
         pending_list = []
         for req in pending_data:
-            pending_list.append({
-                'request_id': req['id'],
-                'from_user_id': req['from_user_id'],
-                'from_user_username': req['from_user__username']
-            })
-
+            if sent:
+                pending_list.append({
+                    'request_id': req['id'],
+                    'to_user_id': req['to_user_id'],
+                    'to_user_username': req['to_user__username']
+                })
+            else:
+                pending_list.append({
+                    'request_id': req['id'],
+                    'from_user_id': req['from_user_id'],
+                    'from_user_username': req['from_user__username']
+                })
+        
         # Enviar la lista de solicitudes pendientes al grupo de canales del usuario
         await self.channel_layer.group_send(
             f"user_{user_id}",  # Nombre del grupo basado en user_id
             {
                 'type': 'pending_list',  # Tipo de evento que será manejado por el método pending_list
-                'pending': pending_list    # Carga útil con la lista de solicitudes pendientes
+                'pending': pending_list,
+                'sent': sent  # Indicar si son solicitudes enviadas
             }
         )
             
     async def pending_list(self, event):
         # Enviar los datos de solicitudes pendientes al cliente WebSocket en formato JSON
         await self.send(text_data=json.dumps({
-            'type': 'pending_friend_requests',  # Tipo de mensaje que indica solicitudes pendientes
+            'type': 'pending_friend_requests' if not event['sent'] else 'sent_friend_requests',  # Tipo de mensaje que indica solicitudes pendientes o enviadas
             'pending': event['pending']        # Lista de solicitudes pendientes recibida del evento
         }))
         
@@ -196,4 +210,12 @@ class FriendRequestsConsumer:
             FriendRequest.objects.filter(to_user_id=user_id)
             .select_related('from_user')
             .values('id', 'from_user_id', 'from_user__username')
+        )
+        
+    @database_sync_to_async
+    def get_sent_requests_data(self, user_id):
+        return list(
+            FriendRequest.objects.filter(from_user_id=user_id)
+            .select_related('to_user')
+            .values('id', 'to_user_id', 'to_user__username')
         )

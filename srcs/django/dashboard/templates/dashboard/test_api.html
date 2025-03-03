@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Dashboard</title>
+    <!-- Incluimos Bootstrap desde un CDN -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        #results {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        /* Estilos para el gráfico circular */
+        .circular-chart {
+            display: block;
+            margin: 10px auto;
+            max-width: 120px;
+            max-height: 120px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: #eee;
+            stroke-width: 3.8;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 2.8;
+            stroke-linecap: round;
+            stroke: #007bff;
+        }
+        .percentage {
+            font-size: 0.5em;
+            text-anchor: middle;
+            fill: #007bff;
+        }
+    </style>
+    <script>
+        // Función asíncrona para obtener las estadísticas del jugador.
+        // Realiza una petición GET al endpoint '/api/dashboard/player-stats/' y, al recibir
+        // la respuesta en formato JSON, llama a 'displayPlayerStats' para renderizar los datos.
+        async function fetchPlayerStats() {
+            try {
+                const response = await fetch('/api/dashboard/player-stats/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'  // Envío de cookies de sesión
+                });
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                displayPlayerStats(data);
+            } catch (error) {
+                console.error('Error fetching player stats:', error);
+            }
+        }
+        
+        // Función que muestra las estadísticas dentro del div 'results'.
+        // Se utiliza una tabla para organizar la información, además de un progress bar y un gráfico circular.
+        function displayPlayerStats(data) {
+            const stats = data.stats;
+            const games = data.games;
+            const winRatio = stats.win_ratio;  // Porcentaje de victorias
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <h2>Player Stats</h2>
+                <table class="table table-striped">
+                    <tr><th>Profile Picture</th><td><img src="${stats.profile_picture_url}" alt="Profile Picture" class="img-thumbnail" style="width: 100px; height: 100px;"></td></tr>
+                    <tr><th>Username</th><td>${stats.username}</td></tr>
+                    <tr><th>Games Played</th><td>${stats.games_played}</td></tr>
+                    <tr><th>Games Won</th><td>${stats.games_won}</td></tr>
+                    <tr><th>Win Ratio</th><td>${winRatio.toFixed(2)}%</td></tr>
+                    <tr><th>Average Points Per Game</th><td>${stats.avg_points_per_game.toFixed(2)}</td></tr>
+                    <tr><th>Total Points Scored</th><td>${stats.total_points_scored}</td></tr>
+                    <tr><th>Total Points Conceded</th><td>${stats.total_points_conceded}</td></tr>
+                </table>
+                <h3>Win Ratio Progress (Horizontal)</h3>
+                <div class="progress mb-4">
+                    <div class="progress-bar" role="progressbar" style="width: ${winRatio}%" aria-valuenow="${winRatio}" aria-valuemin="0" aria-valuemax="100">
+                        ${winRatio.toFixed(2)}%
+                    </div>
+                </div>
+                <h3>Win Ratio Progress (Circular)</h3>
+                <div class="d-flex justify-content-center">
+                    <svg class="circular-chart" viewBox="0 0 36 36">
+                        <path class="circle-bg"
+                            d="M18 2.0845
+                               a 15.9155 15.9155 0 0 1 0 31.831
+                               a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle"
+                            stroke-dasharray="${winRatio}, 100"
+                            d="M18 2.0845
+                               a 15.9155 15.9155 0 0 1 0 31.831
+                               a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.35" class="percentage">${winRatio.toFixed(2)}%</text>
+                    </svg>
+                </div>
+                <h2>Game History</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player 1</th>
+                            <th>Player 2</th>
+                            <th>Score Player 1</th>
+                            <th>Score Player 2</th>
+                            <th>Winner</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${games.map(game => `
+                            <tr>
+                                <td>${game.player1}</td>
+                                <td>${game.player2}</td>
+                                <td>${game.score_player1}</td>
+                                <td>${game.score_player2}</td>
+                                <td>${game.winner || 'N/A'}</td>
+                                <td>${game.date || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Player Dashboard</h1>
+        <div class="text-center">
+            <!-- Al hacer click en este botón se invoca la función fetchPlayerStats -->
+            <button class="btn btn-primary" onclick="fetchPlayerStats()">Fetch Player Stats</button>
+        </div>
+        <!-- Contenedor donde se mostrarán las estadísticas y los indicadores -->
+        <div id="results" class="mt-4 bg-white p-3 border rounded"></div>
+    </div>
+    <!-- Scripts de Bootstrap y dependencias -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+

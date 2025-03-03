@@ -2,7 +2,6 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from ..engine.game_state import GameState
 import json
 
-
 class BaseGameConsumer(AsyncJsonWebsocketConsumer):
     game_states = {}
 

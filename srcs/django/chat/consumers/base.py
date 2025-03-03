@@ -83,6 +83,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def update_all_lists(self):
         await self.user_list_update()
         await self.notify_pending_requests(self.scope["user"].id)
+        await self.notify_pending_requests(self.scope["user"].id, sent=True)
         await self.send_friend_list(self.scope["user"].id)
         await self.send_blocked_users()
         await self.send_user_groups()

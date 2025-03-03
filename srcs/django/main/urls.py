@@ -27,14 +27,16 @@ urlpatterns = [
     path("", include("authentication.web.urls")),
     # Admin panel
     path("admin/", admin.site.urls),
-    # Tournament API
-    # path('api/tournament/', include('tournament.api.urls')),
+    # API de tournament
+    path('api/tournament/', include('tournament.urls')),
     # API endpoints (production)
     path("api/", include("authentication.api.urls")),
     # Chat
     path("chat/", views.chat, name="chat"),
     # Game
     path("game/", include("game.urls")),
+    # API de dashboard
+    path('api/dashboard/', include('dashboard.urls')),
 ]
 
 # Media and static files configuration
