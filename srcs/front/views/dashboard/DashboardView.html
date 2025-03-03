@@ -1,0 +1,154 @@
+<section class="hero-section dashboard">
+    <div class="container py-5">
+        <div class="card bg-dark">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Columna de la foto de perfil -->
+                    <div class="col-md-3 text-center border-end border-secondary">
+                        <div class="profile-header">
+                            <img id="userAvatar" class="dashboard-avatar mb-3" alt="Avatar">
+                            <h3 id="userName" class="h4 text-light mb-2">-</h3>
+                            <div class="rank-icon" data-bs-toggle="tooltip"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna de contenido principal -->
+                    <div class="col-md-9">
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs dashboard-tabs mb-4" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab">
+                                    <i class="fas fa-chart-bar me-2"></i>Estadísticas
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                                    <i class="fas fa-history me-2"></i>Historial
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Contenido de los tabs -->
+                        <div class="tab-content">
+                            <!-- Tab de Estadísticas -->
+                            <div class="tab-pane fade show active" id="stats">
+                                <div class="row g-4">
+                                    <div class="col-md-6 col-lg-3">
+                                        <div class="stat-box success">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-gamepad"></i>
+                                            </div>
+                                            <div class="stat-details">
+                                                <span class="stat-number" id="gamesPlayed">-</span>
+                                                <span class="stat-text">Partidas</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 col-lg-3">
+                                        <div class="stat-box warning">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-trophy"></i>
+                                            </div>
+                                            <div class="stat-details">
+                                                <span class="stat-number" id="gamesWon">-</span>
+                                                <span class="stat-text">Victorias</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 col-lg-3">
+                                        <div class="stat-box info">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-star"></i>
+                                            </div>
+                                            <div class="stat-details">
+                                                <span class="stat-number" id="totalPoints">-</span>
+                                                <span class="stat-text">Puntos Anotados</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 col-lg-3">
+                                        <div class="stat-box danger">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </div>
+                                            <div class="stat-details">
+                                                <span class="stat-number" id="pointsConceded">-</span>
+                                                <span class="stat-text">Puntos Recibidos</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Segunda fila de estadísticas -->
+                                    <div class="col-md-6">
+                                        <div class="stat-box purple">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-chart-line"></i>
+                                            </div>
+                                            <div class="stat-details">
+                                                <span class="stat-number" id="avgPoints">-</span>
+                                                <span class="stat-text">Promedio por Partida</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="stat-box cyan">
+                                            <div class="stat-icon-container">
+                                                <i class="fas fa-chart-pie"></i>
+                                            </div>
+                                            <div class="stat-details ratio-details">
+                                                <div class="ratio-header">
+                                                    <span id="winRatio" class="ratio-value">-%</span>
+                                                    <span class="ratio-label">Ratio de Victoria</span>
+                                                </div>
+                                                <div class="ratio-bar">
+                                                    <div class="ratio-progress"></div>
+                                                    <div class="ratio-markers">
+                                                        <span>0%</span>
+                                                        <span>50%</span>
+                                                        <span>100%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab de Historial -->
+                            <div class="tab-pane fade" id="history">
+                                <div class="table-responsive">
+                                    <div class="d-flex justify-content-end mb-2">
+                                        <div class="history-nav">
+                                            <button class="history-nav-btn" id="prevPage" disabled>
+                                                <i class="fas fa-chevron-left"></i>
+                                            </button>
+                                            <button class="history-nav-btn" id="nextPage" disabled>
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <table class="table table-dark table-hover match-history">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th colspan="3" class="text-center">Resultado</th>
+                                                <th class="text-center">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="gamesList">
+                                            <!-- Contenido dinámico -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

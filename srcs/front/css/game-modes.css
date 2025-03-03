@@ -1,0 +1,496 @@
+/* Game Modes Grid */
+.game-modes {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(15px);
+    padding: 2.5rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.game-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: stretch;
+}
+
+/* Game Mode Card */
+.game-mode-card {
+    position: relative;
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 2rem;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        inset 0 0 20px rgba(13, 110, 253, 0.03);
+}
+
+.game-mode-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(13, 110, 253, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(13, 110, 253, 0.2);
+}
+
+/* Card Glow Effect */
+.card-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at var(--x, 50%) var(--y, 50%),
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.game-mode-card:hover .card-glow {
+    opacity: 1;
+}
+
+/* Card Content */
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.game-mode-card:hover .card-icon {
+    transform: scale(1.1);
+}
+
+.game-mode-card h3 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 0.5rem 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.game-mode-card p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Mode-specific styles */
+.game-mode-card[id="matchmakingBtn"] .card-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-mode-card[id="aiBtn"] .card-icon {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Badges y estados adicionales */
+.coming-soon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(13, 110, 253, 0.15);
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: white;
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    font-weight: 500;
+}
+
+.game-mode-card.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: linear-gradient(145deg, 
+        rgba(108, 117, 125, 0.05) 0%,
+        rgba(108, 117, 125, 0.02) 100%
+    );
+}
+
+/* Iconos específicos por modo adicionales */
+.game-mode-card[id="localTournamentBtn"] .card-icon {
+    background: linear-gradient(135deg, #ffd86f 0%, #ffc107 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.3));
+}
+
+.game-mode-card[id="onlineTournamentBtn"] .card-icon {
+    background: linear-gradient(135deg, #2196f3 0%, #4dabf5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(33, 150, 243, 0.3));
+}
+
+.game-mode-card[id="friendInviteBtn"] .card-icon {
+    background: linear-gradient(135deg, #4caf50 0%, #80e27e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.3));
+}
+
+.game-mode-card[id="tournament-create-btn"] .card-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(79, 172, 254, 0.3));
+}
+
+.game-mode-card[id="tournaments-pending"] .card-icon {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.3));
+}
+
+.game-mode-card[id="tournaments-played"] .card-icon {
+    background: linear-gradient(135deg, #4caf50 0%, #80e27e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.3));
+}
+
+.game-mode-card[id="tournaments-finished"] .card-icon {
+    background: linear-gradient(135deg, #4caf50 0%, #80e27e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.3));
+}
+
+/* Información adicional de modos */
+.mode-details,
+.difficulty-badges,
+.tournament-info,
+.tournament-schedule,
+.invite-info {
+    margin-top: auto;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.difficulty-levels {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.difficulty-levels .badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Info adicional de torneo */
+.tournament-info,
+.tournament-schedule {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Badge de dificultad */
+.difficulty-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .game-modes-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-modes-grid {
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .game-mode-card {
+        height: 300px;
+    }
+}
+
+/* Matchmaking Modal Styles */
+.matchmaking-modal {
+    background: rgba(16, 19, 34, 0.98);
+    backdrop-filter: blur(10px);
+}
+
+.matchmaking-modal-dialog {
+    max-width: 500px;
+}
+
+.matchmaking-modal-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.matchmaking-content {
+    padding: 2.5rem;
+    text-align: center;
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.modal-title i {
+    font-size: 2rem;
+    animation: pulse 2s ease-in-out infinite;
+    color: #4facfe;
+    opacity: 0.9;
+}
+
+.modal-title h2 {
+    font-size: 2rem;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.pong-logo-wrapper {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 2rem;
+    position: relative;
+    opacity: 0.9;
+}
+
+.glow-effect {
+    animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+.waiting-info {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+
+.status-message {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+}
+
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+@keyframes subtle-glow {
+    0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 10px rgba(79, 172, 254, 0.3));
+    }
+    50% {
+        filter: brightness(1.2) drop-shadow(0 0 15px rgba(79, 172, 254, 0.5));
+    }
+}
+
+.retro-screen {
+    position: relative;
+    background: #000;
+    padding: 2rem;
+    overflow: hidden;
+}
+
+.scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 50%,
+        rgba(0, 0, 0, 0.5) 50%
+    );
+    background-size: 100% 4px;
+    animation: scanline 10s linear infinite;
+    pointer-events: none;
+    opacity: 0.2;
+}
+
+/* Eliminar o comentar estas reglas duplicadas */
+/* .pong-logo-wrapper {
+    width: 120px;
+    height: 120px;
+    margin: 1rem auto;
+    position: relative;
+    filter: brightness(1.2) contrast(1.2);
+} */
+
+.retro-text {
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    color: #4facfe;
+    text-shadow: 0 0 10px rgba(79, 172, 254, 0.7);
+    margin: 2rem 0;
+}
+
+.blink {
+    font-size: 1.2rem;
+    animation: blink 1s steps(2) infinite;
+    margin-bottom: 1rem;
+}
+
+.status-message {
+    font-size: 0.8rem;
+    color: rgba(79, 172, 254, 0.7);
+    letter-spacing: 1px;
+}
+
+@keyframes scanline {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(100%);
+    }
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.search-header h3 {
+    font-size: 1.8rem;
+    margin: 0;
+    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.rotating-dish {
+    font-size: 1.8rem;
+    color: #4facfe;
+    animation: rotateDish 2s linear infinite;
+}
+
+.search-info {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.search-time {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4facfe;
+    text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+}
+
+.search-tips {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-top: 1rem;
+}
+
+.cancel-search-btn {
+    margin-top: 1rem;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.cancel-search-btn:hover {
+    background: rgba(255, 59, 59, 0.2);
+    border-color: rgba(255, 59, 59, 0.4);
+    transform: translateY(-2px);
+}
+
+.cancel-search-btn:active {
+    transform: translateY(1px);
+}
+
+@keyframes rotateDish {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

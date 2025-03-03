@@ -137,6 +137,19 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     animation: buttonGlow 1.5s linear infinite;
 }
 
+/* Botones - Estilos base */
+.btn:not(.game-section .btn):not(.game-modes .btn):not(.game-over-screen .btn):not(.game-wrapper .fullscreen-btn) {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.btn:not(.game-section .btn):not(.game-modes .btn):not(.game-over-screen .btn):not(.game-wrapper .fullscreen-btn):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
 /* Botones sociales */
 .btn-social {
     transition: all 0.3s ease;
@@ -846,6 +859,9 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     box-shadow: 
         0 8px 32px rgba(31, 38, 135, 0.2),
         inset 0 0 32px rgba(13, 110, 253, 0.05);
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .tab-pane {
@@ -854,10 +870,12 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     background: rgba(255, 255, 255, 0.02);
     border-radius: 1rem;
     box-shadow: inset 0 0 20px rgba(13, 110, 253, 0.02);
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .tab-pane.active {
-    display: block;
+    display: block !important;
 }
 
 .tab-pane .stats-card,
@@ -1057,10 +1075,20 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     border-radius: 0 0 1rem 1rem;
     padding: 2rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .tab-pane {
     animation: fadeIn 0.3s ease-out;
+    display: none;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.tab-pane.active {
+    display: block !important;
 }
 
 /* Settings card titles */
@@ -1262,4 +1290,94 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
 .site-footer .authors {
     color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
+}
+
+/* Botones de configuración específicos */
+.settings-card .btn {
+    padding: 0.75rem 1.25rem;
+    margin: 0.5rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+/* Botón de 2FA */
+.btn-2fa {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-2fa:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+.btn-2fa.active {
+    background: rgba(25, 135, 84, 0.2);
+    border-color: rgba(25, 135, 84, 0.5);
+    color: #2ecc71;
+}
+
+.btn-2fa.active:hover {
+    background: rgba(25, 135, 84, 0.3);
+    border-color: rgba(25, 135, 84, 0.6);
+}
+
+/* Botón de QR */
+.btn-qr {
+    background: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-qr:hover {
+    background: rgba(13, 110, 253, 0.2);
+    border-color: rgba(13, 110, 253, 0.3);
+    color: white;
+}
+
+/* Contenedor de botones de settings */
+.settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Game buttons */
+.game-button {
+    background: rgba(var(--neon-color-rgb), 0.2);
+    border: 1px solid var(--neon-color);
+    color: var(--neon-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.game-button:hover {
+    background: rgba(var(--neon-color-rgb), 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(var(--neon-color-rgb), 0.5);
+}
+
+.game-button.primary {
+    background: rgba(var(--neon-primary-rgb), 0.2);
+    border-color: var(--neon-primary);
+    color: var(--neon-primary);
+}
+
+.game-button.success {
+    background: rgba(var(--neon-success-rgb), 0.2);
+    border-color: var(--neon-success);
+    color: var(--neon-success);
+}
+
+.game-button.danger {
+    background: rgba(var(--neon-danger-rgb), 0.2);
+    border-color: var(--neon-danger);
+    color: var(--neon-danger);
 }
