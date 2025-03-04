@@ -14,20 +14,20 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         self.user = self.scope["user"]
         self.channel = self.channel_name
         
-        # Verificar si el usuario ya está conectado desde otro navegador
+        # Check if the user is already connected from another browser
         if self.user.id in connected_players:
             existing_channel = connected_players[self.user.id]
             if existing_channel != self.channel_name:
-                # Usuario ya conectado desde otro lugar, rechazar la conexión
+                # User already connected from another location, reject the connection
                 await self.close(code=4000)  # Código personalizado para indicar "ya conectado"
                 return
                 
-        # Agregar el usuario a la lista de espera si no está ya
+        # Add the user to the waiting list if not already there
         in_queue = any(item['user'].id == self.user.id for item in waiting_players)
         if not in_queue:
             waiting_players.append({'user': self.user, 'channel_name': self.channel})
 
-        # Agregar el usuario a la lista de conectados
+        # Add the user to the connected list
         connected_players[self.user.id] = self.channel_name
 
         await self.accept()
@@ -35,10 +35,10 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         global waiting_players, connected_players
-        # Eliminar al usuario de la lista de espera
+        # Remove the user from the waiting list
         waiting_players = [item for item in waiting_players if item['user'].id != self.user.id]
         
-        # Verificar que el canal actual es el que está registrado antes de eliminarlo
+        # Verify that the current channel is the one registered before removing it
         if self.user.id in connected_players and connected_players[self.user.id] == self.channel_name:
             del connected_players[self.user.id]
 
@@ -60,12 +60,12 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             player1 = waiting_players.pop(0)
             player2 = waiting_players.pop(0)
 
-            # Espera hasta que ambos jugadores estén conectados
+            # Wait until both players are connected
             start_time = time.time()
             while (player1['user'].id not in connected_players or
                     player2['user'].id not in connected_players):
-                if time.time() - start_time > 5:  # Timeout de 5 segundos
-                    # Volver a poner a los jugadores en la cola
+                if time.time() - start_time > 5:  # 5 second timeout
+                    # Put the players back in the queue
                     waiting_players.append(player1)
                     waiting_players.append(player2)
                     return
@@ -74,11 +74,11 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             game = await self.create_game(player1['user'], player2['user'])
             print(f"Match found between {player1['user']} and {player2['user']} for game {game.id}")
 
-            # Agregar ambos canales al grupo del juego
+            # Add both channels to the game group
             await self.channel_layer.group_add(f'game_{game.id}', player1['channel_name'])
             await self.channel_layer.group_add(f'game_{game.id}', player2['channel_name'])
 
-            # Notificar a ambos que se ha hecho el match (aquí los clientes cargarán la vista de juego)
+            # Notify both that the match has been made (here clients will load the game view)
             await self.channel_layer.group_send(
                 f'game_{game.id}',
                 {
@@ -87,7 +87,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-            # Actualizar el estado del juego a MATCHED
+            # Update the game status to MATCHED
             await self.update_game_status(game.id, 'MATCHED')
         else:
             await self.send(text_data=json.dumps({
@@ -97,7 +97,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def create_game(self, player1, player2):
-        # Se crea inicialmente en WAITING y luego se actualiza a MATCHED
+        # Initially created as WAITING and then updated to MATCHED
         return Game.objects.create(player1=player1, player2=player2, status='WAITING')
 
     @database_sync_to_async

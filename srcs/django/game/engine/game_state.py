@@ -9,13 +9,17 @@ class GameState:
     CANVAS_HEIGHT = 600
     WINNING_SCORE = 10
     PLAYER_SPEED = 7
-    BALL_SPEED = 7
+    BALL_SPEED = 15
     PADDLE_WIDTH = 10
     PADDLE_HEIGHT = 160
 
     def __init__(self):
         """Initial game state setup"""
-        self.ball = Ball(self.CANVAS_WIDTH / 2, self.CANVAS_HEIGHT / 2)
+        self.ball = Ball(
+            self.CANVAS_WIDTH / 2, 
+            self.CANVAS_HEIGHT / 2,
+            base_speed=self.BALL_SPEED
+        )
 
         paddle_y = (self.CANVAS_HEIGHT - self.PADDLE_HEIGHT) / 2
         self.paddles = {
@@ -51,7 +55,6 @@ class GameState:
 
         winner = self.score_manager.check_scoring()  # Check for winner
         if winner:
-            # print(f"Winner detected: {winner} - Scores: {self.paddles['left'].score}-{self.paddles['right'].score}")
             self.status = "finished"
             return winner
 

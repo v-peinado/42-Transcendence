@@ -77,22 +77,20 @@ export async function GameMatchView(gameId) {
             modal.style.display = 'none';
                 
             // 3. Mostrar cuenta regresiva
-            for(let i = 3; i >= 0; i--) {
-                countdown.style.display = 'flex';
-                countdown.textContent = i === 0 ? 'GO!' : i.toString();
-                countdown.classList.remove('countdown-pulse');
-                void countdown.offsetWidth;
-                countdown.classList.add('countdown-pulse');
-                await soundService.playCountdown();
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            countdown.style.display = 'none';
-                
-            resolve();
-        });
+   			countdown.style.display = 'flex';
+   			countdown.textContent = '';
+   
+   			// 4. --->>> Decimos al servidor que estamos listos para la cuenta atrás
+   			socket.send(JSON.stringify({
+   				type: 'ready_for_countdown'
+   			}));
+   
+   		resolve();
+   	});
     }
 
     let gameStarted = false; // Nueva variable de estado
+	let countdownShown = false;
 
     socket.onmessage = async (event) => {
         const data = JSON.parse(event.data);
@@ -159,6 +157,24 @@ export async function GameMatchView(gameId) {
         
         gameState = state;
         
+		// Si hay una cuenta atrás en el estado, actualizar la UI de cuenta atrás
+		if (state.countdown !== undefined) {
+			const countdown = document.getElementById('countdown');
+			countdown.style.display = 'flex';
+			countdown.textContent = state.countdown === "GO!" ? "GO!" : state.countdown.toString();
+			countdown.classList.remove('countdown-pulse');
+			void countdown.offsetWidth; // Forzar reflow
+			countdown.classList.add('countdown-pulse');
+	
+			// Reproducir sonido solo si viene con el indicador
+			if (state.play_sound) {
+				soundService.playCountdown();
+			}
+		} else if (state.status === 'playing') {
+			// Si el estado es playing y ya no hay cuenta atrás, ocultar el elemento de cuenta atrás
+			document.getElementById('countdown').style.display = 'none';
+		}
+	
         // Actualizar marcador si existe
         const leftScore = document.querySelector('.minimal-header .player-score:first-child');
         const rightScore = document.querySelector('.minimal-header .player-score:last-child');

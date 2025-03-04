@@ -9,23 +9,20 @@ class MultiplayerHandler:
 
     @staticmethod
     async def handle_player_join(consumer, game):
-        # Determinar el rol del jugador y marcarlo como listo
+        """Assign player to game and mark player as ready"""
         if game.player1 == consumer.user:
             consumer.side = "left"
             await MultiplayerHandler.mark_player_ready(game, role="player1")
         else:
             consumer.side = "right"
-            # Si por alguna razón aún no se ha asignado player2, se asigna ahora
             if game.player2 != consumer.user:
                 await MultiplayerHandler.set_player2(game, consumer.user)
             await MultiplayerHandler.mark_player_ready(game, role="player2")
 
-        # Obtener el juego actualizado para ver si ambos jugadores están listos
         updated_game = await MultiplayerHandler.get_game(game.id)
         if (updated_game.player1_ready and updated_game.player2_ready) and (updated_game.status != "PLAYING"):
-            # Actualizamos el estado a PLAYING
             updated_game = await MultiplayerHandler.update_game_status(updated_game, "PLAYING")
-            # Notificamos a ambos jugadores que la partida inicia
+
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {
@@ -37,7 +34,7 @@ class MultiplayerHandler:
                     "game_id": updated_game.id,
                 },
             )
-            # Iniciamos el countdown y arrancamos el game loop
+            # Start game countdown
             consumer.game_state.status = "countdown"
             await consumer.game_state.start_countdown()
             asyncio.create_task(consumer.game_loop())

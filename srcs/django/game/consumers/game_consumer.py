@@ -10,18 +10,17 @@ from .shared_state import connected_players, waiting_players
 
 class GameConsumer(BaseGameConsumer):
     async def connect(self):
-        # Obtener el usuario actual
-        self.user = self.scope["user"]
+        """Connect to websocket"""
+        self.user = self.scope["user"]	# Get user from scope
         
-        # Verificar si el usuario ya está conectado a un juego
+        # Verify that the user is connected from only one place
         if self.user.id in connected_players:
             existing_channel = connected_players[self.user.id]
             if existing_channel != self.channel_name:
-                # Usuario ya conectado desde otro lugar, rechazar la conexión
+                # User is already connected from another place, reject this connection
                 await self.close(code=4000)
                 return
         
-        # Continuar con la conexión normal
         await super().connect()
         
         @database_sync_to_async
@@ -31,21 +30,21 @@ class GameConsumer(BaseGameConsumer):
         game = await get_game()
         self.scope["game"] = game
         
-        # Verificar que el usuario es uno de los jugadores legítimos del juego
+        # Verify that the user is authorized to join this game
         if game and (self.user.id == game.player1.id or self.user.id == game.player2.id):
-            # Registrar al usuario como conectado a este juego
+            # Register the user as connected to this game
             connected_players[self.user.id] = self.channel_name
             await MultiplayerHandler.handle_player_join(self, game)
         else:
-            # Usuario no autorizado para este juego
+            # Unauthorized user, close the connection
             await self.close(code=4001)
 
     async def disconnect(self, close_code):
-        # Verificar que el canal actual es el que está registrado antes de eliminarlo
+        # Verify that the user is connected to this game before disconnecting
         if hasattr(self, 'user') and self.user.id in connected_players and connected_players[self.user.id] == self.channel_name:
             del connected_players[self.user.id]
         
-        # Ejecutar la lógica de desconexión
+        # Handle player disconnection
         if self.game_state:
             game = await DatabaseOperations.get_game(self.game_id)
             if game:
@@ -60,11 +59,18 @@ class GameConsumer(BaseGameConsumer):
         message_type = content.get("type")
         if message_type == "move_paddle":
             await GameStateHandler.handle_paddle_movement(self, content)
+        elif message_type == "ready_for_countdown":
+            # Player is ready for countdown
+            if hasattr(self, "game_state") and self.game_state:
+                self.game_state.player_ready = True
+                if not hasattr(self.game_state, "countdown_started") or not self.game_state.countdown_started:
+                    self.game_state.countdown_started = True
+                    asyncio.create_task(GameStateHandler.countdown_timer(self))
 
     async def game_start(self, event):
         if self.game_state:
             await self.game_state.start_countdown()
-            asyncio.create_task(GameStateHandler.countdown_timer(self))
+
         await self.send(text_data=json.dumps(event))
 
     async def game_loop(self):

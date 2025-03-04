@@ -87,33 +87,44 @@ class GameStateHandler:
     @staticmethod
     async def countdown_timer(consumer):  # Countdown timer
         """Handle game countdown"""
-        countdown_value = 3
-
-        while countdown_value > 0:
-            consumer.game_state.countdown = countdown_value  # Update countdown value
-            state = consumer.game_state.serialize()  # Serialize game state
-
-            await consumer.channel_layer.group_send(  # Send game state update
-                consumer.room_group_name, {"type": "game_state_update", "state": state}
+        consumer.game_state.status = "countdown"
+        consumer.game_state.countdown_active = True
+        
+        # Start countdown
+        for countdown_value in [3, 2, 1, "GO!"]:
+            consumer.game_state.countdown = countdown_value
+            
+            # Serialize game state and add sound indicator
+            state = consumer.game_state.serialize()
+            state["play_sound"] = True  # Add sound indicator
+            
+            await consumer.channel_layer.group_send(
+                consumer.room_group_name,
+                {"type": "game_state_update", "state": state}
             )
-
-            await asyncio.sleep(1)  # Display numbers each second
-            countdown_value -= 1  # Decrement countdown value
-
-        # Start game after countdown
+            
+            # Wait 1 second before next countdown value
+            await asyncio.sleep(1)
+        
+        # Countdown finished, start game
         consumer.game_state.countdown_active = False
-        consumer.game_state.countdown = 0
+        consumer.game_state.countdown = None
         consumer.game_state.status = "playing"
 
-        # Set ball position at game start
+         # Set ball position at game start with correct speed
         consumer.game_state.ball.reset(
-            consumer.game_state.CANVAS_WIDTH / 2, consumer.game_state.CANVAS_HEIGHT / 2
+            consumer.game_state.CANVAS_WIDTH / 2, 
+            consumer.game_state.CANVAS_HEIGHT / 2,
+            base_speed=consumer.game_state.BALL_SPEED
         )
-
-        # Send updated game state when game starts
+        
         await consumer.channel_layer.group_send(
             consumer.room_group_name,
-            {"type": "game_state_update", "state": consumer.game_state.serialize()},
+            {
+                "type": "game_state_update", 
+                "state": consumer.game_state.serialize(),
+                "game_started": True
+            }
         )
 
         # Start game loop
