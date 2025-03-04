@@ -41,7 +41,7 @@ class Game(models.Model):
         ],
         default="WAITING",
     )
-    # Campos para marcar que cada jugador se ha unido (listo)
+    # Ready flags for players
     player1_ready = models.BooleanField(default=False)
     player2_ready = models.BooleanField(default=False)
 
