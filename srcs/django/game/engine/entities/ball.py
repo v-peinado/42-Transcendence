@@ -42,22 +42,18 @@ class Ball:
         """Reset ball position and velocity after scoring"""
         self.x = x
         self.y = y
-        
-        # Asegurar que la velocidad sea la original
-        self.base_speed = 7  # Confirmar que usamos la velocidad base original
-        
-        # Generar un ángulo aleatorio entre -45 y 45 grados (o 135 y 225 grados)
-        angle = random.uniform(-45, 45)
-        # 50% de probabilidad de ir hacia la izquierda o derecha
-        if random.random() < 0.5:
-            angle += 180  # Hacia la izquierda
-        
-        # Convertir el ángulo a radianes
-        angle_rad = math.radians(angle)
-        
-        # Calcular las componentes de velocidad basadas en el ángulo y la velocidad base
-        self.speed_x = self.base_speed * math.cos(angle_rad)
-        self.speed_y = self.base_speed * math.sin(angle_rad)
+
+        # Always ensure constant x velocity
+        while abs(self.speed_y) < 2:  # Ensure y velocity is greater than 2
+            angle = random.uniform(-0.5, 0.5)  # Random serve angle
+            self.speed_x = self.base_speed * (
+                1 if random.random() > 0.5 else -1
+            )  # Constant x velocity
+            self.speed_y = self.base_speed * math.sin(
+                angle
+            )  # Variable y velocity (based on angle)
+
+        # print(f"Ball reset - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")  # Debug
 
     def serialize(self):
         """Serializa el estado de la pelota"""

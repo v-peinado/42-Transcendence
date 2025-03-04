@@ -87,52 +87,35 @@ class GameStateHandler:
     @staticmethod
     async def countdown_timer(consumer):  # Countdown timer
         """Handle game countdown"""
-        # Ya no necesitamos espera inicial, el frontend nos avisará cuando esté listo
-        
-        # Reiniciar el estado para asegurarse de que countdown_active esté en True
         consumer.game_state.status = "countdown"
         consumer.game_state.countdown_active = True
         
-        # Comenzar la cuenta regresiva
+        # Start countdown
         for countdown_value in [3, 2, 1, "GO!"]:
-            # Establecer el valor de la cuenta regresiva
             consumer.game_state.countdown = countdown_value
             
-            # Serializar y enviar el estado actual del juego
+            # Serialize game state and add sound indicator
             state = consumer.game_state.serialize()
-            state["play_sound"] = True  # Añadir indicador para reproducir sonido
+            state["play_sound"] = True  # Add sound indicator
             
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {"type": "game_state_update", "state": state}
             )
             
-            # Esperar un segundo completo
+            # Wait 1 second before next countdown value
             await asyncio.sleep(1)
         
-        # Finalizar la cuenta regresiva y comenzar el juego
+        # Countdown finished, start game
         consumer.game_state.countdown_active = False
         consumer.game_state.countdown = None
         consumer.game_state.status = "playing"
 
-        # Establecer posición inicial de la pelota con velocidad original
+         # Set ball position at game start
         consumer.game_state.ball.reset(
             consumer.game_state.CANVAS_WIDTH / 2, consumer.game_state.CANVAS_HEIGHT / 2
         )
         
-        # Asegurar que la pelota tenga la velocidad correcta
-        if hasattr(consumer.game_state.ball, 'base_speed'):
-            # Aplicar la velocidad base a las componentes X e Y según la dirección actual
-            current_direction_x = 1 if consumer.game_state.ball.speed_x > 0 else -1
-            current_direction_y = 1 if consumer.game_state.ball.speed_y > 0 else -1
-            
-            # Normalizar el vector de velocidad actual y aplicar la velocidad base
-            total_speed = (consumer.game_state.ball.speed_x**2 + consumer.game_state.ball.speed_y**2)**0.5
-            if total_speed > 0:  # Evitar división por cero
-                consumer.game_state.ball.speed_x = (consumer.game_state.ball.speed_x / total_speed) * consumer.game_state.ball.base_speed
-                consumer.game_state.ball.speed_y = (consumer.game_state.ball.speed_y / total_speed) * consumer.game_state.ball.base_speed
-
-        # Notificar que el juego ha comenzado con el nuevo estado de la pelota
         await consumer.channel_layer.group_send(
             consumer.room_group_name,
             {
@@ -142,5 +125,5 @@ class GameStateHandler:
             }
         )
 
-        # Iniciar el bucle del juego
+        # Start game loop
         asyncio.create_task(GameStateHandler.game_loop(consumer))

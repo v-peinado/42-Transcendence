@@ -60,7 +60,7 @@ class GameConsumer(BaseGameConsumer):
         if message_type == "move_paddle":
             await GameStateHandler.handle_paddle_movement(self, content)
         elif message_type == "ready_for_countdown":
-            # Cuando el cliente indica que está listo para la cuenta atrás
+            # Player is ready for countdown
             if hasattr(self, "game_state") and self.game_state:
                 self.game_state.player_ready = True
                 if not hasattr(self.game_state, "countdown_started") or not self.game_state.countdown_started:
@@ -70,8 +70,7 @@ class GameConsumer(BaseGameConsumer):
     async def game_start(self, event):
         if self.game_state:
             await self.game_state.start_countdown()
-            # Ya no iniciamos el countdown_timer aquí
-            # Lo iniciamos cuando recibamos "ready_for_countdown" del cliente
+
         await self.send(text_data=json.dumps(event))
 
     async def game_loop(self):
