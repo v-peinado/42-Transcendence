@@ -3,13 +3,13 @@ import math
 
 
 class Ball:
-    def __init__(self, x, y, radius=10):  # Set initial ball values
+    def __init__(self, x, y, radius=10, base_speed=7):  
         self.x = x
         self.y = y
         self.radius = radius
         self.speed_x = 0
         self.speed_y = 0
-        self.base_speed = 7
+        self.base_speed = base_speed
 
     def update(self, canvas_width, canvas_height):
         """Update ball position"""
@@ -36,12 +36,14 @@ class Ball:
             self.y = self.radius
             self.speed_y *= -1
 
-        # print(f"Ball update - pos:({self.x}, {self.y}), prev:({prev_x}, {prev_y}), speed:({self.speed_x}, {self.speed_y})")
-
-    def reset(self, x, y):
+    def reset(self, x, y, base_speed=None):
         """Reset ball position and velocity after scoring"""
         self.x = x
         self.y = y
+        
+        # Reset ball speed
+        if base_speed is not None:
+            self.base_speed = base_speed
 
         # Always ensure constant x velocity
         while abs(self.speed_y) < 2:  # Ensure y velocity is greater than 2
@@ -53,10 +55,8 @@ class Ball:
                 angle
             )  # Variable y velocity (based on angle)
 
-        # print(f"Ball reset - pos:({self.x}, {self.y}), speed:({self.speed_x}, {self.speed_y})")  # Debug
-
     def serialize(self):
-        """Serializa el estado de la pelota"""
+        """Serializes the ball state"""
         return {
             "x": self.x,
             "y": self.y,

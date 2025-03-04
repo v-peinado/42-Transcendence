@@ -111,9 +111,11 @@ class GameStateHandler:
         consumer.game_state.countdown = None
         consumer.game_state.status = "playing"
 
-         # Set ball position at game start
+         # Set ball position at game start with correct speed
         consumer.game_state.ball.reset(
-            consumer.game_state.CANVAS_WIDTH / 2, consumer.game_state.CANVAS_HEIGHT / 2
+            consumer.game_state.CANVAS_WIDTH / 2, 
+            consumer.game_state.CANVAS_HEIGHT / 2,
+            base_speed=consumer.game_state.BALL_SPEED
         )
         
         await consumer.channel_layer.group_send(
