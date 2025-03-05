@@ -65,14 +65,14 @@ MIDDLEWARE = [
 # CORS and Security configuration
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOWED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:3000",
+    "https://192.168.1.144:8445",
+    "https://192.168.1.144:8443",
+    "http://192.168.1.144:3000",
 ]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + [
-    "http://localhost:8082",
-    "ws://localhost:8000",
-    "wss://localhost:8445",
+    "http://192.168.1.144:8082",
+    "ws://192.168.1.144:8000",
+    "wss://192.168.1.144:8445",
 ]
 
 if DEBUG:
@@ -284,7 +284,7 @@ ACCOUNT_EMAIL_VERIFICATION = (
 ENCRYPTION_KEY = get_encryption_key()
 
 # Frontend settings
-FRONTEND_URL = "https://localhost:8445"
+FRONTEND_URL = "https://192.168.1.144:8445"
 SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
