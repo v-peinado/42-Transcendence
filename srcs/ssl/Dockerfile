@@ -1,10 +1,11 @@
 FROM alpine:latest
 
-RUN apk add --no-cache openssl bash curl jq
+RUN apk update && \
+	apk add --no-cache openssl bash
 
-WORKDIR /ssl
-
-COPY ssl/generate-ssl.sh /usr/local/bin/
+COPY generate-ssl.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/generate-ssl.sh
 
-CMD ["generate-ssl.sh"]
+VOLUME /ssl
+
+CMD ["/usr/local/bin/generate-ssl.sh"]

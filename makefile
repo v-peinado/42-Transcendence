@@ -1,5 +1,5 @@
 # Variables esenciales
-COMPOSE_FILE = ./srcs/docker-compose.yml
+COMPOSE_FILE = ./docker-compose.yml
 COMPOSE_CMD = docker compose
 COLOR_GREEN = \033[0;32m
 COLOR_RED = \033[0;31m

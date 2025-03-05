@@ -30,7 +30,7 @@ RUN apt-get update && \
 	/usr/share/nginx/html
 
 COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
+COPY nginx/conf/default.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 8443
 
