@@ -5,7 +5,7 @@ from channels.db import database_sync_to_async
 from chat.models import Message, PrivateChannelMembership, GroupMembership, PrivateChannel
 import logging
 import asyncio
-
+import html
 
 User = get_user_model()
 
@@ -44,6 +44,9 @@ class MessagesConsumer:
         from_user = self.scope["user"] 
 
         if message:
+            # Sanitizar el mensaje para evitar XSS
+            sanitized_message = html.escape(message)
+            
             if channel_name.startswith('dm_'): # Si el canal es un mensaje directo
                 to_user_ids = channel_name.split('_')[1:] # [:1], asi extraemos el primer elemento de la lista, ej: [4 , 2]
                 # Usaremos map para aplicar el int() a cada elemento de la lista y guardarlo en user1_id = 4 y user2_id = 2
@@ -64,10 +67,10 @@ class MessagesConsumer:
                                 channel_name,
                                 ChatConsumer.connected_users[user_id]
                             )
-            await self.save_message(from_user, channel_name, message)
+            await self.save_message(from_user, channel_name, sanitized_message)
             # Enviamos el mensaje al canal, el cual puede ser un canal privado o un grupo
             # Al enviarlo al canal, se enviará a todos los consumidores suscritos al canal
-            await self.send_to_channel(channel_name, from_user.id, from_user.username, message)
+            await self.send_to_channel(channel_name, from_user.id, from_user.username, sanitized_message)
 
     async def send_to_channel(self, channel_name, user_id, username, message):
         # Enviamos el mensaje al grupo del canal
@@ -107,16 +110,23 @@ class MessagesConsumer:
             messages = await self.get_unarchived_messages_filtered(user_id, channel_name)
             logger.info(f"Loading {len(messages)} unarchived messages for channel {channel_name}")
             for message in messages:
-                logger.info(f"Sending message: {message.content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}")
+                content = message.content
+                # Sanitizar también los mensajes antiguos al cargarlos
+                sanitized_content = html.escape(content) if not self.is_already_escaped(content) else content
+                logger.info(f"Sending message: {content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}")
                 await self.send(text_data=json.dumps({
                     "type": "chat_message",
                     "user_id": await self.get_user_id(message),
                     "username": await self.get_username(message),
-                    "message": message.content,
+                    "message": sanitized_content,
                     "channel_name": message.channel_name,
                     "timestamp": message.timestamp.isoformat()
                 }))
                 #await asyncio.sleep(0.1)  # Añadir un pequeño retraso de 100ms
+
+    def is_already_escaped(self, text):
+        """Verifica si el texto ya está escapado"""
+        return '&lt;' in text or '&gt;' in text or '&quot;' in text or '&#' in text
 
     @database_sync_to_async
     def get_unarchived_messages_filtered(self, user_id, channel_name):
