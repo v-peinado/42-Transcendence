@@ -10,7 +10,9 @@ from .notifications import NotificationsConsumer
 
 import json
 from django.contrib.auth import get_user_model
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class MainChatConsumer(
@@ -32,6 +34,15 @@ class MainChatConsumer(
         channel_name = data.get('channel_name')
 
         # Manejar el mensaje según el tipo, se enviara a la función correspondiente.
+        await self.handle_message_type(message_type, data, channel_name)
+
+    async def handle_message_type(self, message_type, data, channel_name):
+        """
+        Método implementado para manejar los diferentes tipos de mensajes
+        después de que han sido sanitizados
+        """
+        logger.debug(f"Handling message type: {message_type}")
+        
         if message_type == 'chat_message' and channel_name:
             await self.handle_message(data, channel_name)
         elif message_type == 'create_group':
@@ -59,4 +70,17 @@ class MainChatConsumer(
         elif message_type == 'challenge_action' and channel_name:
             await self.handle_challenge_action(data, channel_name)
         elif message_type == 'request_channel_messages':
-            await self.load_unarchived_messages(self.scope['user'].id, data.get('channel_name'))
+            await self.load_unarchived_messages(self.scope['user'].id)
+        # Manejar los tipos de mensajes faltantes
+        elif message_type == 'request_online_users':
+            await self.user_list_update()
+        elif message_type == 'get_user_list':
+            await self.user_list_update()
+        elif message_type == 'get_friend_list':
+            await self.send_friend_list(self.scope['user'].id)
+        elif message_type == 'get_pending_requests':
+            await self.notify_pending_requests(self.scope['user'].id)
+        elif message_type == 'get_sent_requests':
+            await self.notify_pending_requests(self.scope['user'].id, sent=True)
+        else:
+            logger.warning(f"Unknown message type: {message_type}")
