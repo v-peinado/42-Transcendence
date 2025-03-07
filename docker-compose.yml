@@ -105,8 +105,12 @@ services:
       - waf_logs:/var/log/nginx
       - vault_data:/etc/vault.d/data
       - django_media:/usr/share/nginx/html/media:rw
+      - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
     env_file:
       - ./srcs/.env
+    command: >
+      sh -c "envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
+             /usr/local/bin/vault-setup.sh"
     restart: always
     depends_on:
       ssl-manager:

@@ -11,15 +11,15 @@ http {
     default_type  application/octet-stream;
 
     # Buffer size configuration
-    client_body_buffer_size    128k;        # Unified buffer size configuration
+    client_body_buffer_size    128k;
     client_header_buffer_size  1k;
-    client_max_body_size       3M;	#profile images are limited to 2MB in backend, but here we allow 3MB (second layer of defense)
+    client_max_body_size       3M;    #profile images are limited to 2MB in backend, but here we allow 3MB (second layer of defense)
     large_client_header_buffers 4 4k;
-    client_body_in_file_only clean;         # Memory control
-    client_body_in_single_buffer on;        # Memory optimization
+    client_body_in_file_only clean;
+    client_body_in_single_buffer on;
 
     # Timeouts
-    client_body_timeout   60s;    # Increased timeout for larger uploads
+    client_body_timeout   60s;
     client_header_timeout 10;
 
     # Headers and optimizations
@@ -37,7 +37,6 @@ http {
     # Logging configuration
     error_log /var/log/nginx/error.log debug;
     access_log /var/log/nginx/access.log combined;
-    # Add ModSecurity audit log location
     access_log /var/log/modsecurity/audit.log combined;
 
     # ModSecurity debug headers
@@ -81,10 +80,10 @@ http {
     # HTTPS Server
     server {
         listen 8444 ssl;
-        server_name 192.168.1.144;
+        server_name ${IP_SERVER};
 
         # CORS
-        add_header 'Access-Control-Allow-Origin' 'https://192.168.1.144:8445';
+        add_header 'Access-Control-Allow-Origin' 'https://${IP_SERVER}:8445';
 
         # Frontend Configuration
         location / {
@@ -134,7 +133,7 @@ http {
         # API Configuration
         location /api {
             # File upload configs
-            client_max_body_size 3M;	#profile images are limited to 2MB in backend, but here we allow 3MB (second layer of defense)
+            client_max_body_size 3M;
             client_body_buffer_size 128k;
             
             # Increase timeouts for uploads
@@ -142,7 +141,7 @@ http {
             proxy_send_timeout 300;
             proxy_read_timeout 300;
             
-            # Los requests a /api pasan por ModSecurity antes de llegar al backend
+            # Requests to /api go through ModSecurity before reaching the backend
             proxy_pass http://web:8000;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
@@ -151,7 +150,7 @@ http {
             proxy_set_header X-Forwarded-Proto https;
 
             # CORS
-            add_header 'Access-Control-Allow-Origin' 'https://localhost:8445';
+            add_header 'Access-Control-Allow-Origin' 'https://${IP_SERVER}:8445';
             add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
             add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization,X-CSRFToken';
             add_header 'Access-Control-Allow-Credentials' 'true';
