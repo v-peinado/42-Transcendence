@@ -83,7 +83,7 @@ services:
         condition: service_started
     restart: always
     healthcheck:
-      test: [ "CMD", "curl", "-k", "--fail", "https://localhost:8443/health" ]
+      test: [ "CMD", "curl", "-k", "--fail", "-H", "Host: localhost", "https://localhost:8443/health" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -106,10 +106,12 @@ services:
       - vault_data:/etc/vault.d/data
       - django_media:/usr/share/nginx/html/media:rw
       - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
+      - ./srcs/waf/nginx_health_fix.sh:/usr/local/bin/nginx_health_fix.sh
     env_file:
       - ./srcs/.env
     command: >
       sh -c "envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
+             chmod +x /usr/local/bin/nginx_health_fix.sh &&
              /usr/local/bin/vault-setup.sh"
     restart: always
     depends_on:
@@ -118,7 +120,7 @@ services:
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -k https://localhost:8200/v1/sys/health && curl -k --fail --max-time 1 https://nginx:8443/health || exit 0"
+        - "curl -k https://localhost:8200/v1/sys/health || curl -k --fail --max-time 1 http://localhost:8081/health || exit 0"
       interval: 10s
       timeout: 5s
       retries: 3
