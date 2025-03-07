@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 # Build base and root directory paths for Django project (main)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Get server IP from environment
+SERVER_IP = os.environ.get("IP_SERVER", "localhost")
+
 # Basic project configuration
 SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
 DEBUG = os.environ.get("DEBUG", "True") == "True"
@@ -65,14 +68,14 @@ MIDDLEWARE = [
 # CORS and Security configuration
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 CORS_ALLOWED_ORIGINS = [
-    "https://localhost:8445",
-    "https://localhost:8443",
-    "http://localhost:3000",
+    f"https://{SERVER_IP}:8445",
+    f"https://{SERVER_IP}:8443",
+    f"http://{SERVER_IP}:3000",
 ]
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + [
-    "http://localhost:8082",
-    "ws://localhost:8000",
-    "wss://localhost:8445",
+    f"http://{SERVER_IP}:8082",
+    f"ws://{SERVER_IP}:8000",
+    f"wss://{SERVER_IP}:8445",
 ]
 
 if DEBUG:
@@ -284,7 +287,7 @@ ACCOUNT_EMAIL_VERIFICATION = (
 ENCRYPTION_KEY = get_encryption_key()
 
 # Frontend settings
-FRONTEND_URL = "https://localhost:8445"
+FRONTEND_URL = f"https://{SERVER_IP}:8445"
 SITE_URL = FRONTEND_URL
 EMAIL_VERIFICATION_URL = f"{FRONTEND_URL}/verify-email"
 
