@@ -16,6 +16,9 @@ DJANGO_ALLOWED_HOSTS=localhost             # Allowed hosts, comma separated
 # GDPR Configuration
 ENCRYPTION_KEY=your-32-bytes-base64-key    # GDPR Email Encryption Key (32 bytes base64-encoded)
 
+# IP server 
+IP_SERVER=                                 # execute ./configure_ip.sh
+
 # 42 OAuth Web Application
 FORTYTWO_CLIENT_ID=your-client-id          # 42 OAuth client ID
 FORTYTWO_CLIENT_SECRET=your-client-secret  # 42 OAuth client secret
