@@ -106,12 +106,10 @@ services:
       - vault_data:/etc/vault.d/data
       - django_media:/usr/share/nginx/html/media:rw
       - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
-      - ./srcs/waf/nginx_health_fix.sh:/usr/local/bin/nginx_health_fix.sh
     env_file:
       - ./srcs/.env
     command: >
       sh -c "envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
-             chmod +x /usr/local/bin/nginx_health_fix.sh &&
              /usr/local/bin/vault-setup.sh"
     restart: always
     depends_on:

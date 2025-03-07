@@ -53,12 +53,6 @@ http {
     # DNS and Upstream Configuration
     resolver 127.0.0.11;
 
-    # Eliminar la configuración upstream que podría estar causando problemas
-    # upstream backend {
-    #     server nginx:8443 max_fails=3 fail_timeout=30s;
-    #     keepalive 32;
-    # }
-
     # Rate limiting Configuration
     limit_req_zone $binary_remote_addr zone=global_limit:10m rate=30r/s;
     limit_req_status 429;
@@ -68,7 +62,7 @@ http {
         listen 8081;
         server_name localhost;
 
-        # Configuración de health check simple y directa
+        # Simple direct health check configuration
         location = /health {
             access_log off;
             add_header Content-Type text/plain;
@@ -117,12 +111,12 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
             
-            # Timeouts  WebSocket
+            # WebSocket Timeouts
             proxy_read_timeout 3600s;
             proxy_send_timeout 3600s;
             proxy_connect_timeout 3600s;
             
-            # SSL  WebSocket
+            # WebSocket SSL
             proxy_ssl_verify off;
             proxy_ssl_session_reuse on;
             
@@ -197,14 +191,14 @@ http {
             add_header X-Debug-Host $host;
         }
 
-        # Misc - Health Check mejorado con location exacta y prioridad
+        # Health Check with exact location match for priority
         location = /health {
             access_log off;
             add_header Content-Type text/plain always;
             return 200 'OK';
         }
 
-        # Si hay alguna ruta que comienza con /health/ también la manejamos
+        # Also handle paths starting with /health/
         location ^~ /health/ {
             access_log off;
             add_header Content-Type text/plain always;
