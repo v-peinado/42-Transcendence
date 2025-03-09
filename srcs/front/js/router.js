@@ -98,7 +98,7 @@ class Router {
         '/gdpr-settings/': GDPRSettingsView,
         '/game': GameView,
         '/game/': GameView,
-        '/game/:id': GameMatchView,  // Definición de ruta con parámetro
+		'/game/:id': (params) => GameMatchView(params.id),  // definición para compatibilidad, match principal lo hacemos arriba 🇪🇭
         '/dashboard': DashboardView,
         '/dashboard/': DashboardView,
         '/tournament/local': LocalTournamentView,
