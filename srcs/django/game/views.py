@@ -7,9 +7,6 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# waiting_players = []
-
-
 def single_player_view(request):
     return render(request, 'game/single_player.html')
 

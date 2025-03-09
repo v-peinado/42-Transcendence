@@ -1,87 +1,98 @@
-from channels.generic.websocket import AsyncWebsocketConsumer
-from .shared_state import connected_players, waiting_players
+from .base import TranscendenceBaseConsumer
+from .shared_state import waiting_players
 from .utils.database_operations import DatabaseOperations
-from django.contrib.auth import get_user_model
 import asyncio
 import json
 import time
 
-User = get_user_model()
-
-class MatchmakingConsumer(AsyncWebsocketConsumer):
+class MatchmakingConsumer(TranscendenceBaseConsumer):
     async def connect(self):
-        self.user = self.scope["user"]
+        """ Validate user connection and add to waiting list """
+        if not await self.validate_user_connection():
+            return
+        
         self.channel = self.channel_name
         
-        # Check if the user is already connected from another browser
-        if self.user.id in connected_players:
-            existing_channel = connected_players[self.user.id]
-            if existing_channel != self.channel_name:
-                # User already connected from another location, reject the connection
-                await self.close(code=4000)  # Código personalizado para indicar "ya conectado"
-                return
-                
-        # Add the user to the waiting list if not already there
+        # Add the user to the waiting list if not already in it
         in_queue = any(item['user'].id == self.user.id for item in waiting_players)
         if not in_queue:
             waiting_players.append({'user': self.user, 'channel_name': self.channel})
 
-        # Add the user to the connected list
-        connected_players[self.user.id] = self.channel_name
+        # If the user is already connected, remove the old connection 
+		# from the connected_players dictionary and add the new one
+        await self.manage_connected_players(add=True)
 
         await self.accept()
         await self.try_match_players()
 
     async def disconnect(self, close_code):
-        global waiting_players, connected_players
-        # Remove the user from the waiting list
+        """ Remove the user from the waiting list """
+        global waiting_players
         waiting_players = [item for item in waiting_players if item['user'].id != self.user.id]
         
-        # Verify that the current channel is the one registered before removing it
-        if self.user.id in connected_players and connected_players[self.user.id] == self.channel_name:
-            del connected_players[self.user.id]
+        # Remove user from connected players
+        await self.manage_connected_players(add=False)
 
     async def game_start(self, event):
+        """ Send game start event to client """
         await self.send(text_data=json.dumps({
             'game_id': event['game_id'],
             'status': 'matched'
         }))
         
     async def game_state_update(self, event):
+        """ Send game state update to client """
         await self.send(text_data=json.dumps({
             'type': 'game_state_update',
             'state': event['state']
         }))
 
     async def try_match_players(self):
-        global waiting_players, connected_players
+        """ Try to match two players from the waiting list """
+        global waiting_players
         if len(waiting_players) >= 2:
-            player1 = waiting_players.pop(0)
-            player2 = waiting_players.pop(0)
+            player1 = waiting_players.pop(0)	# Remove player1 from the queue...
+            player2 = waiting_players.pop(0)	# Remove player2 from the queue...
 
             # Wait until both players are connected
             start_time = time.time()
-            while (player1['user'].id not in connected_players or
-                    player2['user'].id not in connected_players):
-                if time.time() - start_time > 5:  # 5 second timeout
+            timeout = 5  # 5 second timeout
+            
+            while True:	# Loop until both players are connected
+                
+				# Check if both players are still connected
+                player1_connected = await self.is_player_connected(player1['user'].id)
+                player2_connected = await self.is_player_connected(player2['user'].id)
+                
+                if player1_connected and player2_connected:	# Both players are connected
+                    break	# Exit the loop
+                
+                if time.time() - start_time > timeout:	# This is to prevent infinite loop
                     # Put the players back in the queue
-                    waiting_players.append(player1)
-                    waiting_players.append(player2)
+                    if player1_connected:
+                        waiting_players.append(player1)
+                    if player2_connected:
+                        waiting_players.append(player2)
                     return
+                
                 await asyncio.sleep(0.1)
 
             game = await DatabaseOperations.create_game(player1['user'], player2['user'])
-            print(f"Match found between {player1['user']} and {player2['user']} for game {game.id}")
+            # print(f"Match found between {player1['user']} and {player2['user']} for game {game.id}")
 
             # Add both channels to the game group
             await self.channel_layer.group_add(f'game_{game.id}', player1['channel_name'])
             await self.channel_layer.group_add(f'game_{game.id}', player2['channel_name'])
 
-            # Notify both that the match has been made (here clients will load the game view)
+            # Notify both that the match has been made
             await self.channel_layer.group_send(
                 f'game_{game.id}',
                 {
                     'type': 'game_start',
+                    'player1': player1['user'].username,
+                    'player2': player2['user'].username,
+                    'player1_id': player1['user'].id,
+                    'player2_id': player2['user'].id,
                     'game_id': game.id
                 }
             )
@@ -92,4 +103,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 'status': 'waiting'
             }))
-            print(f"User {self.user} is waiting for another player.")
+            #print(f"User {self.user} is waiting for another player.")
+    
+    async def is_player_connected(self, player_id):
+        """Check if a player is still connected to the matchmaking system"""
+        from .shared_state import connected_players
+        return player_id in connected_players
