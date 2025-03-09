@@ -3,7 +3,7 @@ from ..engine.game_state import GameState
 import json
 
 class BaseGameConsumer(AsyncJsonWebsocketConsumer):
-    game_states = {}
+    game_states = {}	# Storing game states (game_id: GameState object)
 
     async def connect(self):
         """Connect to websocket"""
@@ -23,11 +23,11 @@ class BaseGameConsumer(AsyncJsonWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def initialize_game_state(self):
-        """Centralize game state initialization"""
+        """Game state initialization"""
         if self.game_id not in self.game_states:
             self.game_states[self.game_id] = GameState()
         return self.game_states[self.game_id]
 
     async def game_finished(self, event):
-        """Send game end message"""
+        """Game state finished"""
         await self.send(text_data=json.dumps(event))

@@ -1,10 +1,9 @@
-import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.db import database_sync_to_async
-from ..models import Game
+from .shared_state import connected_players, waiting_players
+from .utils.database_operations import DatabaseOperations
 from django.contrib.auth import get_user_model
 import asyncio
-from .shared_state import connected_players, waiting_players
+import json
 import time
 
 User = get_user_model()
@@ -71,7 +70,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     return
                 await asyncio.sleep(0.1)
 
-            game = await self.create_game(player1['user'], player2['user'])
+            game = await DatabaseOperations.create_game(player1['user'], player2['user'])
             print(f"Match found between {player1['user']} and {player2['user']} for game {game.id}")
 
             # Add both channels to the game group
@@ -88,20 +87,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             )
 
             # Update the game status to MATCHED
-            await self.update_game_status(game.id, 'MATCHED')
+            await DatabaseOperations.update_game_status_by_id(game.id, 'MATCHED')
         else:
             await self.send(text_data=json.dumps({
                 'status': 'waiting'
             }))
             print(f"User {self.user} is waiting for another player.")
-
-    @database_sync_to_async
-    def create_game(self, player1, player2):
-        # Initially created as WAITING and then updated to MATCHED
-        return Game.objects.create(player1=player1, player2=player2, status='WAITING')
-
-    @database_sync_to_async
-    def update_game_status(self, game_id, status):
-        game = Game.objects.get(id=game_id)
-        game.status = status
-        game.save()

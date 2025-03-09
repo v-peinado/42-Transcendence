@@ -1,17 +1,15 @@
-from channels.db import database_sync_to_async
-import json
-import asyncio
-from .base import BaseGameConsumer
 from .handlers.game_state_handler import GameStateHandler
 from .handlers.multiplayer_handler import MultiplayerHandler
 from .utils.database_operations import DatabaseOperations
-from ..models import Game
-from .shared_state import connected_players, waiting_players
+from .shared_state import connected_players
+from .base import BaseGameConsumer
+import asyncio
+import json
 
 class GameConsumer(BaseGameConsumer):
     async def connect(self):
         """Connect to websocket"""
-        self.user = self.scope["user"]	# Get user from scope
+        self.user = self.scope["user"]
         
         # Verify that the user is connected from only one place
         if self.user.id in connected_players:
@@ -23,11 +21,7 @@ class GameConsumer(BaseGameConsumer):
         
         await super().connect()
         
-        @database_sync_to_async
-        def get_game():
-            return Game.objects.select_related("player1", "player2").get(id=self.game_id)
-        
-        game = await get_game()
+        game = await DatabaseOperations.get_game(self.game_id)
         self.scope["game"] = game
         
         # Verify that the user is authorized to join this game
