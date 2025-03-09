@@ -1,5 +1,4 @@
 from channels.db import database_sync_to_async
-from django.utils import timezone
 from django.db import transaction
 from ...models import Game
 
@@ -41,14 +40,6 @@ class DatabaseOperations:
 
     @staticmethod
     @database_sync_to_async
-    def set_player2(game, user):
-        """Set player 2 for a game"""
-        if game.player2 != user:
-            game.player2 = user
-            game.save()
-            
-    @staticmethod
-    @database_sync_to_async
     def mark_player_ready(game, role):
         """Mark player as ready"""
         if role == "player1":
@@ -57,6 +48,21 @@ class DatabaseOperations:
             game.player2_ready = True
         game.save()
         
+    @staticmethod
+    @database_sync_to_async
+    def set_player2(game, user):
+        """Set player 2 for a game"""
+        if game.player2 != user:
+            game.player2 = user
+            game.save()
+                 
+    @staticmethod
+    @database_sync_to_async
+    def update_game_status(game, status):
+        game.status = status
+        game.save()
+        return game	        
+    
     @staticmethod
     @database_sync_to_async
     def update_game(game, user):
@@ -76,17 +82,6 @@ class DatabaseOperations:
             game.score_player2 = game_state.paddles["right"].score
             game.save()
             
-    @staticmethod
-    @database_sync_to_async
-    def update_game_status(game, status):
-        """Update game status"""
-        with transaction.atomic():
-            game.refresh_from_db()
-            game.status = status
-            if status == "FINISHED":
-                game.finished_at = timezone.now()
-            game.save()
-            return game
 
     @staticmethod
     @database_sync_to_async

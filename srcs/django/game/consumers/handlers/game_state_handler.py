@@ -33,7 +33,7 @@ class GameStateHandler:
                 asyncio.get_event_loop().time()
             )
 
-            if winner:
+            if winner:	# if there's a winner
                 game = consumer.scope["game"]
                 winner_id = game.player1.id if winner == "left" else game.player2.id
                 await DatabaseOperations.update_game_winner(game, winner_id, consumer.game_state)

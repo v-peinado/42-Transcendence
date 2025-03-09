@@ -6,7 +6,7 @@ class MultiplayerHandler:
     
     @staticmethod
     async def handle_player_join(consumer, game):
-        """Assign player to game side and mark player as ready"""
+        """Assign player to game side and mark player as ready to start"""
         if game.player1 == consumer.user:
             consumer.side = "left"
             await DatabaseOperations.mark_player_ready(game, role="player1")
@@ -16,9 +16,10 @@ class MultiplayerHandler:
                 await DatabaseOperations.set_player2(game, consumer.user)
             await DatabaseOperations.mark_player_ready(game, role="player2")
 
-        updated_game = await DatabaseOperations.get_game(game.id)
-        if (updated_game.player1_ready and updated_game.player2_ready) and (updated_game.status != "PLAYING"):
-            updated_game = await DatabaseOperations.update_game_status(updated_game, "PLAYING")
+        updated_game = await DatabaseOperations.get_game(game.id)	# get updated game
+        
+        if (updated_game.player1_ready and updated_game.player2_ready) and (updated_game.status != "PLAYING"):	# if both players are ready and game is not playing
+            updated_game = await DatabaseOperations.update_game_status(updated_game, "PLAYING")	# update game status to playing
 
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
@@ -39,9 +40,9 @@ class MultiplayerHandler:
     @staticmethod
     async def handle_player_disconnect(consumer):
         """Handle player disconnection (desertion)"""
-        if consumer.game_state.status == "finished":
+        if consumer.game_state.status == "finished":	# if game is already finished,
             return
-        if hasattr(consumer, "side"):
+        if hasattr(consumer, "side"):	# if consumer has side attribute (is a player)
             winner_side = "right" if consumer.side == "left" else "left"
             consumer.game_state.status = "finished"
 
@@ -53,7 +54,7 @@ class MultiplayerHandler:
                 {
                     "type": "game_finished",
                     "winner": winner_side,
-                    "reason": "desertion",
+                    "reason": "desertion", # Specify game ended due to player desertion
                     "deserter": consumer.side,
                     "final_score": {
                         "left": consumer.game_state.paddles["left"].score,
