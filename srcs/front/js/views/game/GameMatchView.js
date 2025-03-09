@@ -1,10 +1,11 @@
 import { loadHTML } from '../../utils/htmlLoader.js';
 import { soundService } from '../../services/SoundService.js';
 import AuthService from '../../services/AuthService.js';
-import { getNavbarHTML } from '../../components/Navbar.js'; // Añadir esta importación
+import { getNavbarHTML } from '../../components/Navbar.js';
+import { gameReconnectionService } from '../../services/GameReconnectionService.js'; // Nueva importación
 
 export async function GameMatchView(gameId) {
-    console.log('Iniciando partida:', gameId);
+	console.log('Iniciando partida:', gameId);
 
 	// Validar que tenemos un gameId
 	if (!gameId) {
@@ -21,13 +22,13 @@ export async function GameMatchView(gameId) {
 		return;
 	}
 
-    const app = document.getElementById('app');
-    
-    // Cargar navbar autenticado y template del juego
-    const [template, userInfo] = await Promise.all([
-        loadHTML('/views/game/templates/GameMatch.html'),
-        AuthService.getUserProfile()
-    ]);
+	const app = document.getElementById('app');
+
+	// Cargar navbar autenticado y template del juego
+	const [template, userInfo] = await Promise.all([
+		loadHTML('/views/game/templates/GameMatch.html'),
+		AuthService.getUserProfile()
+	]);
 
 	// Si no pudimos obtener el perfil del usuario, redirigir al login
 	if (!userInfo || userInfo.error) {
@@ -37,133 +38,57 @@ export async function GameMatchView(gameId) {
 		return;
 	}
 
-    // Obtener el navbar procesado y añadirlo
-    const navbarHtml = await getNavbarHTML(true, userInfo);
-    
-    // Preparar el contenido
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = template;
-    
-    // Limpiar y añadir el nuevo contenido con navbar
-    app.innerHTML = navbarHtml;
-    app.appendChild(tempDiv.firstElementChild);
+	// Obtener el navbar procesado y añadirlo
+	const navbarHtml = await getNavbarHTML(true, userInfo);
 
-    // Cargar CSS
-    if (!document.querySelector('link[href="/css/game.css"]')) {
-        const linkElem = document.createElement('link');
-        linkElem.rel = 'stylesheet';
-        linkElem.href = '/css/game.css';
-        document.head.appendChild(linkElem);
-    }
+	// Preparar el contenido
+	const tempDiv = document.createElement('div');
+	tempDiv.innerHTML = template;
 
-    // Variables de estado
-    let playerSide = null;
-    let gameState = null;
-    let activeKeys = new Set();
-    let movementInterval = null;
-	let reconnecting = false;
-	let socket = null;
-    const userId = localStorage.getItem('user_id');
-	const RECONNECT_INTERVAL = 2000; // Intentar reconectar cada 2 segundos
-	let reconnectAttempts = 0;
-	const MAX_RECONNECT_ATTEMPTS = 15; // 30 segundos (15 intentos x 2s)
+	// Limpiar y añadir el nuevo contenido con navbar
+	app.innerHTML = navbarHtml;
+	app.appendChild(tempDiv.firstElementChild);
 
-	// Recuperar información de juego del localStorage (para reconexión)
-	const savedGameData = localStorage.getItem(`game_${gameId}`);
-	console.log('Datos guardados del juego:', savedGameData);
-
-	if (savedGameData) {
-		try {
-			const gameData = JSON.parse(savedGameData);
-			playerSide = gameData.playerSide;
-			reconnecting = true;
-			console.log('Recuperando datos de sesión anterior. Lado del jugador:', playerSide);
-
-			// Actualizar UI con datos guardados si están disponibles
-			if (gameData.player1 && gameData.player2) {
-				setTimeout(() => {
-					const leftName = document.querySelector('#leftPlayerName');
-					const rightName = document.querySelector('#rightPlayerName');
-					if (leftName && rightName) {
-						leftName.textContent = gameData.player1;
-						rightName.textContent = gameData.player2;
-					}
-				}, 100);
-			}
-		} catch (e) {
-			console.error('Error al recuperar datos de juego guardados:', e);
-		}
+	// Cargar CSS
+	if (!document.querySelector('link[href="/css/game.css"]')) {
+		const linkElem = document.createElement('link');
+		linkElem.rel = 'stylesheet';
+		linkElem.href = '/css/game.css';
+		document.head.appendChild(linkElem);
 	}
 
-    // Setup canvas y contexto
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 1000;
-    canvas.height = 600;
+	// Variables de estado
+	let playerSide = null;
+	let gameState = null;
+	let activeKeys = new Set();
+	let movementInterval = null;
+	const userId = localStorage.getItem('user_id');
 
-	// Función para establecer conexión
-	function setupConnection() {
-		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${window.location.host}/ws/game/${gameId}/`;
-		console.log('Conectando a:', wsUrl, 'Reconectando:', reconnecting);
+	console.log('User ID en juego:', userId);  // Debug user_id
 
-		// Cerrar socket existente si hubiera
-		if (socket && socket.readyState !== WebSocket.CLOSED) {
-			socket.close();
-		}
+	// Setup canvas y contexto
+	const canvas = document.getElementById('gameCanvas');
+	const ctx = canvas.getContext('2d');
+	canvas.width = 1000;
+	canvas.height = 600;
 
-		socket = new WebSocket(wsUrl);
-
-		socket.onopen = () => {
-			console.log('Conexión WebSocket establecida. Reconexión:', reconnecting, 'Lado:', playerSide);
+	// Establecer conexión WebSocket usando el servicio de reconexión
+	const socket = gameReconnectionService.setupConnection(gameId, {
+		onOpen: (reconnecting) => {
 			document.getElementById('gameStatus').textContent = reconnecting ?
 				'🔄 Reconectando a la partida...' : '🎮 Conectado - Esperando oponente...';
 
-			// Si estamos reconectando, solicitar estado actual del juego
-			if (reconnecting) {
-				console.log('Solicitando estado del juego al servidor...');
-				setTimeout(() => {
-					if (socket && socket.readyState === WebSocket.OPEN) {
-						socket.send(JSON.stringify({
-							type: 'request_game_state',
-							player_id: parseInt(userId),
-							game_id: parseInt(gameId)
-						}));
-						console.log('Solicitud de estado enviada');
-					} else {
-						console.error('Socket no disponible para enviar solicitud de estado');
-					}
-				}, 800); // Aumentar el delay para asegurar que el backend esté listo
-
-				// Si ya sabemos nuestro lado, configurar controles inmediatamente
-				if (playerSide) {
-					console.log('Configurando controles para lado:', playerSide);
-					setupControls();
-				}
+			// Si ya sabemos nuestro lado, configurar controles inmediatamente
+			if (gameReconnectionService.getPlayerSide()) {
+				playerSide = gameReconnectionService.getPlayerSide();
+				setupControls();
 			}
-		};
-
-		socket.onclose = (event) => {
-			console.log('Conexión cerrada', event);
-
-			// Solo intentar reconectar si no fue un cierre controlado y el juego no ha terminado
-			if (event.code !== 1000 && !document.getElementById('gameOverScreen').style.display === 'flex') {
-				handleDisconnection();
-			}
-		};
-
-		socket.onerror = (error) => {
-			console.error('Error en WebSocket:', error);
-			handleDisconnection();
-		};
-
-		socket.onmessage = async (event) => {
-			const data = JSON.parse(event.data);
+		},
+		onMessage: (data) => {
 			console.log('Mensaje recibido en GameMatchView:', data);
 
 			switch (data.type) {
 				case 'game_info':
-					// Mensaje adicional del servidor con información básica del juego
 					console.log('Recibida información del juego:', data);
 					if (!playerSide && userId) {
 						if (userId === data.player1_id.toString()) {
@@ -174,8 +99,7 @@ export async function GameMatchView(gameId) {
 
 						if (playerSide) {
 							console.log('Lado del jugador determinado desde game_info:', playerSide);
-							// Guardar información para futuras reconexiones
-							saveGameData(gameId, {
+							gameReconnectionService.saveGameData(gameId, {
 								playerSide,
 								player1: data.player1,
 								player2: data.player2,
@@ -208,8 +132,8 @@ export async function GameMatchView(gameId) {
 						playerSide = 'right';
 					}
 
-					// Guardar datos del jugador para reconexión
-					saveGameData(gameId, {
+					// Guardar datos para posible reconexión
+					gameReconnectionService.saveGameData(gameId, {
 						playerSide,
 						player1: data.player1,
 						player2: data.player2,
@@ -217,222 +141,31 @@ export async function GameMatchView(gameId) {
 						player2_id: data.player2_id
 					});
 
-					await showPreMatchSequence(data.player1, data.player2, playerSide);
-					setupControls();
+					showPreMatchSequence(data.player1, data.player2, playerSide).then(() => {
+						setupControls();
+					});
 					break;
 
 				case 'game_state':
-					// Si es una reconexión, mostrar mensaje
-					if (data.is_reconnection || reconnecting) {
-						showReconnectionSuccess();
-						reconnecting = false;
-						reconnectAttempts = 0;
-
-						// Si el servidor nos envía información del lado del jugador, usarla
-						if (data.player_side) {
-							playerSide = data.player_side;
-							console.log('Lado del jugador recibido del servidor:', playerSide);
-
-							// Guardar o actualizar datos
-							const existingData = getSavedGameData(gameId) || {};
-							saveGameData(gameId, {
-								...existingData,
-								playerSide: data.player_side
-							});
-
-							// Configurar controles si aún no están configurados
-							if (!movementInterval) {
-								setupControls();
-							}
-						}
-
-						// Si recibimos nombres de jugadores, actualizarlos y guardarlos
-						if (data.player1 && data.player2) {
-							document.querySelector('#leftPlayerName').textContent = data.player1;
-							document.querySelector('#rightPlayerName').textContent = data.player2;
-
-							const existingData = getSavedGameData(gameId) || {};
-							saveGameData(gameId, {
-								...existingData,
-								player1: data.player1,
-								player2: data.player2
-							});
-						}
-						// Si no tenemos nombres pero hay datos guardados, usarlos
-						else {
-							const savedData = getSavedGameData(gameId);
-							if (savedData && savedData.player1 && savedData.player2) {
-								document.querySelector('#leftPlayerName').textContent = savedData.player1;
-								document.querySelector('#rightPlayerName').textContent = savedData.player2;
-							}
-						}
-					}
 					handleGameState(data.state);
 					break;
 
 				case 'game_finished':
 					handleGameEnd(data);
 					break;
-
-				case 'player_disconnected':
-					handleOpponentDisconnect(data);
-					break;
-
-				case 'player_reconnected':
-					handleOpponentReconnect(data);
-					break;
 			}
-		};
-
-		return socket;
-	}
-
-	// Iniciar conexión inicial
-	socket = setupConnection();
-
-	// Función para manejar desconexión
-	function handleDisconnection() {
-		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-			console.log('Máximo de intentos de reconexión alcanzado.');
-			// Mostrar mensaje de error permanente
-			showReconnectionFailed();
-			return;
+		},
+		onDisconnect: (attempt, max) => {
+			document.getElementById('gameStatus').textContent =
+				`🔄 Conexión perdida. Reintentando... (${attempt}/${max})`;
+		},
+		onReconnect: (data) => {
+			document.getElementById('gameStatus').textContent = '🎮 Reconectado!';
+		},
+		onReconnectFailed: () => {
+			document.getElementById('gameStatus').textContent = '❌ No se pudo reconectar';
 		}
-
-		reconnecting = true;
-		reconnectAttempts++;
-
-		// Mostrar estado de reconexión
-		document.getElementById('gameStatus').textContent =
-			`🔄 Conexión perdida. Reintentando... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
-
-		// Mostrar overlay de reconexión
-		showReconnectionAttempt(reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
-
-		// Intentar reconectar después de intervalo
-		setTimeout(() => {
-			if (reconnecting) {
-				setupConnection();
-			}
-		}, RECONNECT_INTERVAL);
-	}
-
-	// Función para mostrar intentos de reconexión
-	function showReconnectionAttempt(attempt, max) {
-		// Verificar si ya existe el overlay, sino crearlo
-		let reconnectOverlay = document.getElementById('reconnectOverlay');
-		if (!reconnectOverlay) {
-			reconnectOverlay = document.createElement('div');
-			reconnectOverlay.id = 'reconnectOverlay';
-			reconnectOverlay.style.position = 'absolute';
-			reconnectOverlay.style.inset = '0';
-			reconnectOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-			reconnectOverlay.style.zIndex = '1000';
-			reconnectOverlay.style.display = 'flex';
-			reconnectOverlay.style.justifyContent = 'center';
-			reconnectOverlay.style.alignItems = 'center';
-			reconnectOverlay.style.flexDirection = 'column';
-			reconnectOverlay.style.color = 'white';
-			reconnectOverlay.style.fontSize = '1.5rem';
-
-			const spinner = document.createElement('div');
-			spinner.className = 'spinner-border text-light mb-3';
-			spinner.setAttribute('role', 'status');
-
-			const message = document.createElement('div');
-			message.id = 'reconnectMessage';
-
-			reconnectOverlay.appendChild(spinner);
-			reconnectOverlay.appendChild(message);
-
-			document.querySelector('.game-wrapper').appendChild(reconnectOverlay);
-		}
-
-		document.getElementById('reconnectMessage').textContent =
-			`Reconectando... (${attempt}/${max})`;
-	}
-
-	// Función para mostrar reconexión exitosa
-	function showReconnectionSuccess() {
-		const reconnectOverlay = document.getElementById('reconnectOverlay');
-		if (reconnectOverlay) {
-			reconnectOverlay.style.backgroundColor = 'rgba(0, 128, 0, 0.7)';
-			document.getElementById('reconnectMessage').textContent = '¡Reconectado con éxito!';
-
-			// Remover el overlay después de 2 segundos
-			setTimeout(() => {
-				reconnectOverlay.remove();
-			}, 2000);
-		}
-	}
-
-	// Función para mostrar reconexión fallida
-	function showReconnectionFailed() {
-		const reconnectOverlay = document.getElementById('reconnectOverlay');
-		if (reconnectOverlay) {
-			reconnectOverlay.style.backgroundColor = 'rgba(128, 0, 0, 0.7)';
-			document.getElementById('reconnectMessage').textContent =
-				'No se pudo reconectar. La partida se ha perdido.';
-
-			// Añadir botón para volver al lobby
-			const backButton = document.createElement('button');
-			backButton.className = 'btn btn-light mt-3';
-			backButton.textContent = 'Volver al menú';
-			backButton.onclick = () => window.location.href = '/game';
-			reconnectOverlay.appendChild(backButton);
-		}
-	}
-
-	// Función para manejar la desconexión de oponente
-	function handleOpponentDisconnect(data) {
-		const opponentSide = data.side;
-
-		// Mostrar mensaje de desconexión
-		const statusEl = document.createElement('div');
-		statusEl.className = 'opponent-disconnect-status';
-		statusEl.textContent = `Oponente desconectado (${opponentSide})`;
-		statusEl.style.position = 'absolute';
-		statusEl.style.bottom = '20px';
-		statusEl.style.left = '20px';
-		statusEl.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
-		statusEl.style.color = 'white';
-		statusEl.style.padding = '10px';
-		statusEl.style.borderRadius = '5px';
-
-		const wrapper = document.querySelector('.game-wrapper');
-		wrapper.appendChild(statusEl);
-
-		// Remover el mensaje después de 5 segundos
-		setTimeout(() => {
-			statusEl.remove();
-		}, 5000);
-	}
-
-	// Función para manejar la reconexión de oponente
-	function handleOpponentReconnect(data) {
-		const opponentSide = data.side;
-		const opponentName = data.username;
-
-		// Mostrar mensaje de reconexión
-		const statusEl = document.createElement('div');
-		statusEl.className = 'opponent-reconnect-status';
-		statusEl.textContent = `${opponentName} reconectado (${opponentSide})`;
-		statusEl.style.position = 'absolute';
-		statusEl.style.bottom = '20px';
-		statusEl.style.left = '20px';
-		statusEl.style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
-		statusEl.style.color = 'white';
-		statusEl.style.padding = '10px';
-		statusEl.style.borderRadius = '5px';
-
-		const wrapper = document.querySelector('.game-wrapper');
-		wrapper.appendChild(statusEl);
-
-		// Remover el mensaje después de 5 segundos
-		setTimeout(() => {
-			statusEl.remove();
-		}, 5000);
-	}
+	});
 
 	async function showPreMatchSequence(player1, player2, playerSide) {
 		return new Promise(async (resolve) => {
@@ -457,16 +190,16 @@ export async function GameMatchView(gameId) {
 			countdown.style.display = 'flex';
 			countdown.textContent = '';
 
-			// 4. --->>> Decimos al servidor que estamos listos para la cuenta atrás
-			socket.send(JSON.stringify({
+			// 4. Decimos al servidor que estamos listos para la cuenta atrás
+			gameReconnectionService.send({
 				type: 'ready_for_countdown'
-			}));
+			});
 
 			resolve();
 		});
 	}
 
-	let gameStarted = false; // Nueva variable de estado
+	let gameStarted = false;
 	let countdownShown = false;
 
 	function handleGameState(state) {
@@ -630,7 +363,7 @@ export async function GameMatchView(gameId) {
 				side: playerSide,
 				player_id: parseInt(userId)
 			};
-			socket.send(JSON.stringify(message));
+			gameReconnectionService.send(message);
 		}
 	}
 
@@ -655,7 +388,7 @@ export async function GameMatchView(gameId) {
 
 		// Iniciar el intervalo de movimiento continuo
 		movementInterval = setInterval(() => {
-			if (activeKeys.size > 0 && playerSide && socket?.readyState === WebSocket.OPEN) {
+			if (activeKeys.size > 0) {
 				const direction = getDirection();
 				const message = {
 					type: 'move_paddle',
@@ -663,7 +396,7 @@ export async function GameMatchView(gameId) {
 					side: playerSide,
 					player_id: parseInt(userId)
 				};
-				socket.send(JSON.stringify(message));
+				gameReconnectionService.send(message);
 			}
 		}, 16);  // ~60 FPS
 
@@ -722,10 +455,8 @@ export async function GameMatchView(gameId) {
 		document.removeEventListener('keydown', handleKeyDown);
 		document.removeEventListener('keyup', handleKeyUp);
 
-		// Cierre controlado del socket
-		if (socket && socket.readyState === WebSocket.OPEN) {
-			socket.close(1000, 'Vista desmontada');
-		}
+		// Usar el servicio para desconectar WebSocket
+		gameReconnectionService.disconnect();
 
 		// Eliminar el CSS si no hay otras vistas que lo usen
 		const cssLink = document.querySelector('link[href="/css/game.css"]');
@@ -738,24 +469,4 @@ export async function GameMatchView(gameId) {
 		document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
 		document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
 	};
-
-	// Funciones auxiliares para guardar y recuperar datos de juego
-	function saveGameData(gameId, data) {
-		try {
-			localStorage.setItem(`game_${gameId}`, JSON.stringify(data));
-			console.log('Datos de juego guardados:', data);
-		} catch (e) {
-			console.error('Error al guardar datos de juego:', e);
-		}
-	}
-
-	function getSavedGameData(gameId) {
-		try {
-			const savedData = localStorage.getItem(`game_${gameId}`);
-			return savedData ? JSON.parse(savedData) : null;
-		} catch (e) {
-			console.error('Error al recuperar datos de juego:', e);
-			return null;
-		}
-	}
 }
