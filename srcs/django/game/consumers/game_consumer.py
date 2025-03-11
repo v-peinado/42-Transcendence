@@ -170,6 +170,81 @@ class GameConsumer(BaseGameConsumer):
             }))
             return
             
+        # OPTIMIZACIÓN: Fast reconnect protocol
+        if message_type == "fast_reconnect":
+            if hasattr(self, "game_state") and self.game_state:
+                # Obtener directamente el lado del jugador de la solicitud
+                player_side = content.get("side") or getattr(self, "side", None)
+                player_id = content.get("player_id")
+                
+                # Verificar que el jugador tiene permiso para este lado
+                if player_side and player_id and str(player_id) == str(self.user.id):
+                    # Establecer el lado si no estaba ya establecido
+                    if not hasattr(self, "side") or not self.side:
+                        self.side = player_side
+                        diag.info('GameConsumer', f'Fast reconnect: Lado establecido para {self.user.username}: {player_side}')
+                    
+                    # Resetear el estado de la pala sin esperas
+                    paddle = self.game_state.paddles.get(player_side)
+                    if paddle:
+                        diag.info('GameConsumer', f'Fast reconnect: Reseteando pala para {self.user.username} ({player_side})')
+                        current_y = paddle.y
+                        paddle.reset_state(current_y)
+                        paddle.ready_for_input = True  # Habilitar inmediatamente la entrada
+                    
+                    # Enviar estado inmediatamente sin serializar todo el juego
+                    current_state = {
+                        "type": "fast_state",
+                        "ball": {
+                            "x": self.game_state.ball.x,
+                            "y": self.game_state.ball.y,
+                            "speed_x": self.game_state.ball.speed_x,
+                            "speed_y": self.game_state.ball.speed_y,
+                            "radius": self.game_state.ball.radius
+                        },
+                        "paddles": {
+                            "left": {
+                                "x": self.game_state.paddles["left"].x,
+                                "y": self.game_state.paddles["left"].y,
+                                "width": self.game_state.paddles["left"].width,
+                                "height": self.game_state.paddles["left"].height,
+                                "moving": self.game_state.paddles["left"].moving,
+                                "direction": self.game_state.paddles["left"].last_direction,
+                            },
+                            "right": {
+                                "x": self.game_state.paddles["right"].x,
+                                "y": self.game_state.paddles["right"].y,
+                                "width": self.game_state.paddles["right"].width,
+                                "height": self.game_state.paddles["right"].height,
+                                "moving": self.game_state.paddles["right"].moving,
+                                "direction": self.game_state.paddles["right"].last_direction,
+                            }
+                        },
+                        "score": {
+                            "left": self.game_state.paddles["left"].score,
+                            "right": self.game_state.paddles["right"].score
+                        },
+                        "status": self.game_state.status,
+                        "player_side": player_side,
+                        "timestamp": int(time.time() * 1000)
+                    }
+                    
+                    # Notificar que el jugador se ha reconectado
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            "type": "player_reconnected",
+                            "side": player_side,
+                            "player_id": self.user.id,
+                            "username": self.user.username
+                        }
+                    )
+                    
+                    # Enviar respuesta rápida
+                    await self.send(text_data=json.dumps(current_state))
+                    diag.info('GameConsumer', f'Fast reconnect completado para {self.user.username} ({player_side})')
+                    return
+        
         if message_type == "move_paddle":
             await GameStateHandler.handle_paddle_movement(self, content)
         elif message_type == "ready_for_countdown":
@@ -191,42 +266,32 @@ class GameConsumer(BaseGameConsumer):
                 # If the side is not set, try to determine it
                 if not player_side:
                     game = self.scope.get("game")
-                    if game and game.player1 and game.player2:
-                        if self.user.id == game.player1.id:
+                    if game:
+                        if game.player1_id and self.user.id == game.player1_id:
                             player_side = "left"
                             self.side = "left"
-                        elif self.user.id == game.player2.id:
+                            diag.info('GameConsumer', f'Lado determinado para reconexión: {player_side} (player1)')
+                        elif game.player2_id and self.user.id == game.player2_id:
                             player_side = "right"
                             self.side = "right"
+                            diag.info('GameConsumer', f'Lado determinado para reconexión: {player_side} (player2)')
                 
                 # Resetear el estado de la pala para este jugador si está reconectando
                 if player_side and self.game_state.status == 'playing':
                     paddle = self.game_state.paddles.get(player_side)
                     if paddle:
-                        print(f"[RECONNECT] Restableciendo pala para {self.user.username} ({player_side})")
+                        diag.info('GameConsumer', f'Reseteando pala para {self.user.username} ({player_side})')
                         # Guardar posición actual para no "teletransportar" la pala
                         current_y = paddle.y
                         paddle.reset_state(current_y)
+                        paddle.ready_for_input = True
                 
-                # Get the game object
-                game = self.scope.get("game")
+                # NUEVO: Usar método específico para sincronización de reconexión
+                await GameStateHandler.handle_reconnection_state_sync(self)
                 
-                # Send the game state to the client
-                await self.send(text_data=json.dumps({
-                    "type": "game_state", 
-                    "state": self.game_state.serialize(),
-                    "is_reconnection": True,
-                    "player_side": player_side,
-                    "player1_id": game.player1.id if game and game.player1 else None,
-                    "player2_id": game.player2.id if game and game.player2 else None,
-                    "player1": game.player1.username if game and game.player1 else None,
-                    "player2": game.player2.username if game and game.player2 else None
-                }))
+                diag.info('GameConsumer', f'Estado de juego enviado a {self.user.username} (lado: {player_side})')
                 
-                print(f"[RECONNECT] Estado de juego enviado a {self.user.username} (lado: {player_side})")
-                
-                # Después de un pequeño retraso, eliminar el flag de reconexión
-                await asyncio.sleep(1.0)
+                # OPTIMIZACIÓN: Eliminar retraso después de reconexión
                 self.reconnecting = False
 
     async def game_start(self, event):

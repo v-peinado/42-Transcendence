@@ -1,5 +1,8 @@
 import asyncio
+import json
+import time
 from ..utils.database_operations import DatabaseOperations
+from ...utils.diagnostic import DiagnosticLogger as diag
 
 class GameStateHandler:
     """Game state updates handler"""
@@ -127,6 +130,88 @@ class GameStateHandler:
                 {"type": "game_state_update", "state": consumer.game_state.serialize()},
             )
             await asyncio.sleep(1/60)  # 60 FPS
+
+    @staticmethod
+    async def handle_reconnection_state_sync(consumer):
+        """Maneja sincronización especial para reconexiones"""
+        if not hasattr(consumer, "game_state") or not consumer.game_state:
+            diag.warn('GameStateHandler', f'No hay estado de juego para sincronizar en reconexión de {consumer.user.username}')
+            return
+
+        # 1. Obtener el estado actual
+        current_state = consumer.game_state.serialize()
+        
+        # 2. Agregar metadatos de predicción para el cliente
+        # Agregar timestamp del servidor para permitir al cliente interpolar estados
+        current_state["reconnection_sync"] = True
+        current_state["server_timestamp"] = asyncio.get_event_loop().time() * 1000
+        current_state["fast_reconnect"] = True  # Marcador para habilitar el protocolo rápido
+        
+        # 3. Marcar explícitamente el lado del jugador
+        player_side = getattr(consumer, "side", None)
+        
+        # 4. Enviar estados inicial y final en una secuencia más rápida
+        diag.info('GameStateHandler', f'Enviando estado de sincronización para reconexión a {consumer.user.username}')
+        
+        # OPTIMIZACIÓN: Enviar un solo estado con toda la información necesaria
+        await consumer.send(text_data=json.dumps({
+            "type": "game_state",
+            "state": current_state,
+            "is_reconnection": True,
+            "player_side": player_side,
+            "reconnection_sync": True,
+            "fast_reconnect": True,
+            "timestamp": int(time.time() * 1000)
+        }))
+        
+        # OPTIMIZACIÓN: Eliminar todo retraso entre estados
+        # En lugar de enviar un segundo estado con retraso, directamente enviamos una
+        # actualización inmediata con las velocidades de los objetos para predicción
+        prediction_data = {
+            "type": "game_prediction",
+            "ball": {
+                "x": current_state["ball"]["x"],
+                "y": current_state["ball"]["y"],
+                "speed_x": current_state["ball"]["speed_x"],
+                "speed_y": current_state["ball"]["speed_y"]
+            },
+            "paddles": {
+                "left": {
+                    "y": current_state["paddles"]["left"]["y"],
+                    "moving": current_state["paddles"]["left"].get("moving", False),
+                    "direction": current_state["paddles"]["left"].get("direction", 0)
+                },
+                "right": {
+                    "y": current_state["paddles"]["right"]["y"],
+                    "moving": current_state["paddles"]["right"].get("moving", False),
+                    "direction": current_state["paddles"]["right"].get("direction", 0)
+                }
+            },
+            "timestamp": int(time.time() * 1000)
+        }
+        
+        # Enviar datos de predicción inmediatamente
+        await consumer.send(text_data=json.dumps(prediction_data))
+
+        # Optimización: enviar un segundo estado actualizado con is_second_sync para permitir 
+        # interpolación suave en el cliente
+        await asyncio.sleep(0.01)  # Espera mínima para asegurar orden de mensajes
+        
+        # Volver a serializar para obtener posiciones actualizadas
+        updated_state = consumer.game_state.serialize()
+        updated_state["reconnection_sync"] = True
+        updated_state["server_timestamp"] = asyncio.get_event_loop().time() * 1000
+        updated_state["is_second_sync"] = True
+        
+        await consumer.send(text_data=json.dumps({
+            "type": "game_state",
+            "state": updated_state,
+            "is_reconnection": True,
+            "player_side": player_side,
+            "reconnection_sync": True,
+            "is_second_sync": True,
+            "timestamp": int(time.time() * 1000)
+        }))
 
     @staticmethod
     async def countdown_timer(consumer):  # Countdown timer

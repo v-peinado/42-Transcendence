@@ -1,3 +1,5 @@
+import asyncio
+
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
         """Set initial paddle values"""
@@ -12,6 +14,7 @@ class Paddle:
         self.moving = False     # Flag to track if paddle is actively moving
         self.ready_for_input = True  # Nueva bandera para controlar si la pala está lista para recibir comandos
         self.last_direction = 0  # Nuevo: Mantener el último comando de dirección
+        self.last_update_time = 0  # Timestamp del último update (para sincronización)
 
     def move(self, direction, canvas_height):
         """Control paddle movement speed"""
@@ -45,6 +48,7 @@ class Paddle:
         # Actualizar la posición objetivo y última posición para seguimiento
         self.target_y = self.y
         self.last_position = self.y
+        self.last_update_time = time.time() * 1000  # ms
         
         print(f"[PADDLE] Movimiento {direction}. Y: {old_y} -> {self.y}")
 
@@ -120,5 +124,6 @@ class Paddle:
             "last_position": self.last_position,
             "target_y": self.target_y,
             "ready_for_input": self.ready_for_input,
-            "last_direction": self.last_direction
+            "last_direction": self.last_direction,
+            "last_update": self.last_update_time
         }

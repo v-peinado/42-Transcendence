@@ -214,13 +214,23 @@ export async function GameMatchView(gameId) {
 							const reconnectionPlayer1 = data.player1;
 							const reconnectionPlayer2 = data.player2;
 
+							// Si es una sincronización específica para reconexión
+							if (reconnectionState.reconnection_sync) {
+								diagnosticService.info('GameMatchView', 'Estado de sincronización de reconexión recibido', {
+									isSecondSync: reconnectionState.is_second_sync || false,
+									timestamp: reconnectionState.server_timestamp
+								});
+							}
+
 							// No más referencia externa a handleReconnection
 							// Toda la lógica implementada directamente aquí
 							(async () => {
 								try {
-									// 1. Detener todo procesamiento actual
-									console.log('[DEBUG] Reconexión - Limpiando estado actual');
-									await cleanupGameState();
+									// 1. Detener todo procesamiento actual solo si no es una actualización de sincronización
+									if (!reconnectionState.reconnection_sync) {
+										console.log('[DEBUG] Reconexión - Limpiando estado actual');
+										await cleanupGameState();
+									}
 
 									// 2. Actualizar información de jugador usando datos guardados
 									if (reconnectionPlayerSide) {
@@ -232,8 +242,18 @@ export async function GameMatchView(gameId) {
 
 									// 3. Actualizar estado del juego con los datos guardados
 									console.log('[DEBUG] Reconexión - Actualizando estado del juego');
-									gameState = reconnectionState;
-									console.log(`[DEBUG] Estado del juego actualizado:`, gameState);
+
+									// Si es un estado de sincronización específico para reconexión,
+									// procesar de manera especial para garantizar transiciones suaves
+									if (reconnectionState.reconnection_sync) {
+										// Aquí simplemente pasamos el estado para que handleGameState
+										// se encargue de la interpolación
+										handleGameState(reconnectionState);
+									} else {
+										gameState = reconnectionState;
+										console.log(`[DEBUG] Estado del juego actualizado:`, gameState);
+										drawGame();
+									}
 
 									// 4. Actualizar UI con nombres de jugadores guardados
 									if (reconnectionPlayer1) {
@@ -326,6 +346,60 @@ export async function GameMatchView(gameId) {
 					case 'game_finished':
 						handleGameEnd(data);
 						break;
+
+					case 'fast_state':
+						// Nuevo: Manejo de reconexión rápida
+						diagnosticService.info('GameMatchView', 'Estado rápido recibido para reconexión', {
+							timestamp: data.timestamp
+						});
+
+						// Mostrar mensaje de reconexión exitosa
+						const gameStatus = document.getElementById('gameStatus');
+						if (gameStatus) {
+							gameStatus.textContent = '🎮 Reconexión rápida completada';
+							gameStatus.style.color = '#4caf50';
+							setTimeout(() => {
+								gameStatus.style.color = '';
+								gameStatus.textContent = '🎮 Conectado';
+							}, 1000);
+						}
+
+						// Construimos un gameState compatible con nuestro handler
+						const fastGameState = {
+							ball: data.ball,
+							paddles: data.paddles,
+							status: data.status,
+							reconnection_sync: true,
+							fast_reconnect: true,
+							server_timestamp: data.timestamp
+						};
+
+						// Actualizar puntuaciones si están disponibles
+						if (data.score) {
+							if (fastGameState.paddles && fastGameState.paddles.left) {
+								fastGameState.paddles.left.score = data.score.left;
+							}
+							if (fastGameState.paddles && fastGameState.paddles.right) {
+								fastGameState.paddles.right.score = data.score.right;
+							}
+						}
+
+						// Establecer playerSide si viene en la respuesta
+						if (data.player_side && !playerSide) {
+							playerSide = data.player_side;
+							setupControls(); // Configurar controles inmediatamente
+						}
+
+						// Aplicar el estado y mostrar animación de reconexión exitosa
+						handleGameState(fastGameState);
+						canvas.classList.add('reconnected');
+						setTimeout(() => canvas.classList.remove('reconnected'), 300);
+						break;
+
+					case 'game_prediction':
+						// Nuevo: Datos de predicción para movimientos más suaves
+						handlePredictionData(data);
+						break;
 				}
 			},
 			onDisconnect: (attempt, max) => {
@@ -337,6 +411,28 @@ export async function GameMatchView(gameId) {
 				if (gameStatus) { // Verificar que el elemento existe
 					gameStatus.textContent = '🎮 Reconectado!';
 				}
+			},
+			onFastReconnect: (data) => {
+				// Actualizamos la interfaz para reconexión rápida
+				const gameStatus = document.getElementById('gameStatus');
+				if (gameStatus) {
+					gameStatus.textContent = '⚡ Reconexión ultra-rápida';
+					gameStatus.style.color = '#4caf50';
+					setTimeout(() => {
+						gameStatus.style.color = '';
+						gameStatus.textContent = '🎮 Conectado';
+					}, 1000);
+				}
+
+				// Configurar controles inmediatamente
+				if (data.player_side) {
+					playerSide = data.player_side;
+					setupControls();
+				}
+
+				// Mostrar animación de reconexión exitosa
+				canvas.classList.add('reconnected');
+				setTimeout(() => canvas.classList.remove('reconnected'), 300);
 			},
 			onReconnectFailed: () => {
 				document.getElementById('gameStatus').textContent = '❌ No se pudo reconectar';
@@ -381,6 +477,10 @@ export async function GameMatchView(gameId) {
 		function handleGameState(state) {
 			if (!state) return;
 
+			// Guardar estado anterior para posible interpolación en reconexiones
+			const previousState = gameState;
+
+			// Actualizar el estado actual
 			gameState = state;
 
 			// Si hay una cuenta atrás en el estado, actualizar la UI de cuenta atrás
@@ -409,11 +509,50 @@ export async function GameMatchView(gameId) {
 				rightScore.textContent = state.paddles.right.score || '0';
 			}
 
-			// Dibujar el estado del juego
+			// OPTIMIZACIÓN: Manejar mejor la interpolación para reconexiones
+			if (state.reconnection_sync && state.ball) {
+				diagnosticService.debug('GameMatchView', 'Recibido estado de sincronización para reconexión', {
+					serverTimestamp: state.server_timestamp,
+					isSecondSync: state.is_second_sync || false
+				});
+
+				// Solo interpolamos si no es el primer estado de sincronización
+				if (previousState && previousState.reconnection_sync && !previousState.is_second_sync && state.is_second_sync) {
+					// Aquí tenemos dos estados de sincronización seguidos, podemos hacer una transición suave
+					diagnosticService.debug('GameMatchView', 'Aplicando interpolación suave para la reconexión');
+
+					// Animar reconexión en el canvas
+					canvas.classList.add('reconnected');
+					setTimeout(() => canvas.classList.remove('reconnected'), 500);
+
+					// OPTIMIZACIÓN: Crear una secuencia más fluida de estados intermedios
+					const steps = 3; // Crear 3 estados intermedios
+					const sequence = GameStateInterpolator.createTransitionSequence(previousState, state, steps);
+
+					// Dibujar la secuencia con un intervalo corto entre frames
+					sequence.forEach((intermediateState, index) => {
+						setTimeout(() => {
+							gameState = intermediateState;
+							drawGame(true); // Parámetro true indica estado de transición
+						}, index * 10); // 10ms entre cada frame para una animación más fluida
+					});
+
+					return; // Terminamos aquí para que no se dibuje de inmediato
+				}
+			}
+
+			// Si es fast-reconnect, animar inmediatamente
+			if (state.fast_reconnect) {
+				canvas.classList.add('reconnected');
+				setTimeout(() => canvas.classList.remove('reconnected'), 300);
+			}
+
+			// Dibujar el estado del juego normalmente si no es un caso especial
 			drawGame();
 		}
 
-		function drawGame() {
+		// Optimizar la función drawGame para suavizar movimientos en reconexión
+		function drawGame(isTransition = false) {
 			if (!gameState || !ctx) return;
 
 			// Limpiar canvas
@@ -438,12 +577,90 @@ export async function GameMatchView(gameId) {
 				ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 			});
 
-			// Dibujar pelota
+			// Dibujar pelota con posible interpolación en reconexión
 			if (gameState.ball) {
-				ctx.beginPath();
-				ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
-				ctx.fill();
+				if (gameState.reconnection_sync && gameState.ball.speed_x && gameState.ball.speed_y) {
+					// OPTIMIZACIÓN: Mejorar la predicción basada en velocidad
+					const now = Date.now();
+					const serverTimestamp = gameState.server_timestamp || now;
+					const timeDiff = Math.min(100, now - serverTimestamp); // Máximo 100ms de predicción
+
+					// Simular el movimiento de la pelota según su velocidad y el tiempo transcurrido
+					const predictedX = gameState.ball.x + (gameState.ball.speed_x * timeDiff / 16);
+					const predictedY = gameState.ball.y + (gameState.ball.speed_y * timeDiff / 16);
+
+					// Dibujar en la posición predicha
+					ctx.beginPath();
+					ctx.arc(predictedX, predictedY, gameState.ball.radius || 5, 0, Math.PI * 2);
+					ctx.fill();
+
+					// Durante transiciones, mostrar estela para hacer más suave el movimiento
+					if (isTransition) {
+						// Estela con transparencia para un efecto de movimiento suave
+						ctx.globalAlpha = 0.3;
+						ctx.beginPath();
+						ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
+						ctx.fill();
+						ctx.globalAlpha = 1.0;
+					}
+				} else {
+					// Dibujo normal sin predicción
+					ctx.beginPath();
+					ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
+					ctx.fill();
+				}
 			}
+		}
+
+		// Nuevo método para manejar datos de predicción
+		function handlePredictionData(data) {
+			if (!gameState || !data) return;
+
+			diagnosticService.debug('GameMatchView', 'Aplicando datos de predicción', {
+				timestamp: data.timestamp
+			});
+
+			// Calcular el tiempo transcurrido desde que se enviaron los datos
+			const now = Date.now();
+			const predictionTime = now - (data.timestamp || now);
+
+			// Aplicar predicción a la pelota si existe
+			if (gameState.ball && data.ball) {
+				// Guardar posiciones anteriores
+				gameState.ball.prev_x = gameState.ball.x;
+				gameState.ball.prev_y = gameState.ball.y;
+
+				// Actualizar velocidades
+				gameState.ball.speed_x = data.ball.speed_x;
+				gameState.ball.speed_y = data.ball.speed_y;
+
+				// Predecir posición actual basada en el tiempo transcurrido
+				if (predictionTime > 0) {
+					const predictionFactor = predictionTime / 1000; // Convertir a segundos
+					gameState.ball.x = data.ball.x + (data.ball.speed_x * predictionFactor);
+					gameState.ball.y = data.ball.y + (data.ball.speed_y * predictionFactor);
+				} else {
+					gameState.ball.x = data.ball.x;
+					gameState.ball.y = data.ball.y;
+				}
+			}
+
+			// Actualizar datos de palas
+			if (gameState.paddles && data.paddles) {
+				if (gameState.paddles.left && data.paddles.left) {
+					gameState.paddles.left.y = data.paddles.left.y;
+					gameState.paddles.left.moving = data.paddles.left.moving || false;
+					gameState.paddles.left.direction = data.paddles.left.direction || 0;
+				}
+				if (gameState.paddles.right && data.paddles.right) {
+					gameState.paddles.right.y = data.paddles.right.y;
+					gameState.paddles.right.moving = data.paddles.right.moving || false;
+					gameState.paddles.right.direction = data.paddles.right.direction || 0;
+				}
+			}
+
+			// Redibujar el juego con la nueva predicción
+			drawGame();
 		}
 
 		function handleGameEnd(data) {
@@ -618,29 +835,13 @@ export async function GameMatchView(gameId) {
 			return 0;
 		}
 
-		function cleanupGameState() {
+		// Optimizar la limpieza de estado
+		async function cleanupGameState() {
 			console.log('[DEBUG] cleanupGameState - Limpiando estado del juego');
 
 			return new Promise(resolve => {
 				try {
-					// 1. Detener cualquier animación o intervalo en curso
-					if (movementInterval) {
-						clearInterval(movementInterval);
-						movementInterval = null;
-						console.log('[DEBUG] cleanupGameState - Intervalo de movimiento eliminado');
-					}
-
-					// 2. Eliminar todos los listeners de eventos
-					document.removeEventListener('keydown', handleKeyDown);
-					document.removeEventListener('keyup', handleKeyUp);
-					console.log('[DEBUG] cleanupGameState - Event listeners eliminados');
-
-					// 3. Reiniciar conjunto de teclas activas
-					const previousKeys = [...activeKeys];
-					activeKeys = new Set();
-					console.log(`[DEBUG] cleanupGameState - Teclas activas eliminadas: ${previousKeys.join(', ')}`);
-
-					// 4. Enviar comando de parada al servidor si tenemos lado asignado
+					// OPTIMIZACIÓN: Envío de comandos de parada más eficiente
 					if (playerSide) {
 						console.log(`[DEBUG] cleanupGameState - Enviando comando de parada para lado: ${playerSide}`);
 						const userId = localStorage.getItem('user_id');
@@ -650,31 +851,29 @@ export async function GameMatchView(gameId) {
 							side: playerSide,
 							player_id: parseInt(userId),
 							force_stop: true,
+							critical: true, // Marcar como crítico para priorización
 							timestamp: Date.now(),
 							message_id: `cleanup_stop_${Date.now()}`
 						});
-
-						// Enviar una segunda vez para asegurar que se procese
-						setTimeout(() => {
-							gameReconnectionService.send({
-								type: 'move_paddle',
-								direction: 0,
-								side: playerSide,
-								player_id: parseInt(userId),
-								force_stop: true,
-								timestamp: Date.now(),
-								message_id: `cleanup_stop_retry_${Date.now()}`
-							});
-						}, 100);
-					} else {
-						console.log('[DEBUG] cleanupGameState - No hay lado asignado, no se envía comando de parada');
 					}
 
-					// 5. Esperar un breve periodo para asegurar sincronización
+					// 1. Detener cualquier animación o intervalo en curso
+					if (movementInterval) {
+						clearInterval(movementInterval);
+						movementInterval = null;
+					}
+
+					// 2. Eliminar todos los listeners de eventos
+					document.removeEventListener('keydown', handleKeyDown);
+					document.removeEventListener('keyup', handleKeyUp);
+
+					// 3. Reiniciar conjunto de teclas activas
+					activeKeys = new Set();
+
+					// 4. Esperar un breve periodo optimizado
 					setTimeout(() => {
-						console.log('[DEBUG] cleanupGameState - Limpieza completada');
 						resolve();
-					}, 200);
+					}, 50); // Reducido a 50ms
 
 				} catch (error) {
 					console.error('[DEBUG] Error en cleanupGameState:', error);

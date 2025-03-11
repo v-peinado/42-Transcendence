@@ -79,9 +79,24 @@ class GameReconnectionService {
 					this.callbacks.onOpen(this.reconnecting);
 				}
 
-				// Si estamos reconectando, solicitar estado actual del juego
-				if (this.reconnecting) {
-					diagnosticService.info('GameReconnection', 'Requesting current game state');
+				// Si estamos reconectando, implementar protocolo FAST RECONNECT inmediato
+				if (this.reconnecting && this.playerSide) {
+					diagnosticService.info('GameReconnection', 'Initiating fast reconnect protocol');
+
+					// Enviar inmediatamente la petición con todos los datos necesarios
+					this.send({
+						type: 'fast_reconnect',
+						player_id: parseInt(userId),
+						game_id: parseInt(gameId),
+						side: this.playerSide,
+						connectionId: this.connectionId,
+						timestamp: Date.now(),
+						critical: true // Marcar como crítico para priorización
+					});
+
+					diagnosticService.debug('GameReconnection', 'Fast reconnect request sent');
+
+					// Como respaldo, también enviar la solicitud tradicional después de un breve retraso
 					setTimeout(() => {
 						if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 							this.send({
@@ -91,13 +106,9 @@ class GameReconnectionService {
 								connectionId: this.connectionId,
 								timestamp: Date.now()
 							});
-							diagnosticService.debug('GameReconnection', 'State request sent');
-						} else {
-							diagnosticService.warn('GameReconnection', 'Cannot send state request, socket not open', {
-								socketState: this.socket ? this.socket.readyState : 'null'
-							});
+							diagnosticService.debug('GameReconnection', 'Backup state request sent');
 						}
-					}, 800);
+					}, 200);
 				}
 
 				// Configurar health check
@@ -120,9 +131,15 @@ class GameReconnectionService {
 						});
 					}
 
-					// Para reconexión
-					if (data.type === 'game_state' && (data.is_reconnection || this.reconnecting)) {
+					// NUEVO: Manejar protocolo fast reconnect
+					if (data.type === 'fast_state') {
+						this.handleFastReconnect(data);
+					}
+					// Para reconexión tradicional
+					else if (data.type === 'game_state' && (data.is_reconnection || this.reconnecting)) {
 						this.handleReconnectionSuccess(data);
+					} else if (data.type === 'game_prediction') {
+						this.handlePredictionData(data);
 					} else if (data.type === 'player_disconnected') {
 						this.handleOpponentDisconnect(data);
 					} else if (data.type === 'player_reconnected') {
@@ -362,7 +379,7 @@ class GameReconnectionService {
 		}, this.RECONNECT_INTERVAL);
 	}
 
-	// Maneja la reconexión exitosa
+	// Optimizar el manejo de reconexión
 	handleReconnectionSuccess(data) {
 		diagnosticService.info('GameReconnection', 'Reconnection successful', {
 			playerSide: data.player_side || this.playerSide,
@@ -377,76 +394,65 @@ class GameReconnectionService {
 			connectionId: this.connectionId
 		});
 
-		// Forzar una pausa antes de procesar reconexión
-		// para asegurar que todos los estados anteriores se hayan resuelto
-		setTimeout(() => {
-			// Si el servidor nos envía información del lado del jugador, usarla
-			if (data.player_side) {
-				this.playerSide = data.player_side;
-				diagnosticService.debug('GameReconnection', `Player side received from server: ${this.playerSide}`);
-			}
+		// OPTIMIZACIÓN: Eliminar la pausa
+		// Si el servidor nos envía información del lado del jugador, usarla
+		if (data.player_side) {
+			this.playerSide = data.player_side;
+			diagnosticService.debug('GameReconnection', `Player side received from server: ${this.playerSide}`);
+		}
 
-			// IMPORTANTE: Enviar comando de parada forzada inmediatamente al reconectar
-			if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
-				const userId = localStorage.getItem('user_id');
-				const stopCommand = {
-					type: 'move_paddle',
-					direction: 0,
-					side: this.playerSide,
-					player_id: parseInt(userId),
-					timestamp: Date.now(),
-					force_stop: true,
-					message_id: `reconnect_stop_${Date.now()}`
-				};
-
-				diagnosticService.info('GameReconnection', 'Enviando comando de parada forzada tras reconexión');
-				this.send(stopCommand);
-
-				// Enviar una segunda vez para asegurar que se procese
-				setTimeout(() => {
-					stopCommand.timestamp = Date.now();
-					stopCommand.message_id = `reconnect_stop_retry_${Date.now()}`;
-					this.send(stopCommand);
-				}, 200);
-			}
-
-			// Guardar o actualizar datos
-			const existingData = this.getSavedGameData(this.gameId) || {};
-
-			let dataToSave = {
-				...existingData,
-				playerSide: this.playerSide,
-				lastReconnection: Date.now()
+		// OPTIMIZACIÓN: Un solo comando de parada forzada
+		if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
+			const userId = localStorage.getItem('user_id');
+			const stopCommand = {
+				type: 'move_paddle',
+				direction: 0,
+				side: this.playerSide,
+				player_id: parseInt(userId),
+				timestamp: Date.now(),
+				force_stop: true,
+				critical: true,
+				message_id: `reconnect_stop_${Date.now()}`
 			};
 
-			// Si recibimos nombres de jugadores, guardarlos también
-			if (data.player1 && data.player2) {
-				dataToSave = {
-					...dataToSave,
-					player1: data.player1,
-					player2: data.player2
-				};
-			}
+			diagnosticService.info('GameReconnection', 'Enviando comando de parada forzada tras reconexión');
+			this.send(stopCommand);
+		}
 
-			// Si recibimos IDs de jugadores, guardarlos
-			if (data.player1_id && data.player2_id) {
-				dataToSave = {
-					...dataToSave,
-					player1_id: data.player1_id,
-					player2_id: data.player2_id
-				};
-			}
+		// Guardar o actualizar datos
+		const existingData = this.getSavedGameData(this.gameId) || {};
 
-			this.saveGameData(this.gameId, dataToSave);
+		let dataToSave = {
+			...existingData,
+			playerSide: this.playerSide,
+			lastReconnection: Date.now()
+		};
 
-			diagnosticService.debug('GameReconnection', 'Game data saved', dataToSave);
+		// Si recibimos nombres de jugadores, guardarlos también
+		if (data.player1 && data.player2) {
+			dataToSave = {
+				...dataToSave,
+				player1: data.player1,
+				player2: data.player2
+			};
+		}
 
-			this.showReconnectionSuccess();
+		// Si recibimos IDs de jugadores, guardarlos
+		if (data.player1_id && data.player2_id) {
+			dataToSave = {
+				...dataToSave,
+				player1_id: data.player1_id,
+				player2_id: data.player2_id
+			};
+		}
 
-			if (this.callbacks.onReconnect) {
-				this.callbacks.onReconnect(data);
-			}
-		}, 200); // Pequeña pausa para sincronización
+		this.saveGameData(this.gameId, dataToSave);
+
+		diagnosticService.debug('GameReconnection', 'Game data saved', dataToSave);
+
+		if (this.callbacks.onReconnect) {
+			this.callbacks.onReconnect(data);
+		}
 	}
 
 	// Muestra UI para intentos de reconexión
@@ -665,7 +671,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Envía un mensaje por el WebSocket
+	// Optimización para envío de mensajes críticos
 	send(message) {
 		if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 			// Añadir timestamp a todos los mensajes si no lo tienen ya
@@ -678,10 +684,32 @@ class GameReconnectionService {
 				message.connectionId = this.connectionId;
 			}
 
-			// Para mensajes críticos como parada, añadir identificador único
-			if (message.force_stop) {
-				message.message_id = `stop_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-				diagnosticService.debug('GameReconnection', 'Sending force stop', message);
+			// Optimización para evitar envíos duplicados de comandos de parada
+			const isStopCommand = message.force_stop || message.type === 'force_stop';
+
+			if (isStopCommand) {
+				// Añadir identificador único si no existe
+				message.message_id = message.message_id || `stop_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+				// Verificar si acabamos de enviar un comando similar
+				const now = Date.now();
+				if (this._lastStopCommandTime && (now - this._lastStopCommandTime < 50)) {
+					// Omitir este comando si acabamos de enviar uno similar en los últimos 50ms
+					diagnosticService.trace('GameReconnection', 'Omitiendo comando de parada duplicado', {
+						timestamp: message.timestamp,
+						timeSinceLastStop: now - this._lastStopCommandTime
+					});
+					return;
+				}
+
+				// Registrar tiempo del último comando de parada
+				this._lastStopCommandTime = now;
+
+				diagnosticService.debug('GameReconnection', 'Sending force stop', {
+					side: message.side,
+					timestamp: message.timestamp,
+					message_id: message.message_id
+				});
 			}
 
 			// Enviar mensaje
@@ -689,17 +717,19 @@ class GameReconnectionService {
 				const messageStr = JSON.stringify(message);
 				this.socket.send(messageStr);
 
-				// Para mensajes de parada, enviar un segundo mensaje después de un breve retraso
-				// para aumentar probabilidad de procesamiento en caso de problemas de red
-				if (message.force_stop) {
+				// OPTIMIZACIÓN: Para mensajes críticos solo enviar un retry si no es de fast reconnect
+				if (isStopCommand && message.critical && !message.type.includes('fast_reconnect')) {
 					setTimeout(() => {
 						if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 							message.timestamp = Date.now();
 							message.retry = true;
+							message.message_id = `retry_${message.message_id}`;
 							this.socket.send(JSON.stringify(message));
-							diagnosticService.trace('GameReconnection', 'Sent retry force stop message');
+							diagnosticService.trace('GameReconnection', 'Sent retry force stop message', {
+								message_id: message.message_id
+							});
 						}
-					}, 100);
+					}, 25);  // Mantener en 25ms para mensajes críticos
 				}
 			} catch (error) {
 				diagnosticService.error('GameReconnection', 'Error sending message', {
@@ -712,6 +742,74 @@ class GameReconnectionService {
 				socketState: this.socket?.readyState,
 				message
 			});
+		}
+	}
+
+	// Nuevo método para manejar el protocolo Fast Reconnect
+	handleFastReconnect(data) {
+		diagnosticService.info('GameReconnection', 'Fast reconnect successful', {
+			playerSide: data.player_side || this.playerSide,
+			timestamp: data.timestamp
+		});
+
+		this.reconnecting = false;
+		this.reconnectAttempts = 0;
+
+		diagnosticService.connectionEvent('fast_reconnect', {
+			gameId: this.gameId,
+			connectionId: this.connectionId
+		});
+
+		// Inmediatamente procesar los datos sin esperas
+		// Si el servidor nos envía información del lado del jugador, usarla
+		if (data.player_side) {
+			this.playerSide = data.player_side;
+		}
+
+		// OPTIMIZACIÓN: Enviar un único comando de parada para evitar duplicados
+		if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
+			const userId = localStorage.getItem('user_id');
+			const stopCommand = {
+				type: 'move_paddle',
+				direction: 0,
+				side: this.playerSide,
+				player_id: parseInt(userId),
+				timestamp: Date.now(),
+				force_stop: true,
+				critical: true,
+				message_id: `fast_reconnect_stop_${Date.now()}`
+			};
+
+			diagnosticService.info('GameReconnection', 'Enviando comando de parada para fast reconnect');
+			this.send(stopCommand);
+		}
+
+		// Guardar o actualizar datos
+		const existingData = this.getSavedGameData(this.gameId) || {};
+
+		let dataToSave = {
+			...existingData,
+			playerSide: this.playerSide,
+			lastReconnection: Date.now()
+		};
+
+		this.saveGameData(this.gameId, dataToSave);
+		diagnosticService.debug('GameReconnection', 'Game data saved', dataToSave);
+
+		// Notificar reconexión exitosa
+		if (this.callbacks.onFastReconnect) {
+			this.callbacks.onFastReconnect(data);
+		} else if (this.callbacks.onReconnect) {
+			this.callbacks.onReconnect(data);
+		}
+	}
+
+	// Nuevo método para manejar datos de predicción 
+	handlePredictionData(data) {
+		diagnosticService.debug('GameReconnection', 'Received prediction data');
+
+		if (this.callbacks.onPredictionData) {
+			this.callbacks.onPredictionData(data);
 		}
 	}
 
