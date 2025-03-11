@@ -4,7 +4,7 @@ import GameService from '../services/GameService.js';
 import { diagnosticService } from '../services/DiagnosticService.js';
 
 export async function NotFoundView() {
-	diagnosticService.info('NotFoundView', 'NotFoundView cargada');
+	console.log('NotFoundView cargada');
 	const app = document.getElementById('app');
 	const path = window.location.pathname;
 
@@ -14,13 +14,13 @@ export async function NotFoundView() {
 		// Si parece una URL de juego y el usuario está autenticado, 
 		// intentar verificar si es válida antes de redirigir
 		const gameId = gameMatch[1];
-		diagnosticService.info('NotFoundView', `Verificando partida ${gameId} antes de redirigir`);
+		console.log(`Verificando partida ${gameId} antes de redirigir`);
 
 		try {
 			// Verificar si el usuario está autenticado
 			const userId = await AuthService.getUserId();
 			if (!userId) {
-				diagnosticService.warn('NotFoundView', 'Usuario no autenticado');
+				console.warn('Usuario no autenticado');
 				throw new Error('Usuario no autenticado');
 			}
 
@@ -41,7 +41,7 @@ export async function NotFoundView() {
 			// Si tenemos datos de reconexión en localStorage, intentar reconectar sin verificar API
 			const savedGameData = localStorage.getItem(`game_${gameId}`);
 			if (savedGameData) {
-				diagnosticService.info('NotFoundView', 'Encontrados datos de reconexión guardados', JSON.parse(savedGameData));
+				console.log('Encontrados datos de reconexión guardados', JSON.parse(savedGameData));
 
 				// Intentar cargar la vista de juego directamente
 				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
@@ -50,18 +50,18 @@ export async function NotFoundView() {
 			}
 
 			if (gameAccess.exists && gameAccess.can_access) {
-				diagnosticService.info('NotFoundView', 'Partida válida, redirigiendo', gameAccess);
+				console.log('Partida válida, redirigiendo', gameAccess);
 
 				// Usar GameMatchView directamente
 				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
 				GameMatchView(gameId);
 				return;
 			} else {
-				diagnosticService.warn('NotFoundView', 'Partida no válida o sin acceso', gameAccess);
+				console.warn('Partida no válida o sin acceso', gameAccess);
 				// No redirigir, mostrar 404 con botón de diagnóstico
 			}
 		} catch (error) {
-			diagnosticService.error('NotFoundView', 'Error al cargar la partida', error);
+			console.error('Error al cargar la partida', error);
 			// Mantener el botón de diagnóstico incluso en caso de error
 		}
 	}

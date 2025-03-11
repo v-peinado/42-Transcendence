@@ -4,6 +4,7 @@ import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
 import { diagnosticService } from '../../services/DiagnosticService.js';
+import GameStateInterpolator from '../../utils/GameStateInterpolator.js';
 
 export async function GameMatchView(gameId) {
 	// Al principio de la función, registrar inicio

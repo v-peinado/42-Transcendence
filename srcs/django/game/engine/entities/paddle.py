@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
@@ -59,28 +60,16 @@ class Paddle:
             return
             
         if self.target_y is not None:
-            current_center = self.y + (
-                self.height / 2
-            )  # Calculate current paddle center
-            target_center = self.target_y + (
-                self.height / 2
-            )  # Calculate target paddle center
-            diff = round(
-                target_center - current_center
-            )  # Round difference to avoid rounding errors
+            current_center = self.y + (self.height / 2)  # Calculate current paddle center
+            target_center = self.target_y + (self.height / 2)  # Calculate target paddle center
+            diff = round(target_center - current_center)  # Round difference to avoid rounding errors
 
             dead_zone = 7  # Dead zone is 7 pixels to avoid vibrations
 
             if abs(diff) > dead_zone:
-                direction = (
-                    1 if diff > 0 else -1
-                )  # Calculate direction based on difference
-                self.move(
-                    direction, canvas_height
-                )  # Use the same move method to avoid code duplication
-            elif (
-                self.y != self.last_position
-            ):  # If we are in the dead zone and the paddle has moved...
+                direction = 1 if diff > 0 else -1  # Calculate direction based on difference
+                self.move(direction, canvas_height)  # Use the same move method to avoid code duplication
+            elif self.y != self.last_position:  # If we are in the dead zone and the paddle has moved...
                 self.y = int(self.target_y)  # Set the paddle to the target position
 
             self.last_position = self.y  # Save last position for comparison
@@ -89,8 +78,8 @@ class Paddle:
         """Reset paddle state completely, optionally with new y position"""
         print(f"[PADDLE] Reset completo de la pala. Y anterior: {self.y}, Y nuevo: {y if y is not None else self.y}")
         
-        # MODIFICACIÓN: No deshabilitar entrada durante el reset
-        # self.ready_for_input = False
+        # MODIFICACIÓN CRUCIAL: No deshabilitar entrada durante el reset
+        # self.ready_for_input = False  <-- Eliminada esta línea
         
         # Reset completo de todas las variables relacionadas con el movimiento
         if y is not None:
@@ -101,7 +90,7 @@ class Paddle:
         self.moving = False
         self.last_direction = 0
         
-        # MODIFICACIÓN: Asegurar que siempre está listo para recibir input
+        # MODIFICACIÓN CRUCIAL: Asegurar que siempre está listo para recibir input
         self.ready_for_input = True
         
         print(f"[PADDLE] Estado final después del reset: y={self.y}, target={self.target_y}, moving={self.moving}, ready={self.ready_for_input}")

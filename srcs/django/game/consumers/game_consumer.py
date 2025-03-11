@@ -74,7 +74,7 @@ class GameConsumer(BaseGameConsumer):
                             # Guardar posición actual para restaurarla
                             current_y = paddle.y
                             paddle.reset_state(current_y)
-                            # Asegurar que esté lista para input
+                            # Asegurar explícitamente que esté lista para input
                             paddle.ready_for_input = True
                     
                     # Enviar el estado actual del juego al cliente
@@ -193,7 +193,7 @@ class GameConsumer(BaseGameConsumer):
                         diag.info('GameConsumer', f'Fast reconnect: Reseteando pala para {self.user.username} ({player_side})')
                         current_y = paddle.y
                         paddle.reset_state(current_y)
-                        paddle.ready_for_input = True  # Asegurar que está listo para input
+                        paddle.ready_for_input = True  # Asegurar explícitamente que está listo para input
                     
                     # Enviar estado inmediatamente sin serializar todo el juego
                     current_state = {

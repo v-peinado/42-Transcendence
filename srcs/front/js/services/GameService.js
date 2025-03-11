@@ -1,8 +1,6 @@
 import AuthService from './AuthService.js';
 
 class GameService {
-	static API_URL = '/api/game';
-
 	/**
 	 * Verifica si una partida existe y el usuario tiene acceso a ella
 	 * @param {string|number} gameId - ID de la partida
@@ -13,11 +11,18 @@ class GameService {
 			// Verificar autenticación
 			const token = localStorage.getItem('accessToken');
 			if (!token) {
-				return { exists: false, canAccess: false };
+				return { exists: false, can_access: false };
 			}
 
-			// Verificar si la partida existe
-			const response = await fetch(`${this.API_URL}/verify/${gameId}/`, {
+			// Recuperar datos guardados si existen
+			const savedData = localStorage.getItem(`game_${gameId}`);
+			if (savedData) {
+				// Si tenemos datos guardados, el usuario probablemente tiene acceso
+				return { exists: true, can_access: true };
+			}
+
+			// Solicitud genérica al backend para confirmar existencia de la partida
+			const response = await fetch(`/api/game/verify/${gameId}/`, {
 				method: 'GET',
 				headers: {
 					'Authorization': `Bearer ${token}`,
@@ -26,17 +31,19 @@ class GameService {
 			});
 
 			if (!response.ok) {
-				return { exists: false, canAccess: false };
+				console.warn(`Error verificando partida ${gameId}: ${response.status}`);
+				return { exists: false, can_access: false };
 			}
 
 			const data = await response.json();
 			return {
 				exists: data.exists || false,
-				canAccess: data.can_access || false
+				can_access: data.can_access || false
 			};
 		} catch (error) {
 			console.error('Error verificando partida:', error);
-			return { exists: false, canAccess: false };
+			// En caso de error de red, asumimos que la partida existe si tenemos el ID
+			return { exists: true, can_access: true };
 		}
 	}
 }

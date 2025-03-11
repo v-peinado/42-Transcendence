@@ -63,7 +63,7 @@ class GameStateHandler:
                     paddle.moving = False
                     paddle.last_position = paddle.y
                     paddle.target_y = paddle.y
-                    paddle.ready_for_input = True
+                    paddle.ready_for_input = True  # Asegurar explícitamente que está listo para input
                     print(f"[PADDLE] Estado después del reset: {paddle.y}, moving={paddle.moving}")
                 else:
                     print(f"[PADDLE] No se pudo restablecer el paddle - No existe o no tiene reset_state")
