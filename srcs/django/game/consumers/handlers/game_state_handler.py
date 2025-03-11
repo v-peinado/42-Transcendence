@@ -133,40 +133,35 @@ class GameStateHandler:
 
     @staticmethod
     async def handle_reconnection_state_sync(consumer):
-        """Maneja sincronización especial para reconexiones"""
+        """Maneja sincronización para reconexiones"""
         if not hasattr(consumer, "game_state") or not consumer.game_state:
-            diag.warn('GameStateHandler', f'No hay estado de juego para sincronizar en reconexión de {consumer.user.username}')
+            print(f'No hay estado de juego para sincronizar en reconexión de {consumer.user.username}')
             return
 
         # 1. Obtener el estado actual
         current_state = consumer.game_state.serialize()
         
-        # 2. Agregar metadatos de predicción para el cliente
-        # Agregar timestamp del servidor para permitir al cliente interpolar estados
-        current_state["reconnection_sync"] = True
+        # 2. Agregar metadatos para reconexión rápida
+        current_state["fast_reconnect"] = True
         current_state["server_timestamp"] = asyncio.get_event_loop().time() * 1000
-        current_state["fast_reconnect"] = True  # Marcador para habilitar el protocolo rápido
         
-        # 3. Marcar explícitamente el lado del jugador
+        # 3. Marcar el lado del jugador
         player_side = getattr(consumer, "side", None)
         
-        # 4. Enviar estados inicial y final en una secuencia más rápida
-        diag.info('GameStateHandler', f'Enviando estado de sincronización para reconexión a {consumer.user.username}')
+        # 4. Enviar estado para sincronización rápida
+        print(f'Enviando estado para reconexión a {consumer.user.username}')
         
-        # OPTIMIZACIÓN: Enviar un solo estado con toda la información necesaria
+        # Enviar estado actual
         await consumer.send(text_data=json.dumps({
             "type": "game_state",
             "state": current_state,
             "is_reconnection": True,
             "player_side": player_side,
             "reconnection_sync": True,
-            "fast_reconnect": True,
             "timestamp": int(time.time() * 1000)
         }))
         
-        # OPTIMIZACIÓN: Eliminar todo retraso entre estados
-        # En lugar de enviar un segundo estado con retraso, directamente enviamos una
-        # actualización inmediata con las velocidades de los objetos para predicción
+        # Enviar datos de predicción inmediatamente para mejorar la experiencia
         prediction_data = {
             "type": "game_prediction",
             "ball": {
@@ -190,28 +185,8 @@ class GameStateHandler:
             "timestamp": int(time.time() * 1000)
         }
         
-        # Enviar datos de predicción inmediatamente
+        # Enviar datos de predicción
         await consumer.send(text_data=json.dumps(prediction_data))
-
-        # Optimización: enviar un segundo estado actualizado con is_second_sync para permitir 
-        # interpolación suave en el cliente
-        await asyncio.sleep(0.01)  # Espera mínima para asegurar orden de mensajes
-        
-        # Volver a serializar para obtener posiciones actualizadas
-        updated_state = consumer.game_state.serialize()
-        updated_state["reconnection_sync"] = True
-        updated_state["server_timestamp"] = asyncio.get_event_loop().time() * 1000
-        updated_state["is_second_sync"] = True
-        
-        await consumer.send(text_data=json.dumps({
-            "type": "game_state",
-            "state": updated_state,
-            "is_reconnection": True,
-            "player_side": player_side,
-            "reconnection_sync": True,
-            "is_second_sync": True,
-            "timestamp": int(time.time() * 1000)
-        }))
 
     @staticmethod
     async def countdown_timer(consumer):  # Countdown timer

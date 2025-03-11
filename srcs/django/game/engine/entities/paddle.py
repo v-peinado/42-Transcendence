@@ -3,18 +3,18 @@ import asyncio
 class Paddle:
     def __init__(self, x, y, width=10, height=100, speed=7):
         """Set initial paddle values"""
-        self.x = int(x)  # Round initial position
+        self.x = int(x)
         self.y = int(y)
         self.width = width
         self.height = height
         self.speed = speed
         self.score = 0
-        self.target_y = int(y)  # Round initial target
-        self.last_position = int(y)  # Add last position for comparison
-        self.moving = False     # Flag to track if paddle is actively moving
-        self.ready_for_input = True  # Nueva bandera para controlar si la pala está lista para recibir comandos
-        self.last_direction = 0  # Nuevo: Mantener el último comando de dirección
-        self.last_update_time = 0  # Timestamp del último update (para sincronización)
+        self.target_y = int(y)
+        self.last_position = int(y)
+        self.moving = False
+        self.ready_for_input = True  # Siempre listo para input por defecto
+        self.last_direction = 0
+        self.last_update_time = 0
 
     def move(self, direction, canvas_height):
         """Control paddle movement speed"""
@@ -89,8 +89,8 @@ class Paddle:
         """Reset paddle state completely, optionally with new y position"""
         print(f"[PADDLE] Reset completo de la pala. Y anterior: {self.y}, Y nuevo: {y if y is not None else self.y}")
         
-        # Temporalmente marcar como no listo para entrada mientras resetea
-        self.ready_for_input = False
+        # MODIFICACIÓN: No deshabilitar entrada durante el reset
+        # self.ready_for_input = False
         
         # Reset completo de todas las variables relacionadas con el movimiento
         if y is not None:
@@ -101,16 +101,10 @@ class Paddle:
         self.moving = False
         self.last_direction = 0
         
-        # Volver a habilitar entrada después de un pequeño delay
-        import asyncio
-        def enable_input():
-            self.ready_for_input = True
-            print(f"[DEBUG] Paddle.reset_state - Pala lista para entrada de nuevo. Estado final: {self.__dict__}")
-        
-        # En entorno síncrono, habilitar inmediatamente
+        # MODIFICACIÓN: Asegurar que siempre está listo para recibir input
         self.ready_for_input = True
         
-        print(f"[PADDLE] Estado final después del reset: y={self.y}, target={self.target_y}, moving={self.moving}")
+        print(f"[PADDLE] Estado final después del reset: y={self.y}, target={self.target_y}, moving={self.moving}, ready={self.ready_for_input}")
 
     def serialize(self):
         """Serializar la pala para enviarla a los clientes"""

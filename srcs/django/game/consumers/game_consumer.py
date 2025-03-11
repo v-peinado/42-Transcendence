@@ -18,7 +18,7 @@ class GameConsumer(BaseGameConsumer):
             await super().connect()
             
             # If connection validation failed, return early
-            if not hasattr(self, "game_state"):
+            if not hasattr(self, "game_state") or not self.game_state:
                 print(f"[DEBUG] GameConsumer.connect - No game state for {self.scope['user'].username}")
                 return
             
@@ -59,14 +59,14 @@ class GameConsumer(BaseGameConsumer):
                     "game_id": game.id,
                 }))
                 
-                # If the game is in PLAYING state, send the game state to the client for reconnection
+                # Si la partida está en curso o finalizada, restaurar el estado
                 if game.status == "PLAYING" and hasattr(self, "game_state"):
                     side = getattr(self, "side", None)
                     
                     # Marcar al consumidor como reconectando
                     self.reconnecting = True
                     
-                    # Restablecer completamente el estado de la pala si el jugador está reconectando
+                    # MODIFICACIÓN: Restablecer el estado de la pala pero asegurarse de que esté lista para input
                     if side:
                         paddle = self.game_state.paddles.get(side)
                         if paddle:
@@ -74,6 +74,8 @@ class GameConsumer(BaseGameConsumer):
                             # Guardar posición actual para restaurarla
                             current_y = paddle.y
                             paddle.reset_state(current_y)
+                            # Asegurar que esté lista para input
+                            paddle.ready_for_input = True
                     
                     # Enviar el estado actual del juego al cliente
                     player1_name = player1_info.get('username') if player1_info else 'Unknown'
@@ -90,7 +92,8 @@ class GameConsumer(BaseGameConsumer):
                     print(f"[RECONNECT] Estado de juego enviado a {self.user.username} (lado: {side})")
                     
                     # Después de un pequeño retraso, eliminar el flag de reconexión
-                    await asyncio.sleep(1.0)
+                    # MODIFICACIÓN: Reducir este tiempo de 1.0 segundos a 0.1 segundos
+                    await asyncio.sleep(0.1)
                     self.reconnecting = False
             else:
                 # Unauthorized user, close the connection
@@ -190,7 +193,7 @@ class GameConsumer(BaseGameConsumer):
                         diag.info('GameConsumer', f'Fast reconnect: Reseteando pala para {self.user.username} ({player_side})')
                         current_y = paddle.y
                         paddle.reset_state(current_y)
-                        paddle.ready_for_input = True  # Habilitar inmediatamente la entrada
+                        paddle.ready_for_input = True  # Asegurar que está listo para input
                     
                     # Enviar estado inmediatamente sin serializar todo el juego
                     current_state = {
