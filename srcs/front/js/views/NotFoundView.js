@@ -1,7 +1,10 @@
 import { getNavbarHTML } from '../components/Navbar.js';
 import AuthService from '../services/AuthService.js';
+import GameService from '../services/GameService.js';
+import { diagnosticService } from '../services/DiagnosticService.js';
 
 export async function NotFoundView() {
+	diagnosticService.info('NotFoundView', 'NotFoundView cargada');
 	const app = document.getElementById('app');
 	const path = window.location.pathname;
 
@@ -9,17 +12,61 @@ export async function NotFoundView() {
 	const gameMatch = path.match(/^\/game\/(\d+)$/);
 	if (gameMatch && localStorage.getItem('isAuthenticated') === 'true') {
 		// Si parece una URL de juego y el usuario está autenticado, 
-		// intentar redirigir en lugar de mostrar 404
+		// intentar verificar si es válida antes de redirigir
 		const gameId = gameMatch[1];
-		console.log('Redirigiendo a partida desde NotFoundView:', gameId);
+		diagnosticService.info('NotFoundView', `Verificando partida ${gameId} antes de redirigir`);
 
-		// Usar GameMatchView directamente
-		const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
-		GameMatchView(gameId);
-		return;
+		try {
+			// Verificar si el usuario está autenticado
+			const userId = await AuthService.getUserId();
+			if (!userId) {
+				diagnosticService.warn('NotFoundView', 'Usuario no autenticado');
+				throw new Error('Usuario no autenticado');
+			}
+
+			// Verificar si la partida existe y si tiene acceso
+			const gameAccess = await GameService.verifyGameAccess(gameId);
+
+			// Añadir botón de diagnóstico independientemente del resultado de la verificación
+			const diagnosticButton = document.createElement('button');
+			diagnosticButton.id = 'emergencyDiagnostic';
+			diagnosticButton.className = 'btn btn-danger position-fixed';
+			diagnosticButton.style.bottom = '20px';
+			diagnosticButton.style.right = '20px';
+			diagnosticButton.style.zIndex = '9999';
+			diagnosticButton.innerHTML = '<i class="fas fa-stethoscope"></i> Diagnóstico de Emergencia';
+			diagnosticButton.onclick = () => diagnosticService.showDiagnosticPanel();
+			document.body.appendChild(diagnosticButton);
+
+			// Si tenemos datos de reconexión en localStorage, intentar reconectar sin verificar API
+			const savedGameData = localStorage.getItem(`game_${gameId}`);
+			if (savedGameData) {
+				diagnosticService.info('NotFoundView', 'Encontrados datos de reconexión guardados', JSON.parse(savedGameData));
+
+				// Intentar cargar la vista de juego directamente
+				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
+				GameMatchView(gameId);
+				return;
+			}
+
+			if (gameAccess.exists && gameAccess.can_access) {
+				diagnosticService.info('NotFoundView', 'Partida válida, redirigiendo', gameAccess);
+
+				// Usar GameMatchView directamente
+				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
+				GameMatchView(gameId);
+				return;
+			} else {
+				diagnosticService.warn('NotFoundView', 'Partida no válida o sin acceso', gameAccess);
+				// No redirigir, mostrar 404 con botón de diagnóstico
+			}
+		} catch (error) {
+			diagnosticService.error('NotFoundView', 'Error al cargar la partida', error);
+			// Mantener el botón de diagnóstico incluso en caso de error
+		}
 	}
 
-	// Si no es una URL de juego, mostrar 404 normal
+	// Si no es una URL de juego o hay error, mostrar 404 normal
 	const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 	const userInfo = isAuthenticated ? await AuthService.getUserProfile() : null;
 	const navbarHtml = await getNavbarHTML(isAuthenticated, userInfo);
@@ -41,7 +88,21 @@ export async function NotFoundView() {
                     <i class="fas fa-home me-2"></i>
                     Volver al inicio
                 </a>
+                
+                ${gameMatch ? `
+                <button id="diagnosticBtn" class="btn btn-warning mt-3">
+                    <i class="fas fa-stethoscope me-2"></i>Ver diagnóstico de conexión
+                </button>
+                ` : ''}
             </div>
         </div>
     `;
+
+	// Añadir event listener para el botón de diagnóstico si existe
+	const diagnosticBtn = document.getElementById('diagnosticBtn');
+	if (diagnosticBtn) {
+		diagnosticBtn.addEventListener('click', () => {
+			diagnosticService.showDiagnosticPanel();
+		});
+	}
 }

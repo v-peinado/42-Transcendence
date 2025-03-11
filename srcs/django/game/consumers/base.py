@@ -1,34 +1,48 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from ..engine.game_state import GameState
-from .shared_state import connected_players
 import json
+from ..engine.game_state import GameState
+from .utils.diagnostic import DiagnosticLogger as diag
+from .shared_state import connected_players
 
 class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
-    """Base consumer with common functionality for all Pong game consumers"""
+    """Base consumer with common functionality"""
     
     async def validate_user_connection(self):
-        """Validate if user is already connected from another location"""
-        self.user = self.scope["user"]
-        
-        # Verify that the user is connected from only one place
-        if self.user.id in connected_players:
-            existing_channel = connected_players[self.user.id]
-            if existing_channel != self.channel_name:
-                # User is already connected from another place, reject this connection
-                await self.close(code=4000)
-                return False	# connection rejected
-        
-        return True	# connection accepted
-        
-    async def manage_connected_players(self, add=True):
-        """Add or remove user from connected_players dictionary"""
-        if add:
-            connected_players[self.user.id] = self.channel_name
-        else:
-            # Verify that the user is connected to this channel before disconnecting
-            if hasattr(self, "user") and self.user.id in connected_players and connected_players[self.user.id] == self.channel_name:
-                del connected_players[self.user.id]
+        """Validate user authentication and connection"""
+        try:
+            # Check if user is authenticated
+            if not self.scope["user"].is_authenticated:
+                await self.close(code=4001)  # Unauthorized
+                diag.warn('BaseConsumer', 'Connection attempt by unauthenticated user')
+                return False
+            
+            # Store user reference for convenience
+            self.user = self.scope["user"]
+            return True
+        except Exception as e:
+            diag.error('BaseConsumer', f'Error validating user connection: {e}')
+            await self.close(code=4500)  # Internal error
+            return False
     
+    async def manage_connected_players(self, add=True):
+        """Add/remove user from connected players"""
+        try:
+            user_id = self.user.id
+            
+            if add:
+                connected_players[user_id] = {
+                    "channel_name": self.channel_name,
+                    "username": self.user.username,
+                    "last_seen": 0
+                }
+                diag.info('BaseConsumer', f'Added user {self.user.username} to connected players')
+            else:
+                if user_id in connected_players:
+                    del connected_players[user_id]
+                    diag.info('BaseConsumer', f'Removed user {self.user.username} from connected players')
+        except Exception as e:
+            diag.error('BaseConsumer', f'Error managing connected players: {e}')
+
     async def game_state_update(self, event):
         """Send game state update to client"""
         await self.send(text_data=json.dumps({
@@ -46,37 +60,52 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
 
 
 class BaseGameConsumer(TranscendenceBaseConsumer):
-    """Base game consumer with game-specific functionality"""
+    """Base consumer for game connections"""
     
-    game_states = {}    # Storing game states (game_id: GameState object)
-
     async def connect(self):
         """Connect to websocket"""
-        self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
-        self.room_group_name = f"game_{self.game_id}"
-        
-        # Validate user connection using base consumer method
-        if not await self.validate_user_connection():
-            return
+        try:
+            # Check authentication using the base class method
+            if not await self.validate_user_connection():
+                return
             
-        self.game_state = await self.initialize_game_state()
-
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-        await self.accept()
-
+            # Parse game_id from URL route
+            self.game_id = self.scope['url_route']['kwargs']['game_id']
+            self.room_group_name = f'game_{self.game_id}'
+            
+            # Join game group
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+            
+            # Create game state if not exists
+            if not hasattr(self, "game_state"):
+                from .shared_state import game_players, game_states
+                game_id = str(self.game_id)
+                
+                # Check if there's an existing game state in our shared dictionary
+                if game_id in game_states:
+                    self.game_state = game_states[game_id]
+                    diag.info('BaseGameConsumer', f'Reusing existing game state from shared memory for game {self.game_id}')
+                # If no existing game state, create a new one
+                else:
+                    self.game_state = GameState()
+                    # Store in shared dictionary for other connections to use
+                    game_states[game_id] = self.game_state
+                    diag.info('BaseGameConsumer', f'Created new game state for game {self.game_id}')
+            
+            await self.accept()
+            
+        except Exception as e:
+            diag.error('BaseGameConsumer', f'Error in connect: {e}')
+            if hasattr(self, 'websocket') and not self.websocket.closed:
+                await self.close(code=4500)
+    
     async def disconnect(self, close_code):
         """Disconnect from websocket"""
-        # Remove user from connected players
-        await self.manage_connected_players(add=False)
-        
-        if hasattr(self, "game_id") and self.game_id in self.game_states:
-            del self.game_states[self.game_id]
-
-        if hasattr(self, "room_group_name") and hasattr(self, "channel_name"):
-            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
-    async def initialize_game_state(self):
-        """Game state initialization"""
-        if self.game_id not in self.game_states:
-            self.game_states[self.game_id] = GameState()
-        return self.game_states[self.game_id]
+        if hasattr(self, "room_group_name"):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
