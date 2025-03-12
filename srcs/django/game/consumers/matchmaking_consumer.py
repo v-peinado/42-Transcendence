@@ -1,5 +1,5 @@
 from .base import TranscendenceBaseConsumer
-from .shared_state import waiting_players as global_waiting_players
+from .shared_state import waiting_players
 from .shared_state import connected_players
 from .utils.database_operations import DatabaseOperations
 import json
@@ -16,7 +16,17 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
         
         self.channel = self.channel_name
         
-        # Accept the connection first
+        # Add the user to the waiting list if not already in it
+        in_queue = any(item['user'].id == self.user.id for item in waiting_players)
+        if not in_queue:
+            waiting_players.append({
+                'user': self.user, 
+                'channel_name': self.channel
+            })
+
+        # Register player in connected players
+        await self.manage_connected_players(add=True)
+        
         await self.accept()
         
         # Send welcome message
@@ -25,36 +35,29 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             'message': 'Connected to matchmaking'
         }))
         
-        # Add the user to the waiting list if not already in it
-        in_queue = any(item['user'].id == self.user.id for item in global_waiting_players)
-        if not in_queue:
-            global_waiting_players.append({
-                'user': self.user, 
-                'channel_name': self.channel,
-                'join_time': time.time()
-            })
-            
-            # Send status update
-            await self.send(text_data=json.dumps({
-                'type': 'status',
-                'status': 'waiting',
-                'position': len(global_waiting_players)
-            }))
-
-        # Register player in connected players
-        await self.manage_connected_players(add=True)
-        
         # Try to match players
         await self.try_match_players()
 
     async def disconnect(self, close_code):
         """ Remove the user from the waiting list """
-        
         # Filter the waiting players list
-        self._remove_from_waiting_list(self.user.id)
+        self._remove_player_from_queue(self.user.id)
         
         # Remove user from connected players
         await self.manage_connected_players(add=False)
+
+    def _remove_player_from_queue(self, user_id):
+        """Helper method to remove a player from the waiting queue"""
+        # Create a new list without the specified user
+        players_to_keep = []
+        for item in waiting_players[:]:  # Create a copy to iterate
+            if item['user'].id != user_id:
+                players_to_keep.append(item)
+        
+        # Clear and update the waiting_players list
+        waiting_players.clear()
+        for player in players_to_keep:
+            waiting_players.append(player)
 
     async def receive_json(self, content):
         """Receive JSON message from client"""
@@ -65,10 +68,10 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             user = self.scope["user"]
             
             # Check if the user is already in the waiting list before adding
-            in_queue = any(item['user'].id == user.id for item in global_waiting_players)
+            in_queue = any(item['user'].id == user.id for item in waiting_players)
             if not in_queue:
                 # Register player in the waiting list
-                global_waiting_players.append({
+                waiting_players.append({
                     'user': user,
                     'channel_name': self.channel_name,
                     'join_time': time.time()
@@ -78,7 +81,7 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                 await self.send(text_data=json.dumps({
                     'type': 'status',
                     'status': 'waiting',
-                    'position': len(global_waiting_players)
+                    'position': len(waiting_players)
                 }))
                 
                 # Try to match players
@@ -89,7 +92,7 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             user_id = self.scope["user"].id
             
             # Remove player from waiting list
-            self._remove_from_waiting_list(user_id)
+            self._remove_player_from_queue(user_id)
             
             # Inform client they have left the queue
             await self.send(text_data=json.dumps({
@@ -109,15 +112,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             user_id = self.scope["user"].id
             if user_id in connected_players:
                 connected_players[user_id]["last_seen"] = time.time()
-
-    def _remove_from_waiting_list(self, user_id):
-        """Helper method to remove a user from the waiting list"""
-        # Crear una nueva lista sin el usuario especificado
-        new_waiting_players = [item for item in global_waiting_players if item['user'].id != user_id]
-        
-        # Actualizar la lista global
-        global_waiting_players.clear()
-        global_waiting_players.extend(new_waiting_players)
 
     async def game_start(self, event):
         """ Send game start event to client """
@@ -140,15 +134,10 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
 
     async def try_match_players(self):
         """ Try to match two players from the waiting list """
-        if len(global_waiting_players) >= 2:
-            
-            # Hacer copias locales para no modificar la lista mientras iteramos
-            player1 = global_waiting_players[0]
-            player2 = global_waiting_players[1]
-            
-            # Eliminar a ambos jugadores de la lista de espera
-            self._remove_from_waiting_list(player1['user'].id)
-            self._remove_from_waiting_list(player2['user'].id)
+        if len(waiting_players) >= 2:
+            # Get the two first players in the queue
+            player1 = waiting_players.pop(0)
+            player2 = waiting_players.pop(0)
 
             # Wait until both players are connected
             start_time = time.time()
@@ -165,14 +154,14 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                 if time.time() - start_time > timeout:    # This is to prevent infinite loop
                     # Put the players back in the queue
                     if player1_connected:
-                        global_waiting_players.append(player1)
+                        waiting_players.append(player1)
                     if player2_connected:
-                        global_waiting_players.append(player2)
+                        waiting_players.append(player2)
                     return
                 
                 await asyncio.sleep(0.1)
 
-            # Crear nueva partida
+            # Create new game
             game = await DatabaseOperations.create_game(player1['user'], player2['user'])
 
             # Add both channels to the game group
@@ -195,8 +184,8 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             # Update the game status to MATCHED
             await DatabaseOperations.update_game_status_by_id(game.id, 'MATCHED')
         else:
-            # Informar al usuario sobre su posición en la cola
-            position = next((i+1 for i, p in enumerate(global_waiting_players) if p['user'].id == self.user.id), 0)
+            # Inform client about their position in the queue
+            position = next((i+1 for i, p in enumerate(waiting_players) if p['user'].id == self.user.id), 0)
             await self.send(text_data=json.dumps({
                 'type': 'status',
                 'status': 'waiting',
@@ -213,7 +202,7 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             data = json.loads(text_data)
             await self.receive_json(data)
         except json.JSONDecodeError:
-            # Intentar enviar mensaje de error al cliente
+            # Send error message to client
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Invalid JSON format'

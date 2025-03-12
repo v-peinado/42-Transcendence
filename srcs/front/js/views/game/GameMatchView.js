@@ -73,8 +73,6 @@ export async function GameMatchView(gameId) {
 		app.innerHTML = navbarHtml;
 		app.appendChild(tempDiv.firstElementChild);
 
-		// Ya no agregamos el botón de diagnóstico
-
 		// Cargar CSS
 		if (!document.querySelector('link[href="/css/game.css"]')) {
 			const linkElem = document.createElement('link');
