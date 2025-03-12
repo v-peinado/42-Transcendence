@@ -1,5 +1,6 @@
 import random
 import math
+import time
 
 
 class Ball:
@@ -10,12 +11,15 @@ class Ball:
         self.speed_x = 0
         self.speed_y = 0
         self.base_speed = base_speed
+        self.last_update_time = 0
+        self.prev_x = x
+        self.prev_y = y
 
     def update(self, canvas_width, canvas_height):
         """Update ball position"""
         # Save previous position
-        prev_x = self.x
-        prev_y = self.y
+        self.prev_x = self.x
+        self.prev_y = self.y
 
         # Update position
         self.x += self.speed_x
@@ -35,9 +39,15 @@ class Ball:
         elif self.y - self.radius < 0:
             self.y = self.radius
             self.speed_y *= -1
+            
+        # Save last update time
+        self.last_update_time = time.time() * 1000  # ms
 
     def reset(self, x, y, base_speed=None):
         """Reset ball position and velocity after scoring"""
+        self.prev_x = self.x
+        self.prev_y = self.y
+        
         self.x = x
         self.y = y
         
@@ -60,7 +70,20 @@ class Ball:
         return {
             "x": self.x,
             "y": self.y,
+            "prev_x": self.prev_x,
+            "prev_y": self.prev_y,
             "radius": self.radius,
             "speed_x": self.speed_x,
             "speed_y": self.speed_y,
+            "last_update": self.last_update_time
         }
+
+    def calculate_predicted_position(self, time_offset_ms=100):
+        # Convert to seconds
+        time_offset = time_offset_ms / 1000
+        
+        # Calculate predicted position based on current speed
+        predicted_x = self.x + (self.speed_x * time_offset)
+        predicted_y = self.y + (self.speed_y * time_offset)
+        
+        return (predicted_x, predicted_y)
