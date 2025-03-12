@@ -1,4 +1,6 @@
 from ..utils.database_operations import DatabaseOperations
+from channels.db import database_sync_to_async
+from django.contrib.auth import get_user_model
 import asyncio
 import time
 import traceback
@@ -52,7 +54,7 @@ class MultiplayerHandler:
                     )
                     return
             
-            # Assign player to game side - Utilizamos los IDs directamente para evitar problemas async
+            # Assign player to game side - Using IDs directly to avoid async issues
             if game.player1_id and game.player1_id == consumer.user.id:
                 consumer.side = "left"
                 await DatabaseOperations.mark_player_ready(game, role="player1")
@@ -112,8 +114,7 @@ class MultiplayerHandler:
                 async def get_username_safe(user_id):
                     if not user_id:
                         return "Unknown"
-                    from django.contrib.auth import get_user_model
-                    from channels.db import database_sync_to_async
+
                     User = get_user_model()
                     
                     try:

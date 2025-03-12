@@ -79,11 +79,11 @@ class Paddle:
         self.moving = False
         self.last_direction = 0
         
-        # Impportant: Do not disable input during reset
+        # Important: Do not disable input during reset
         self.ready_for_input = True
 
     def serialize(self):
-        """Serializar la pala para enviarla a los clientes"""
+        """Serializes the paddle state"""
         return {
             "x": self.x,
             "y": int(self.y),
