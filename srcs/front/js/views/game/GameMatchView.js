@@ -3,18 +3,13 @@ import { soundService } from '../../services/SoundService.js';
 import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
-import GameStateInterpolator from '../../utils/GameStateInterpolator.js';
 
 export async function GameMatchView(gameId) {
-	// Al principio de la función, registrar inicio
-	console.log(`Starting game view for game ${gameId}`);
-
 	console.log('Iniciando partida:', gameId);
 
 	// Validar que tenemos un gameId válido
 	if (!gameId || isNaN(parseInt(gameId))) {
 		console.error('GameMatchView: ID de partida inválido');
-		// Redirigir a Not Found en lugar de /game
 		window.history.pushState(null, null, '/404');
 		const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
 		await NotFoundView();
@@ -88,7 +83,7 @@ export async function GameMatchView(gameId) {
 		let movementInterval = null;
 		const userId = localStorage.getItem('user_id');
 
-		console.log('User ID en juego:', userId);  // Debug user_id
+		console.log('User ID en juego:', userId);
 
 		// Setup canvas y contexto
 		const canvas = document.getElementById('gameCanvas');
@@ -99,23 +94,14 @@ export async function GameMatchView(gameId) {
 		// Establecer conexión WebSocket usando el servicio de reconexión
 		const socket = gameReconnectionService.setupConnection(gameId, {
 			onOpen: (reconnecting) => {
-				console.log(`[DEBUG] Conexión WebSocket abierta. Reconectando: ${reconnecting}`);
+				console.log(`Conexión WebSocket abierta. Reconectando: ${reconnecting}`);
 				const gameStatus = document.getElementById('gameStatus');
-				if (gameStatus) { // Verificar que el elemento existe
+				if (gameStatus) {
 					gameStatus.textContent = reconnecting ?
 						'🔄 Reconectando a la partida...' : '🎮 Conectado - Esperando oponente...';
 				}
-
-				// Si ya sabemos nuestro lado, configurar controles inmediatamente
-				if (gameReconnectionService.getPlayerSide()) {
-					playerSide = gameReconnectionService.getPlayerSide();
-					console.log(`[DEBUG] Lado recuperado del servicio: ${playerSide}`);
-					setupControls();
-				}
 			},
 			onMessage: (data) => {
-				console.log(`[DEBUG] Mensaje recibido: ${data.type}`);
-
 				switch (data.type) {
 					case 'game_info':
 						console.log('Recibida información del juego:', data);
@@ -127,7 +113,7 @@ export async function GameMatchView(gameId) {
 							}
 
 							if (playerSide) {
-								console.log('Lado del jugador determinado desde game_info:', playerSide);
+								console.log('Lado del jugador determinado:', playerSide);
 								gameReconnectionService.saveGameData(gameId, {
 									playerSide,
 									player1: data.player1,
@@ -176,202 +162,39 @@ export async function GameMatchView(gameId) {
 						break;
 
 					case 'game_state':
-						// Si se trata de reconexión, hacer un manejo especial
-						if (data.is_reconnection) {
-							console.log('[DEBUG] Iniciando proceso de reconexión completa');
-
-							// Inmediatamente guardar datos críticos en variables locales
-							// antes de cualquier procesamiento asíncrono
-							const reconnectionState = JSON.parse(JSON.stringify(data.state || {}));
-							const reconnectionPlayerSide = data.player_side || playerSide;
-							const reconnectionPlayer1 = data.player1;
-							const reconnectionPlayer2 = data.player2;
-
-							// Si es una sincronización específica para reconexión
-							if (reconnectionState.reconnection_sync) {
-								console.log('Estado de sincronización de reconexión recibido:', {
-									isSecondSync: reconnectionState.is_second_sync || false,
-									timestamp: reconnectionState.server_timestamp
-								});
-							}
-
-							// No más referencia externa a handleReconnection
-							// Toda la lógica implementada directamente aquí
-							(async () => {
-								try {
-									// 1. Detener todo procesamiento actual solo si no es una actualización de sincronización
-									if (!reconnectionState.reconnection_sync) {
-										console.log('[DEBUG] Reconexión - Limpiando estado actual');
-										await cleanupGameState();
-									}
-
-									// 2. Actualizar información de jugador usando datos guardados
-									if (reconnectionPlayerSide) {
-										playerSide = reconnectionPlayerSide;
-										console.log(`[DEBUG] Reconexión - Lado del jugador actualizado: ${playerSide}`);
-									} else {
-										console.log('[DEBUG] Reconexión - No se recibió lado del jugador');
-									}
-
-									// 3. Actualizar estado del juego con los datos guardados
-									console.log('[DEBUG] Reconexión - Actualizando estado del juego');
-
-									// Si es un estado de sincronización específico para reconexión,
-									// procesar de manera especial para garantizar transiciones suaves
-									if (reconnectionState.reconnection_sync) {
-										// Aquí simplemente pasamos el estado para que handleGameState
-										// se encargue de la interpolación
-										handleGameState(reconnectionState);
-									} else {
-										gameState = reconnectionState;
-										console.log(`[DEBUG] Estado del juego actualizado:`, gameState);
-										drawGame();
-									}
-
-									// 4. Actualizar UI con nombres de jugadores guardados
-									if (reconnectionPlayer1) {
-										const leftNameEl = document.querySelector('#leftPlayerName');
-										if (leftNameEl) {
-											leftNameEl.textContent = reconnectionPlayer1;
-											console.log(`[DEBUG] Reconexión - Nombre del jugador 1 actualizado: ${reconnectionPlayer1}`);
-										} else {
-											console.error('[DEBUG] Reconexión - No se encontró el elemento #leftPlayerName');
-										}
-									}
-
-									if (reconnectionPlayer2) {
-										const rightNameEl = document.querySelector('#rightPlayerName');
-										if (rightNameEl) {
-											rightNameEl.textContent = reconnectionPlayer2;
-											console.log(`[DEBUG] Reconexión - Nombre del jugador 2 actualizado: ${reconnectionPlayer2}`);
-										} else {
-											console.error('[DEBUG] Reconexión - No se encontró el elemento #rightPlayerName');
-										}
-									}
-
-									// Resto del código igual...
-									// 5. Restaurar elementos UI que pudieran haberse perdido
-									console.log('[DEBUG] Reconexión - Restaurando UI');
-
-									// Restaurar UI directamente aquí (en lugar de llamar a restoreGameUI)
-									try {
-										// Restaurar el botón de chat si se ha perdido
-										const chatContainer = document.querySelector('.game-chat-container');
-										const chatButton = document.querySelector('.chat-toggle-btn');
-										const gameControls = document.querySelector('.game-controls');
-
-										console.log('[DEBUG] Reconexión - Estado actual:', {
-											chatContainerExists: !!chatContainer,
-											chatButtonExists: !!chatButton,
-											gameControlsExists: !!gameControls
-										});
-
-										if (!chatButton && chatContainer && gameControls) {
-											console.log('[DEBUG] Reconexión - Recreando botón de chat');
-											const newChatButton = document.createElement('button');
-											newChatButton.className = 'chat-toggle-btn';
-											newChatButton.innerHTML = '<i class="fas fa-comments"></i>';
-											newChatButton.addEventListener('click', () => {
-												chatContainer.classList.toggle('chat-open');
-												newChatButton.classList.toggle('active');
-											});
-											gameControls.appendChild(newChatButton);
-											console.log('[DEBUG] Reconexión - Botón de chat recreado');
-										}
-
-										// Asegurar que el chat está en estado cerrado tras reconexión
-										if (chatContainer) {
-											chatContainer.classList.remove('chat-open');
-											if (chatButton) chatButton.classList.remove('active');
-											console.log('[DEBUG] Reconexión - Chat cerrado correctamente');
-										}
-									} catch (error) {
-										console.error('[DEBUG] Error al restaurar UI:', error);
-									}
-
-									// 6. Redibujar el canvas con el nuevo estado
-									if (gameState) {
-										console.log('[DEBUG] Reconexión - Redibujando canvas');
-										drawGame();
-									} else {
-										console.error('[DEBUG] Reconexión - No se puede redibujar, gameState es null');
-									}
-
-									// 7. Configurar controles con retardo para asegurar sincronización
-									console.log('[DEBUG] Reconexión - Configurando controles con retardo');
-									setTimeout(() => {
-										setupControls();
-										const gameStatusEl = document.getElementById('gameStatus');
-										if (gameStatusEl) {
-											gameStatusEl.textContent = '🎮 Reconectado - Partida en curso';
-										}
-										console.log('[DEBUG] Reconexión - Proceso completado');
-									}, 800);
-								} catch (error) {
-									console.error('[DEBUG] Error en proceso de reconexión:', error);
-								}
-							})();
-						} else {
-							handleGameState(data.state);
-						}
+						handleGameState(data.state);
 						break;
 
 					case 'game_finished':
 						handleGameEnd(data);
 						break;
 
-					case 'fast_state':
-						// Nuevo: Manejo de reconexión rápida
-						console.log('Estado rápido recibido para reconexión:', {
-							timestamp: data.timestamp
-						});
-
-						// Mostrar mensaje de reconexión exitosa
-						const gameStatus = document.getElementById('gameStatus');
-						if (gameStatus) {
-							gameStatus.textContent = '🎮 Reconexión rápida completada';
-							gameStatus.style.color = '#4caf50';
-							setTimeout(() => {
-								gameStatus.style.color = '';
-								gameStatus.textContent = '🎮 Conectado';
-							}, 1000);
-						}
-
-						// Construimos un gameState compatible con nuestro handler
-						const fastGameState = {
-							ball: data.ball,
-							paddles: data.paddles,
-							status: data.status,
-							reconnection_sync: true,
-							fast_reconnect: true,
-							server_timestamp: data.timestamp
-						};
-
-						// Actualizar puntuaciones si están disponibles
-						if (data.score) {
-							if (fastGameState.paddles && fastGameState.paddles.left) {
-								fastGameState.paddles.left.score = data.score.left;
-							}
-							if (fastGameState.paddles && fastGameState.paddles.right) {
-								fastGameState.paddles.right.score = data.score.right;
-							}
-						}
-
-						// Establecer playerSide si viene en la respuesta
-						if (data.player_side && !playerSide) {
-							playerSide = data.player_side;
-							setupControls(); // Configurar controles inmediatamente
-						}
-
-						// Aplicar el estado y mostrar animación de reconexión exitosa
-						handleGameState(fastGameState);
-						canvas.classList.add('reconnected');
-						setTimeout(() => canvas.classList.remove('reconnected'), 300);
+					case 'player_disconnected':
+						showGameNotification(
+							`${data.username || 'Jugador'} se ha desconectado temporalmente`,
+							'warning',
+							'fa-user-slash'
+						);
 						break;
 
-					case 'game_prediction':
-						// Nuevo: Datos de predicción para movimientos más suaves
-						handlePredictionData(data);
+					case 'player_reconnected':
+						showGameNotification(
+							`¡${data.username || 'Jugador'} ha vuelto a la partida!`,
+							'success',
+							'fa-user-check'
+						);
+						break;
+
+					case 'chat_message':
+						handleChatMessage(data);
+						// También mostrar una notificación discreta si no es del usuario actual
+						if (data.sender_id.toString() !== userId) {
+							showGameNotification(
+								`Mensaje de ${data.sender}`,
+								'info',
+								'fa-comment'
+							);
+						}
 						break;
 				}
 			},
@@ -379,38 +202,49 @@ export async function GameMatchView(gameId) {
 				document.getElementById('gameStatus').textContent =
 					`🔄 Conexión perdida. Reintentando... (${attempt}/${max})`;
 			},
-			onReconnect: (data) => {
-				const gameStatus = document.getElementById('gameStatus');
-				if (gameStatus) { // Verificar que el elemento existe
-					gameStatus.textContent = '🎮 Reconectado!';
-				}
-			},
-			onFastReconnect: (data) => {
-				// Actualizamos la interfaz para reconexión rápida
+			onReconnect: () => {
 				const gameStatus = document.getElementById('gameStatus');
 				if (gameStatus) {
-					gameStatus.textContent = '⚡ Reconexión ultra-rápida';
-					gameStatus.style.color = '#4caf50';
-					setTimeout(() => {
-						gameStatus.style.color = '';
-						gameStatus.textContent = '🎮 Conectado';
-					}, 1000);
+					gameStatus.textContent = '🎮 Reconectado!';
 				}
-
-				// Configurar controles inmediatamente
-				if (data.player_side) {
-					playerSide = data.player_side;
-					setupControls();
-				}
-
-				// Mostrar animación de reconexión exitosa
-				canvas.classList.add('reconnected');
-				setTimeout(() => canvas.classList.remove('reconnected'), 300);
+				showGameNotification('¡Reconectado al juego!', 'success');
 			},
 			onReconnectFailed: () => {
 				document.getElementById('gameStatus').textContent = '❌ No se pudo reconectar';
+				showGameNotification('No se pudo reconectar. Intenta refrescar la página.', 'error');
 			}
 		});
+
+		// Función mejorada para mostrar notificaciones en el juego
+		function showGameNotification(message, type = 'info', iconClass = 'fa-info-circle') {
+			const container = document.getElementById('gameNotificationsContainer');
+			if (!container) return;
+
+			const notification = document.createElement('div');
+			notification.className = `game-notification ${type}`;
+
+			notification.innerHTML = `
+				<div class="notification-icon">
+					<i class="fas ${iconClass}"></i>
+				</div>
+				<div class="notification-content">${message}</div>
+			`;
+
+			container.appendChild(notification);
+
+			// Mostrar con un pequeño retraso para permitir la animación
+			setTimeout(() => notification.classList.add('visible'), 10);
+
+			// Auto-eliminar después de unos segundos
+			setTimeout(() => {
+				notification.classList.add('fadeout');
+				setTimeout(() => {
+					if (notification.parentNode === container) {
+						container.removeChild(notification);
+					}
+				}, 300); // Tiempo para que termine la animación de salida
+			}, 3000);
+		}
 
 		async function showPreMatchSequence(player1, player2, playerSide) {
 			return new Promise(async (resolve) => {
@@ -444,16 +278,31 @@ export async function GameMatchView(gameId) {
 			});
 		}
 
-		let gameStarted = false;
-		let countdownShown = false;
+		function handleChatMessage(data) {
+			const chatMessages = document.getElementById('chatMessages');
+			if (!chatMessages) return;
+
+			const messageElement = document.createElement('div');
+			messageElement.className = 'chat-message';
+
+			// Identificar si el mensaje es del usuario o de otro jugador
+			const isCurrentUser = data.sender_id.toString() === userId;
+			if (isCurrentUser) {
+				messageElement.classList.add('own-message');
+			}
+
+			messageElement.innerHTML = `
+				<span class="message-sender">${isCurrentUser ? 'Tú' : data.sender}:</span>
+				<span class="message-content">${data.message}</span>
+			`;
+
+			chatMessages.appendChild(messageElement);
+			chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll al último mensaje
+		}
 
 		function handleGameState(state) {
 			if (!state) return;
 
-			// Guardar estado anterior para posible interpolación en reconexiones
-			const previousState = gameState;
-
-			// Actualizar el estado actual
 			gameState = state;
 
 			// Si hay una cuenta atrás en el estado, actualizar la UI de cuenta atrás
@@ -482,50 +331,11 @@ export async function GameMatchView(gameId) {
 				rightScore.textContent = state.paddles.right.score || '0';
 			}
 
-			// OPTIMIZACIÓN: Manejar mejor la interpolación para reconexiones
-			if (state.reconnection_sync && state.ball) {
-				console.log('Recibido estado de sincronización para reconexión:', {
-					serverTimestamp: state.server_timestamp,
-					isSecondSync: state.is_second_sync || false
-				});
-
-				// Solo interpolamos si no es el primer estado de sincronización
-				if (previousState && previousState.reconnection_sync && !previousState.is_second_sync && state.is_second_sync) {
-					// Aquí tenemos dos estados de sincronización seguidos, podemos hacer una transición suave
-					console.log('Aplicando interpolación suave para la reconexión');
-
-					// Animar reconexión en el canvas
-					canvas.classList.add('reconnected');
-					setTimeout(() => canvas.classList.remove('reconnected'), 500);
-
-					// OPTIMIZACIÓN: Crear una secuencia más fluida de estados intermedios
-					const steps = 3; // Crear 3 estados intermedios
-					const sequence = GameStateInterpolator.createTransitionSequence(previousState, state, steps);
-
-					// Dibujar la secuencia con un intervalo corto entre frames
-					sequence.forEach((intermediateState, index) => {
-						setTimeout(() => {
-							gameState = intermediateState;
-							drawGame(true); // Parámetro true indica estado de transición
-						}, index * 10); // 10ms entre cada frame para una animación más fluida
-					});
-
-					return; // Terminamos aquí para que no se dibuje de inmediato
-				}
-			}
-
-			// Si es fast-reconnect, animar inmediatamente
-			if (state.fast_reconnect) {
-				canvas.classList.add('reconnected');
-				setTimeout(() => canvas.classList.remove('reconnected'), 300);
-			}
-
-			// Dibujar el estado del juego normalmente si no es un caso especial
+			// Dibujar el estado del juego
 			drawGame();
 		}
 
-		// Optimizar la función drawGame para suavizar movimientos en reconexión
-		function drawGame(isTransition = false) {
+		function drawGame() {
 			if (!gameState || !ctx) return;
 
 			// Limpiar canvas
@@ -550,90 +360,12 @@ export async function GameMatchView(gameId) {
 				ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 			});
 
-			// Dibujar pelota con posible interpolación en reconexión
+			// Dibujar pelota
 			if (gameState.ball) {
-				if (gameState.reconnection_sync && gameState.ball.speed_x && gameState.ball.speed_y) {
-					// OPTIMIZACIÓN: Mejorar la predicción basada en velocidad
-					const now = Date.now();
-					const serverTimestamp = gameState.server_timestamp || now;
-					const timeDiff = Math.min(100, now - serverTimestamp); // Máximo 100ms de predicción
-
-					// Simular el movimiento de la pelota según su velocidad y el tiempo transcurrido
-					const predictedX = gameState.ball.x + (gameState.ball.speed_x * timeDiff / 16);
-					const predictedY = gameState.ball.y + (gameState.ball.speed_y * timeDiff / 16);
-
-					// Dibujar en la posición predicha
-					ctx.beginPath();
-					ctx.arc(predictedX, predictedY, gameState.ball.radius || 5, 0, Math.PI * 2);
-					ctx.fill();
-
-					// Durante transiciones, mostrar estela para hacer más suave el movimiento
-					if (isTransition) {
-						// Estela con transparencia para un efecto de movimiento suave
-						ctx.globalAlpha = 0.3;
-						ctx.beginPath();
-						ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
-						ctx.fill();
-						ctx.globalAlpha = 1.0;
-					}
-				} else {
-					// Dibujo normal sin predicción
-					ctx.beginPath();
-					ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
-					ctx.fill();
-				}
+				ctx.beginPath();
+				ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius || 5, 0, Math.PI * 2);
+				ctx.fill();
 			}
-		}
-
-		// Nuevo método para manejar datos de predicción
-		function handlePredictionData(data) {
-			if (!gameState || !data) return;
-
-			console.log('Aplicando datos de predicción:', {
-				timestamp: data.timestamp
-			});
-
-			// Calcular el tiempo transcurrido desde que se enviaron los datos
-			const now = Date.now();
-			const predictionTime = now - (data.timestamp || now);
-
-			// Aplicar predicción a la pelota si existe
-			if (gameState.ball && data.ball) {
-				// Guardar posiciones anteriores
-				gameState.ball.prev_x = gameState.ball.x;
-				gameState.ball.prev_y = gameState.ball.y;
-
-				// Actualizar velocidades
-				gameState.ball.speed_x = data.ball.speed_x;
-				gameState.ball.speed_y = data.ball.speed_y;
-
-				// Predecir posición actual basada en el tiempo transcurrido
-				if (predictionTime > 0) {
-					const predictionFactor = predictionTime / 1000; // Convertir a segundos
-					gameState.ball.x = data.ball.x + (data.ball.speed_x * predictionFactor);
-					gameState.ball.y = data.ball.y + (data.ball.speed_y * predictionFactor);
-				} else {
-					gameState.ball.x = data.ball.x;
-					gameState.ball.y = data.ball.y;
-				}
-			}
-
-			// Actualizar datos de palas
-			if (gameState.paddles && data.paddles) {
-				if (gameState.paddles.left && data.paddles.left) {
-					gameState.paddles.left.y = data.paddles.left.y;
-					gameState.paddles.left.moving = data.paddles.left.moving || false;
-					gameState.paddles.left.direction = data.paddles.left.direction || 0;
-				}
-				if (gameState.paddles.right && data.paddles.right) {
-					gameState.paddles.right.y = data.paddles.right.y;
-					gameState.paddles.right.moving = data.paddles.right.moving || false;
-					gameState.paddles.right.direction = data.paddles.right.direction || 0;
-				}
-			}
-
-			// Redibujar el juego con la nueva predicción
-			drawGame();
 		}
 
 		function handleGameEnd(data) {
@@ -705,60 +437,30 @@ export async function GameMatchView(gameId) {
 
 		function handleKeyDown(e) {
 			// No procesar si el foco está en un input (para que el chat u otros campos funcionen)
-			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-				console.log('[DEBUG] handleKeyDown - Ignorando evento en input/textarea');
-				return;
-			}
+			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
 			// No procesar si no tenemos un lado asignado
-			if (!playerSide) {
-				console.log('[DEBUG] handleKeyDown - Ignorando evento sin lado asignado');
-				return;
-			}
+			if (!playerSide) return;
 
 			// Solo procesar si el juego está en estado "playing"
-			if (!gameState || gameState.status !== 'playing') {
-				console.log(`[DEBUG] handleKeyDown - Ignorando evento, estado: ${gameState?.status || 'sin estado'}`);
-				return;
-			}
-
-			// Verificar si la pala está lista para recibir comandos
-			const paddle = gameState.paddles[playerSide];
-			if (paddle && paddle.ready_for_input === false) {
-				console.log('[DEBUG] handleKeyDown - Ignorando evento, pala no lista para comandos');
-				return;
-			}
+			if (!gameState || gameState.status !== 'playing') return;
 
 			const key = e.key.toLowerCase();
 			const isValidKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
 				(playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
 
-			if (!isValidKey) {
-				console.log(`[DEBUG] handleKeyDown - Tecla no válida: ${key} para lado ${playerSide}`);
-				return;
-			}
+			if (!isValidKey) return;
 
-			console.log(`[DEBUG] handleKeyDown - Procesando tecla: ${key} para lado ${playerSide}`);
 			e.preventDefault();
 			activeKeys.add(key);
-			console.log(`[DEBUG] handleKeyDown - Teclas activas: ${[...activeKeys].join(', ')}`);
 		}
 
 		function handleKeyUp(e) {
 			const key = e.key.toLowerCase();
-			console.log(`[DEBUG] handleKeyUp - Tecla liberada: ${key}`);
-
-			// Siempre eliminar la tecla del conjunto independientemente de otras condiciones
-			if (activeKeys.has(key)) {
-				activeKeys.delete(key);
-				console.log(`[DEBUG] handleKeyUp - Tecla eliminada, teclas restantes: ${[...activeKeys].join(', ')}`);
-			}
+			activeKeys.delete(key);
 
 			// No procesar más si no tenemos un lado asignado
-			if (!playerSide) {
-				console.log('[DEBUG] handleKeyUp - No hay lado asignado, no se envía comando');
-				return;
-			}
+			if (!playerSide) return;
 
 			// Determinar si es una tecla de movimiento para este jugador
 			const isMovementKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
@@ -768,21 +470,17 @@ export async function GameMatchView(gameId) {
 			if (isMovementKey || activeKeys.size === 0) {
 				// Verificar direcciones restantes
 				const remainingDirection = getDirection();
-				console.log(`[DEBUG] handleKeyUp - Dirección restante: ${remainingDirection}`);
 
-				// Siempre enviar comando cuando se suelta una tecla de movimiento
-				if (isMovementKey) {
-					console.log(`[DEBUG] handleKeyUp - Enviando comando de movimiento: ${remainingDirection}`);
-					const message = {
-						type: 'move_paddle',
-						direction: remainingDirection,
-						side: playerSide,
-						player_id: parseInt(userId),
-						timestamp: Date.now(),
-						force_stop: remainingDirection === 0 // Forzar parada si no hay más dirección
-					};
-					gameReconnectionService.send(message);
-				}
+				// Enviar comando de dirección
+				const message = {
+					type: 'move_paddle',
+					direction: remainingDirection,
+					side: playerSide,
+					player_id: parseInt(userId),
+					timestamp: Date.now(),
+					force_stop: remainingDirection === 0 // Forzar parada si no hay más dirección
+				};
+				gameReconnectionService.send(message);
 			}
 		}
 
@@ -797,110 +495,78 @@ export async function GameMatchView(gameId) {
 			return 0;
 		}
 
-		// Optimizar la limpieza de estado
-		async function cleanupGameState() {
-			console.log('[DEBUG] cleanupGameState - Limpiando estado del juego');
+		function setupControls() {
+			console.log(`Setting up controls for side: ${playerSide || 'not assigned'}`);
 
-			return new Promise(resolve => {
-				try {
-					// OPTIMIZACIÓN: Envío de comandos de parada más eficiente
-					if (playerSide) {
-						console.log(`[DEBUG] cleanupGameState - Enviando comando de parada para lado: ${playerSide}`);
-						const userId = localStorage.getItem('user_id');
-						gameReconnectionService.send({
+			// Limpieza para evitar duplicados
+			if (movementInterval) {
+				clearInterval(movementInterval);
+				movementInterval = null;
+			}
+
+			document.removeEventListener('keydown', handleKeyDown);
+			document.removeEventListener('keyup', handleKeyUp);
+
+			// Reinicializar activeKeys
+			activeKeys = new Set();
+
+			// Verificar que tenemos lo necesario para configurar controles
+			if (!playerSide) return;
+
+			// Agregar event listeners
+			document.addEventListener('keydown', handleKeyDown);
+			document.addEventListener('keyup', handleKeyUp);
+
+			// Iniciar intervalo para movimiento continuo
+			movementInterval = setInterval(() => {
+				// Solo enviar si hay teclas activas y juego en estado "playing"
+				if (activeKeys.size > 0 && gameState?.status === 'playing') {
+					const direction = getDirection();
+					if (direction !== 0) {  // Solo enviar si hay dirección
+						const message = {
 							type: 'move_paddle',
-							direction: 0,
+							direction: direction,
 							side: playerSide,
 							player_id: parseInt(userId),
-							force_stop: true,
-							critical: true, // Marcar como crítico para priorización
-							timestamp: Date.now(),
-							message_id: `cleanup_stop_${Date.now()}`
-						});
+							timestamp: Date.now()
+						};
+						gameReconnectionService.send(message);
 					}
+				}
+			}, 16);  // ~60 FPS
 
-					// 1. Detener cualquier animación o intervalo en curso
-					if (movementInterval) {
-						clearInterval(movementInterval);
-						movementInterval = null;
-					}
+			// Configurar chat
+			setupChat();
+		}
 
-					// 2. Eliminar todos los listeners de eventos
-					document.removeEventListener('keydown', handleKeyDown);
-					document.removeEventListener('keyup', handleKeyUp);
+		function setupChat() {
+			const chatInput = document.getElementById('chatInput');
+			const sendButton = document.getElementById('sendChatBtn');
 
-					// 3. Reiniciar conjunto de teclas activas
-					activeKeys = new Set();
+			if (!chatInput || !sendButton) return;
 
-					// 4. Esperar un breve periodo optimizado
-					setTimeout(() => {
-						resolve();
-					}, 50); // Reducido a 50ms
+			const sendChatMessage = () => {
+				const message = chatInput.value.trim();
+				if (message) {
+					gameReconnectionService.send({
+						type: 'chat_message',
+						message: message
+					});
+					chatInput.value = '';
+				}
+			};
 
-				} catch (error) {
-					console.error('[DEBUG] Error en cleanupGameState:', error);
-					resolve(); // Resolver de todas formas para no bloquear
+			sendButton.addEventListener('click', sendChatMessage);
+
+			chatInput.addEventListener('keypress', (e) => {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					sendChatMessage();
 				}
 			});
 		}
 
-		function setupControls() {
-			console.log(`Setting up controls for side: ${playerSide || 'not assigned'}`);
-
-			try {
-				// Limpieza forzada primero para evitar controles duplicados
-				if (movementInterval) {
-					clearInterval(movementInterval);
-					movementInterval = null;
-					console.log('[DEBUG] setupControls - Intervalo de movimiento previo eliminado');
-				}
-
-				document.removeEventListener('keydown', handleKeyDown);
-				document.removeEventListener('keyup', handleKeyUp);
-				console.log('[DEBUG] setupControls - Event listeners previos eliminados');
-
-				// Reinicializar activeKeys
-				activeKeys = new Set();
-				console.log('[DEBUG] setupControls - Conjunto de teclas activas reinicializado');
-
-				// Verificar que tenemos lo necesario para configurar controles
-				if (!playerSide) {
-					console.error('[DEBUG] setupControls - No hay lado de jugador asignado, no se pueden configurar controles');
-					return;
-				}
-
-				// Agregar event listeners con referencias estables
-				document.addEventListener('keydown', handleKeyDown);
-				document.addEventListener('keyup', handleKeyUp);
-				console.log('[DEBUG] setupControls - Nuevos event listeners agregados');
-
-				// Iniciar intervalo para movimiento continuo
-				movementInterval = setInterval(() => {
-					// Solo enviar si hay teclas activas y juego en estado "playing"
-					if (activeKeys.size > 0 && gameState?.status === 'playing') {
-						const direction = getDirection();
-						if (direction !== 0) {  // Solo enviar si hay dirección
-							const message = {
-								type: 'move_paddle',
-								direction: direction,
-								side: playerSide,
-								player_id: parseInt(userId),
-								timestamp: Date.now()
-							};
-							gameReconnectionService.send(message);
-						}
-					}
-				}, 16);  // ~60 FPS
-
-				console.log('[DEBUG] setupControls - Intervalo de movimiento configurado');
-				console.log('[DEBUG] setupControls - Configuración completada');
-
-			} catch (error) {
-				console.error('Error in setupControls', error);
-			}
-		}
-
-		// Añadir después de la configuración inicial
+		// Control de fullscreen
 		const gameWrapper = document.querySelector('.game-wrapper');
 		const fullscreenBtn = document.getElementById('fullscreenBtn');
 
@@ -942,10 +608,16 @@ export async function GameMatchView(gameId) {
 			}
 		}
 
-		// Cleanup mejorado
+		// Cleanup
 		return () => {
 			console.log('Cleaning up game view');
-			cleanupGameState();
+
+			// Limpiar intervalos y event listeners
+			if (movementInterval) {
+				clearInterval(movementInterval);
+			}
+			document.removeEventListener('keydown', handleKeyDown);
+			document.removeEventListener('keyup', handleKeyUp);
 
 			// Usar el servicio para desconectar WebSocket
 			gameReconnectionService.disconnect();

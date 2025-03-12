@@ -36,8 +36,8 @@ class GameStateHandler:
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {
-                    "type": "game_state_update",
-                    "state": consumer.game_state.serialize(),
+                    "type": "game_state_update",  # Define message type as 'game_state_update'
+                    "state": consumer.game_state.serialize(),  # Serialize and send game state
                 },
             )
 
@@ -104,9 +104,9 @@ class GameStateHandler:
 
          # Set ball position at game start with correct speed
         consumer.game_state.ball.reset(
-            consumer.game_state.CANVAS_WIDTH / 2,
+            consumer.game_state.CANVAS_WIDTH / 2, # in the middle of the canvas
             consumer.game_state.CANVAS_HEIGHT / 2,
-            base_speed=consumer.game_state.BALL_SPEED
+            base_speed=consumer.game_state.BALL_SPEED #base speed
         )
         
         await consumer.channel_layer.group_send(

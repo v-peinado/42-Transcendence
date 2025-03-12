@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-import json
 from ..engine.game_state import GameState
 from .shared_state import connected_players
+import json
 
 class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
     """Base consumer with common functionality for all Pong game consumers"""
