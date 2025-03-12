@@ -79,7 +79,7 @@ class MultiplayerHandler:
                     "channel_name": consumer.channel_name
                 }
 
-            elif not game.player2_id:  # Si no hay player2 asignado
+            elif not game.player2_id:
                 consumer.side = "right"
                 await DatabaseOperations.set_player2(game, consumer.user)
                 await DatabaseOperations.mark_player_ready(game, role="player2")
@@ -96,7 +96,7 @@ class MultiplayerHandler:
                 print(f"Error: Player {consumer.user.username} could not join game {game.id}")
                 return
             
-            # Obtener el juego actualizado después de marcar jugador como listo
+            # Obtaining updated game state to check if both players are ready
             updated_game = await DatabaseOperations.get_game(game.id)
             if not updated_game:
                 print(f"Error: Could not get updated game {game.id}")
@@ -105,10 +105,10 @@ class MultiplayerHandler:
             if (updated_game.player1_ready and updated_game.player2_ready and 
                 updated_game.status != "PLAYING"):
                 
-                # Actualizar estado del juego a PLAYING
+                # Set game status to PLAYING
                 updated_game = await DatabaseOperations.update_game_status(updated_game, "PLAYING")
                 
-                # Función auxiliar para obtener nombre con manejo de excepciones
+                # Auxiliar function to get player username safely
                 async def get_username_safe(user_id):
                     if not user_id:
                         return "Unknown"
@@ -122,11 +122,11 @@ class MultiplayerHandler:
                     except Exception:
                         return f"Player_{user_id}"
                 
-                # Obtener nombres de jugadores de forma segura
+                # Get player usernames for game start event
                 player1_username = await get_username_safe(updated_game.player1_id)
                 player2_username = await get_username_safe(updated_game.player2_id)
                 
-                # Enviar evento de inicio de juego
+                # Send game start event to both players
                 await consumer.channel_layer.group_send(
                     consumer.room_group_name,
                     {
