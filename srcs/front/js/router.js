@@ -100,7 +100,7 @@ class Router {
 		'/game/': GameView,
 		'/game/:id': async (params) => {
 			try {
-				// Verificar si el usuario está autenticado
+				// Comprobar que el usuario está autenticado
 				const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 				if (!isAuthenticated) {
 					window.location.href = '/login?redirect=/game/' + params.id;
