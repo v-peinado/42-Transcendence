@@ -53,7 +53,7 @@ export async function NotFoundView() {
 		}
 	}
 
-	// Si no es una URL de juego o hay error, mostrar 404 normal
+	// Si no es una URL de juego, mostrar 404 normal
 	const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 	const userInfo = isAuthenticated ? await AuthService.getUserProfile() : null;
 	const navbarHtml = await getNavbarHTML(isAuthenticated, userInfo);
