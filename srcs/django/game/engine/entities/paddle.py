@@ -13,7 +13,7 @@ class Paddle:
         self.target_y = int(y)
         self.last_position = int(y)
         self.moving = False
-        self.ready_for_input = True  # Siempre listo para input por defecto
+        self.ready_for_input = True
         self.last_direction = 0
         self.last_update_time = 0
 
@@ -22,37 +22,34 @@ class Paddle:
         if not self.ready_for_input:
             return
 
-        # Guardar la última dirección recibida
+        # Save last direction for interpolation
         self.last_direction = direction
         
-        # Si la dirección es 0, marcar como no en movimiento
+        # If direction is 0, stop moving
         if direction == 0:
             self.moving = False
-            # Al detenerse, asegurarse de que la posición objetivo coincide con la actual
             self.target_y = self.y
             return
             
-        # Marcar como en movimiento si la dirección no es 0
         self.moving = True
         old_y = self.y
         
         move_amount = self.speed * int(direction)  # Always use same base speed
         new_y = self.y + move_amount
         
-        # Asegurar que se mantiene dentro de los límites
+        # Is in the limits of the canvas?
         self.y = int(
             max(0, min(new_y, canvas_height - self.height))
         )  # Round position and ensure bounds
         
-        # Actualizar la posición objetivo y última posición para seguimiento
+        # Set target position for interpolation
         self.target_y = self.y
         self.last_position = self.y
         self.last_update_time = time.time() * 1000  # ms
 
     def update(self, canvas_height):
         """Update paddle position without vibrations"""
-        # Si no está en movimiento activo, no necesitamos actualizar
-        if not self.moving or not self.ready_for_input:
+        if not self.moving or not self.ready_for_input:	# if not moving or not ready for input,
             return
             
         if self.target_y is not None:
@@ -72,9 +69,8 @@ class Paddle:
 
     def reset_state(self, y=None):
         """Reset paddle state completely, optionally with new y position"""
-        # MODIFICACIÓN CRUCIAL: No deshabilitar entrada durante el reset
         
-        # Reset completo de todas las variables relacionadas con el movimiento
+        # Reset all values to default in case of a new game
         if y is not None:
             self.y = int(y)
         
@@ -83,7 +79,7 @@ class Paddle:
         self.moving = False
         self.last_direction = 0
         
-        # MODIFICACIÓN CRUCIAL: Asegurar que siempre está listo para recibir input
+        # Impportant: Do not disable input during reset
         self.ready_for_input = True
 
     def serialize(self):
