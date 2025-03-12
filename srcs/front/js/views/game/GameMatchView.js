@@ -442,8 +442,8 @@ export async function GameMatchView(gameId) {
 			// No procesar si no tenemos un lado asignado
 			if (!playerSide) return;
 
-			// Solo procesar si el juego está en estado "playing"
-			if (!gameState || gameState.status !== 'playing') return;
+			// Permitir teclas durante el juego activo y también durante la cuenta atrás
+			if (!gameState || (gameState.status !== 'playing' && gameState.status !== 'countdown')) return;
 
 			const key = e.key.toLowerCase();
 			const isValidKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
@@ -519,8 +519,8 @@ export async function GameMatchView(gameId) {
 
 			// Iniciar intervalo para movimiento continuo
 			movementInterval = setInterval(() => {
-				// Solo enviar si hay teclas activas y juego en estado "playing"
-				if (activeKeys.size > 0 && gameState?.status === 'playing') {
+				// Permitir movimiento tanto en estado "playing" como en "countdown"
+				if (activeKeys.size > 0 && gameState && (gameState.status === 'playing' || gameState.status === 'countdown')) {
 					const direction = getDirection();
 					if (direction !== 0) {  // Solo enviar si hay dirección
 						const message = {
