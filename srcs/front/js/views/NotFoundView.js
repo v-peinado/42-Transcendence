@@ -1,7 +1,6 @@
 import { getNavbarHTML } from '../components/Navbar.js';
 import AuthService from '../services/AuthService.js';
 import GameService from '../services/GameService.js';
-import { diagnosticService } from '../services/DiagnosticService.js';
 
 export async function NotFoundView() {
 	console.log('NotFoundView cargada');
@@ -27,17 +26,6 @@ export async function NotFoundView() {
 			// Verificar si la partida existe y si tiene acceso
 			const gameAccess = await GameService.verifyGameAccess(gameId);
 
-			// Añadir botón de diagnóstico independientemente del resultado de la verificación
-			const diagnosticButton = document.createElement('button');
-			diagnosticButton.id = 'emergencyDiagnostic';
-			diagnosticButton.className = 'btn btn-danger position-fixed';
-			diagnosticButton.style.bottom = '20px';
-			diagnosticButton.style.right = '20px';
-			diagnosticButton.style.zIndex = '9999';
-			diagnosticButton.innerHTML = '<i class="fas fa-stethoscope"></i> Diagnóstico de Emergencia';
-			diagnosticButton.onclick = () => diagnosticService.showDiagnosticPanel();
-			document.body.appendChild(diagnosticButton);
-
 			// Si tenemos datos de reconexión en localStorage, intentar reconectar sin verificar API
 			const savedGameData = localStorage.getItem(`game_${gameId}`);
 			if (savedGameData) {
@@ -58,11 +46,10 @@ export async function NotFoundView() {
 				return;
 			} else {
 				console.warn('Partida no válida o sin acceso', gameAccess);
-				// No redirigir, mostrar 404 con botón de diagnóstico
+				// No redirigir, mostrar 404
 			}
 		} catch (error) {
 			console.error('Error al cargar la partida', error);
-			// Mantener el botón de diagnóstico incluso en caso de error
 		}
 	}
 
@@ -88,21 +75,7 @@ export async function NotFoundView() {
                     <i class="fas fa-home me-2"></i>
                     Volver al inicio
                 </a>
-                
-                ${gameMatch ? `
-                <button id="diagnosticBtn" class="btn btn-warning mt-3">
-                    <i class="fas fa-stethoscope me-2"></i>Ver diagnóstico de conexión
-                </button>
-                ` : ''}
             </div>
         </div>
     `;
-
-	// Añadir event listener para el botón de diagnóstico si existe
-	const diagnosticBtn = document.getElementById('diagnosticBtn');
-	if (diagnosticBtn) {
-		diagnosticBtn.addEventListener('click', () => {
-			diagnosticService.showDiagnosticPanel();
-		});
-	}
 }

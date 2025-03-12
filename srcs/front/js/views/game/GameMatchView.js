@@ -3,18 +3,16 @@ import { soundService } from '../../services/SoundService.js';
 import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
-import { diagnosticService } from '../../services/DiagnosticService.js';
 import GameStateInterpolator from '../../utils/GameStateInterpolator.js';
 
 export async function GameMatchView(gameId) {
 	// Al principio de la función, registrar inicio
-	diagnosticService.info('GameMatchView', `Starting game view for game ${gameId}`);
+	console.log(`Starting game view for game ${gameId}`);
 
 	console.log('Iniciando partida:', gameId);
 
 	// Validar que tenemos un gameId válido
 	if (!gameId || isNaN(parseInt(gameId))) {
-		diagnosticService.error('GameMatchView', 'ID de partida inválido', { gameId });
 		console.error('GameMatchView: ID de partida inválido');
 		// Redirigir a Not Found en lugar de /game
 		window.history.pushState(null, null, '/404');
@@ -26,7 +24,6 @@ export async function GameMatchView(gameId) {
 	// Asegurarnos que estamos autenticados
 	const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 	if (!isAuthenticated) {
-		diagnosticService.error('GameMatchView', 'Usuario no autenticado');
 		console.error('GameMatchView: Usuario no autenticado');
 		window.location.href = '/login?redirect=/game/' + gameId;
 		return;
@@ -34,11 +31,10 @@ export async function GameMatchView(gameId) {
 
 	// Verificar si la partida existe y el usuario tiene acceso
 	try {
-		diagnosticService.info('GameMatchView', 'Verificando acceso a partida', { gameId });
+		console.log('Verificando acceso a partida:', gameId);
 		const gameAccess = await GameService.verifyGameAccess(gameId);
 
 		if (!gameAccess.exists || !gameAccess.can_access) {
-			diagnosticService.warn('GameMatchView', 'Acceso a partida denegado', gameAccess);
 			console.error('GameMatchView: Acceso a partida denegado:', gameAccess.message);
 			window.history.pushState(null, null, '/404');
 			const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
@@ -46,7 +42,6 @@ export async function GameMatchView(gameId) {
 			return;
 		}
 	} catch (error) {
-		diagnosticService.error('GameMatchView', 'Error verificando acceso a partida', error);
 		console.error('Error verificando acceso a partida:', error);
 	}
 
@@ -78,28 +73,7 @@ export async function GameMatchView(gameId) {
 		app.innerHTML = navbarHtml;
 		app.appendChild(tempDiv.firstElementChild);
 
-		// Añadir botón de diagnóstico independientemente del gameControls
-		const diagnosticBtn = document.createElement('button');
-		diagnosticBtn.id = 'diagnosticBtn';
-		diagnosticBtn.className = 'btn btn-sm btn-outline-info position-fixed';
-		diagnosticBtn.title = 'Mostrar panel de diagnóstico';
-		diagnosticBtn.innerHTML = '<i class="fas fa-stethoscope"></i>';
-		diagnosticBtn.style.position = 'fixed';
-		diagnosticBtn.style.bottom = '10px';
-		diagnosticBtn.style.right = '10px';
-		diagnosticBtn.style.zIndex = '900';
-		diagnosticBtn.addEventListener('click', () => {
-			diagnosticService.showDiagnosticPanel();
-		});
-
-		// Añadir al gameControls si existe, o directamente al documento si no
-		const gameControls = document.querySelector('.game-controls');
-		if (gameControls) {
-			gameControls.appendChild(diagnosticBtn);
-		} else {
-			document.body.appendChild(diagnosticBtn);
-			diagnosticService.warn('GameMatchView', 'gameControls no encontrado, botón añadido al body');
-		}
+		// Ya no agregamos el botón de diagnóstico
 
 		// Cargar CSS
 		if (!document.querySelector('link[href="/css/game.css"]')) {
@@ -217,7 +191,7 @@ export async function GameMatchView(gameId) {
 
 							// Si es una sincronización específica para reconexión
 							if (reconnectionState.reconnection_sync) {
-								diagnosticService.info('GameMatchView', 'Estado de sincronización de reconexión recibido', {
+								console.log('Estado de sincronización de reconexión recibido:', {
 									isSecondSync: reconnectionState.is_second_sync || false,
 									timestamp: reconnectionState.server_timestamp
 								});
@@ -350,7 +324,7 @@ export async function GameMatchView(gameId) {
 
 					case 'fast_state':
 						// Nuevo: Manejo de reconexión rápida
-						diagnosticService.info('GameMatchView', 'Estado rápido recibido para reconexión', {
+						console.log('Estado rápido recibido para reconexión:', {
 							timestamp: data.timestamp
 						});
 
@@ -512,7 +486,7 @@ export async function GameMatchView(gameId) {
 
 			// OPTIMIZACIÓN: Manejar mejor la interpolación para reconexiones
 			if (state.reconnection_sync && state.ball) {
-				diagnosticService.debug('GameMatchView', 'Recibido estado de sincronización para reconexión', {
+				console.log('Recibido estado de sincronización para reconexión:', {
 					serverTimestamp: state.server_timestamp,
 					isSecondSync: state.is_second_sync || false
 				});
@@ -520,7 +494,7 @@ export async function GameMatchView(gameId) {
 				// Solo interpolamos si no es el primer estado de sincronización
 				if (previousState && previousState.reconnection_sync && !previousState.is_second_sync && state.is_second_sync) {
 					// Aquí tenemos dos estados de sincronización seguidos, podemos hacer una transición suave
-					diagnosticService.debug('GameMatchView', 'Aplicando interpolación suave para la reconexión');
+					console.log('Aplicando interpolación suave para la reconexión');
 
 					// Animar reconexión en el canvas
 					canvas.classList.add('reconnected');
@@ -617,7 +591,7 @@ export async function GameMatchView(gameId) {
 		function handlePredictionData(data) {
 			if (!gameState || !data) return;
 
-			diagnosticService.debug('GameMatchView', 'Aplicando datos de predicción', {
+			console.log('Aplicando datos de predicción:', {
 				timestamp: data.timestamp
 			});
 
@@ -770,12 +744,6 @@ export async function GameMatchView(gameId) {
 			e.preventDefault();
 			activeKeys.add(key);
 			console.log(`[DEBUG] handleKeyDown - Teclas activas: ${[...activeKeys].join(', ')}`);
-
-			diagnosticService.trace('GameMatchView', `Key down: ${key}`, {
-				playerSide,
-				gameState: gameState?.status,
-				activeKeys: [...activeKeys]
-			});
 		}
 
 		function handleKeyUp(e) {
@@ -818,11 +786,6 @@ export async function GameMatchView(gameId) {
 					gameReconnectionService.send(message);
 				}
 			}
-
-			diagnosticService.trace('GameMatchView', `Key up: ${key}`, {
-				playerSide,
-				remaining: [...activeKeys]
-			});
 		}
 
 		function getDirection() {
@@ -884,7 +847,7 @@ export async function GameMatchView(gameId) {
 		}
 
 		function setupControls() {
-			diagnosticService.debug('GameMatchView', `Setting up controls for side: ${playerSide || 'not assigned'}`);
+			console.log(`Setting up controls for side: ${playerSide || 'not assigned'}`);
 
 			try {
 				// Limpieza forzada primero para evitar controles duplicados
@@ -935,7 +898,7 @@ export async function GameMatchView(gameId) {
 				console.log('[DEBUG] setupControls - Configuración completada');
 
 			} catch (error) {
-				diagnosticService.error('GameMatchView', 'Error in setupControls', error);
+				console.error('Error in setupControls', error);
 			}
 		}
 
@@ -983,7 +946,7 @@ export async function GameMatchView(gameId) {
 
 		// Cleanup mejorado
 		return () => {
-			diagnosticService.info('GameMatchView', 'Cleaning up game view');
+			console.log('Cleaning up game view');
 			cleanupGameState();
 
 			// Usar el servicio para desconectar WebSocket
@@ -1001,7 +964,6 @@ export async function GameMatchView(gameId) {
 			document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
 		};
 	} catch (error) {
-		diagnosticService.error('GameMatchView', 'Error loading game view', error);
 		console.error('Error al cargar la vista del juego:', error);
 		// Mostrar NotFoundView en caso de error
 		const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;

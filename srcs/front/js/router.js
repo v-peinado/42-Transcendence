@@ -299,7 +299,7 @@ class Router {
 						// Verificar si hay datos de sesión guardados (para reconexión)
 						const savedData = localStorage.getItem(`game_${gameId}`);
 						if (savedData) {
-							diagnosticService.info('Router', 'Datos de reconexión encontrados para partida', {
+							console.log('Datos de reconexión encontrados para partida', {
 								gameId,
 								data: JSON.parse(savedData)
 							});
@@ -309,18 +309,8 @@ class Router {
 						await GameMatchView(gameId);
 						return;
 					} catch (error) {
-						diagnosticService.error('Router', 'Error cargando partida', error);
-						// Mostrar diagnóstico de emergencia
-						const diagnosticBtn = document.createElement('button');
-						diagnosticBtn.className = 'btn btn-danger position-fixed';
-						diagnosticBtn.style.bottom = '20px';
-						diagnosticBtn.style.right = '20px';
-						diagnosticBtn.style.zIndex = '9999';
-						diagnosticBtn.innerHTML = 'Diagnóstico de Emergencia';
-						diagnosticBtn.onclick = () => diagnosticService.showDiagnosticPanel();
-						document.body.appendChild(diagnosticBtn);
-
-						// Continuar al manejador 404
+						console.error('Error cargando partida', error);
+						// Mostrar 404
 					}
 				}
 			}

@@ -2,7 +2,7 @@ import logging
 import sys
 
 class DiagnosticLogger:
-    """Versión simplificada del logger para diagnósticos mínimos"""
+    """Logger simple para mensajes importantes"""
 
     # Configure logging
     logger = logging.getLogger('game')
@@ -15,7 +15,7 @@ class DiagnosticLogger:
     @classmethod
     def debug(cls, source, message, data=None):
         """Log debug message"""
-        cls._log(logging.DEBUG, source, message)
+        pass  # Desactivado para reducir ruido
 
     @classmethod
     def info(cls, source, message, data=None):
