@@ -2,7 +2,6 @@ import asyncio
 import json
 import time
 from ..utils.database_operations import DatabaseOperations
-from ...utils.diagnostic import DiagnosticLogger as diag
 
 class GameStateHandler:
     """Game state updates handler"""
@@ -17,9 +16,6 @@ class GameStateHandler:
         message_id = content.get("message_id", "no_id")  # Message ID for debugging
         player_id = content.get("player_id")  # ID del jugador
         
-        # Mejor logging de diagnóstico
-        print(f"[PADDLE] Mensaje: {message_id}, Lado: {side}, Dir: {direction}, Stop: {force_stop}, Jugador: {player_id}, TS: {timestamp}")
-
         # Verificar que el jugador que envía el comando es el que corresponde a este lado
         is_valid_side = False
         try:
@@ -31,20 +27,17 @@ class GameStateHandler:
                     is_valid_side = True
                     
             if not is_valid_side:
-                print(f"[PADDLE] Comando ignorado: jugador {player_id} no puede controlar lado {side}")
                 return
-        except Exception as e:
-            print(f"[PADDLE] Error verificando jugador: {e}")
+        except Exception:
+            pass
 
         # Store last processed timestamp to prevent processing older messages
         if not hasattr(consumer, "last_movement_timestamp"):
             consumer.last_movement_timestamp = {}
-            print(f"[PADDLE] Inicializando timestamps para {consumer.user.username}")
 
         # Skip outdated messages to prevent "time travel"
         if side in consumer.last_movement_timestamp:
             if timestamp < consumer.last_movement_timestamp[side]:
-                print(f"[PADDLE] Ignorando mensaje antiguo para {side}. TS: {timestamp}, Último: {consumer.last_movement_timestamp[side]}")
                 return
         
         # Update timestamp
@@ -55,7 +48,6 @@ class GameStateHandler:
             
             # Si es un comando de parada forzada, reiniciar completamente el estado de la pala
             if force_stop and direction == 0:
-                print(f"[PADDLE] ¡FORZANDO PARADA COMPLETA! para jugador {side}")
                 
                 if paddle and hasattr(paddle, "reset_state"):
                     # Un reset más agresivo que actualiza posición y estado
@@ -64,28 +56,16 @@ class GameStateHandler:
                     paddle.last_position = paddle.y
                     paddle.target_y = paddle.y
                     paddle.ready_for_input = True  # Asegurar explícitamente que está listo para input
-                    print(f"[PADDLE] Estado después del reset: {paddle.y}, moving={paddle.moving}")
-                else:
-                    print(f"[PADDLE] No se pudo restablecer el paddle - No existe o no tiene reset_state")
             
             # Si la pala no está lista para input y no es comando de parada, ignorar
             if paddle and not paddle.ready_for_input and not (force_stop and direction == 0):
-                print(f"[PADDLE] Ignorando movimiento, pala no lista para input: {side}")
                 return
             
             # IMPORTANTE: Si estamos en reconnection, asegurarse que no queden movimientos pendientes
             if hasattr(consumer, "reconnecting") and consumer.reconnecting and paddle:
-                print(f"[PADDLE] Reconexión detectada - Limpiando estado de movimiento para {side}")
                 paddle.moving = direction != 0
                 
             # Ejecutar el movimiento en el estado del juego
-            if paddle:
-                if direction == 0:
-                    paddle.moving = False
-                    print(f"[PADDLE] Deteniendo pala {side} - moving={paddle.moving}")
-                else:
-                    print(f"[PADDLE] Moviendo pala {side} dir={direction}")
-                
             consumer.game_state.move_paddle(side, direction)
 
             # Enviar actualización inmediata del estado a todos los clientes
@@ -135,7 +115,6 @@ class GameStateHandler:
     async def handle_reconnection_state_sync(consumer):
         """Maneja sincronización para reconexiones"""
         if not hasattr(consumer, "game_state") or not consumer.game_state:
-            print(f'No hay estado de juego para sincronizar en reconexión de {consumer.user.username}')
             return
 
         # 1. Obtener el estado actual
@@ -149,7 +128,6 @@ class GameStateHandler:
         player_side = getattr(consumer, "side", None)
         
         # 4. Enviar estado para sincronización rápida
-        print(f'Enviando estado para reconexión a {consumer.user.username}')
         
         # Enviar estado actual
         await consumer.send(text_data=json.dumps({

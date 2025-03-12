@@ -1,5 +1,4 @@
 from .base import TranscendenceBaseConsumer
-from .utils.diagnostic import DiagnosticLogger as diag
 from .shared_state import waiting_players as global_waiting_players
 from .shared_state import connected_players
 from .utils.database_operations import DatabaseOperations
@@ -16,7 +15,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             return
         
         self.channel = self.channel_name
-        diag.info('MatchmakingConsumer', f'User {self.user.username} connected to matchmaking')
         
         # Accept the connection first
         await self.accept()
@@ -35,7 +33,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                 'channel_name': self.channel,
                 'join_time': time.time()
             })
-            diag.info('MatchmakingConsumer', f'User {self.user.username} added to matchmaking queue')
             
             # Send status update
             await self.send(text_data=json.dumps({
@@ -52,7 +49,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
 
     async def disconnect(self, close_code):
         """ Remove the user from the waiting list """
-        diag.info('MatchmakingConsumer', f'User {self.user.username} disconnected from matchmaking')
         
         # Filter the waiting players list
         self._remove_from_waiting_list(self.user.id)
@@ -75,8 +71,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                 'join_time': time.time()
             })
             
-            diag.info('MatchmakingConsumer', f'User {user.username} joined matchmaking queue')
-            
             # Informar al cliente que está en cola
             await self.send(text_data=json.dumps({
                 'type': 'status',
@@ -93,8 +87,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             
             # Eliminar al jugador de la lista de espera
             self._remove_from_waiting_list(user_id)
-            
-            diag.info('MatchmakingConsumer', f'User {self.scope["user"].username} left matchmaking queue')
             
             # Informar al cliente que ha salido de la cola
             await self.send(text_data=json.dumps({
@@ -146,7 +138,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
     async def try_match_players(self):
         """ Try to match two players from the waiting list """
         if len(global_waiting_players) >= 2:
-            diag.info('MatchmakingConsumer', f'Trying to match players. Queue length: {len(global_waiting_players)}')
             
             # Hacer copias locales para no modificar la lista mientras iteramos
             player1 = global_waiting_players[0]
@@ -169,7 +160,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                     break    # Exit the loop
                 
                 if time.time() - start_time > timeout:    # This is to prevent infinite loop
-                    diag.warn('MatchmakingConsumer', 'Match timeout - putting available players back in queue')
                     # Put the players back in the queue
                     if player1_connected:
                         global_waiting_players.append(player1)
@@ -181,7 +171,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
 
             # Crear nueva partida
             game = await DatabaseOperations.create_game(player1['user'], player2['user'])
-            diag.info('MatchmakingConsumer', f"Match found between {player1['user'].username} and {player2['user'].username} for game {game.id}")
 
             # Add both channels to the game group
             await self.channel_layer.group_add(f'game_{game.id}', player1['channel_name'])
@@ -221,7 +210,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
             data = json.loads(text_data)
             await self.receive_json(data)
         except json.JSONDecodeError:
-            diag.error('MatchmakingConsumer', f'Invalid JSON received: {text_data[:100]}')
             # Intentar enviar mensaje de error al cliente
             await self.send(text_data=json.dumps({
                 'type': 'error',

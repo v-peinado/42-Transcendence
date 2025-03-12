@@ -8,7 +8,6 @@ import time
 from channels.db import database_sync_to_async
 import traceback
 from .shared_state import game_players, game_states
-from .utils.diagnostic import DiagnosticLogger as diag
 
 class GameConsumer(BaseGameConsumer):
     async def connect(self):
@@ -19,13 +18,11 @@ class GameConsumer(BaseGameConsumer):
             
             # If connection validation failed, return early
             if not hasattr(self, "game_state") or not self.game_state:
-                print(f"[DEBUG] GameConsumer.connect - No game state for {self.scope['user'].username}")
                 return
             
             # Importante: Usar database_sync_to_async para acceder a la base de datos
             game = await DatabaseOperations.get_game(self.game_id)
             if not game:
-                print(f"[DEBUG] GameConsumer.connect - Game {self.game_id} not found")
                 await self.close(code=4004)  # Custom code: Game not found
                 return
                 
@@ -33,7 +30,6 @@ class GameConsumer(BaseGameConsumer):
             
             # Si el juego está en estado FINISHED, rechazamos la conexión
             if game and game.status == "FINISHED":
-                print(f"[DEBUG] GameConsumer.connect - Game {self.game_id} is already finished")
                 await self.close(code=4002)
                 return
             
@@ -70,7 +66,6 @@ class GameConsumer(BaseGameConsumer):
                     if side:
                         paddle = self.game_state.paddles.get(side)
                         if paddle:
-                            print(f"[RECONNECT] Restableciendo pala para {self.user.username} ({side})")
                             # Guardar posición actual para restaurarla
                             current_y = paddle.y
                             paddle.reset_state(current_y)
@@ -89,7 +84,6 @@ class GameConsumer(BaseGameConsumer):
                         "player1": player1_name,
                         "player2": player2_name
                     }))
-                    print(f"[RECONNECT] Estado de juego enviado a {self.user.username} (lado: {side})")
                     
                     # Después de un pequeño retraso, eliminar el flag de reconexión
                     # MODIFICACIÓN: Reducir este tiempo de 1.0 segundos a 0.1 segundos
@@ -97,11 +91,8 @@ class GameConsumer(BaseGameConsumer):
                     self.reconnecting = False
             else:
                 # Unauthorized user, close the connection
-                print(f"[DEBUG] GameConsumer.connect - User {self.user.id} not a player in game {self.game_id}")
                 await self.close(code=4001)
         except Exception as e:
-            error_details = traceback.format_exc()
-            print(f"[DEBUG] Error en GameConsumer.connect: {error_details}")
             if not hasattr(self, 'websocket_closed'):
                 await self.close(code=4500)
 
@@ -136,8 +127,6 @@ class GameConsumer(BaseGameConsumer):
         if hasattr(self, 'player_side') and game_id in game_players and self.player_side in game_players[game_id]:
             game_players[game_id][self.player_side]["connected"] = False
             game_players[game_id][self.player_side]["disconnect_time"] = asyncio.get_event_loop().time()
-            
-            diag.info('GameConsumer', f'Player {self.user.username} ({self.player_side}) disconnected from game {game_id}')
     
     async def determine_player_side(self):
         """Determine which side (left/right) the connected player is on"""
@@ -185,12 +174,10 @@ class GameConsumer(BaseGameConsumer):
                     # Establecer el lado si no estaba ya establecido
                     if not hasattr(self, "side") or not self.side:
                         self.side = player_side
-                        diag.info('GameConsumer', f'Fast reconnect: Lado establecido para {self.user.username}: {player_side}')
                     
                     # Resetear el estado de la pala sin esperas
                     paddle = self.game_state.paddles.get(player_side)
                     if paddle:
-                        diag.info('GameConsumer', f'Fast reconnect: Reseteando pala para {self.user.username} ({player_side})')
                         current_y = paddle.y
                         paddle.reset_state(current_y)
                         paddle.ready_for_input = True  # Asegurar explícitamente que está listo para input
@@ -245,7 +232,6 @@ class GameConsumer(BaseGameConsumer):
                     
                     # Enviar respuesta rápida
                     await self.send(text_data=json.dumps(current_state))
-                    diag.info('GameConsumer', f'Fast reconnect completado para {self.user.username} ({player_side})')
                     return
         
         if message_type == "move_paddle":
@@ -273,17 +259,14 @@ class GameConsumer(BaseGameConsumer):
                         if game.player1_id and self.user.id == game.player1_id:
                             player_side = "left"
                             self.side = "left"
-                            diag.info('GameConsumer', f'Lado determinado para reconexión: {player_side} (player1)')
                         elif game.player2_id and self.user.id == game.player2_id:
                             player_side = "right"
                             self.side = "right"
-                            diag.info('GameConsumer', f'Lado determinado para reconexión: {player_side} (player2)')
                 
                 # Resetear el estado de la pala para este jugador si está reconectando
                 if player_side and self.game_state.status == 'playing':
                     paddle = self.game_state.paddles.get(player_side)
                     if paddle:
-                        diag.info('GameConsumer', f'Reseteando pala para {self.user.username} ({player_side})')
                         # Guardar posición actual para no "teletransportar" la pala
                         current_y = paddle.y
                         paddle.reset_state(current_y)
@@ -291,8 +274,6 @@ class GameConsumer(BaseGameConsumer):
                 
                 # NUEVO: Usar método específico para sincronización de reconexión
                 await GameStateHandler.handle_reconnection_state_sync(self)
-                
-                diag.info('GameConsumer', f'Estado de juego enviado a {self.user.username} (lado: {player_side})')
                 
                 # OPTIMIZACIÓN: Eliminar retraso después de reconexión
                 self.reconnecting = False
@@ -354,7 +335,3 @@ class GameConsumer(BaseGameConsumer):
                 'type': 'game_state',
                 'state': state_data
             })
-            
-            diag.info('GameConsumer', f'Sent current game state to reconnected player {self.user.username}')
-        else:
-            diag.warn('GameConsumer', f'No game state available to send to reconnected player {self.user.username}')

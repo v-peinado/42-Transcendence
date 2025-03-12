@@ -20,7 +20,6 @@ class Paddle:
     def move(self, direction, canvas_height):
         """Control paddle movement speed"""
         if not self.ready_for_input:
-            print(f"[PADDLE] Ignorando movimiento, pala no lista para input. Estado: {self.__dict__}")
             return
 
         # Guardar la última dirección recibida
@@ -28,7 +27,6 @@ class Paddle:
         
         # Si la dirección es 0, marcar como no en movimiento
         if direction == 0:
-            print(f"[PADDLE] Deteniendo movimiento. Posición: {self.y}")
             self.moving = False
             # Al detenerse, asegurarse de que la posición objetivo coincide con la actual
             self.target_y = self.y
@@ -50,8 +48,6 @@ class Paddle:
         self.target_y = self.y
         self.last_position = self.y
         self.last_update_time = time.time() * 1000  # ms
-        
-        print(f"[PADDLE] Movimiento {direction}. Y: {old_y} -> {self.y}")
 
     def update(self, canvas_height):
         """Update paddle position without vibrations"""
@@ -76,10 +72,7 @@ class Paddle:
 
     def reset_state(self, y=None):
         """Reset paddle state completely, optionally with new y position"""
-        print(f"[PADDLE] Reset completo de la pala. Y anterior: {self.y}, Y nuevo: {y if y is not None else self.y}")
-        
         # MODIFICACIÓN CRUCIAL: No deshabilitar entrada durante el reset
-        # self.ready_for_input = False  <-- Eliminada esta línea
         
         # Reset completo de todas las variables relacionadas con el movimiento
         if y is not None:
@@ -92,8 +85,6 @@ class Paddle:
         
         # MODIFICACIÓN CRUCIAL: Asegurar que siempre está listo para recibir input
         self.ready_for_input = True
-        
-        print(f"[PADDLE] Estado final después del reset: y={self.y}, target={self.target_y}, moving={self.moving}, ready={self.ready_for_input}")
 
     def serialize(self):
         """Serializar la pala para enviarla a los clientes"""
