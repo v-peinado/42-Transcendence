@@ -1017,22 +1017,4 @@
     }
 }
 
-/* Efecto visual para reconexiones exitosas */
-@keyframes reconnectionComplete {
-	0% {
-		box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.5);
-	}
 
-	70% {
-		box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
-	}
-
-	100% {
-		box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
-	}
-}
-
-/* Aplicar animación cuando se completa reconexión */
-#gameCanvas.reconnected {
-	animation: reconnectionComplete 0.3s ease-out;
-}

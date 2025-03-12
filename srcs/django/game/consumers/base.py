@@ -4,10 +4,10 @@ from ..engine.game_state import GameState
 from .shared_state import connected_players
 
 class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
-    """Base consumer with common functionality"""
+    """Base consumer with common functionality for all Pong game consumers"""
     
     async def validate_user_connection(self):
-        """Validate user authentication and connection"""
+        """Validate if user is already connected from another location"""
         try:
             if not self.scope["user"].is_authenticated:
                 await self.close(code=4001)  # Unauthorized
@@ -20,7 +20,7 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
             return False
     
     async def manage_connected_players(self, add=True):
-        """Add/remove user from connected players"""
+        """Add or remove user from connected_players dictionary"""
         try:
             user_id = self.user.id
             
@@ -53,7 +53,7 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
 
 
 class BaseGameConsumer(TranscendenceBaseConsumer):
-    """Base consumer for game connections"""
+    """Base game consumer with game-specific functionality"""
     
     async def connect(self):
         """Connect to websocket"""

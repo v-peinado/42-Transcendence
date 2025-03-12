@@ -100,7 +100,7 @@ class GameStateHandler:
                         },
                     },
                 )
-                break
+                break # Exit loop if there's a winner
 
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
