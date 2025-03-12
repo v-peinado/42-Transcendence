@@ -32,12 +32,12 @@ class MultiplayerHandler:
                     game_players[game_id][player_side]['connected'] = True
                     game_players[game_id][player_side]['channel_name'] = consumer.channel_name
                     
-                    # Resetear el estado de la pala para este jugador si estamos en medio de una partida
+                    # Reset paddle state for this player if we're in the middle of a game
                     if hasattr(consumer, 'game_state') and consumer.game_state and consumer.game_state.status == 'playing':
-                        # Obtener la posición actual y resetear estado de la pala
+                        # Get current position and reset paddle state
                         paddle = consumer.game_state.paddles.get(player_side)
                         if paddle:
-                            print(f"Reseteando estado de pala para {consumer.user.username} ({player_side}) en reconexión")
+                            print(f"Resetting paddle state for {consumer.user.username} ({player_side}) on reconnection")
                             paddle.reset_state()
                     
                     # Notify reconnection
@@ -163,7 +163,7 @@ class MultiplayerHandler:
             if game_id in game_players and side in game_players[game_id] and game_players[game_id][side]:
                 game_players[game_id][side]['connected'] = False
                 
-                # Verificar si ambos jugadores están desconectados
+                # Check if both players are disconnected
                 both_disconnected = all(not player_data.get('connected', False) 
                                       for player_data in game_players[game_id].values() 
                                       if player_data is not None)

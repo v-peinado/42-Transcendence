@@ -9,15 +9,13 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
     async def validate_user_connection(self):
         """Validate user authentication and connection"""
         try:
-            # Check if user is authenticated
             if not self.scope["user"].is_authenticated:
                 await self.close(code=4001)  # Unauthorized
                 return False
             
-            # Store user reference for convenience
             self.user = self.scope["user"]
             return True
-        except Exception as e:
+        except Exception:
             await self.close(code=4500)  # Internal error
             return False
     
@@ -60,32 +58,25 @@ class BaseGameConsumer(TranscendenceBaseConsumer):
     async def connect(self):
         """Connect to websocket"""
         try:
-            # Check authentication using the base class method
             if not await self.validate_user_connection():
                 return
             
-            # Parse game_id from URL route
             self.game_id = self.scope['url_route']['kwargs']['game_id']
             self.room_group_name = f'game_{self.game_id}'
             
-            # Join game group
             await self.channel_layer.group_add(
                 self.room_group_name,
                 self.channel_name
             )
             
-            # Create game state if not exists
             if not hasattr(self, "game_state"):
                 from .shared_state import game_players, game_states
                 game_id = str(self.game_id)
                 
-                # Check if there's an existing game state in our shared dictionary
                 if game_id in game_states:
                     self.game_state = game_states[game_id]
-                # If no existing game state, create a new one
                 else:
                     self.game_state = GameState()
-                    # Store in shared dictionary for other connections to use
                     game_states[game_id] = self.game_state
             
             await self.accept()

@@ -1,14 +1,14 @@
 """
-Estado compartido entre consumidores para la gestión de partidas y jugadores
+Shared state between consumers for game and player management
 """
 
-# Diccionario de jugadores conectados: {user_id: {channel_name, username, last_seen}, ...}
+# Dictionary of connected players: {user_id: {channel_name, username, last_seen}, ...}
 connected_players = {}
 
-# Lista de jugadores en espera de partida: [{user, channel_name, join_time}, ...]
+# List of players waiting for a match: [{user, channel_name, join_time}, ...]
 waiting_players = []
 
-# Estructura anidada para jugadores en partidas
+# Nested structure for players in games
 # {
 #   game_id: {
 #     "left": {
@@ -27,13 +27,13 @@ waiting_players = []
 # }
 game_players = {}
 
-# Almacena las instancias de GameState por partida
+# Stores GameState instances per game
 # {game_id: GameState instance, ...}
 game_states = {}
 
 # Diagnostics
 def get_status_snapshot():
-    """Obtiene un snapshot del estado actual para diagnóstico"""
+    """Gets a snapshot of the current state for diagnostics"""
     return {
         "connected_count": len(connected_players),
         "waiting_count": len(waiting_players),

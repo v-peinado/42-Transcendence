@@ -57,52 +57,55 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
         await self.manage_connected_players(add=False)
 
     async def receive_json(self, content):
-        """Recibir mensaje JSON del cliente"""
+        """Receive JSON message from client"""
         message_type = content.get('type')
         
         if message_type == 'join_matchmaking':
-            # Usuario quiere entrar en matchmaking
+            # User wants to enter matchmaking
             user = self.scope["user"]
             
-            # Registrar al jugador en la lista de espera
-            global_waiting_players.append({
-                'user': user,
-                'channel_name': self.channel_name,
-                'join_time': time.time()
-            })
-            
-            # Informar al cliente que está en cola
-            await self.send(text_data=json.dumps({
-                'type': 'status',
-                'status': 'waiting',
-                'position': len(global_waiting_players)
-            }))
-            
-            # Intentar emparejar jugadores
-            await self.try_match_players()
+            # Check if the user is already in the waiting list before adding
+            in_queue = any(item['user'].id == user.id for item in global_waiting_players)
+            if not in_queue:
+                # Register player in the waiting list
+                global_waiting_players.append({
+                    'user': user,
+                    'channel_name': self.channel_name,
+                    'join_time': time.time()
+                })
+                
+                # Inform client they are in queue
+                await self.send(text_data=json.dumps({
+                    'type': 'status',
+                    'status': 'waiting',
+                    'position': len(global_waiting_players)
+                }))
+                
+                # Try to match players
+                await self.try_match_players()
         
         elif message_type == 'leave_matchmaking':
-            # Usuario quiere salir de matchmaking
+            # User wants to leave matchmaking
             user_id = self.scope["user"].id
             
-            # Eliminar al jugador de la lista de espera
+            # Remove player from waiting list
             self._remove_from_waiting_list(user_id)
             
-            # Informar al cliente que ha salido de la cola
+            # Inform client they have left the queue
             await self.send(text_data=json.dumps({
                 'type': 'status',
                 'status': 'left_queue'
             }))
         
         elif message_type == 'ping':
-            # Responder al ping con un pong
+            # Reply to ping with pong
             await self.send(text_data=json.dumps({
                 'type': 'pong',
                 'timestamp': content.get('timestamp'),
                 'server_timestamp': int(time.time() * 1000)
             }))
             
-            # Actualizar timestamp de actividad
+            # Update activity timestamp
             user_id = self.scope["user"].id
             if user_id in connected_players:
                 connected_players[user_id]["last_seen"] = time.time()

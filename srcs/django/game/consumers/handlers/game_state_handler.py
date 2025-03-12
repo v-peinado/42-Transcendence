@@ -7,16 +7,15 @@ class GameStateHandler:
     """Game state updates handler"""
 
     @staticmethod
-    async def handle_paddle_movement(consumer, content):  # its async because we use await inside (is a coroutine)
+    async def handle_paddle_movement(consumer, content):
         """Handle paddle movement"""
-        side = content.get("side")  # Player's side
-        direction = content.get("direction", 0)  # Paddle movement direction
-        force_stop = content.get("force_stop", False)  # Flag to force stop
-        timestamp = content.get("timestamp", 0)  # Client timestamp
-        message_id = content.get("message_id", "no_id")  # Message ID for debugging
-        player_id = content.get("player_id")  # ID del jugador
+        side = content.get("side")
+        direction = content.get("direction", 0)
+        force_stop = content.get("force_stop", False)
+        timestamp = content.get("timestamp", 0)
+        player_id = content.get("player_id")
         
-        # Verificar que el jugador que envía el comando es el que corresponde a este lado
+        # Validate player has permission for this side
         is_valid_side = False
         try:
             game = consumer.scope.get("game")
@@ -46,29 +45,27 @@ class GameStateHandler:
         if hasattr(consumer, "game_state") and consumer.game_state:
             paddle = consumer.game_state.paddles.get(side)
             
-            # Si es un comando de parada forzada, reiniciar completamente el estado de la pala
+            # Handle force stop command with complete paddle reset
             if force_stop and direction == 0:
-                
                 if paddle and hasattr(paddle, "reset_state"):
-                    # Un reset más agresivo que actualiza posición y estado
                     paddle.reset_state()
                     paddle.moving = False
                     paddle.last_position = paddle.y
                     paddle.target_y = paddle.y
-                    paddle.ready_for_input = True  # Asegurar explícitamente que está listo para input
+                    paddle.ready_for_input = True
             
-            # Si la pala no está lista para input y no es comando de parada, ignorar
+            # Ignore command if paddle is not ready for input, unless it's a force stop
             if paddle and not paddle.ready_for_input and not (force_stop and direction == 0):
                 return
             
-            # IMPORTANTE: Si estamos en reconnection, asegurarse que no queden movimientos pendientes
+            # During reconnection, ensure pending movements are cleared
             if hasattr(consumer, "reconnecting") and consumer.reconnecting and paddle:
                 paddle.moving = direction != 0
                 
-            # Ejecutar el movimiento en el estado del juego
+            # Execute paddle movement in game state
             consumer.game_state.move_paddle(side, direction)
 
-            # Enviar actualización inmediata del estado a todos los clientes
+            # Send immediate state update to all clients
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
                 {
@@ -113,23 +110,23 @@ class GameStateHandler:
 
     @staticmethod
     async def handle_reconnection_state_sync(consumer):
-        """Maneja sincronización para reconexiones"""
+        """Handle state synchronization for reconnections"""
         if not hasattr(consumer, "game_state") or not consumer.game_state:
             return
 
-        # 1. Obtener el estado actual
+        # 1. Get current game state
         current_state = consumer.game_state.serialize()
         
-        # 2. Agregar metadatos para reconexión rápida
+        # 2. Add metadata for fast reconnection
         current_state["fast_reconnect"] = True
         current_state["server_timestamp"] = asyncio.get_event_loop().time() * 1000
         
-        # 3. Marcar el lado del jugador
+        # 3. Set player side
         player_side = getattr(consumer, "side", None)
         
-        # 4. Enviar estado para sincronización rápida
+        # 4. Send state for fast synchronization
         
-        # Enviar estado actual
+        # Send current state
         await consumer.send(text_data=json.dumps({
             "type": "game_state",
             "state": current_state,
@@ -139,7 +136,7 @@ class GameStateHandler:
             "timestamp": int(time.time() * 1000)
         }))
         
-        # Enviar datos de predicción inmediatamente para mejorar la experiencia
+        # Send prediction data immediately to improve experience
         prediction_data = {
             "type": "game_prediction",
             "ball": {
@@ -163,11 +160,11 @@ class GameStateHandler:
             "timestamp": int(time.time() * 1000)
         }
         
-        # Enviar datos de predicción
+        # Send prediction data
         await consumer.send(text_data=json.dumps(prediction_data))
 
     @staticmethod
-    async def countdown_timer(consumer):  # Countdown timer
+    async def countdown_timer(consumer):
         """Handle game countdown"""
         consumer.game_state.status = "countdown"
         consumer.game_state.countdown_active = True
@@ -178,7 +175,7 @@ class GameStateHandler:
             
             # Serialize game state and add sound indicator
             state = consumer.game_state.serialize()
-            state["play_sound"] = True  # Add sound indicator
+            state["play_sound"] = True
             
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
