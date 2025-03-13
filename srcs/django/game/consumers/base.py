@@ -1,7 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
+from .shared_state import game_states, connected_players
 from ..engine.game_state import GameState
-from .shared_state import game_players, game_states
-from .shared_state import connected_players
 import json
 
 class TranscendenceBaseConsumer(AsyncWebsocketConsumer):

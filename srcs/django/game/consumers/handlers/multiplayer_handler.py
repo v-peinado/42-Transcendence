@@ -220,8 +220,7 @@ class MultiplayerHandler:
     @staticmethod
     async def handle_reconnect_timeout(channel_layer, room_group_name, game_id, side, game_state, game):
         
-        # wait for 30 seconds before checking if the player has reconnected
-        await asyncio.sleep(30)
+        await asyncio.sleep(30) # <<< wait n seconds before checking if the player has reconnected
         
         # If the player has not reconnected, end the game
         if (game_id in game_players and 

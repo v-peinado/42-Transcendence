@@ -126,3 +126,16 @@ class DatabaseOperations:
             
         game.save()
         return game
+
+    @staticmethod
+    @database_sync_to_async
+    def get_player_info(user_id):
+        """Get basic player information safely"""
+        if not user_id:	# if user id is not provided
+            return None
+            
+        try:
+            user = User.objects.get(id=user_id)
+            return {'id': user.id, 'username': user.username}
+        except Exception:
+            return None

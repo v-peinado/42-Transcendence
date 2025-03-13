@@ -92,12 +92,8 @@ class GameConsumer(BaseGameConsumer):
                 game_players[game_id][self.side]["disconnect_time"] = asyncio.get_event_loop().time()
 
     async def receive(self, text_data):
-        """Receive message from websocket (string)"""
-        data = json.loads(text_data)
-        await self.receive_json(data)
-
-    async def receive_json(self, content):
-        """Receive message from websocket (dictionary)"""
+        """Receive and process message from websocket"""
+        content = json.loads(text_data)
         message_type = content.get("type")
         
         # Handle ping messages for latency measurement
@@ -110,8 +106,10 @@ class GameConsumer(BaseGameConsumer):
             }))
             return
         
+		# Handle paddle movement
         if message_type == "move_paddle":
             await GameStateHandler.handle_paddle_movement(self, content)
+        # Handle player ready for countdown
         elif message_type == "ready_for_countdown":
             # Player is ready for countdown
             if hasattr(self, "game_state") and self.game_state:
@@ -119,11 +117,11 @@ class GameConsumer(BaseGameConsumer):
                 if not hasattr(self.game_state, "countdown_started") or not self.game_state.countdown_started:
                     self.game_state.countdown_started = True
                     asyncio.create_task(GameStateHandler.countdown_timer(self))
+        # Handle chat messages
         elif message_type == "chat_message":
-            # Handle chat messages
             await self.handle_chat_message(content)
+        # Handle reconnect request
         elif message_type == "request_game_state" or message_type == "fast_reconnect":
-            # Request for game state synchronization
             await self.send_game_state()
     
     async def handle_chat_message(self, content):

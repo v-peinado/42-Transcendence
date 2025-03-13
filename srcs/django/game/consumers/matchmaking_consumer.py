@@ -1,7 +1,6 @@
-from .base import TranscendenceBaseConsumer
-from .shared_state import waiting_players
-from .shared_state import connected_players
+from .shared_state import waiting_players, connected_players
 from .utils.database_operations import DatabaseOperations
+from .base import TranscendenceBaseConsumer
 import json
 import asyncio
 import time
