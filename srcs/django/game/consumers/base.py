@@ -9,11 +9,11 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
     async def validate_user_connection(self):
         """Validate if user is already connected from another location"""
         try:
-            if not self.scope["user"].is_authenticated:
+            if not self.scope["user"].is_authenticated: # if user is not authenticated
                 await self.close(code=4001)  # Unauthorized
                 return False
             
-            self.user = self.scope["user"]
+            self.user = self.scope["user"] # get user object
             return True
         except Exception:
             await self.close(code=4500)  # Internal error
@@ -22,19 +22,19 @@ class TranscendenceBaseConsumer(AsyncWebsocketConsumer):
     async def manage_connected_players(self, add=True):
         """Add or remove user from connected_players dictionary"""
         try:
-            user_id = self.user.id
+            user_id = self.user.id	# get user id
             
-            if add:
+            if add:	# if user is connecting
                 connected_players[user_id] = {
                     "channel_name": self.channel_name,
                     "username": self.user.username,
                     "last_seen": 0
                 }
-            else:
+            else:	# if user is disconnecting
                 if user_id in connected_players:
                     del connected_players[user_id]
-        except Exception:
-            pass
+        except Exception:	# if any error occurs
+            pass	# do nothing
 
     async def game_state_update(self, event):
         """Send game state update to client"""

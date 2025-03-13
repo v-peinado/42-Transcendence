@@ -7,7 +7,7 @@ class GameStateHandler:
     """Game state updates handler"""
 
     @staticmethod
-    async def handle_paddle_movement(consumer, content):
+    async def handle_paddle_movement(consumer, content):	# its async because we use await inside (is a coroutine)
         """Handle paddle movement"""
         side = content.get("side")  # Player's side
         direction = content.get("direction", 0)  # Paddle movement direction (0 = still, 1 = up, -1 = down)
@@ -49,7 +49,7 @@ class GameStateHandler:
                 asyncio.get_event_loop().time()
             )
 
-            if winner:  # if there's a winner
+            if winner:	# if there's a winner
                 game = consumer.scope["game"]
                 winner_id = game.player1.id if winner == "left" else game.player2.id
                 await DatabaseOperations.update_game_winner(game, winner_id, consumer.game_state)
@@ -76,7 +76,7 @@ class GameStateHandler:
             await asyncio.sleep(1/60)  # 60 FPS
 
     @staticmethod
-    async def countdown_timer(consumer):
+    async def countdown_timer(consumer):  # Countdown timer
         """Handle game countdown"""
         consumer.game_state.status = "countdown"
         consumer.game_state.countdown_active = True
@@ -87,7 +87,7 @@ class GameStateHandler:
             
             # Serialize game state and add sound indicator
             state = consumer.game_state.serialize()
-            state["play_sound"] = True
+            state["play_sound"] = True  # Add sound indicator
             
             await consumer.channel_layer.group_send(
                 consumer.room_group_name,
