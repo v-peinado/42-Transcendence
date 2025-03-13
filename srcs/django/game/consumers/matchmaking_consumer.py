@@ -2,7 +2,6 @@ from .shared_state import waiting_players, connected_players
 from .utils.database_operations import DatabaseOperations
 from .base import TranscendenceBaseConsumer
 import json
-import asyncio
 import time
 import logging
 
@@ -182,8 +181,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                 # Update the game status to MATCHED
                 await DatabaseOperations.update_game_status_by_id(game.id, 'MATCHED')
                 
-                # Verify that the game has transitioned to a new state
-                asyncio.create_task(self._verify_game_transition(game.id))
             else:
                 # Inform client about their position in the queue
                 position = next((i+1 for i, p in enumerate(waiting_players) if p['user'].id == self.user.id), 0)
@@ -201,15 +198,6 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
                     waiting_players.append(player1)	# Add player1 back to the queue if not already there
                 if not any(p['user'].id == player2['user'].id for p in waiting_players):
                     waiting_players.append(player2)
-    
-    async def _verify_game_transition(self, game_id):
-        """Verify that the game has transitioned to a new state"""
-        await asyncio.sleep(10)  # Wait 10 seconds
-        
-        game = await DatabaseOperations.get_game(game_id)	# Get the game from the database
-        if game and game.status == "MATCHED":	# If the game is still in MATCHED status
-            logger.warning(f"Game {game_id} still in MATCHED status after 10 seconds")	
-
     
     async def is_player_connected(self, player_id):
         """Check if a player is still connected to the matchmaking system"""
