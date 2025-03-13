@@ -50,5 +50,3 @@ class ScoreManager:
 
         self.game_state.ball.speed_x = self.game_state.BALL_SPEED * direction
         self.game_state.ball.speed_y = self.game_state.BALL_SPEED * math.sin(angle)
-
-        # print(f"Ball reset after point - pos:({self.game_state.ball.x}, {self.game_state.ball.y}), speed:({self.game_state.ball.speed_x}, {self.game_state.ball.speed_y})")
