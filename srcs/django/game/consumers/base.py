@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from ..engine.game_state import GameState
+from .shared_state import game_players, game_states
 from .shared_state import connected_players
 import json
 
@@ -56,28 +57,27 @@ class BaseGameConsumer(TranscendenceBaseConsumer):
     """Base game consumer with game-specific functionality"""
     
     async def connect(self):
-        """Connect to websocket"""
+        """Connect to websocket and add to game group"""
         try:
-            if not await self.validate_user_connection():
+            if not await self.validate_user_connection(): # if user is not authenticated
                 return
             
-            self.game_id = self.scope['url_route']['kwargs']['game_id']
-            self.room_group_name = f'game_{self.game_id}'
+            self.game_id = self.scope['url_route']['kwargs']['game_id'] # get game id
+            self.room_group_name = f'game_{self.game_id}'	# create room group name
             
-            await self.channel_layer.group_add(
+            await self.channel_layer.group_add(	# add user to the room group
                 self.room_group_name,
                 self.channel_name
             )
             
-            if not hasattr(self, "game_state"):
-                from .shared_state import game_players, game_states
-                game_id = str(self.game_id)
+            if not hasattr(self, "game_state"):	# if game state is not already set
+                game_id = str(self.game_id)	# get game id as string
                 
-                if game_id in game_states:
-                    self.game_state = game_states[game_id]
-                else:
-                    self.game_state = GameState()
-                    game_states[game_id] = self.game_state
+                if game_id in game_states:	# if game state is already set
+                    self.game_state = game_states[game_id]	# get game state
+                else:	# if game state is not set
+                    self.game_state = GameState()	# create new game state
+                    game_states[game_id] = self.game_state	# set game state
             
             await self.accept()
             

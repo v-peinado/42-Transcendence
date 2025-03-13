@@ -1,16 +1,16 @@
-from .handlers.game_state_handler import GameStateHandler
 from .handlers.multiplayer_handler import MultiplayerHandler
+from .handlers.game_state_handler import GameStateHandler
 from .utils.database_operations import DatabaseOperations
+from django.contrib.auth import get_user_model
+from channels.db import database_sync_to_async
+from .shared_state import game_players
 from .base import BaseGameConsumer
+import logging
 import asyncio
 import json
 import time
-from channels.db import database_sync_to_async
-from django.contrib.auth import get_user_model
-from .shared_state import game_players
-import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) # to log messages in the console
 
 class GameConsumer(BaseGameConsumer):
     async def connect(self):
