@@ -4,11 +4,12 @@ import math
 
 class ScoreManager:
     def __init__(self, game_state):
+        """Initialize ScoreManager with game state"""
         self.game_state = game_state
 
     def check_scoring(self):
         """Check if a point has been scored"""
-        ball = self.game_state.ball
+        ball = self.game_state.ball # Get ball object
 
         if (
             ball.x + ball.radius >= self.game_state.CANVAS_WIDTH
