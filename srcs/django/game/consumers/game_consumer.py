@@ -23,8 +23,17 @@ class GameConsumer(BaseGameConsumer):
             if not hasattr(self, "game_state"):
                 return
             
-            game = await DatabaseOperations.get_game(self.game_id)
+            game = None # Game object
+            retry_count = 0	# Retry counter
+            
+            while not game and retry_count < 3:	# try to get the game 3 times before giving up when connecting
+                game = await DatabaseOperations.get_game(self.game_id)	
+                if not game:
+                    retry_count += 1
+                    await asyncio.sleep(0.5)	
+            
             if not game:
+                logger.error(f"Could not load game {self.game_id} after retries")
                 await self.close(code=4004)
                 return
                 
@@ -57,6 +66,12 @@ class GameConsumer(BaseGameConsumer):
             else:
                 # Unauthorized user, close the connection
                 await self.close(code=4001)
+            
+            # If game is in MATCHED status but countdown not started, initialize countdown
+            if game.status == "MATCHED" and self.game_state and not hasattr(self.game_state, "countdown_started"):
+                logger.info(f"Game {game.id} is in MATCHED status but countdown not started, initializing")
+                self.game_state.countdown_started = False 
+            
         except Exception as e:
             logger.error(f"Error in connect: {e}")
             if not hasattr(self, 'websocket_closed'):
@@ -93,36 +108,53 @@ class GameConsumer(BaseGameConsumer):
 
     async def receive(self, text_data):
         """Receive and process message from websocket"""
-        content = json.loads(text_data)
-        message_type = content.get("type")
-        
-        # Handle ping messages for latency measurement
-        if message_type == "ping":
-            timestamp = content.get("timestamp")
+        try:
+            content = json.loads(text_data)
+            message_type = content.get("type")
+            
+            # Handle ping messages for latency measurement
+            if message_type == "ping":
+                timestamp = content.get("timestamp")
+                await self.send(text_data=json.dumps({
+                    "type": "pong",
+                    "client_timestamp": timestamp,
+                    "server_timestamp": int(time.time() * 1000)
+                }))
+                return
+            
+            # Handle paddle movement
+            if message_type == "move_paddle":
+                await GameStateHandler.handle_paddle_movement(self, content)
+            # Handle player ready for countdown con mejoras de robustez
+            elif message_type == "ready_for_countdown":
+                # We ensure thet we have a game state before setting player ready
+                if hasattr(self, "game_state") and self.game_state:
+                    self.game_state.player_ready = True
+                    
+                    # Verify if countdown has started
+                    countdown_started = (hasattr(self.game_state, "countdown_started") and 
+                                        self.game_state.countdown_started)
+                    
+                    # If game is not playing and countdown not started, start countdown
+                    if not countdown_started and self.game_state.status != "playing":
+                        self.game_state.countdown_started = True
+                        # Save countdown start time to calculate elapsed time (block countdown)
+                        self.game_state.countdown_start_time = time.time()
+                        asyncio.create_task(GameStateHandler.countdown_timer(self))
+            # Handle chat messages
+            elif message_type == "chat_message":
+                await self.handle_chat_message(content)
+            # Handle reconnect request
+            elif message_type == "request_game_state" or message_type == "fast_reconnect":
+                await self.send_game_state()
+        except json.JSONDecodeError:
+            logger.warning(f"Received invalid JSON from client: {text_data[:100]}")
             await self.send(text_data=json.dumps({
-                "type": "pong",
-                "client_timestamp": timestamp,
-                "server_timestamp": int(time.time() * 1000)
+                "type": "error",
+                "message": "Invalid JSON format"
             }))
-            return
-        
-		# Handle paddle movement
-        if message_type == "move_paddle":
-            await GameStateHandler.handle_paddle_movement(self, content)
-        # Handle player ready for countdown
-        elif message_type == "ready_for_countdown":
-            # Player is ready for countdown
-            if hasattr(self, "game_state") and self.game_state:
-                self.game_state.player_ready = True
-                if not hasattr(self.game_state, "countdown_started") or not self.game_state.countdown_started:
-                    self.game_state.countdown_started = True
-                    asyncio.create_task(GameStateHandler.countdown_timer(self))
-        # Handle chat messages
-        elif message_type == "chat_message":
-            await self.handle_chat_message(content)
-        # Handle reconnect request
-        elif message_type == "request_game_state" or message_type == "fast_reconnect":
-            await self.send_game_state()
+        except Exception as e:
+            logger.error(f"Error in receive: {str(e)}")
     
     async def handle_chat_message(self, content):
         """Handle chat messages"""

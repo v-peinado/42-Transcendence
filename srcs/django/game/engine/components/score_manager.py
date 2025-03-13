@@ -4,11 +4,12 @@ import math
 
 class ScoreManager:
     def __init__(self, game_state):
+        """Initialize ScoreManager with game state"""
         self.game_state = game_state
 
     def check_scoring(self):
         """Check if a point has been scored"""
-        ball = self.game_state.ball
+        ball = self.game_state.ball # Get ball object
 
         if (
             ball.x + ball.radius >= self.game_state.CANVAS_WIDTH
@@ -50,5 +51,3 @@ class ScoreManager:
 
         self.game_state.ball.speed_x = self.game_state.BALL_SPEED * direction
         self.game_state.ball.speed_y = self.game_state.BALL_SPEED * math.sin(angle)
-
-        # print(f"Ball reset after point - pos:({self.game_state.ball.x}, {self.game_state.ball.y}), speed:({self.game_state.ball.speed_x}, {self.game_state.ball.speed_y})")

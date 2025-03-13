@@ -1,5 +1,5 @@
 class GameReconnectionService {
-	constructor() {
+	constructor() { // Inicialize variables
 		this.socket = null;
 		this.gameId = null;
 		this.playerSide = null;
@@ -11,7 +11,7 @@ class GameReconnectionService {
 		this._lastStopCommandTime = 0;
 	}
 
-	// Configura conexión WebSocket con soporte para reconexión rápida
+	// Config websockets connection for game with fast reconnect
 	setupConnection(gameId, callbacks = {}) {
 		this.gameId = gameId;
 		this.callbacks = callbacks;
@@ -20,14 +20,14 @@ class GameReconnectionService {
 
 		const userId = localStorage.getItem('user_id');
 
-		// Recuperar datos de reconexión
+		// Recover reconnection data
 		this.recoverReconnectionData(gameId);
 
-		// Crear conexión WebSocket
-		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${window.location.host}/ws/game/${gameId}/`;
+		// Websockets data for connection
+		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; // Check if the protocol is https or http
+		const wsUrl = `${protocol}//${window.location.host}/ws/game/${gameId}/`; // Websockets url
 
-		// Cerrar socket existente
+		// Close the connection if it is open or connecting before creating a new one
 		if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
 			try {
 				this.socket.close(1000, 'Creando nueva conexión');
@@ -35,7 +35,7 @@ class GameReconnectionService {
 				console.error('Error closing socket:', e);
 			}
 		}
-
+		// Create a new connection
 		try {
 			this.socket = new WebSocket(wsUrl);
 
@@ -46,11 +46,11 @@ class GameReconnectionService {
 					this.callbacks.onOpen(this.reconnecting);
 				}
 
-				// Si estamos reconectando, implementar protocolo FAST RECONNECT
+				// If we are reconnecting, send a fast reconnect request
 				if (this.reconnecting && this.playerSide) {
 					console.log('Iniciando protocolo de reconexión rápida');
 
-					// Enviar petición de reconexión rápida
+					// Send fast reconnect request
 					this.send({
 						type: 'fast_reconnect',
 						player_id: parseInt(userId),
@@ -59,7 +59,7 @@ class GameReconnectionService {
 						timestamp: Date.now()
 					});
 
-					// Como respaldo, enviar también una solicitud estándar después de un breve retraso
+					// fallback to full state request if no response in 200ms
 					setTimeout(() => {
 						if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 							this.send({
@@ -72,23 +72,23 @@ class GameReconnectionService {
 					}, 200);
 				}
 			};
-
+			// Handle messages
 			this.socket.onmessage = (event) => {
-				// Actualizar timestamp
+				// Update last message time
 				this.lastMessageTime = Date.now();
 
-				// Procesar mensaje
+				// Parse message
 				try {
 					const data = JSON.parse(event.data);
 
-					// Manejar tipos de mensajes específicos para reconexión
+					// Handle fast reconnect response and game state
 					if (data.type === 'fast_state') {
 						this.handleFastReconnect(data);
 					} else if (data.type === 'game_state' && (data.is_reconnection || this.reconnecting)) {
 						this.handleReconnectionSuccess(data);
 					}
 
-					// Pasar mensaje al callback
+					// Send message to callback
 					if (this.callbacks.onMessage) {
 						this.callbacks.onMessage(data);
 					}
@@ -100,7 +100,7 @@ class GameReconnectionService {
 			this.socket.onclose = (event) => {
 				console.log('Connection closed', event.code, event.reason);
 
-				// Solo intentar reconectar si no fue un cierre controlado
+				// Handle disconnection if not a normal close event (like page unload)
 				if (event.code !== 1000) {
 					this.handleDisconnection();
 				}
@@ -118,7 +118,7 @@ class GameReconnectionService {
 		return this.socket;
 	}
 
-	// Maneja desconexión e intenta reconectar
+	// Handle disconnection and reconnect attempts
 	handleDisconnection() {
 		if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
 			console.warn('Maximum reconnection attempts reached');
@@ -135,7 +135,7 @@ class GameReconnectionService {
 			this.callbacks.onDisconnect(this.reconnectAttempts, this.MAX_RECONNECT_ATTEMPTS);
 		}
 
-		// Intentar reconectar después de intervalo
+		// Try to reconnect after a delay
 		setTimeout(() => {
 			if (this.reconnecting) {
 				console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})`);
@@ -144,19 +144,19 @@ class GameReconnectionService {
 		}, this.RECONNECT_INTERVAL);
 	}
 
-	// Manejo de reconexión rápida
+	// Handle fast reconnect response
 	handleFastReconnect(data) {
 		console.log('Fast reconnect successful');
 
 		this.reconnecting = false;
 		this.reconnectAttempts = 0;
 
-		// Si el servidor envía información del lado del jugador, actualizarla
+		// If server has assigned a side, update it
 		if (data.player_side) {
 			this.playerSide = data.player_side;
 		}
 
-		// Enviar un único comando de parada
+		// Send stop command to server to prevent paddle from moving
 		if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
 			const userId = localStorage.getItem('user_id');
 			this.send({
@@ -169,13 +169,13 @@ class GameReconnectionService {
 			});
 		}
 
-		// Guardar datos
+		// Save data
 		this.saveGameData(this.gameId, {
 			playerSide: this.playerSide,
 			lastReconnection: Date.now()
 		});
 
-		// Notificar reconexión exitosa
+		// Send notification to callback
 		if (this.callbacks.onFastReconnect) {
 			this.callbacks.onFastReconnect(data);
 		} else if (this.callbacks.onReconnect) {
@@ -183,19 +183,19 @@ class GameReconnectionService {
 		}
 	}
 
-	// Manejo de reconexión tradicional
+	// Handle reconnection success and update player side
 	handleReconnectionSuccess(data) {
 		console.log('Reconnection successful');
 
 		this.reconnecting = false;
 		this.reconnectAttempts = 0;
 
-		// Actualizar lado del jugador
+		// Player side has been assigned by the server
 		if (data.player_side) {
 			this.playerSide = data.player_side;
 		}
 
-		// Enviar comando de parada
+		// Send stop command to server to prevent paddle from moving
 		if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
 			const userId = localStorage.getItem('user_id');
 			this.send({
@@ -208,7 +208,7 @@ class GameReconnectionService {
 			});
 		}
 
-		// Guardar datos
+		// Save data
 		const existingData = this.getSavedGameData(this.gameId) || {};
 		let dataToSave = {
 			...existingData,
@@ -216,7 +216,7 @@ class GameReconnectionService {
 			lastReconnection: Date.now()
 		};
 
-		// Guardar nombres e IDs de jugadores si están disponibles
+		// Save player names and IDs if available in the response
 		if (data.player1 && data.player2) {
 			dataToSave.player1 = data.player1;
 			dataToSave.player2 = data.player2;
@@ -233,7 +233,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Guarda datos en localStorage
+	// Save game data to localStorage
 	saveGameData(gameId, data) {
 		try {
 			localStorage.setItem(`game_${gameId}`, JSON.stringify(data));
@@ -242,7 +242,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Recupera datos de localStorage
+	// Recover saved game data from localStorage
 	getSavedGameData(gameId) {
 		try {
 			const savedData = localStorage.getItem(`game_${gameId}`);
@@ -253,7 +253,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Recupera datos de reconexión
+	// Recover reconnection data from localStorage
 	recoverReconnectionData(gameId) {
 		try {
 			const savedData = this.getSavedGameData(gameId);
@@ -271,25 +271,25 @@ class GameReconnectionService {
 		}
 	}
 
-	// Envía mensaje evitando duplicados de comandos de parada
+	// Send a message through the socket connection
 	send(message) {
 		if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-			// Añadir timestamp si no existe
+			// Add timestamp if not present
 			if (!message.timestamp) {
 				message.timestamp = Date.now();
 			}
 
-			// Optimización para evitar comandos de parada duplicados
+			// Avoid sending stop commands too frequently (prevent paddle jitter)
 			const isStopCommand = message.force_stop || message.type === 'force_stop';
 			if (isStopCommand) {
-				// Verificar si acabamos de enviar un comando similar
+				// Verrify time between stop commands to avoid jitter
 				const now = Date.now();
 				if (this._lastStopCommandTime && (now - this._lastStopCommandTime < 50)) {
-					// Omitir comando si acabamos de enviar uno similar en los últimos 50ms
+					// Avoid sending stop command too frequently
 					return;
 				}
 
-				// Registrar tiempo del comando
+				// timestamp of the last stop command
 				this._lastStopCommandTime = now;
 			}
 
@@ -304,7 +304,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Cierra la conexión
+	// close the socket connection
 	disconnect() {
 		if (this.socket) {
 			try {
@@ -319,7 +319,7 @@ class GameReconnectionService {
 		}
 	}
 
-	// Obtiene el lado del jugador
+	// Get the player side
 	getPlayerSide() {
 		return this.playerSide;
 	}

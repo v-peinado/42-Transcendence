@@ -1,9 +1,12 @@
-from .shared_state import waiting_players, connected_players
+from .shared_state import waiting_players, connected_players, game_states
 from .utils.database_operations import DatabaseOperations
 from .base import TranscendenceBaseConsumer
 import json
-import asyncio
 import time
+import logging
+import asyncio
+
+logger = logging.getLogger(__name__) # Logger for this module
 
 class MatchmakingConsumer(TranscendenceBaseConsumer):
     """Consumer for matchmaking"""
@@ -133,63 +136,103 @@ class MatchmakingConsumer(TranscendenceBaseConsumer):
 
     async def try_match_players(self):
         """ Try to match two players from the waiting list """
-        if len(waiting_players) >= 2:
-            # Get the two first players in the queue
-            player1 = waiting_players.pop(0)
-            player2 = waiting_players.pop(0)
+        try:
+            if len(waiting_players) >= 2: # If there are at least two players in the queue
+                # We add blocking code here to prevent race conditions
+                timestamp_check = time.time()
+                player1_data = waiting_players[0]
+                player2_data = waiting_players[1]
+                
+				# Check if the players are still connected
+                player1_connected = await self.is_player_connected(player1_data['user'].id)
+                player2_connected = await self.is_player_connected(player2_data['user'].id)
+                
+                # Again, check if the players are still in the queue and connected after the blocking code to prevent race conditions
+                if len(waiting_players) < 2 or waiting_players[0] != player1_data or waiting_players[1] != player2_data:
+                    logger.warning("Players in waiting list changed during matchmaking verification")
+                    return
 
-            # Wait until both players are connected
-            start_time = time.time()
-            timeout = 5  # 5 second timeout
-            
-            while True:    # Loop until both players are connected
-                # Check if both players are still connected
-                player1_connected = await self.is_player_connected(player1['user'].id)
-                player2_connected = await self.is_player_connected(player2['user'].id)
-                
-                if player1_connected and player2_connected:    # Both players are connected
-                    break    # Exit the loop
-                
-                if time.time() - start_time > timeout:    # This is to prevent infinite loop
-                    # Put the players back in the queue
-                    if player1_connected:
-                        waiting_players.append(player1)
-                    if player2_connected:
-                        waiting_players.append(player2)
+                if not player1_connected or not player2_connected:
+                    logger.warning(f"Matching canceled - Player1 connected: {player1_connected}, Player2 connected: {player2_connected}")
+                    if not player1_connected:
+                        self._remove_player_from_queue(player1_data['user'].id)
+                    if not player2_connected:
+                        self._remove_player_from_queue(player2_data['user'].id)
                     return
                 
-                await asyncio.sleep(0.1)
+                # Extract players from the queue
+                player1 = waiting_players.pop(0)
+                player2 = waiting_players.pop(0)
+                
+                logger.info(f"Matching players: {player1['user'].username} and {player2['user'].username}")
 
-            # Create new game
-            game = await DatabaseOperations.create_game(player1['user'], player2['user'])
+                # Create new game
+                game = await DatabaseOperations.create_game(player1['user'], player2['user'])
+                logger.info(f"Game created with ID: {game.id}")
 
-            # Add both channels to the game group
-            await self.channel_layer.group_add(f'game_{game.id}', player1['channel_name'])
-            await self.channel_layer.group_add(f'game_{game.id}', player2['channel_name'])
+                # Add both channels to the game group con confirmación explícita
+                await self.channel_layer.group_add(f'game_{game.id}', player1['channel_name'])
+                await self.channel_layer.group_add(f'game_{game.id}', player2['channel_name'])
 
-            # Notify both that the match has been made
-            await self.channel_layer.group_send(
-                f'game_{game.id}',
-                {
-                    'type': 'game_start',
-                    'player1': player1['user'].username,
-                    'player2': player2['user'].username,
-                    'player1_id': player1['user'].id,
-                    'player2_id': player2['user'].id,
-                    'game_id': game.id
-                }
-            )
+                # Notify both that the match has been made
+                await self.channel_layer.group_send(
+                    f'game_{game.id}',
+                    {
+                        'type': 'game_start',
+                        'player1': player1['user'].username,
+                        'player2': player2['user'].username,
+                        'player1_id': player1['user'].id,
+                        'player2_id': player2['user'].id,
+                        'game_id': game.id
+                    }
+                )
 
-            # Update the game status to MATCHED
-            await DatabaseOperations.update_game_status_by_id(game.id, 'MATCHED')
-        else:
-            # Inform client about their position in the queue
-            position = next((i+1 for i, p in enumerate(waiting_players) if p['user'].id == self.user.id), 0)
-            await self.send(text_data=json.dumps({
-                'type': 'status',
-                'status': 'waiting',
-                'position': position
-            }))
+                # Update the game status to MATCHED
+                await DatabaseOperations.update_game_status_by_id(game.id, 'MATCHED')
+                
+                # Add game state to the game_states dictionary
+                asyncio.create_task(self._verify_game_transition(game.id))
+                
+            else:
+                # Inform client about their position in the queue
+                position = next((i+1 for i, p in enumerate(waiting_players) if p['user'].id == self.user.id), 0)
+                await self.send(text_data=json.dumps({
+                    'type': 'status',
+                    'status': 'waiting',
+                    'position': position
+                }))
+        except Exception as e:
+            logger.error(f"Error in matchmaking: {str(e)}") # Log the error
+            # Recover the players to the queue in case of error
+            if 'player1' in locals() and 'player2' in locals():
+                # Verify that the players are not already in the queue
+                if not any(p['user'].id == player1['user'].id for p in waiting_players):
+                    waiting_players.append(player1)	# Add player1 back to the queue if not already there
+                if not any(p['user'].id == player2['user'].id for p in waiting_players):
+                    waiting_players.append(player2)
+    
+    async def _verify_game_transition(self, game_id):
+        """Verify that the game has transitioned to PLAYING status, if not, force the transition"""
+        await asyncio.sleep(10)  # wait 10 seconds
+        
+        # Verify that the game has transitioned to PLAYING status
+        game = await DatabaseOperations.get_game(game_id)
+        if not game:
+            logger.error(f"Game {game_id} not found during transition verification")
+            return
+            
+        if game.status == "MATCHED":
+            logger.warning(f"Game {game_id} still in MATCHED status after 10 seconds")
+            
+            # If the game is still in MATCHED status, force the transition to PLAYING
+            if str(game_id) in game_states:
+                game_state = game_states[str(game_id)]
+                if game_state.status == "waiting" or game_state.status == "countdown":
+                    logger.warning(f"Game state for {game_id} seems stuck in {game_state.status}")
+                    # Force the countdown to start if it hasn't already
+                    if hasattr(game_state, "countdown_started") and not game_state.countdown_started:
+                        game_state.countdown_started = True
+                        logger.info(f"Forced countdown start for game {game_id}")
     
     async def is_player_connected(self, player_id):
         """Check if a player is still connected to the matchmaking system"""

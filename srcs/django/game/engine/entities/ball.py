@@ -5,6 +5,7 @@ import time
 
 class Ball:
     def __init__(self, x, y, radius=10, base_speed=7):  
+        """Set initial ball values"""
         self.x = x
         self.y = y
         self.radius = radius
@@ -26,11 +27,12 @@ class Ball:
         self.y += self.speed_y
 
         # To ensure constant speed when ball goes in other angles
-        total_speed = math.sqrt(self.speed_x**2 + self.speed_y**2)
-        if abs(total_speed - self.base_speed) > 0.1:
-            scale = self.base_speed / total_speed
-            self.speed_x *= scale
-            self.speed_y *= scale
+        # Total speed represents the magnitude of the ball's velocity
+        total_speed = math.sqrt(self.speed_x**2 + self.speed_y**2) # Total speed = square root of x^2 + y^2 
+        if abs(total_speed - self.base_speed) > 0.1: # If total speed is not equal to base speed
+            scale = self.base_speed / total_speed	# Scale = base speed / total speed
+            self.speed_x *= scale	# Multiply x speed by scale
+            self.speed_y *= scale	# Multiply y speed by scale
 
         # To verify if ball is out of bounds of the canvas
         if self.y + self.radius > canvas_height:
@@ -77,13 +79,3 @@ class Ball:
             "speed_y": self.speed_y,
             "last_update": self.last_update_time
         }
-
-    def calculate_predicted_position(self, time_offset_ms=100):
-        # Convert to seconds
-        time_offset = time_offset_ms / 1000
-        
-        # Calculate predicted position based on current speed
-        predicted_x = self.x + (self.speed_x * time_offset)
-        predicted_y = self.y + (self.speed_y * time_offset)
-        
-        return (predicted_x, predicted_y)

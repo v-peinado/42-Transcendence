@@ -1,5 +1,8 @@
 from ..utils.database_operations import DatabaseOperations
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GameStateHandler:
     """Game state updates handler"""
@@ -76,45 +79,59 @@ class GameStateHandler:
     @staticmethod
     async def countdown_timer(consumer):  # Countdown timer
         """Handle game countdown"""
-        consumer.game_state.status = "countdown"
-        consumer.game_state.countdown_active = True
-        
-        # Start countdown
-        for countdown_value in [3, 2, 1, "GO!"]:
-            consumer.game_state.countdown = countdown_value
+        try:
+            # Check if game is already playing
+            if consumer.game_state.status == "playing":
+                return
+                
+            consumer.game_state.status = "countdown"
+            consumer.game_state.countdown_active = True
             
-            # Serialize game state and add sound indicator
-            state = consumer.game_state.serialize()
-            state["play_sound"] = True  # Add sound indicator
+            # Start countdown
+            for countdown_value in [3, 2, 1, "GO!"]:
+                # Validate if game is finished before countdown ends
+                if consumer.game_state.status == "finished":
+                    return
+                    
+                consumer.game_state.countdown = countdown_value
+                
+                # Serialize game state and add sound indicator
+                state = consumer.game_state.serialize()
+                state["play_sound"] = True  # Add sound indicator
+                
+                await consumer.channel_layer.group_send(
+                    consumer.room_group_name,
+                    {"type": "game_state_update", "state": state}
+                )
+                
+                # Wait 1 second before next countdown value
+                await asyncio.sleep(1)
             
-            await consumer.channel_layer.group_send(
-                consumer.room_group_name,
-                {"type": "game_state_update", "state": state}
-            )
-            
-            # Wait 1 second before next countdown value
-            await asyncio.sleep(1)
-        
-        # Countdown finished, start game
-        consumer.game_state.countdown_active = False
-        consumer.game_state.countdown = None
-        consumer.game_state.status = "playing"
+            # Countdown finished, start game if not already started
+            if consumer.game_state.status != "playing":
+                consumer.game_state.countdown_active = False
+                consumer.game_state.countdown = None
+                consumer.game_state.status = "playing"
 
-         # Set ball position at game start with correct speed
-        consumer.game_state.ball.reset(
-            consumer.game_state.CANVAS_WIDTH / 2, # in the middle of the canvas
-            consumer.game_state.CANVAS_HEIGHT / 2,
-            base_speed=consumer.game_state.BALL_SPEED #base speed
-        )
-        
-        await consumer.channel_layer.group_send(
-            consumer.room_group_name,
-            {
-                "type": "game_state_update", 
-                "state": consumer.game_state.serialize(),
-                "game_started": True
-            }
-        )
+                # Set ball position at game start with correct speed
+                consumer.game_state.ball.reset(
+                    consumer.game_state.CANVAS_WIDTH / 2, # in the middle of the canvas
+                    consumer.game_state.CANVAS_HEIGHT / 2,
+                    base_speed=consumer.game_state.BALL_SPEED #base speed
+                )
+                
+                await consumer.channel_layer.group_send(
+                    consumer.room_group_name,
+                    {
+                        "type": "game_state_update", 
+                        "state": consumer.game_state.serialize(),
+                        "game_started": True
+                    }
+                )
 
-        # Start game loop in background when game starts
-        asyncio.create_task(GameStateHandler.game_loop(consumer))
+                # Start game loop in background when game starts
+                asyncio.create_task(GameStateHandler.game_loop(consumer))
+        except Exception as e:
+            import traceback
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in countdown_timer: {str(e)}\n{traceback.format_exc()}")
