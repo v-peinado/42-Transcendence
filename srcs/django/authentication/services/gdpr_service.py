@@ -79,8 +79,7 @@ class GDPRService:
     def delete_user_data(user):
         """Soft deletes user's account by anonymizing their data"""
         try:
-            # Now we just call anonymize_user
-            GDPRService.anonymize_user(user)
+            GDPRService.anonymize_user(user) # anonymize user data
             return True
         except Exception as e:
             raise ValidationError(f"Error deleting user: {str(e)}")
@@ -90,10 +89,11 @@ class GDPRService:
         """
         Delegates to CleanupService.cleanup_inactive_users
         
-        This method is kept for backward compatibility.
-        New code should use CleanupService directly.
+        This method is maintained for backward compatibility only.
+        All new code should use CleanupService.cleanup_inactive_users() directly.
         """
         from authentication.services.cleanup_service import CleanupService
+        logger.info("GDPRService.cleanup_inactive_users called - Delegating to CleanupService")
         return CleanupService.cleanup_inactive_users(email_connection)
 
     @staticmethod

@@ -1,6 +1,5 @@
 from celery import shared_task
-from django.conf import settings
-from .services.gdpr_service import GDPRService
+from authentication.services.cleanup_service import CleanupService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,8 +12,8 @@ def cleanup_inactive_users():
     """
     try:
         logger.info("🔄 ====== STARTING CLEANUP TASK ======")
-        result = GDPRService.cleanup_inactive_users()
-        logger.info(f"✅ Task completed - Users deleted: {result}")
+        result = CleanupService.cleanup_inactive_users()
+        logger.info(f"✅ Task completed - Processing complete")
         logger.info("======= END OF CLEANUP TASK =======\n")
     except Exception as e:
         logger.error(f"❌ Task failed: {str(e)}")

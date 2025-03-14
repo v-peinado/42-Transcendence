@@ -46,13 +46,12 @@ fcleandb: down_volumes clean
 re: fclean all
 
 # Muestra todos los usuarios de la base de datos 
-# (docker exec -e srcs-db-1 psql -U srcs -d srcs -c "SELECT * FROM authentication_customuser;")
 view-users:
 	@echo "$(COLOR_GREEN)Consultando usuarios en la base de datos...$(COLOR_RESET)"
-	@if [ "$$(docker ps -q -f name=srcs-db)" ]; then \
-		if docker exec srcs-db-1 pg_isready >/dev/null 2>&1; then \
+	@if [ "$$(docker ps -q -f name=db)" ]; then \
+		if docker exec $$(docker ps -q -f name=db) pg_isready >/dev/null 2>&1; then \
 			echo "\n$(COLOR_GREEN)Lista de usuarios:$(COLOR_RESET)"; \
-			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" srcs-db-1 psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
+			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" $$(docker ps -q -f name=db) psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
 				-c "SELECT u.id, u.username, \
 						CASE \
 							WHEN u.username LIKE 'deleted_user_%' THEN 'anonymized@deleted.local' \
@@ -66,16 +65,20 @@ view-users:
 				( \
 					echo "$(COLOR_RED)Error: No se pudo consultar la base de datos$(COLOR_RESET)" \
 				); \
-		fi; \
+		else \
+			echo "$(COLOR_RED)Error: La base de datos no está lista$(COLOR_RESET)"; \
+		fi \
+	else \
+		echo "$(COLOR_RED)Error: Base de datos no encontrada. Ejecuta 'make up' primero.$(COLOR_RESET)"; \
 	fi
 
 # Muestra la estructura de la tabla CustomUser
 view-table:
 	@echo "$(COLOR_GREEN)Consultando estructura de la tabla authentication_customuser...$(COLOR_RESET)"
-	@if [ "$$(docker ps -q -f name=srcs-db)" ]; then \
-		if docker exec srcs-db-1 pg_isready >/dev/null 2>&1; then \
+	@if [ "$$(docker ps -q -f name=db)" ]; then \
+		if docker exec $$(docker ps -q -f name=db) pg_isready >/dev/null 2>&1; then \
 			echo "\n$(COLOR_GREEN)Estructura de la tabla:$(COLOR_RESET)"; \
-			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" srcs-db-1 psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
+			docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" $$(docker ps -q -f name=db) psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
 				-c "\d+ authentication_customuser;" || \
 			( \
 				echo "$(COLOR_RED)Error: No se pudo consultar la base de datos$(COLOR_RESET)" \

@@ -42,7 +42,7 @@ from django.utils import timezone
 from django.core import mail
 from django.conf import settings
 from authentication.models import CustomUser
-from authentication.services.gdpr_service import GDPRService
+from authentication.services.cleanup_service import CleanupService
 from datetime import timedelta
 import time
 import logging
@@ -133,7 +133,7 @@ class Command(BaseCommand):
         
         # 3. Fase 1: Probar notificación
         self.stdout.write("\n=== Phase 1: Testing Notification ===")
-        GDPRService.cleanup_inactive_users()
+        CleanupService.cleanup_inactive_users()
         
         # 4. Fase 2: Probar eliminación
         self.stdout.write("\n=== Phase 2: Testing Deletion ===")
@@ -155,7 +155,7 @@ class Command(BaseCommand):
             test_user.save()
         
         self.stdout.write("Executing final cleanup...")
-        GDPRService.cleanup_inactive_users()
+        CleanupService.cleanup_inactive_users()
         
         # Verificar eliminación
         try:

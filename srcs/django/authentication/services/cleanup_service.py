@@ -36,9 +36,9 @@ class CleanupService:
             email_connection: Optional email connection for batch sending
         """
         try:
-            current_time = timezone.now()
-            deleted_count = 0
-            notification_count = 0
+            current_time = timezone.now() # Get current time
+            deleted_count = 0	# Initialize deleted count
+            notification_count = 0	# Initialize notification count
             
             # 1. Clean unverified users
             cls._cleanup_unverified_users(current_time)
@@ -90,7 +90,7 @@ class CleanupService:
             )
             try:
                 GDPRService.delete_user_data(user)
-                deleted_count += 1
+                deleted_count += 1	# Increment deleted count
             except Exception as e:
                 logger.error(f"Error deleting unverified user {user.username}: {str(e)}")
         
@@ -119,7 +119,7 @@ class CleanupService:
             active_user_ids = set(session.user_id for session in active_sessions)
             
             # Log only when debugging or if there are active sessions to report
-            if settings.DEBUG or active_user_ids:
+            if active_user_ids:	# If there are active sessions
                 logger.info(f"Found {len(active_user_ids)} active user sessions to exclude from cleanup")
                 
             return active_user_ids
@@ -183,7 +183,7 @@ class CleanupService:
                 time_unit = 'seconds'
             else:
                 # In production, show days
-                remaining_time = seconds_remaining / 86400
+                remaining_time = seconds_remaining / 86400	# Convert to days
                 time_unit = 'days'
             
             logger.info(f"Sending inactivity warning to {user.username}. Time remaining: {remaining_time} {time_unit}")
