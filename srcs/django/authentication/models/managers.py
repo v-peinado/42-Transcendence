@@ -6,7 +6,6 @@ Using GDPR guidelines, this allows for better data management and auditing.
 """
 
 from django.contrib.auth.models import UserManager
-from django.db import models
 
 class CustomUserManager(UserManager):
     def get_queryset(self):

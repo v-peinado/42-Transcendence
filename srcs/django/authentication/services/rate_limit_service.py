@@ -2,19 +2,18 @@
 Rate Limiting System with Redis
 ------------------------------
 
-This system implements a rate limiting mechanism using Redis as a temporary storage solution.
-Here's how it works:
+System that implements a rate limiting mechanism using Redis as a temporary storage solution.
 
-1. Redis Connection:
+Redis Connection:
    - Connects to a Redis container running on host 'redis' at port 6379
    - Used for storing temporary counters and block states
 
-2. Configuration Parameters:
+Configuration Parameters:
    - MAX_ATTEMPTS (5): Maximum number of tries within the time window
    - WINDOW_TIME (300): Time window of 5 minutes to track attempts
    - BLOCK_TIME (900): Block duration of 15 minutes after exceeding limits
 
-3. How Rate Limiting Works:
+How Rate Limiting Works:
    - Each user/IP is tracked using a unique key combining the action and identifier
    - When a user performs an action:
      a) First checks if they're currently blocked
@@ -22,22 +21,14 @@ Here's how it works:
      c) If attempts exceed MAX_ATTEMPTS, user gets blocked for BLOCK_TIME
      d) After WINDOW_TIME, attempt counters automatically expire
 
-4. Key Features:
+Key Features:
    - Distributed rate limiting across multiple application instances
    - Automatic cleanup of expired entries (Redis TTL)
    - Separate tracking for different actions
    - Block/unblock functionality
    - Logging of all rate limit events
 
-5. Usage Example:
-   rate_limiter = RateLimitService()
-   is_limited, time_remaining = rate_limiter.is_rate_limited("user123", "login")
-   if is_limited:
-       # Block access and show remaining time
-   else:
-       # Allow access
-
-This implementation helps protect against brute force attacks and ensures
+This helps protect against brute force attacks and ensures
 fair usage of the application's resources.
 """
 

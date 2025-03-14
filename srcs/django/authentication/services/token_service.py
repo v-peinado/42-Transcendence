@@ -1,18 +1,16 @@
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes
-from django.conf import settings
-from datetime import datetime, timedelta
-import jwt
-import logging
 from django.core.exceptions import ValidationError
-from authentication.models import CustomUser
 from .rate_limit_service import RateLimitService
+from django.utils.encoding import force_bytes
+from authentication.models import CustomUser
+from datetime import datetime, timedelta
+from django.conf import settings
+import logging
+import jwt
 
 logger = logging.getLogger(__name__)
 
 """
-Token Service Module
--------------------
 This service manages all token-related operations including:
 - Token generation for different purposes (auth, email verification, password reset)
 - Token verification and validation
@@ -30,6 +28,7 @@ class TokenService:
 
     @property
     def rate_limiter(self):
+        """Property to access RateLimitService instance"""
         if self._rate_limiter is None:
             self._rate_limiter = RateLimitService()
         return self._rate_limiter
@@ -71,7 +70,7 @@ class TokenService:
     def generate_auth_token(user):
         """
         Generates a JWT token for authentication
-        The payload is a dictionary containing:
+        There is a dictionary containing:
         - user_id: User identifier
         - exp: Token expiration timestamp
         - iat: Token issue timestamp

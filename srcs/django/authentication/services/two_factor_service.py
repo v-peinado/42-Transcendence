@@ -1,13 +1,13 @@
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.conf import settings
-from django.utils.html import strip_tags
-from django.utils import timezone
-from ..models import CustomUser
-import jwt
 from datetime import datetime, timedelta
+from django.utils.html import strip_tags
+from django.core.mail import send_mail
+from django.utils import timezone
+from django.conf import settings
+from ..models import CustomUser
 import secrets
 import random
+import jwt
 
 
 class TwoFactorService:

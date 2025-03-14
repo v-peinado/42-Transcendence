@@ -41,6 +41,7 @@ class PasswordService:
 
     @staticmethod
     def _validate_password_history(user, password):
+        """Check if password has been used before"""
         if user.pk:
             previous_passwords = PreviousPassword.objects.filter(user=user).order_by(
                 "-created_at"
@@ -53,12 +54,14 @@ class PasswordService:
 
     @staticmethod
     def _validate_password_basic(user, password1, password2):
+        """Validate password complexity and history"""
         PasswordService._validate_password_match(password1, password2)
         PasswordService._validate_password_complexity(password1, user)
         PasswordService._validate_password_history(user, password1)
 
     @staticmethod
     def validate_password_change(user, current_password, new_password1, new_password2):
+        """Validate password change request"""
         if not user.check_password(current_password):
             raise ValidationError("La contraseña actual es incorrecta")
         PasswordService._validate_password_basic(user, new_password1, new_password2)

@@ -1,21 +1,21 @@
-from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
+from django.core.exceptions import ValidationError
+from .rate_limit_service import RateLimitService
 from django.core.files.base import ContentFile
-from django.conf import settings
-from ..models import CustomUser
-from .token_service import TokenService
-from .mail_service import MailSendingService
 from .password_service import PasswordService
+from authentication.models import UserSession
+from .mail_service import MailSendingService
+from .token_service import TokenService
 from ..models import PreviousPassword
 from .gdpr_service import GDPRService
-from .rate_limit_service import RateLimitService
-import re
-import base64
-import logging
-import os
+from django.conf import settings
+from ..models import CustomUser
 from pathlib import Path
+import logging
+import base64
 import time
-from authentication.models import UserSession
+import re
+import os
 
 logger = logging.getLogger(__name__)
 

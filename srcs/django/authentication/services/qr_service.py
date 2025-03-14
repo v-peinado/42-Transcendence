@@ -15,14 +15,16 @@ class QRService:
         self._token_service = None
         self._rate_limiter = None
 
-    @property
+    @property # This is a decorator that allows you to access the method as an attribute
     def token_service(self):
+        """Property to access TokenService instance"""
         if self._token_service is None:
             self._token_service = TokenService()
         return self._token_service
 
     @property
     def rate_limiter(self):
+        """Property to access RateLimitService instance"""
         if self._rate_limiter is None:
             self._rate_limiter = RateLimitService()
         return self._rate_limiter
@@ -30,7 +32,7 @@ class QRService:
     def _generate_username_hash(self, username, timestamp):
         """Generates a unique temporary hash for the username"""
         data = f"{username}:{timestamp}"
-        return hashlib.sha256(data.encode()).hexdigest()[:16]
+        return hashlib.sha256(data.encode()).hexdigest()[:16]	# 16 characters
 
     def generate_qr(self, username):
         """Generate QR code for username with 8h validity and max 3 uses"""
@@ -49,7 +51,7 @@ class QRService:
             key = f"qr_auth:{username_hash}"
             uses_key = f"qr_uses:{username_hash}"
             
-            # Pipeline for atomic operations
+            # We use pipeline for atomicity and performance
             pipe = self.rate_limiter.redis_client.pipeline()
             pipe.setex(key, 28800, username)  # 8 hours validity
             pipe.setex(uses_key, 28800, 0)    # Counter starts at 0
@@ -66,6 +68,7 @@ class QRService:
             qr.add_data(username_hash)
             qr.make(fit=True)
 
+			# Generate image
             img = qr.make_image(fill="black", back_color="white")
             buffer = io.BytesIO()
             img.save(buffer, format="PNG")

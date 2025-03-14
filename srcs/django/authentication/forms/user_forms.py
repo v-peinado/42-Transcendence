@@ -1,8 +1,8 @@
-from django import forms
-from django.utils.html import escape
-from django.core.exceptions import ValidationError
-from ..models import CustomUser
 from ..services.password_service import PasswordService
+from django.core.exceptions import ValidationError
+from django.utils.html import escape
+from ..models import CustomUser
+from django import forms
 
 
 class UserForm(forms.ModelForm):

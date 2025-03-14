@@ -1,4 +1,4 @@
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -236,23 +236,9 @@ class MailSendingService:
 
     @staticmethod
     def send_inactivity_warning(user, remaining_days=0, time_unit='days', connection=None):
-        """
-        Sends an inactivity warning email to the user.
-        
-        This email notifies users that their account will be deleted due to
-        inactivity if they don't log in within the specified time period.
-        
-        Args:
-            user: User to send the message to
-            remaining_days: Days remaining before deletion
-            time_unit: Time unit (days, seconds, etc.)
-            connection: Optional SMTP connection
-            
-        Returns:
-            bool: True if email was sent successfully, False otherwise
-        """
+        """ Notifies users that their account will be deleted in the specified time period."""
         try:
-            if not user.email:
+            if not user.email:	# Check if user has an email address
                 logger.warning(f"No email address for user {user.username}")
                 return False
 
@@ -264,12 +250,9 @@ class MailSendingService:
                 "login_url": f"{settings.FRONTEND_URL}/login"
             }
             
-            # Use the template for HTML and plain text versions
+            # Render email template
             html_message = render_to_string('authentication/inactivity_warning_email.html', context)
             plain_message = strip_tags(html_message)
-
-            # Send the email
-            from django.core.mail import EmailMultiAlternatives
             
             email = EmailMultiAlternatives(
                 subject=subject,
