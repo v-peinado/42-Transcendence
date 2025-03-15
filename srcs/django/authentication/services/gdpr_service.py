@@ -1,10 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
 import logging
-import hashlib
-from authentication.models import CustomUser
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,72 +70,30 @@ class GDPRService:
             return True
         except Exception as e:
             logger.error(f"Error in anonymize_user: {str(e)}")
+            # Raise the error to inform the caller (upper layer of the system)
             raise ValidationError(f"Error anonymizing user: {str(e)}")
 
     @staticmethod
     def delete_user_data(user):
-        """Soft deletes user's account by anonymizing their data"""
+        """Soft deletes user's account only by anonymizing their data and deactivating the account, (auditoring GDPR purposes)"""
         try:
             GDPRService.anonymize_user(user) # anonymize user data
             return True
-        except Exception as e:
-            raise ValidationError(f"Error deleting user: {str(e)}")
+        except Exception as e: # Catch all exceptions of the anonymize_user method
+            logger.error(f"Error in delete_user_data: {str(e)}")
+            
+			# If the exception is already a ValidationError, (raised by the anonymize_user method)
+            if isinstance(e, ValidationError):
+                raise	# Raise the exception to inform the caller (upper layer of the system)
+            # If the exception is not a ValidationError, the error is from the delete_user_data method
+            else:
+                raise ValidationError(f"Error deleting user: {str(e)}")
+    	# *This is developed by me, only to understand how raise works in Python and Django
 
-    @classmethod
-    def cleanup_inactive_users(cls, email_connection=None):
-        """
-        Delegates to CleanupService.cleanup_inactive_users
-        
-        This method is maintained for backward compatibility only.
-        All new code should use CleanupService.cleanup_inactive_users() directly.
-        """
-        from authentication.services.cleanup_service import CleanupService
-        logger.info("GDPRService.cleanup_inactive_users called - Delegating to CleanupService")
-        return CleanupService.cleanup_inactive_users(email_connection)
 
-    @staticmethod
-    def cleanup_unverified_users(max_verification_age=None):
-        """
-        Delete unverified users that haven't completed email verification.
-        
-        Args:
-            max_verification_age (int): Maximum time in seconds to wait for email verification
-        """
-        if max_verification_age is None:
-            max_verification_age = getattr(settings, 'EMAIL_VERIFICATION_TIMEOUT', 86400)  # Default: 1 day
-        
-        current_time = timezone.now()
-        cutoff_date = current_time - timedelta(seconds=max_verification_age)
-        
-        # Find unverified users who have exceeded the maximum verification time
-        # and who are NOT already anonymized users (starting with "deleted_user_")
-        unverified_users = CustomUser.objects.filter(
-            email_verified=False,
-            is_active=False,
-            date_joined__lt=cutoff_date
-        ).exclude(
-            username__startswith='deleted_user_'
-        )
-        
-        deleted_count = 0
-        
-        # Process each unverified user
-        for user in unverified_users:
-            logger.info(
-                f"🔥 Deleting unverified user {user.username}:\n"
-                f"- Registration date: {user.date_joined}\n"
-                f"- Cutoff date: {cutoff_date}\n"
-                f"- Current time: {current_time}"
-            )
-            try:
-                # Use delete_user_data for consistency with the rest of the system
-                GDPRService.delete_user_data(user)
-                deleted_count += 1
-            except Exception as e:
-                logger.error(f"Error deleting unverified user {user.username}: {str(e)}")
-        
-        # Only log if there's something to report
-        if deleted_count > 0:
-            logger.info(f"🧹 Deleted {deleted_count} unverified users past verification time")
-        
-        return deleted_count
+# Important disclaimer! 
+# 
+# This is only a few parts of the GDPR methods,
+# there is more in other parts of the project, because of the complexity of the GDPR rules.
+# For example: cleanup_service.py and tasks.py 
+# 

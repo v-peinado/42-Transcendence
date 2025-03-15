@@ -1,25 +1,24 @@
 from django.core.mail import send_mail, EmailMultiAlternatives
-from django.core.exceptions import ValidationError
-from django.template.loader import render_to_string
-from django.conf import settings
-from django.utils.html import strip_tags
-from authentication.models import CustomUser
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
-import jwt
+from django.template.loader import render_to_string
+from django.core.exceptions import ValidationError
+from authentication.models import CustomUser
+from django.utils.html import strip_tags
+from django.conf import settings
 import logging
+import jwt
 
 logger = logging.getLogger(__name__)
-
 
 class EmailVerificationService:
     @staticmethod
     def verify_email(uidb64, token):
         """Verifies user's email to activate account"""
         try:
-            uid = urlsafe_base64_decode(uidb64).decode()
-            user = CustomUser.objects.get(pk=uid)
-            payload = TokenService.decode_jwt_token(token)
+            uid = urlsafe_base64_decode(uidb64).decode() # Decode user ID from base64 
+            user = CustomUser.objects.get(pk=uid) # Get user by ID from database
+            payload = TokenService.decode_jwt_token(token)	# Decode JWT token to get user ID
 
             if user and payload and payload["user_id"] == user.id:
                 user.email_verified = True
@@ -32,12 +31,12 @@ class EmailVerificationService:
             else:
                 raise ValidationError("Token de verificación inválido")
 
-        except (
-            TypeError,
-            ValueError,
-            OverflowError,
-            CustomUser.DoesNotExist,
-            jwt.InvalidTokenError,
+        except (	
+            TypeError,	# if uidb64 is not a valid base64 string
+            ValueError,	# if value is not a valid base64 string
+            OverflowError,	# if value is too large
+            CustomUser.DoesNotExist, # if user does not exist
+            jwt.InvalidTokenError,	# if token is invalid
         ):
             raise ValidationError("El enlace de verificación no es válido")
         except Exception as e:
@@ -52,13 +51,14 @@ class EmailVerificationService:
             payload = TokenService.decode_jwt_token(token)
 
             if not (
-                user
-                and payload
-                and payload["user_id"] == user.id
-                and token == user.pending_email_token
+                user # Check if user exists
+                and payload # Check if payload exists
+                and payload["user_id"] == user.id # Check if user ID matches the payload
+                and token == user.pending_email_token # Check if token matches the pending email token
             ):
                 raise ValueError("Token inválido")
 
+			# Update user email (swapping old email with new email)
             old_email = user.email
             user.email = user.pending_email
             user.pending_email = None
@@ -71,6 +71,10 @@ class EmailVerificationService:
         except Exception as e:
             raise ValueError(f"Error sending email change: {str(e)}")
 
+
+############################################################################################################
+# "Sender" methods
+############################################################################################################
 
 class MailSendingService:
     @staticmethod
@@ -238,7 +242,8 @@ class MailSendingService:
     def send_inactivity_warning(user, remaining_days=0, time_unit='days', connection=None):
         """ Notifies users that their account will be deleted in the specified time period."""
         try:
-            if not user.email:	# Check if user has an email address
+            if not user.email: 
+                # In the other "senders", this comprobation is done before calling the method
                 logger.warning(f"No email address for user {user.username}")
                 return False
 
