@@ -32,11 +32,9 @@ class RateLimitService:
         # Authentication rate limits
         self.LIMITS = { 
             'login': {'max_attempts': 5, 'window': 300, 'block': 900},        # 5 attempts / 5 min, block 15 min
-            'manual_login': {'max_attempts': 3, 'window': 300, 'block': 900}, # 3 attempts / 5 min, block 15 min
             'password_reset': {'max_attempts': 3, 'window': 600, 'block': 1800},  # 3 attempts / 10 min, block 30 min
             'email_verification': {'max_attempts': 3, 'window': 1800, 'block': 3600},  # 3 attempts / 30 min, block 1h
             'two_factor': {'max_attempts': 3, 'window': 300, 'block': 900},  # 3 attempts / 5 min, block 15 min
-            'token_refresh': {'max_attempts': 10, 'window': 600, 'block': 300},  # 10 attempts / 10 min, block 5 min
         }
         
         # Profile management rate limits
@@ -57,7 +55,6 @@ class RateLimitService:
             'password_reset': 30,   # Password reset token (30 min)
             'email_verify': 1440,   # Email verification token (24h)
             'two_factor': 5,        # 2FA code (5 min)
-            'refresh': 10080        # Refresh token (7 days)
         }
 
     def get_limit_config(self, action: str) -> dict:
