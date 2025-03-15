@@ -63,7 +63,7 @@ class ProfileService:
             "verification_url": f"{settings.SITE_URL}/verify-email-change/{token_data['uid']}/{token_data['token']}/"}
 
         MailSendingService.send_email_change_verification(user, verification_data)
-        rate_limiter.reset_limit(user.id, 'email_change')
+        rate_limiter.reset_limit(user.id, 'email_change') # reset rate limit on successfull email change
         return "Te hemos enviado un email para confirmar el cambio"
 
     @staticmethod
@@ -172,7 +172,7 @@ class ProfileService:
                     raise ValidationError(f"Error al guardar la imagen: {str(e)}")
 
             user.save()
-            rate_limiter.reset_limit(user.id, 'profile_update')
+            rate_limiter.reset_limit(user.id, 'profile_update') # reset rate limit on successful profile update
             
             # Build profile image URL
             profile_image_url = None

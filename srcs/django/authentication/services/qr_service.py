@@ -77,7 +77,7 @@ class QRService:
             logger.error(f"Error generating QR: {str(e)}", exc_info=True)
             raise
         
-############################################################################################################
+## Deprecated method (not used anymore) ################
     def validate_qr_data(self, qr_data):
         """Validates QR data and authenticates user"""
         # Disclaimer:
@@ -101,7 +101,7 @@ class QRService:
         except Exception as e:
             logger.error(f"QR validation error: {str(e)}", exc_info=True)
             return False, f"Error al validar QR: {str(e)}", None
-############################################################################################################
+############################################################
 
     def pre_validate_qr(self, qr_data):
         """First phase: validate format and get username"""
@@ -192,19 +192,19 @@ class QRService:
 
     def _cleanup_qr_keys(self, auth_key, uses_key):
         """Helper method to clean up QR keys in redis"""
-        pipe = self.rate_limiter.redis_client.pipeline()
-        pipe.delete(auth_key)
-        pipe.delete(uses_key)
-        pipe.execute()
+        pipe = self.rate_limiter.redis_client.pipeline() # Use pipeline for atomicity and performance
+        pipe.delete(auth_key)	# Delete both keys
+        pipe.delete(uses_key)	
+        pipe.execute()	# Execute both commands atomically
         logger.info(f"QR keys cleaned up: {auth_key}, {uses_key}")
 
     def _validate_hash_format(self, qr_data):
         """Validates QR hash format"""
         try:
-            if isinstance(qr_data, str):
-                hash_code = qr_data.strip()
-            elif isinstance(qr_data, dict):
-                hash_code = qr_data.get('username', '').strip()
+            if isinstance(qr_data, str):	# Check if QR data is a string
+                hash_code = qr_data.strip()	# Remove leading/trailing whitespaces
+            elif isinstance(qr_data, dict):	# Check if QR data is a dictionary (key and value)
+                hash_code = qr_data.get('username', '').strip()	# Get username key
             else:
                 logger.error(f"Invalid QR data format: {type(qr_data)}")
                 return None
@@ -213,8 +213,8 @@ class QRService:
                 logger.error(f"Invalid hash format: {hash_code}")
                 return None
             
-            self._current_hash = hash_code
-            return hash_code
+            self._current_hash = hash_code # Store hash for later use (authenticate_qr)
+            return hash_code # Return hash
         except Exception as e:
             logger.error(f"Hash validation error: {str(e)}")
             return None

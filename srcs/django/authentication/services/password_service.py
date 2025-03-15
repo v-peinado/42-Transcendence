@@ -5,9 +5,12 @@ from ..models import PreviousPassword, CustomUser
 from .mail_service import MailSendingService
 from authentication.models import CustomUser
 from .token_service import TokenService
+from .rate_limit_service import RateLimitService
 from django.utils.html import escape
+import logging
 import re
 
+logger = logging.getLogger(__name__)
 
 class PasswordService:
     @staticmethod
@@ -135,6 +138,8 @@ class PasswordService:
     @staticmethod
     def initiate_password_reset(email):
         """Iniciate password reset process"""
+        rate_limiter = RateLimitService()
+        
         if re.match(r".*@student\.42.*\.com$", email.lower()):
             raise ValidationError(
                 "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42")
@@ -148,10 +153,21 @@ class PasswordService:
         user = users.first()
         if user.is_fortytwo_user:
             raise ValidationError("Los usuarios de 42 no pueden usar esta función")
+            
+        # Verify rate limit for password_reset attempts
+        is_limited, remaining_time = rate_limiter.is_rate_limited(
+            email.lower(), 'password_reset')
+            
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for email {email} on password reset")
+            raise ValidationError(f"Demasiados intentos. Por favor, espera {remaining_time} segundos e inténtalo de nuevo.")
 
-        token_data = TokenService.generate_password_reset_token(user)
-        MailSendingService.send_password_reset_email(user, token_data)
-        return token_data
+        try:
+            token_data = TokenService.generate_password_reset_token(user)
+            MailSendingService.send_password_reset_email(user, token_data)
+            return token_data
+        except ValidationError as e:
+            raise e # Propagate validation errors to the view
 
     @staticmethod
     def confirm_password_reset(uidb64, token, new_password1, new_password2):

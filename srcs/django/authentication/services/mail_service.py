@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from authentication.models import CustomUser
 from django.utils.html import strip_tags
 from django.core.mail import send_mail
+from .rate_limit_service import RateLimitService
 from django.conf import settings
 import logging
 import jwt
@@ -72,15 +73,25 @@ class EmailVerificationService:
             raise ValueError(f"Error sending email change: {str(e)}")
 
 
-############################################################################################################
-# "Sender" methods
-############################################################################################################
+### Mail sending methods ###
 
 class MailSendingService:
+    @staticmethod
+    def _check_email_rate_limit(user_id):
+        """Helper method to check email sending rate limits"""
+        rate_limiter = RateLimitService()
+        is_limited, remaining_time = rate_limiter.is_rate_limited(user_id, 'email_send')
+        
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for user {user_id} on email sending")
+            raise ValidationError(f"Demasiados emails enviados. Por favor, espera {remaining_time} segundos.")
+    
     @staticmethod
     def send_verification_email(user, token):
         """Sends verification email"""
         try:
+            MailSendingService._check_email_rate_limit(user.id)
+            
             subject = "Verifica tu cuenta de PongOrama"
             context = {
                 "user": user,
@@ -102,7 +113,13 @@ class MailSendingService:
                 html_message=html_message,
                 fail_silently=False,
             )
+            # Reset rate limit after sending email successfully
+            rate_limiter = RateLimitService()
+            rate_limiter.reset_limit(user.id, 'email_send')
             return True
+        except ValidationError as e:
+            # Re-raise the validation exception (rate limit)
+            raise e
         except Exception as e:
             raise Exception(f"Error sending verification email: {str(e)}")
 
@@ -215,6 +232,8 @@ class MailSendingService:
     def send_password_reset_email(user, verification_data):
         """Send password reset email"""
         try:
+            MailSendingService._check_email_rate_limit(user.id)
+            
             subject = "Resetear contraseña de PongOrama"
             context = {
                 "user": user,
@@ -234,7 +253,14 @@ class MailSendingService:
                 html_message=html_message,
                 fail_silently=False,
             )
+            
+            # Reset rate limit after sending email successfully
+            rate_limiter = RateLimitService()
+            rate_limiter.reset_limit(user.id, 'email_send')
             return True
+        except ValidationError as e:
+            # Re-raise the validation exception (rate limit)
+            raise e
         except Exception as e:
             raise Exception(f"Error sending password reset email: {str(e)}")
 
