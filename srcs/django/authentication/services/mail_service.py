@@ -173,6 +173,9 @@ class MailSendingService:
     @staticmethod
     def send_email_change_verification(user, verification_data):
         """Send email change verification email"""
+        # The token expended in this method has a expiration time protection too
+        # but it´s implemented in ProfileService.handle_email_change method that calls this method
+        # see srcs/django/authentication/services/profile_service.py for more details
         try:
             subject = "Confirma tu nuevo email"
 
