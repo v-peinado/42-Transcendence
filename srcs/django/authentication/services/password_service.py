@@ -1,10 +1,10 @@
-from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ValidationError
 from ..models import PreviousPassword, CustomUser
-from .token_service import TokenService
 from .mail_service import MailSendingService
 from authentication.models import CustomUser
+from .token_service import TokenService
 from django.utils.html import escape
 import re
 
@@ -75,33 +75,11 @@ class PasswordService:
         email = escape(email)
 
         dangerous_patterns = [
-            "<script>",
-            "javascript:",
-            "onerror=",
-            "onload=",
-            "onclick=",
-            "data:",
-            "alert(",
-            "eval(",  # XSS
-            "SELECT",
-            "UNION",
-            "--",  # SQL Injection
-            "../",
-            "..\\",  # Path Traversal
-            "&",
-            "|",
-            ";",
-            "`",
-            "$",
-            "(",
-            ")",
-            "{",
-            "}",  # Command Injection
-            "\0",
-            "\n",
-            "\r",
-            "\t",
-            "\b",  # Control Characters
+            "<script>", "javascript:", "onerror=", "onload=", "onclick=", "data:", "alert(", "eval(",  # XSS
+            "SELECT", "UNION", "--",  # SQL Injection
+            "../", "..\\",  # Path Traversal
+            "&", "|", ";", "`", "$", "(", ")", "{", "}",  # Command Injection
+            "\0", "\n", "\r", "\t", "\b",  # Control Characters
         ]
         allowed_chars = ["-", ".", "_", "@", "+"]
 
@@ -159,12 +137,10 @@ class PasswordService:
         """Iniciate password reset process"""
         if re.match(r".*@student\.42.*\.com$", email.lower()):
             raise ValidationError(
-                "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42"
-            )
+                "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42")
 
         users = CustomUser.objects.filter(
-            email__iexact=email, is_active=True, is_fortytwo_user=False
-        )
+            email__iexact=email, is_active=True, is_fortytwo_user=False)
 
         if not users.exists():
             return False

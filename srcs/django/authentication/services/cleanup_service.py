@@ -174,6 +174,11 @@ class CleanupService:
     def _send_inactivity_warning(cls, user, current_time, email_connection=None):
         """Send inactivity warning to a specific user"""
         try:
+            # Verificar que el usuario tiene un email antes de intentar enviar
+            if not user.email:
+                logger.warning(f"No email address for user {user.username}")
+                return
+                
             # Calculate remaining time before deletion
             seconds_remaining = settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             

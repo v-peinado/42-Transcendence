@@ -1,10 +1,10 @@
-from django.core.mail import send_mail, EmailMultiAlternatives
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError
 from authentication.models import CustomUser
 from django.utils.html import strip_tags
+from django.core.mail import send_mail
 from django.conf import settings
 import logging
 import jwt
@@ -242,11 +242,6 @@ class MailSendingService:
     def send_inactivity_warning(user, remaining_days=0, time_unit='days', connection=None):
         """ Notifies users that their account will be deleted in the specified time period."""
         try:
-            if not user.email: 
-                # In the other "senders", this comprobation is done before calling the method
-                logger.warning(f"No email address for user {user.username}")
-                return False
-
             subject = "Your account will be deleted due to inactivity"
             context = {
                 "user": user,
@@ -255,24 +250,22 @@ class MailSendingService:
                 "login_url": f"{settings.FRONTEND_URL}/login"
             }
             
-            # Render email template
             html_message = render_to_string('authentication/inactivity_warning_email.html', context)
             plain_message = strip_tags(html_message)
             
-            email = EmailMultiAlternatives(
-                subject=subject,
-                body=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[user.decrypted_email],
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.decrypted_email],
+                html_message=html_message,
+                fail_silently=False,
                 connection=connection,
             )
-            
-            email.attach_alternative(html_message, "text/html")
-            email.send()
             
             logger.info(f"Inactivity email sent to {user.username}")
             return True
             
         except Exception as e:
             logger.error(f"Error sending inactivity email to {user.username}: {str(e)}")
-            return False
+            raise Exception(f"Error sending inactivity email: {str(e)}")
