@@ -1,10 +1,10 @@
-from django.views import View
-from django.http import JsonResponse
+from django.contrib.auth import update_session_auth_hash
+from ...services.profile_service import ProfileService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
-from django.contrib.auth import update_session_auth_hash
-from ...services.profile_service import ProfileService
+from django.http import JsonResponse
+from django.views import View
 import json
 
 

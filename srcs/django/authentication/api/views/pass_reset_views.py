@@ -1,9 +1,9 @@
-from django.views import View
-from django.http import JsonResponse
+from ...services.password_service import PasswordService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
-from ...services.password_service import PasswordService
+from django.http import JsonResponse
+from django.views import View
 import json
 
 
