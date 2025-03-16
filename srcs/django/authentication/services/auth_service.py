@@ -1,15 +1,15 @@
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from authentication.forms.auth_forms import RegistrationForm
 from django.core.exceptions import ValidationError
+from authentication.models import PreviousPassword
+from .rate_limit_service import RateLimitService
+from .two_factor_service import TwoFactorService
+from .password_service import PasswordService
 from authentication.models import CustomUser
 from .mail_service import MailSendingService
 from .token_service import TokenService
-from .password_service import PasswordService
-from .two_factor_service import TwoFactorService
-from authentication.forms.auth_forms import RegistrationForm
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.utils.html import escape
 from django.utils import timezone
-from authentication.models import PreviousPassword
-from .rate_limit_service import RateLimitService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -140,7 +140,7 @@ class AuthenticationService:
                 logger.info(f"User {request.user.username} logged out. Last login updated to prevent immediate inactivity warning.")
                 
             # Proceed with logout
-            auth_logout(request)  # Changed to auth_logout to avoid confusion
+            auth_logout(request) # Clear session (django.contrib.auth.logout method)
             return True
         except Exception as e:
             logger.error(f"Error in logout_user: {str(e)}")

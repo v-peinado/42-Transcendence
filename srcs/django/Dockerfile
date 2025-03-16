@@ -26,12 +26,8 @@ RUN chmod +x /app/django-entrypoint.py
 # Set proper permissions for app directory
 RUN chown -R celeryuser:celeryuser /app
 
-# Add supervisor configuration
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
 # Setup entry script
-COPY start.sh /app/
-RUN chmod +x /app/start.sh
+ENV USE_DAPHNE=True
 
 # Set default command
-CMD ["/app/start.sh"]
+CMD ["python", "django-entrypoint.py"]

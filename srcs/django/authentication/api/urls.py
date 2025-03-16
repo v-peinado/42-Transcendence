@@ -68,7 +68,10 @@ qr_patterns = [
 gdpr_patterns = [
     path("gdpr/settings/", GDPRSettingsAPIView.as_view(), name="api_gdpr_settings"),
     path(
-        "gdpr/export-data/", ExportPersonalDataAPIView.as_view(), name="api_export_data"
+        "gdpr/export-data/download/",
+        ExportPersonalDataAPIView.as_view(),
+        {"download": True},
+        name="api_export_data_download"
     ),
     path(
         "gdpr/privacy-policy/",

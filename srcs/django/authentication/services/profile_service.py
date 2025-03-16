@@ -1,21 +1,21 @@
-from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
+from django.core.exceptions import ValidationError
+from .rate_limit_service import RateLimitService
 from django.core.files.base import ContentFile
-from django.conf import settings
-from ..models import CustomUser
-from .token_service import TokenService
-from .mail_service import MailSendingService
 from .password_service import PasswordService
+from authentication.models import UserSession
+from .mail_service import MailSendingService
+from .token_service import TokenService
 from ..models import PreviousPassword
 from .gdpr_service import GDPRService
-from .rate_limit_service import RateLimitService
-import re
-import base64
-import logging
-import os
+from django.conf import settings
+from ..models import CustomUser
 from pathlib import Path
+import logging
+import base64
 import time
-from authentication.models import UserSession
+import re
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,7 @@ class ProfileService:
 
         if re.match(r".*@student\.42.*\.com$", new_email.lower()):
             raise ValidationError(
-                "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
-            )
+                "Los correos con dominio @student.42*.com están reservados para usuarios de 42")
 
         if CustomUser.objects.exclude(id=user.id).filter(email=new_email).exists():
             raise ValidationError("Este email ya está en uso")
@@ -57,22 +56,24 @@ class ProfileService:
         user.save()
 
         verification_data = {
-            "uid": token_data["uid"],
-            "token": token_data["token"],
+            "uid": token_data["uid"], # id user
+            "token": token_data["token"], # jwt_token (for email verification)
             "new_email": new_email,
-            "verification_url": f"{settings.SITE_URL}/verify-email-change/{token_data['uid']}/{token_data['token']}/",
-        }
+            # send verification URL to user's email (id + jwt_token)
+            "verification_url": f"{settings.SITE_URL}/verify-email-change/{token_data['uid']}/{token_data['token']}/"}
 
         MailSendingService.send_email_change_verification(user, verification_data)
-        rate_limiter.reset_limit(user.id, 'email_change')
+        rate_limiter.reset_limit(user.id, 'email_change') # reset rate limit on successfull email change
         return "Te hemos enviado un email para confirmar el cambio"
 
     @staticmethod
     def handle_password_change(user, current_password, new_password1, new_password2):
         """Handles password change"""
-        PasswordService.validate_password_change(
-            user, current_password, new_password1, new_password2
-        )
+        PasswordService.validate_password_change( # first check if the old password is correct
+            user, current_password, new_password1, new_password2 )
+        
+        # set_password hashes the password and saves it in the database 
+		# (see: https://docs.djangoproject.com/en/3.2/topics/auth/default/#changing-passwords)
         user.set_password(new_password1)
         user.save()
 
@@ -85,18 +86,19 @@ class ProfileService:
         rate_limiter = RateLimitService()
         is_limited, remaining_time = rate_limiter.is_rate_limited(user.id, 'profile_update')
         
-        if is_limited:
+        if is_limited: # if the user is rate limited, raise an error
             logger.warning(f"Rate limit exceeded for user {user.id} on profile update")
             raise ValidationError(f"Please wait {remaining_time} seconds before updating your profile again")
 
         try:
-            if not user.is_fortytwo_user and "email" in data:
+            if not user.is_fortytwo_user and "email" in data: 
+                # if the user is not a 42 user and the email is in the data
+                # (42 users cannot change their email)
                 email = data.get("email")
                 if email != user.email:
                     if re.match(r".*@student\.42.*\.com$", email.lower()):
                         raise ValidationError(
-                            "Los correos con dominio @student.42*.com están reservados para usuarios de 42"
-                        )
+                            "Los correos con dominio @student.42*.com están reservados para usuarios de 42")
 
                     if (
                         CustomUser.objects.exclude(id=user.id)
@@ -110,6 +112,8 @@ class ProfileService:
             profile_image = None
 
             if data.get("profile_image_base64"):
+                # We receive the image as base64 encoded string because it's sent from the frontend
+                # We need to decode it and save it as a file
                 try:
                     format, imgstr = data["profile_image_base64"].split(";base64,")
                     ext = format.split("/")[-1]
@@ -119,7 +123,7 @@ class ProfileService:
                 except Exception as e:
                     raise ValidationError(f"Error procesando imagen base64: {str(e)}")
 
-            elif files and "profile_image" in files:
+            elif files and "profile_image" in files: # if the profile_image is in the files (from the frontend)
                 profile_image = files["profile_image"]
 
             if profile_image:
@@ -168,7 +172,7 @@ class ProfileService:
                     raise ValidationError(f"Error al guardar la imagen: {str(e)}")
 
             user.save()
-            rate_limiter.reset_limit(user.id, 'profile_update')
+            rate_limiter.reset_limit(user.id, 'profile_update') # reset rate limit on successful profile update
             
             # Build profile image URL
             profile_image_url = None
@@ -204,11 +208,11 @@ class ProfileService:
 
     @staticmethod
     def get_user_profile_data(user):
-        """Gets user profile data"""
+        """Gets user profile data to display in the profile view"""
         if not user.is_authenticated:
             raise ValidationError("Usuario no autenticado")
 
-        profile_image_url = None
+        profile_image_url = None # default profile image URL
         if user.profile_image:
             profile_image_url = f"{settings.SITE_URL}{settings.MEDIA_URL}{user.profile_image}"
 
@@ -229,6 +233,11 @@ class ProfileService:
     @staticmethod
     def delete_user_account(user, password=None):
         """Manages account deletion"""
+        # Disclaimer!
+		# This method is not used in the current implementation of the project
+        # because we use GDPR deletion instead (softer deletion)
+		# This is used in the 8000 port development environment but was deprecated in production
+        # We keep it here for reference purposes and avoid errors when is called when the project is running
         try:
             if not user.is_fortytwo_user:
                 if not password or not user.check_password(password):

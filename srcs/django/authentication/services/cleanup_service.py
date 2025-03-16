@@ -1,47 +1,43 @@
-"""
-Cleanup Service for GDPR compliance and inactive user management.
-
-This service handles:
-- Detection and deletion of unverified accounts past verification timeout
-- Identification of inactive users requiring notification
-- Sending of inactivity warning emails
-- Deletion of users who haven't responded to inactivity warnings
-- Respecting active user sessions and recent activity
-"""
-
-from django.utils import timezone
-from django.conf import settings
-import logging
 from authentication.models import CustomUser, UserSession
 from .mail_service import MailSendingService
 from .gdpr_service import GDPRService
+from django.utils import timezone
+from django.conf import settings
+import logging
+
+
+# Cleanup Service for GDPR compliance and inactive user management.
+
+# This service handles:
+# - Detection and deletion of unverified accounts past verification timeout
+# - Identification of inactive users requiring notification
+# - Sending of inactivity warning emails
+# - Deletion of users who haven't responded to inactivity warnings
+# - Respecting active user sessions and recent activity
+
+
 
 logger = logging.getLogger(__name__)
 
 class CleanupService:
-    """Service for handling user cleanup based on inactivity and GDPR requirements"""
-    
     @classmethod
     def cleanup_inactive_users(cls, email_connection=None):
         """
         Main GDPR cleanup method that handles user inactivity management.
         
         This method:
-        1. Deletes unverified accounts past verification timeout
+        1. Deletes unverified accounts past verification timeout (EMAIL_VERIFICATION_TIMEOUT)
         2. Identifies users with recent activity and resets inactivity warnings
-        3. Sends warnings to inactive users approaching threshold
-        4. Deletes/anonymizes users who haven't responded to warnings
-        
-        Args:
-            email_connection: Optional email connection for batch sending
+        3. Sends warnings to inactive users approaching threshold (INACTIVITY_WARNING)
+        4. Deletes/anonymizes users who haven't responded to warnings after grace period (INACTIVITY_THRESHOLD)
         """
         try:
-            current_time = timezone.now()
-            deleted_count = 0
-            notification_count = 0
+            current_time = timezone.now() # Get current time
+            deleted_count = 0	# Initialize deleted count
+            notification_count = 0	# Initialize notification count
             
             # 1. Clean unverified users
-            cls._cleanup_unverified_users(current_time)
+            cls._cleanup_unverified_users(current_time) # cls is like "self" but for class methods
             
             # 2. Get users with active sessions
             active_sessions = cls._get_active_sessions(current_time)
@@ -90,7 +86,7 @@ class CleanupService:
             )
             try:
                 GDPRService.delete_user_data(user)
-                deleted_count += 1
+                deleted_count += 1	# Increment deleted count
             except Exception as e:
                 logger.error(f"Error deleting unverified user {user.username}: {str(e)}")
         
@@ -100,14 +96,9 @@ class CleanupService:
     
     @classmethod
     def _get_active_sessions(cls, current_time):
-        """
+        """ 
         Return a set of user IDs with active sessions.
-        
-        Args:
-            current_time (datetime): The current time to consider
-            
-        Returns:
-            set: Set of user IDs with active sessions
+        current_time (datetime): The current time to consider
         """
         try:
             # Query for active sessions
@@ -119,7 +110,7 @@ class CleanupService:
             active_user_ids = set(session.user_id for session in active_sessions)
             
             # Log only when debugging or if there are active sessions to report
-            if settings.DEBUG or active_user_ids:
+            if active_user_ids:	# If there are active sessions
                 logger.info(f"Found {len(active_user_ids)} active user sessions to exclude from cleanup")
                 
             return active_user_ids
@@ -130,38 +121,39 @@ class CleanupService:
     @classmethod
     def _reset_notifications_for_active_users(cls, active_sessions):
         """Reset inactivity notification flags for users with recent activity"""
-        for user_id in active_sessions:
+        for user_id in active_sessions: # Iterate over active sessions
             try:
-                user = CustomUser.objects.get(id=user_id, inactivity_notified=True)
-                user.inactivity_notified = False
-                user.inactivity_notification_date = None
-                user.save(update_fields=['inactivity_notified', 'inactivity_notification_date'])
-                logger.info(f"Reset inactivity notification for active user: {user.username}")
+                user = CustomUser.objects.get(id=user_id, inactivity_notified=True) # Get user
+                user.inactivity_notified = False # Reset notification flag
+                user.inactivity_notification_date = None # Reset notification date
+                user.save(update_fields=['inactivity_notified', 'inactivity_notification_date']) # Save changes
+                logger.info(f"Reset inactivity notification for active user: {user.username}") # Log
             except CustomUser.DoesNotExist:
                 continue
     
     @classmethod
     def _get_inactive_users_base_query(cls, active_sessions):
-        """Get base queryset for processing inactive users"""
+        """Get inactive users base query excluding active users to cleanup"""
         return CustomUser.objects.filter(
-            is_active=True,
-            email_verified=True
+            is_active=True,	# Only active users
+            email_verified=True	# Only verified users
         ).exclude(
-            id__in=active_sessions
+            id__in=active_sessions	# Exclude users with active sessions
         ).exclude(
-            is_superuser=True
+            is_superuser=True	# Exclude superusers from cleanup
         )
     
     @classmethod
     def _notify_inactive_users(cls, base_query, current_time, email_connection=None):
-        """Send notifications to users approaching inactivity threshold"""
-        users_to_notify = []
+        """put the users that need to be notified in a list"""
+        users_to_notify = []	# Initialize list of users to notify
         
-        for user in base_query.filter(inactivity_notified=False):
-            last_activity = user.get_last_activity()
+        for user in base_query.filter(inactivity_notified=False):	# Iterate over inactive users
+            last_activity = user.get_last_activity()	# Get last activity
             
+			# If the user has been inactive for more than the warning period and hasn't been notified
             if last_activity and (current_time - last_activity).total_seconds() >= settings.INACTIVITY_WARNING:
-                users_to_notify.append(user)
+                users_to_notify.append(user)	# Add user to list of users to notify
         
         notification_count = len(users_to_notify)
         
@@ -172,9 +164,14 @@ class CleanupService:
     
     @classmethod
     def _send_inactivity_warning(cls, user, current_time, email_connection=None):
-        """Send inactivity warning to a specific user"""
+        """Send mail to user to warn about inactivity"""
         try:
-            # Calculate remaining time before deletion
+            # Check if user has an email address
+            if not user.email:
+                logger.warning(f"No email address for user {user.username}")
+                return
+                
+            # Calculate remaining time for warning (inactive time - warning time = period between warning and deletion)
             seconds_remaining = settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             
             if settings.TEST_MODE == 'True':
@@ -183,7 +180,7 @@ class CleanupService:
                 time_unit = 'seconds'
             else:
                 # In production, show days
-                remaining_time = seconds_remaining / 86400
+                remaining_time = seconds_remaining / 86400	# Convert to days
                 time_unit = 'days'
             
             logger.info(f"Sending inactivity warning to {user.username}. Time remaining: {remaining_time} {time_unit}")
@@ -204,26 +201,32 @@ class CleanupService:
     @classmethod
     def _process_deletions(cls, base_query, current_time):
         """Process deletions for users past grace period"""
+        
+		# Calculate warning expiry date (current time - grace period)
         warning_expiry = current_time - timezone.timedelta(
             seconds=settings.INACTIVITY_WARNING
         )
         
+		# Get users to delete
         inactive_users = base_query.filter(
-            inactivity_notified=True,
-            inactivity_notification_date__lt=warning_expiry
+            inactivity_notified=True, # Users who have been notified
+            inactivity_notification_date__lt=warning_expiry	# Users who have been notified before the grace period
         )
         
+		# If there are users to delete...
         if inactive_users.exists():
             logger.info(f"🗑️  Found {inactive_users.count()} users to delete")
             for user in inactive_users:
-                cls._process_user_deletion(user, current_time)
+                cls._process_user_deletion(user, current_time) # ...process deletion
     
     @classmethod
     def _process_user_deletion(cls, user, current_time):
         """Process deletion for a specific user"""
-        last_activity = user.get_last_activity()
-        inactivity_time = (current_time - last_activity).total_seconds()
-        notification_age = (current_time - user.inactivity_notification_date).total_seconds()
+        
+		# Get last activity and calculate inactivity time for logging
+        last_activity = user.get_last_activity() # Get last activity
+        inactivity_time = (current_time - last_activity).total_seconds() # Calculate inactivity time
+        notification_age = (current_time - user.inactivity_notification_date).total_seconds() # Calculate notification age
         
         logger.info(
             f"❌ Checking deletion for {user.username}:\n"

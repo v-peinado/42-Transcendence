@@ -1,13 +1,16 @@
-from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ValidationError
 from ..models import PreviousPassword, CustomUser
-from .token_service import TokenService
+from .rate_limit_service import RateLimitService
 from .mail_service import MailSendingService
 from authentication.models import CustomUser
+from .token_service import TokenService
 from django.utils.html import escape
+import logging
 import re
 
+logger = logging.getLogger(__name__)
 
 class PasswordService:
     @staticmethod
@@ -41,6 +44,7 @@ class PasswordService:
 
     @staticmethod
     def _validate_password_history(user, password):
+        """Check if password has been used before"""
         if user.pk:
             previous_passwords = PreviousPassword.objects.filter(user=user).order_by(
                 "-created_at"
@@ -53,12 +57,14 @@ class PasswordService:
 
     @staticmethod
     def _validate_password_basic(user, password1, password2):
+        """Validate password complexity and history"""
         PasswordService._validate_password_match(password1, password2)
         PasswordService._validate_password_complexity(password1, user)
         PasswordService._validate_password_history(user, password1)
 
     @staticmethod
     def validate_password_change(user, current_password, new_password1, new_password2):
+        """Validate password change request"""
         if not user.check_password(current_password):
             raise ValidationError("La contraseña actual es incorrecta")
         PasswordService._validate_password_basic(user, new_password1, new_password2)
@@ -72,33 +78,11 @@ class PasswordService:
         email = escape(email)
 
         dangerous_patterns = [
-            "<script>",
-            "javascript:",
-            "onerror=",
-            "onload=",
-            "onclick=",
-            "data:",
-            "alert(",
-            "eval(",  # XSS
-            "SELECT",
-            "UNION",
-            "--",  # SQL Injection
-            "../",
-            "..\\",  # Path Traversal
-            "&",
-            "|",
-            ";",
-            "`",
-            "$",
-            "(",
-            ")",
-            "{",
-            "}",  # Command Injection
-            "\0",
-            "\n",
-            "\r",
-            "\t",
-            "\b",  # Control Characters
+            "<script>", "javascript:", "onerror=", "onload=", "onclick=", "data:", "alert(", "eval(",  # XSS
+            "SELECT", "UNION", "--",  # SQL Injection
+            "../", "..\\",  # Path Traversal
+            "&", "|", ";", "`", "$", "(", ")", "{", "}",  # Command Injection
+            "\0", "\n", "\r", "\t", "\b",  # Control Characters
         ]
         allowed_chars = ["-", ".", "_", "@", "+"]
 
@@ -154,14 +138,14 @@ class PasswordService:
     @staticmethod
     def initiate_password_reset(email):
         """Iniciate password reset process"""
+        rate_limiter = RateLimitService()
+        
         if re.match(r".*@student\.42.*\.com$", email.lower()):
             raise ValidationError(
-                "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42"
-            )
+                "Los usuarios de 42 deben iniciar sesión a través del botón de login de 42")
 
         users = CustomUser.objects.filter(
-            email__iexact=email, is_active=True, is_fortytwo_user=False
-        )
+            email__iexact=email, is_active=True, is_fortytwo_user=False)
 
         if not users.exists():
             return False
@@ -169,10 +153,21 @@ class PasswordService:
         user = users.first()
         if user.is_fortytwo_user:
             raise ValidationError("Los usuarios de 42 no pueden usar esta función")
+            
+        # Verify rate limit for password_reset attempts
+        is_limited, remaining_time = rate_limiter.is_rate_limited(
+            email.lower(), 'password_reset')
+            
+        if is_limited:
+            logger.warning(f"Rate limit exceeded for email {email} on password reset")
+            raise ValidationError(f"Demasiados intentos. Por favor, espera {remaining_time} segundos e inténtalo de nuevo.")
 
-        token_data = TokenService.generate_password_reset_token(user)
-        MailSendingService.send_password_reset_email(user, token_data)
-        return token_data
+        try:
+            token_data = TokenService.generate_password_reset_token(user)
+            MailSendingService.send_password_reset_email(user, token_data)
+            return token_data
+        except ValidationError as e:
+            raise e # Propagate validation errors to the view
 
     @staticmethod
     def confirm_password_reset(uidb64, token, new_password1, new_password2):

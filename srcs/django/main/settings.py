@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from pathlib import Path
-import os
 from django.core.management.utils import get_random_secret_key
-import logging
 from main.encryption import get_encryption_key
+from pathlib import Path
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ if TEST_MODE == 'True':	# Test mode (seconds)
     EMAIL_VERIFICATION_TIMEOUT = 10        
     INACTIVITY_WARNING = 40            
     INACTIVITY_THRESHOLD = 60          
-    TASK_CHECK_INTERVAL = 5              
+    TASK_CHECK_INTERVAL = 5 # every 5 seconds it will check for inactive users            
     SESSION_ACTIVITY_CHECK = 2           
 else:	# Production mode
     EMAIL_VERIFICATION_TIMEOUT = 600 # 10 minutes

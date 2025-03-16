@@ -593,6 +593,36 @@ function setupProfileEvents() {
             window.location.replace('/');
         }
     }
+
+	// Añadir manejador para el botón de descarga GDPR
+	const setupGDPRTab = () => {
+		const downloadDataBtn = document.getElementById('downloadDataBtn');
+		if (downloadDataBtn) {
+			downloadDataBtn.addEventListener('click', async () => {
+				try {
+					// Mostrar indicador de carga
+					downloadDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Descargando...';
+					downloadDataBtn.disabled = true;
+
+					// Importante: Usar directamente AuthGDPR en lugar de AuthService
+					const result = await AuthGDPR.downloadUserData();
+
+					if (result.status === 'error') {
+						showAlert('danger', 'Error al descargar datos', result.message);
+					} else {
+						showAlert('success', 'Datos descargados', 'Tus datos personales han sido descargados');
+					}
+				} catch (error) {
+					console.error('Error downloading data:', error);
+					showAlert('danger', 'Error', 'Ha ocurrido un error al descargar tus datos');
+				} finally {
+					// Restaurar el botón
+					downloadDataBtn.innerHTML = '<i class="fas fa-download me-2"></i>Descargar mis datos';
+					downloadDataBtn.disabled = false;
+				}
+			});
+		}
+	};
 }
 
 // Función auxiliar para mostrar alertas
@@ -751,19 +781,29 @@ function updateGDPRContent(data) {
 
 // Añadir las nuevas funciones para manejar las acciones de GDPR
 async function handleDataDownload() {
-    try {
-        const response = await AuthService.downloadUserData();
-        // Crear un blob y descargarlo
-        const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'mis-datos.json';
-        a.click();
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        showAlert('Error al descargar los datos: ' + error.message, 'danger');
-    }
+	try {
+		// Mostrar indicador de estado
+		const downloadDataBtn = document.getElementById('downloadDataBtn');
+		if (downloadDataBtn) {
+			downloadDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Descargando...';
+			downloadDataBtn.disabled = true;
+		}
+
+		// IMPORTANTE: Usar AuthGDPR directamente, no AuthService
+		await AuthGDPR.downloadUserData();
+
+		showAlert('Datos descargados correctamente', 'success');
+	} catch (error) {
+		console.error('Error al descargar datos:', error);
+		showAlert('Error al descargar los datos: ' + error.message, 'danger');
+	} finally {
+		// Restaurar el botón
+		const downloadDataBtn = document.getElementById('downloadDataBtn');
+		if (downloadDataBtn) {
+			downloadDataBtn.innerHTML = '<i class="fas fa-download me-2"></i>Descargar mis datos';
+			downloadDataBtn.disabled = false;
+		}
+	}
 }
 
 async function handleDataDeletion() {

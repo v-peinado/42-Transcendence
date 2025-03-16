@@ -1,145 +1,118 @@
-import AuthService from '../AuthService.js';
-
-export class AuthGDPR {
+class AuthGDPR {
     static async getGDPRSettings() {
         try {
             // Obtener política de privacidad
-            const policyResponse = await fetch(`${AuthService.API_URL}/gdpr/privacy-policy/`, {
+			const response = await fetch('/api/gdpr/settings/', {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
+                    'X-CSRFToken': this.getCSRFToken()
                 },
                 credentials: 'include'
             });
-
-            // Obtener datos personales
-            const dataResponse = await fetch(`${AuthService.API_URL}/gdpr/export-data/`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
-                },
-                credentials: 'include'
-            });
-
-            if (!policyResponse.ok || !dataResponse.ok) {
-                throw new Error('Error al obtener datos GDPR');
-            }
-
-            const policy = await policyResponse.json();
-            const userData = await dataResponse.json();
-
-            return {
-                ...policy.data,
-                ...userData.data
-            };
-        } catch (error) {
-            throw error;
-        }
-    }
+			return await response.json();
+		} catch (error) {
+			console.error('Error getting GDPR settings:', error);
+			return { status: 'error', message: error.message };
+		}
+	}
 
     static async updateGDPRSettings(settings) {
         try {
-            const response = await fetch(`${AuthService.API_URL}/gdpr/data/`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
-                },
-                body: JSON.stringify({
-                    settings: {
-                        profile_public: settings.personal_info.username,
-                        show_online_status: settings.personal_info.email,
-                        allow_game_invites: settings.security_settings.two_factor_enabled
-                    }
-                }),
-                credentials: 'include'
-            });
+			const response = await fetch('/api/gdpr/settings/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': this.getCSRFToken()
+				},
+				body: JSON.stringify(settings),
+				credentials: 'include'
+			});
+			return await response.json();
+		} catch (error) {
+			console.error('Error updating GDPR settings:', error);
+			return { status: 'error', message: error.message };
+		}
+	}
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Error al actualizar configuraciones');
-            }
+	static async downloadUserData() {
+		try {
+			// Mostrar indicador de proceso
+			console.log('Iniciando descarga de datos GDPR...');
 
-            return await response.json();
-        } catch (error) {
-            throw error;
-        }
-    }
+			// Hacer una solicitud directa al endpoint de descarga para obtener el blob
+			const response = await fetch('/api/gdpr/export-data/download/', {
+				method: 'GET',
+				headers: {
+					'X-CSRFToken': this.getCSRFToken()
+				},
+				credentials: 'include'
+			});
 
-    static async downloadUserData() {
-        try {
-            const response = await fetch(`${AuthService.API_URL}/gdpr/export-data/`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
-                },
-                credentials: 'include'
-            });
+			// Verificar si la respuesta es correcta
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.message || 'Error en la descarga de datos');
+			}
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Error al descargar datos');
-            }
+			// Comprobar el tipo de contenido - si es JSON pero con un mensaje de error
+			const contentType = response.headers.get('content-type');
+			if (contentType && contentType.includes('application/json')) {
+				// Intentar analizar como JSON para ver si hay un mensaje de error
+				const jsonData = await response.json();
+				if (jsonData.status === 'error') {
+					throw new Error(jsonData.message || 'Error al obtener los datos');
+				}
 
-            const data = await response.json();
-            
-            // Crear archivo de descarga
-            const blob = new Blob([JSON.stringify(data.data, null, 2)], {
-                type: 'application/json'
-            });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'mis_datos.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            throw error;
-        }
-    }
+				// Si llegamos aquí, los datos son JSON válidos y no contienen error
+				// Convertir los datos JSON a un blob y descargar
+				const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+				const username = localStorage.getItem('username') || 'user';
+				// Usar la referencia de clase estática en lugar de this
+				AuthGDPR.downloadBlob(blob, `user_data_${username}.json`);
+				return { status: 'success', message: 'Datos descargados correctamente' };
+			}
 
-    static async deleteAccount(password = null) {
-        try {
-            console.log('Iniciando eliminación de cuenta...');
-            
-            // El cuerpo de la petición será diferente según el tipo de usuario
-            const requestBody = password ? { confirm_password: password } : {};
+			// Si no es JSON o no contiene error, obtener como blob y descargar
+			const blob = await response.blob();
+			const username = localStorage.getItem('username') || 'user';
+			// Usar la referencia de clase estática en lugar de this
+			AuthGDPR.downloadBlob(blob, `user_data_${username}.json`);
 
-            const response = await fetch(`${AuthService.API_URL}/profile/delete-account/`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': AuthService.getCSRFToken()
-                },
-                body: JSON.stringify(requestBody),
-                credentials: 'include'
-            });
+			return { status: 'success', message: 'Datos descargados correctamente' };
+		} catch (error) {
+			console.error('Error downloading user data:', error);
+			return { status: 'error', message: error.message };
+		}
+	}
 
-            const data = await response.json();
-            console.log('Respuesta del servidor:', data);
+	static downloadBlob(blob, filename) {
+		// Crear un URL para el blob
+		const url = window.URL.createObjectURL(blob);
 
-            // Verificar tanto response.ok como data.status
-            if (!response.ok || data.status === 'error') {
-                throw new Error(data.message || 'Error al eliminar la cuenta');
-            }
+		// Crear un elemento <a> para la descarga
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
 
-            // Asegurarnos de que devolvemos un objeto con la estructura esperada
-            return {
-                success: true,
-                message: data.message || 'Cuenta eliminada correctamente'
-            };
-        } catch (error) {
-            console.error('Error detallado en deleteAccount:', error);
-            throw error;
-        }
-    }
+		// Añadir al documento, hacer click y luego eliminar
+		document.body.appendChild(a);
+		a.click();
+
+		// Limpiar después de un momento
+		setTimeout(() => {
+			document.body.removeChild(a);
+			window.URL.revokeObjectURL(url);
+		}, 100);
+	}
+
+	static getCSRFToken() {
+		const cookieValue = document.cookie
+			.split('; ')
+			.find(row => row.startsWith('csrftoken='))
+			?.split('=')[1];
+		return cookieValue || '';
+	}
 }
+
+export { AuthGDPR };

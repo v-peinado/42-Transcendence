@@ -8,8 +8,10 @@ services:
   web:
     build:
       context: ./srcs/django
-    ports:
-      - "8000:8000"
+    # ports:  # This only was used for development!
+    #   - "8000:8000"
+    expose:
+      - "8000"
     networks:
       - transcendence-backend
     volumes:
