@@ -1,39 +1,35 @@
-"""
-Cleanup Service for GDPR compliance and inactive user management.
-
-This service handles:
-- Detection and deletion of unverified accounts past verification timeout
-- Identification of inactive users requiring notification
-- Sending of inactivity warning emails
-- Deletion of users who haven't responded to inactivity warnings
-- Respecting active user sessions and recent activity
-"""
-
-from django.utils import timezone
-from django.conf import settings
-import logging
 from authentication.models import CustomUser, UserSession
 from .mail_service import MailSendingService
 from .gdpr_service import GDPRService
+from django.utils import timezone
+from django.conf import settings
+import logging
+
+
+# Cleanup Service for GDPR compliance and inactive user management.
+
+# This service handles:
+# - Detection and deletion of unverified accounts past verification timeout
+# - Identification of inactive users requiring notification
+# - Sending of inactivity warning emails
+# - Deletion of users who haven't responded to inactivity warnings
+# - Respecting active user sessions and recent activity
+
+
 
 logger = logging.getLogger(__name__)
 
 class CleanupService:
-    """Service for handling user cleanup based on inactivity and GDPR requirements"""
-    
     @classmethod
     def cleanup_inactive_users(cls, email_connection=None):
         """
         Main GDPR cleanup method that handles user inactivity management.
         
         This method:
-        1. Deletes unverified accounts past verification timeout
+        1. Deletes unverified accounts past verification timeout (EMAIL_VERIFICATION_TIMEOUT)
         2. Identifies users with recent activity and resets inactivity warnings
-        3. Sends warnings to inactive users approaching threshold
-        4. Deletes/anonymizes users who haven't responded to warnings
-        
-        Args:
-            email_connection: Optional email connection for batch sending
+        3. Sends warnings to inactive users approaching threshold (INACTIVITY_WARNING)
+        4. Deletes/anonymizes users who haven't responded to warnings after grace period (INACTIVITY_THRESHOLD)
         """
         try:
             current_time = timezone.now() # Get current time

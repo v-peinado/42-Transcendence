@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from pathlib import Path
-import os
 from django.core.management.utils import get_random_secret_key
-import logging
 from main.encryption import get_encryption_key
+from pathlib import Path
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 

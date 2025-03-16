@@ -1,8 +1,8 @@
 from django.template.loader import render_to_string
+from .rate_limit_service import RateLimitService
 from datetime import datetime, timedelta
 from django.utils.html import strip_tags
 from django.core.mail import send_mail
-from .rate_limit_service import RateLimitService
 from django.utils import timezone
 from django.conf import settings
 from ..models import CustomUser

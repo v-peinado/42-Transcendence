@@ -2,10 +2,10 @@ from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_decode
 from django.template.loader import render_to_string
 from django.core.exceptions import ValidationError
+from .rate_limit_service import RateLimitService
 from authentication.models import CustomUser
 from django.utils.html import strip_tags
 from django.core.mail import send_mail
-from .rate_limit_service import RateLimitService
 from django.conf import settings
 import logging
 import jwt
