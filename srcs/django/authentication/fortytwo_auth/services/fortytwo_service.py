@@ -1,40 +1,47 @@
-import requests
-from django.conf import settings
+from authentication.services.rate_limit_service import RateLimitService
+from authentication.services.two_factor_service import TwoFactorService
+from authentication.services.mail_service import MailSendingService
 from authentication.services.token_service import TokenService
 from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from authentication.services.mail_service import MailSendingService
-from authentication.services.two_factor_service import TwoFactorService
-from authentication.models import CustomUser
 from django.contrib.auth import login as auth_login
+from django.utils.encoding import force_bytes
+from authentication.models import CustomUser
 from django.utils import timezone
+from django.conf import settings
 from datetime import timedelta
-from authentication.services.rate_limit_service import RateLimitService
+import requests
 import logging
+
+# FortyTwoAuthService class to handle 42 authentication
+
+# This class is used to authenticate users using the 42 OAuth API
+# It provides methods to generate the authentication URL, get the access token, and get user information
+# it also handles the user authentication process and sends verification emails
 
 logger = logging.getLogger(__name__)
 
-
 class FortyTwoAuthService:
-    AUTH_URL = "https://api.intra.42.fr/oauth/authorize"
-    TOKEN_URL = "https://api.intra.42.fr/oauth/token"
-    USER_URL = "https://api.intra.42.fr/v2/me"
+    
+    AUTH_URL = "https://api.intra.42.fr/oauth/authorize" # URL to authorize the app
+    TOKEN_URL = "https://api.intra.42.fr/oauth/token" # URL to get the access token
+    USER_URL = "https://api.intra.42.fr/v2/me" # URL to get user information
 
     def __init__(self, is_api=False):
         self.is_api = is_api
-        if is_api:
-            self.client_id = settings.FORTYTWO_API_UID
-            self.client_secret = settings.FORTYTWO_API_SECRET
-            self.redirect_uri = settings.FORTYTWO_API_URL
-        else:
+        if is_api: # Check if the app is in API mode
+            self.client_id = settings.FORTYTWO_API_UID # client ID
+            self.client_secret = settings.FORTYTWO_API_SECRET # client secret
+            self.redirect_uri = settings.FORTYTWO_API_URL # redirect URI
+        else: # This ies for the development frontend of the 8000 port (deprecated)
             self.client_id = settings.FORTYTWO_CLIENT_ID
             self.client_secret = settings.FORTYTWO_CLIENT_SECRET
             self.redirect_uri = settings.FORTYTWO_REDIRECT_URI
-        self.rate_limiter = RateLimitService()
+        self.rate_limiter = RateLimitService() # Rate limit service
         self.TOKEN_EXPIRY_HOURS = 24
 
-    @classmethod
+    @classmethod # class method is used to create a factory method that returns an instance of the class to the caller
     def get_auth_url(cls, is_api=False):
+        """ Generate the authentication URL """
         service = cls(is_api=is_api)
         params = {
             "client_id": service.client_id,
@@ -42,15 +49,18 @@ class FortyTwoAuthService:
             "response_type": "code",
             "scope": "public",
         }
+        # URL with the parameters: client_id, redirect_uri, response_type, and scope
         return f"{cls.AUTH_URL}?{'&'.join(f'{k}={v}' for k, v in params.items())}"
 
     def _make_request(self, method, url, **kwargs):
+        """ Make a request to the API to get the code, access token, or user information """
         response = requests.request(method, url, **kwargs)
         if response.status_code != 200:
             raise Exception(f"API request failed: {response.text}")
         return response.json()
 
     def get_access_token(self, code):
+        """ Get the access token using the authorization code """
         data = {
             "grant_type": "authorization_code",
             "client_id": self.client_id,
@@ -61,10 +71,12 @@ class FortyTwoAuthService:
         return self._make_request("POST", self.TOKEN_URL, data=data)
 
     def get_user_info(self, access_token):
+        """ Get user information using the access token """
         headers = {"Authorization": f"Bearer {access_token}"}
         return self._make_request("GET", self.USER_URL, headers=headers)
 
     def process_user_authentication(self, user_data):
+        """ Process the user authentication and form the user object """
         user, created = CustomUser.objects.get_or_create(
             username=f"42.{user_data['login']}",
             defaults={
@@ -92,6 +104,7 @@ class FortyTwoAuthService:
         return timezone.now() > expiry_time
 
     def _handle_new_user(self, user):
+        """Generate and send a new verification token"""
         token = TokenService.generate_auth_token(user)
         user.email_verification_token = token
         user.email_token_created_at = timezone.now()
@@ -108,6 +121,7 @@ class FortyTwoAuthService:
 
     @classmethod
     def handle_login(cls, request, is_api=False):
+        """Handle the login process"""
         try:
             auth_url = cls.get_auth_url(is_api=is_api)
             return True, auth_url, None
@@ -116,9 +130,13 @@ class FortyTwoAuthService:
 
     @classmethod
     def handle_callback(cls, request, is_api=False, code=None):
+        """Handle the callback from the 42 API 
+        (final step of the authentication process)"""
+        
+		# Get the code from the request
         code = code or request.GET.get("code")
         if not code:
-            return False, None, "No se proporcionó código de autorización"
+            return False, None, "Invalid code"
 
         # Rate limiting check
         service = cls(is_api=is_api)
@@ -127,7 +145,7 @@ class FortyTwoAuthService:
             ip, "oauth_callback"
         )
 
-        if is_limited:
+        if is_limited: # If the rate limit is exceeded
             logger.warning(f"Rate limit exceeded for IP {ip}")
             return (
                 False,
@@ -136,9 +154,9 @@ class FortyTwoAuthService:
             )
 
         try:
-            token_data = service.get_access_token(code)
-            user_data = service.get_user_info(token_data["access_token"])
-            user, created = service.process_user_authentication(user_data)
+            token_data = service.get_access_token(code) # Get the access token
+            user_data = service.get_user_info(token_data["access_token"]) # Get the user information
+            user, created = service.process_user_authentication(user_data) # Process the user authentication
 
             # Reset rate limit on successful authentication
             service.rate_limiter.reset_limit(ip, "oauth_callback")

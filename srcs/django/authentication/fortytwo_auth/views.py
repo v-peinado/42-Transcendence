@@ -1,20 +1,21 @@
-from django.shortcuts import redirect
-from django.contrib import messages
-from django.http import HttpResponseRedirect, JsonResponse
-from django.urls import reverse
-from django.views import View
-from django.contrib.auth import login as auth_login
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from authentication.fortytwo_auth.services.fortytwo_service import FortyTwoAuthService
 from authentication.services.two_factor_service import TwoFactorService
+from django.http import HttpResponseRedirect, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.contrib.auth import login as auth_login
 from authentication.models import CustomUser
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.urls import reverse
+from django.views import View
 import json
 
 
 # Web Views
 def fortytwo_login(request):
     """Web view for 42 login"""
+    
     success, auth_url, error = FortyTwoAuthService.handle_login(request)
     if not success:
         messages.error(request, f"Error: {error}")
@@ -24,7 +25,8 @@ def fortytwo_login(request):
 
 def fortytwo_callback(request):
     """Web view for 42 callback"""
-    success, user, message = FortyTwoAuthService.handle_callback(request)
+    
+    success, message = FortyTwoAuthService.handle_callback(request)
 
     if not success:
         messages.error(request, message)
@@ -49,11 +51,15 @@ class FortyTwoLoginAPIView(View):
         return JsonResponse({"status": "error", "message": error})
 
 
+# Decorator used to exempt the view from CSRF verification 
+# Cross-Site Request Forgery or CSRF is a type of attack that occurs when a malicious web site, email, blog, instant message, 
+# or program causes a user's web browser to perform an unwanted action on a trusted site when the user is authenticated.
 @method_decorator(csrf_exempt, name="dispatch")
 class FortyTwoCallbackAPIView(View):
     """API view for 42 callback"""
 
     def post(self, request):
+        """Handle 42 callback for API"""
         try:
             data = json.loads(request.body)
             code = data.get("code")
