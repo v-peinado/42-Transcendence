@@ -37,7 +37,7 @@ class CleanupService:
             notification_count = 0	# Initialize notification count
             
             # 1. Clean unverified users
-            cls._cleanup_unverified_users(current_time)
+            cls._cleanup_unverified_users(current_time) # cls is like "self" but for class methods
             
             # 2. Get users with active sessions
             active_sessions = cls._get_active_sessions(current_time)
@@ -96,14 +96,9 @@ class CleanupService:
     
     @classmethod
     def _get_active_sessions(cls, current_time):
-        """
+        """ 
         Return a set of user IDs with active sessions.
-        
-        Args:
-            current_time (datetime): The current time to consider
-            
-        Returns:
-            set: Set of user IDs with active sessions
+        current_time (datetime): The current time to consider
         """
         try:
             # Query for active sessions
@@ -126,38 +121,39 @@ class CleanupService:
     @classmethod
     def _reset_notifications_for_active_users(cls, active_sessions):
         """Reset inactivity notification flags for users with recent activity"""
-        for user_id in active_sessions:
+        for user_id in active_sessions: # Iterate over active sessions
             try:
-                user = CustomUser.objects.get(id=user_id, inactivity_notified=True)
-                user.inactivity_notified = False
-                user.inactivity_notification_date = None
-                user.save(update_fields=['inactivity_notified', 'inactivity_notification_date'])
-                logger.info(f"Reset inactivity notification for active user: {user.username}")
+                user = CustomUser.objects.get(id=user_id, inactivity_notified=True) # Get user
+                user.inactivity_notified = False # Reset notification flag
+                user.inactivity_notification_date = None # Reset notification date
+                user.save(update_fields=['inactivity_notified', 'inactivity_notification_date']) # Save changes
+                logger.info(f"Reset inactivity notification for active user: {user.username}") # Log
             except CustomUser.DoesNotExist:
                 continue
     
     @classmethod
     def _get_inactive_users_base_query(cls, active_sessions):
-        """Get base queryset for processing inactive users"""
+        """Get inactive users base query excluding active users to cleanup"""
         return CustomUser.objects.filter(
-            is_active=True,
-            email_verified=True
+            is_active=True,	# Only active users
+            email_verified=True	# Only verified users
         ).exclude(
-            id__in=active_sessions
+            id__in=active_sessions	# Exclude users with active sessions
         ).exclude(
-            is_superuser=True
+            is_superuser=True	# Exclude superusers from cleanup
         )
     
     @classmethod
     def _notify_inactive_users(cls, base_query, current_time, email_connection=None):
-        """Send notifications to users approaching inactivity threshold"""
-        users_to_notify = []
+        """put the users that need to be notified in a list"""
+        users_to_notify = []	# Initialize list of users to notify
         
-        for user in base_query.filter(inactivity_notified=False):
-            last_activity = user.get_last_activity()
+        for user in base_query.filter(inactivity_notified=False):	# Iterate over inactive users
+            last_activity = user.get_last_activity()	# Get last activity
             
+			# If the user has been inactive for more than the warning period and hasn't been notified
             if last_activity and (current_time - last_activity).total_seconds() >= settings.INACTIVITY_WARNING:
-                users_to_notify.append(user)
+                users_to_notify.append(user)	# Add user to list of users to notify
         
         notification_count = len(users_to_notify)
         
@@ -168,14 +164,14 @@ class CleanupService:
     
     @classmethod
     def _send_inactivity_warning(cls, user, current_time, email_connection=None):
-        """Send inactivity warning to a specific user"""
+        """Send mail to user to warn about inactivity"""
         try:
-            # Verificar que el usuario tiene un email antes de intentar enviar
+            # Check if user has an email address
             if not user.email:
                 logger.warning(f"No email address for user {user.username}")
                 return
                 
-            # Calculate remaining time before deletion
+            # Calculate remaining time for warning (inactive time - warning time = period between warning and deletion)
             seconds_remaining = settings.INACTIVITY_THRESHOLD - settings.INACTIVITY_WARNING
             
             if settings.TEST_MODE == 'True':
@@ -205,26 +201,32 @@ class CleanupService:
     @classmethod
     def _process_deletions(cls, base_query, current_time):
         """Process deletions for users past grace period"""
+        
+		# Calculate warning expiry date (current time - grace period)
         warning_expiry = current_time - timezone.timedelta(
             seconds=settings.INACTIVITY_WARNING
         )
         
+		# Get users to delete
         inactive_users = base_query.filter(
-            inactivity_notified=True,
-            inactivity_notification_date__lt=warning_expiry
+            inactivity_notified=True, # Users who have been notified
+            inactivity_notification_date__lt=warning_expiry	# Users who have been notified before the grace period
         )
         
+		# If there are users to delete...
         if inactive_users.exists():
             logger.info(f"🗑️  Found {inactive_users.count()} users to delete")
             for user in inactive_users:
-                cls._process_user_deletion(user, current_time)
+                cls._process_user_deletion(user, current_time) # ...process deletion
     
     @classmethod
     def _process_user_deletion(cls, user, current_time):
         """Process deletion for a specific user"""
-        last_activity = user.get_last_activity()
-        inactivity_time = (current_time - last_activity).total_seconds()
-        notification_age = (current_time - user.inactivity_notification_date).total_seconds()
+        
+		# Get last activity and calculate inactivity time for logging
+        last_activity = user.get_last_activity() # Get last activity
+        inactivity_time = (current_time - last_activity).total_seconds() # Calculate inactivity time
+        notification_age = (current_time - user.inactivity_notification_date).total_seconds() # Calculate notification age
         
         logger.info(
             f"❌ Checking deletion for {user.username}:\n"
