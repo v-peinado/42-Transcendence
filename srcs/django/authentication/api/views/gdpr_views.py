@@ -1,10 +1,12 @@
-from django.views import View
-from django.http import JsonResponse, HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, HttpResponse
 from ...services.gdpr_service import GDPRService
+from django.views import View
+import logging
 import json
 
+logger = logging.getLogger(__name__)
 
 @method_decorator(csrf_exempt, name="dispatch")
 class GDPRSettingsAPIView(View):
@@ -23,36 +25,64 @@ class ExportPersonalDataAPIView(View):
     def get(self, request, *args, **kwargs):
         """Export user's personal data"""
         try:
+            # Verify if is an download request
+            if 'download' in kwargs and kwargs['download'] == True:
+                return self.download_data(request)
+                
             # Get user data
             data = GDPRService.export_user_data(request.user)
 
-            # Generate download URL
-            download_url = f"/api/gdpr/export/download/{request.user.username}"
+            # Check for errors in data response and return error log
+            if "error" in data:
+                logger.error(f"Error exporting user data: {data['details']}")
+                return JsonResponse({"status": "error", "message": data["details"]}, status=400)
 
+            # Generate download URL
+            download_url = f"/api/gdpr/export-data/download/"
+
+			# Return data and download URL
             return JsonResponse(
-                {"status": "success", "data": data, "download_url": download_url}
-            )
+                {"status": "success", "data": data, "download_url": download_url})
 
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            logger.error(f"Error exporting user data: {str(e)}")
+            return JsonResponse({"status": "error", "message": str(e)}, status=401)
 
-    def get_download(self, request):
+    def download_data(self, request):
         """Download authenticated user's personal data"""
         try:
             if not request.user.is_authenticated:
                 return JsonResponse(
-                    {"status": "error", "message": "Usuario no autenticado"}, status=401
-                )
+                    {"status": "error", "message": "user is not authenticated"}, status=401)
 
-            data = GDPRService.export_user_data(request.user)
-            response = HttpResponse(
-                json.dumps(data, indent=4, default=str), content_type="application/json"
-            )
-            response["Content-Disposition"] = (
-                f'attachment; filename="{request.user.username}_data.json"'
-            )
+            data = GDPRService.export_user_data(request.user) # store user data in "data"
+            
+            # Check for errors in data response and return error log
+            if isinstance(data, dict) and "error" in data:
+                logger.error(f"Error downloading data: {data.get('details', 'Desconocido')}")
+                return JsonResponse({"status": "error", "message": data.get("details", "Error in exportation")}, status=401)
+            
+            # If there is no data or data is an empty dictionary
+            if not data or (isinstance(data, dict) and not data):
+                logger.error("No data found to export")
+                return JsonResponse({"status": "error", "message": "No data found to export"}, status=404)
+            
+            # Create a filename for the downloaded file
+            filename = f"user_data_{request.user.username}.json"
+            
+            # Convert data to JSON format
+            json_data = json.dumps(data, indent=4, default=str, ensure_ascii=False)
+            
+            # Create a response with the JSON data
+            response = HttpResponse(json_data, content_type="application/json; charset=utf-8")
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+            response["Content-Length"] = len(json_data)
+            
+            logger.info(f"Downloading GDPR data for user {request.user.username}")
             return response
+            
         except Exception as e:
+            logger.error(f"Error downloading user data: {str(e)}")
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
 

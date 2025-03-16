@@ -25,7 +25,7 @@ class AuthService {
     // Delegación a otros servicios
     static getGDPRSettings = AuthGDPR.getGDPRSettings;
     static updateGDPRSettings = AuthGDPR.updateGDPRSettings;
-    static downloadUserData = AuthGDPR.downloadUserData;
+	static async downloadUserData() { return await AuthGDPR.downloadUserData();}
 
     static getUserProfile = AuthProfile.getUserProfile;
     static updateProfile = AuthProfile.updateProfile;

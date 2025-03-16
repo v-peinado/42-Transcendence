@@ -16,14 +16,9 @@ class GDPRService:
                 "date_joined": user.date_joined,
                 "last_login": user.last_login,
                 "is_active": user.is_active,
+                "acepted_privacy_policy": True, # This is acepted in the moment of the registration
+				"date_of_acceptance": user.date_joined, # This is the date of the registration
                 "is_fortytwo_user": user.is_fortytwo_user,
-                "fortytwo_id": user.fortytwo_id if user.is_fortytwo_user else None,
-            },
-            "profile_data": {
-                "profile_image": user.profile_image.url if user.profile_image else None,
-                "fortytwo_image": (
-                    user.fortytwo_image if user.is_fortytwo_user else None
-                ),
             },
             "security_settings": {
                 "two_factor_enabled": user.two_factor_enabled,
