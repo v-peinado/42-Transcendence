@@ -1,23 +1,34 @@
+from authentication.fortytwo_auth.views import FortyTwoLoginAPIView, FortyTwoCallbackAPIView
+from authentication.services import ProfileService
 from ninja import Router, UploadedFile
-from typing import Dict
+from django.http import JsonResponse
+from typing import Dict, Optional
 from ..schemas import *
 from ..views import *
-from django.http import JsonResponse
-from authentication.services import ProfileService
-from authentication.fortytwo_auth.views import FortyTwoLoginAPIView, FortyTwoCallbackAPIView
+
+# Authentication API Router Configuration
+
+# This file defines all API endpoints related to user authentication and profile management
+# using Django Ninja routers. It acts as the central entry point for all authentication-related
+# HTTP requests in the application.
+
+# Structure:
+# Each endpoint is mapped to a Django view that implements the actual logic
+# Request data is validated using schemas defined in ..schemas module.
+# Responses are also validated using Django Ninja's response system.
 
 router = Router()
 
 # Auth endpoints
 @router.post("/login", tags=["auth"])
 def login(request, data: AuthSchema) -> Dict:
-    """Iniciar sesión de usuario"""
+    """Login user"""
     request.data = data.dict()
     return LoginAPIView.as_view()(request)
 
 @router.post("/register", tags=["auth"])
 def register(request, data: RegisterSchema) -> Dict:
-    """Registrar nuevo usuario"""
+    """Register user"""
     try:        
         request.data = data.dict()
         response = RegisterAPIView.as_view()(request)
@@ -31,14 +42,14 @@ def register(request, data: RegisterSchema) -> Dict:
 
 @router.post("/logout", tags=["auth"])
 def logout(request) -> Dict:
-    """Cerrar sesión de usuario"""
+    """Logout user"""
     return LogoutAPIView.as_view()(request)
 
 # 42 endpoints
 
 @router.get("/auth/42", tags=["auth"], response=FortyTwoAuthResponseSchema)
 def fortytwo_login(request) -> Dict:
-    """Iniciar autenticación con 42"""
+    """42 Login"""
     return FortyTwoLoginAPIView.as_view()(request)
 
 @router.get(
@@ -49,52 +60,54 @@ def fortytwo_login(request) -> Dict:
 def fortytwo_callback(
     request,
     code: str,
-    state: str = None
+    state: Optional[str] = None
 ) -> Dict:
-    """Callback de autenticación 42"""
+    """Callback 42 auth"""
     data = FortyTwoCallbackRequestSchema(code=code, state=state)
     return FortyTwoCallbackAPIView.as_view()(request, data)
 
 # GDPR endpoints
 
+# this is deprecated 
+# we use the next one, this is just for compatibility developing part
 @router.get("/gdpr/export", tags=["gdpr"], response=GDPRExportSchema)
 def export_data(request) -> Dict:
-    """Ver datos personales"""
+    """Export personal data"""
     return ExportPersonalDataAPIView.as_view()(request)
 
 @router.get("/gdpr/export/download", tags=["gdpr"])
 def download_data(request) -> Dict:
-    """Descargar datos personales del usuario autenticado"""
+    """Download personal data"""
     return ExportPersonalDataAPIView().get_download(request)
 
 @router.get("/gdpr/privacy", tags=["gdpr"])
 def privacy_policy(request) -> Dict:
-    """Ver política de privacidad"""
+    """See privacy policy"""
     return PrivacyPolicyAPIView.as_view()(request)
 
 # Profile endpoints
 
 @router.post("/profile/password", tags=["profile"])
 def change_password(request, data: PasswordChangeSchema) -> Dict:
-    """Cambiar contraseña"""
+    """Change user password """
     request.data = data.dict()
     return EditProfileAPIView.as_view()(request)
 
 @router.post("/profile/email", tags=["profile"])
 def change_email(request, data: EmailChangeSchema) -> Dict:
-    """Cambiar email"""
+    """Change user email"""
     request.data = data.dict()
     return EditProfileAPIView.as_view()(request)
 
 @router.post("/profile/restore-image", tags=["profile"])
 def restore_image(request, data: RestoreImageSchema) -> Dict:
-    """Restaurar imagen de perfil"""
+    """Restore profile image"""
     request.data = data.dict()
     return EditProfileAPIView.as_view()(request)
 
 @router.post("/profile/image", tags=["profile"])
 def update_profile_image(request, profile_image: UploadedFile) -> Dict:
-    """Actualizar imagen de perfil"""
+    """Update profile image"""
     try:
         result = ProfileService.update_profile(
             user=request.user,
@@ -114,7 +127,7 @@ def update_profile_image(request, profile_image: UploadedFile) -> Dict:
 
 @router.post("/profile/delete", tags=["profile"])  # Cambiado de delete a post
 def delete_account(request, data: DeleteAccountSchema) -> Dict:
-    """Eliminar cuenta"""
+    """Delete user account (soft delete GDPR)"""
     try:
         result = ProfileService.delete_user_account(
             user=request.user,
@@ -153,13 +166,13 @@ def get_user_profile(request) -> Dict:
 # Password endpoints
 @router.post("/password/reset", tags=["password"])
 def password_reset(request, data: PasswordResetSchema) -> Dict:
-    """Solicitar reset de contraseña"""
+    """Reset user password"""
     request.data = data.dict()
     return PasswordResetAPIView.as_view()(request)
 
 @router.post("/password/reset/confirm", tags=["password"])
 def password_reset_confirm(request, data: PasswordResetConfirmSchema) -> Dict:
-    """Confirmar reset de contraseña"""
+    """Confirm password reset"""
     request.data = data.dict()
     return PasswordResetConfirmAPIView.as_view()(request)
 
@@ -167,12 +180,12 @@ def password_reset_confirm(request, data: PasswordResetConfirmSchema) -> Dict:
 
 @router.get("/qr/generate", tags=["2fa"])
 def generate_qr(request) -> Dict:
-    """Generar QR del usuario autenticado"""
+    """Generate QR code to authenticate"""
     return GenerateQRAPIView.as_view()(request)
 
 @router.post("/qr/validate", tags=["2fa"])
 def validate_qr(request, data: QRSchema) -> Dict:
-    """Validar código QR"""
+    """Validate QR code to login"""
     request.data = data.dict()
     return ValidateQRAPIView.as_view()(request)
 
@@ -180,17 +193,17 @@ def validate_qr(request, data: QRSchema) -> Dict:
 
 @router.post("/2fa/enable", tags=["2fa"])
 def enable_2fa(request) -> Dict:
-    """Activar 2FA"""
+    """Enable 2FA"""
     return Enable2FAView.as_view()(request)
 
 @router.post("/2fa/verify", tags=["2fa"])
 def verify_2fa(request, data: TwoFactorSchema) -> Dict:
-    """Verificar código 2FA"""
+    """Verify 2FA"""
     request.data = data.dict()
     return Verify2FAAPIView.as_view()(request)
 
 @router.post("/2fa/disable", tags=["2fa"])
 def disable_2fa(request) -> Dict:
-    """Desactivar 2FA"""
+    """Disable 2FA"""
     return Disable2FAView.as_view()(request)
 
