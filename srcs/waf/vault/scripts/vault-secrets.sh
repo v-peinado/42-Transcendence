@@ -8,7 +8,7 @@
 # - SSL certificates storage
 # - JWT token management
 # - Access and permissions verification
-#
+
 # Implements validation and error handling for each operation
 # and provides detailed feedback on each secret's status
 

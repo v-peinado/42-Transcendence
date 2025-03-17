@@ -8,7 +8,7 @@
 # - Global error handling
 # - Cleanup of sensitive variables
 # - Starting nginx server
-#
+
 # The script ensures each step completes successfully
 # before proceeding to the next one, providing
 # a robust and secure system initialization.
