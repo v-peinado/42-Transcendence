@@ -1,6 +1,6 @@
-from django.db import models
 from django.contrib.sessions.models import Session
 from django.utils import timezone
+from django.db import models
 
 class UserSession(models.Model):
     user = models.ForeignKey('authentication.CustomUser', on_delete=models.CASCADE)

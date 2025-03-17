@@ -1,25 +1,30 @@
-import hvac
+from urllib3.exceptions import InsecureRequestWarning
+from dotenv import load_dotenv
+from typing import Dict, Any
 import requests
-import os
-import time
 import warnings
 import logging
-from urllib3.exceptions import InsecureRequestWarning
-from typing import Dict, Any
-from dotenv import load_dotenv
+import hvac # HashiCorp Vault client (connect to Vault)
+import time # to wait for Vault to be unsealed
+import os # to read the token file
+
+# This file is to connect to Vault and retrieve secrets from it (client)
 
 # Configure logger
 logger = logging.getLogger(__name__)
 
-# Disable SSL warnings for Vault connection (self-signed certificate)
+# Disable SSL warnings for Vault connection (because is a self-signed certificate)
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 _secrets_cache = {}  # Cache for secrets
 
-
 class VaultClient:
     def __init__(self):
-        token_file = "/tmp/ssl/django_token"
+        
+		# Wait for token file
+        token_file = "/tmp/ssl/django_token" # store token...
+        
+		# Read token from file
         try:
             with open(token_file, "r") as f:
                 token = f.read().strip()
@@ -28,24 +33,25 @@ class VaultClient:
             token = None
 
         # Config client with token
-        with warnings.catch_warnings():
+        with warnings.catch_warnings(): # Ignore warnings of self-signed certificate
             warnings.simplefilter("ignore")
-            self.client = hvac.Client(url="https://waf:8200", verify=False, token=token)
+            self.client = hvac.Client(url="https://waf:8200", verify=False, token=token) # Connect to Vault
 
-    def _is_vault_sealed(self) -> bool:  # Private method
+    def _is_vault_sealed(self) -> bool:
+        """Check if the Vault server is sealed"""
         try:
-            response = requests.get("https://waf:8200/v1/sys/seal-status", verify=False)
-            return response.json().get("sealed", True)
-        except Exception:
+            response = requests.get("https://waf:8200/v1/sys/seal-status", verify=False) 
+            return response.json().get("sealed", True) # Check if the server is sealed and return True if it is and False if it is not
+        except Exception: # If there is an exception, return True too (to wait for unseal)
             return True
 
     def get_secrets(self, path: str) -> Dict[str, Any]:
-        # Check cache first
+        """Get secrets from Vault"""
         if path in _secrets_cache:
             return _secrets_cache[path]
 
-        retries = 0
-        max_retries = 5
+        retries = 0 # initialize retries
+        max_retries = 5	# maximum number of retries 
 
         while retries < max_retries:
             try:
@@ -90,6 +96,7 @@ def wait_for_token(max_attempts=30, delay=2):
 
 
 def get_client():
+    """Create a Vault client and authenticate with token"""
     token = wait_for_token()
     if not token:
         logger.error("❌Failed to get Vault token")
@@ -130,7 +137,8 @@ def wait_for_secrets(client, path: str, max_retries=10, delay=2) -> Dict[str, An
                 logger.error(f"❌Failed to read {path} after {max_retries} attempts: {e}")
             time.sleep(
                 delay * (1.5**attempt)
-            )  # Exponential backoff with smaller factor
+            )  # Exponential backoff (it means that the delay will increase exponentially 
+            	# with each attempt to read, because is much more likely that the server is busy
     return {}
 
 
@@ -150,8 +158,8 @@ def load_vault_secrets():
         "JWT": "django/jwt",
     }
 
-    success = 0
-    total = len(paths)
+    success = 0 # initialize success
+    total = len(paths) # total number of paths
 
     # Wait for vault to be fully ready
     time.sleep(5)  # Give vault time to initialize

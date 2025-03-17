@@ -1,8 +1,11 @@
-from django.contrib import admin
-from django.utils.html import format_html
 from django.core.exceptions import ValidationError
 from .models import CustomUser, PreviousPassword
+from django.utils.html import format_html
+from django.contrib import admin
 
+# This file is used to customize the Django admin panel
+# It is used to display the models in a more user-friendly way
+# and to add some custom actions like activating or deactivating users
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):

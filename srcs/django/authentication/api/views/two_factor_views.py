@@ -1,9 +1,9 @@
-from django.views import View
-from django.http import JsonResponse
+from ...services.two_factor_service import TwoFactorService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login as auth_login
-from ...services.two_factor_service import TwoFactorService
+from django.http import JsonResponse
+from django.views import View
 import json
 
 

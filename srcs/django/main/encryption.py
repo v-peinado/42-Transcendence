@@ -1,7 +1,14 @@
-import logging
 from cryptography.fernet import Fernet
-import os
 from .vault import VaultClient
+import logging
+import os
+
+# This file is used to retrieve and validate the encryption key from Vault or environment.
+# The key is used to encrypt and decrypt email directions in the database,
+# following the GDPR guidelines.
+
+# The key is stored in Vault and retrieved at runtime to ensure security.
+# If the key is not found in Vault, it falls back to the environment variable.
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,10 @@
-from django.views import View
-from django.http import JsonResponse
+from ...services.auth_service import AuthenticationService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import ValidationError
-from ...services.auth_service import AuthenticationService
+from django.http import JsonResponse
+from django.views import View
 import json
-from django.contrib.auth.decorators import login_required
-
 
 @method_decorator(csrf_exempt, name="dispatch")
 class LoginAPIView(View):

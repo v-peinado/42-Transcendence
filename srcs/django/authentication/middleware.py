@@ -1,21 +1,19 @@
-"""
-Activity Tracking Middleware
-
-IMPORTANT NOTE: This middleware only tracks user activity when they make requests to the server.
-Simply having a browser tab open will NOT count as activity. The user must interact with the
-application (navigate pages, make API calls, etc.) to be considered active.
-
-Current behavior:
-- Activity is updated only on server requests
-- Session remains valid until SESSION_COOKIE_AGE expires
-- Users are marked inactive after INACTIVITY_THRESHOLD without requests
-- Warning email sent after INACTIVITY_WARNING time
-- Account deleted after full INACTIVITY_THRESHOLD if no new activity
-"""
-
-from django.utils import timezone
 from authentication.models import UserSession
+from django.utils import timezone
 import logging
+
+# Activity Tracking Middleware for informing users of inactivity (cleanup GDPR service)
+
+# IMPORTANT NOTE: This middleware only tracks user activity when they make requests to the server.
+# Simply having a browser tab open will NOT count as activity. The user must interact with the
+# application (navigate pages, make API calls, etc.) to be considered active.
+
+# Current behavior:
+# - Activity is updated only on server requests
+# - Session remains valid until SESSION_COOKIE_AGE expires
+# - Users are marked inactive after INACTIVITY_THRESHOLD without requests
+# - Warning email sent after INACTIVITY_WARNING time
+# - Account deleted after full INACTIVITY_THRESHOLD if no new activity
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +24,7 @@ class UserSessionMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        """Run the middleware"""
         try:
             if request.user.is_authenticated:
                 # counter starts from the logout moment, not from the previous activity

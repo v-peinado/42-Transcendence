@@ -1,9 +1,30 @@
-from ninja import Schema
 from typing import Optional, Dict
+from ninja import Schema
+
+# Schema Definitions for API Data Validation
+
+# This file defines schemas that act as contracts for data exchange in the API.
+
+
+# DATA VALIDATION:
+#    - Automatically validate incoming request data against defined types
+#    - Reject invalid requests with appropriate error messages
+#    - Convert data to proper Python types (strings, integers, booleans)
+
+# DOCUMENTATION:
+#    - Generate OpenAPI/Swagger documentation automatically (on 8000/docs)
+#    - Make the API self-documenting and easier to understand
+#    - Provide clear expectations for input/output data structures
+
+# STRUCTURE ENFORCEMENT:
+#    - Define explicit interfaces for API endpoints
+#    - Ensure consistent data structures across the application
+#    - Simplify testing by providing clear contracts
+
+# N - When defining schemas, use Optional[Type] when a field may be null/None.
+
 
 # Auth schemas
-
-
 class AuthSchema(Schema):
     username: str
     password: str
@@ -19,8 +40,6 @@ class RegisterSchema(Schema):
 
 
 # GDPR schemas
-
-
 class GDPRExportSchema(Schema):
     status: str
     data: Dict
@@ -28,15 +47,11 @@ class GDPRExportSchema(Schema):
 
 
 # QR schemas
-
-
 class QRSchema(Schema):
     username: str
 
 
 # Password schemas
-
-
 class PasswordResetSchema(Schema):
     email: str
 
@@ -49,15 +64,11 @@ class PasswordResetConfirmSchema(Schema):
 
 
 # Two factor schemas
-
-
 class TwoFactorSchema(Schema):
     code: str
 
 
 # Profile schemas
-
-
 class BaseSchema(Schema):
     class Config:
         arbitrary_types_allowed = True
@@ -105,7 +116,7 @@ class FortyTwoAuthResponseSchema(Schema):
 
 # Auth schemas 42
 class FortyTwoCallbackRequestSchema(Schema):
-    code: str = None
+    code: Optional[str] = None
     state: Optional[str] = None
 
 

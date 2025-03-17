@@ -1,22 +1,22 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.conf import settings
-from django.apps import apps
 from cryptography.fernet import Fernet
-import logging
 from django.utils import timezone
+from django.conf import settings
+from django.db import models
+from django.apps import apps
+import logging
 import hashlib
-
 
 logger = logging.getLogger(__name__)
 
 class CustomUser(AbstractUser):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True) # id is the primary key for the user
     DEFAULT_PROFILE_IMAGE = (
         "https://ui-avatars.com/api/?name={}&background=random&length=2"
     )
 
     def profile_image_path(instance, filename):
+        """Returns the path for the profile image"""
         ext = filename.split(".")[-1]
         return f"profile_images/{instance.username}.{ext}"
 
@@ -41,6 +41,7 @@ class CustomUser(AbstractUser):
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     def get_profile_image_url(self):
+        """Get the URL for the profile image of 42 API"""
         if self.profile_image and hasattr(self.profile_image, "url"):
             return self.profile_image.url
         if self.is_fortytwo_user and self.fortytwo_image:
@@ -49,6 +50,7 @@ class CustomUser(AbstractUser):
 
     @property
     def fortytwo_image_url(self):
+        """Returns the URL for the profile image from 42 API"""
         return (
             self.fortytwo_image
             if self.is_fortytwo_user
@@ -64,7 +66,7 @@ class CustomUser(AbstractUser):
                 return self.email
                 
             if self.email:
-                if self.email.startswith('gAAAAAB'):  # If it's encrypted (Fernet - gAAAAAB)
+                if self.email.startswith('gAAAAAB'):  # If it's encrypted (Fernet prefix - gAAAAAB)
                     cipher_suite = Fernet(settings.ENCRYPTION_KEY)
                     return cipher_suite.decrypt(self.email.encode()).decode()
                 return self.email  # If it's not encrypted
@@ -74,13 +76,20 @@ class CustomUser(AbstractUser):
         return None
 
     def _generate_email_hash(self, email):
-        """Generate a deterministic hash for email comparison"""
+        """Generate a hash for email comparison
+		   This is used to compare emails without storing them in plain text.
+           to know if a mail user is already registered.
+           
+           Fernet encryption is used to store the email in the database.
+           It encripted with a different key each time and it cant be used to compare emails.
+		"""
         if not email:
             return None
-        normalized_email = email.lower().strip()
-        return hashlib.sha256(normalized_email.encode()).hexdigest()
+        normalized_email = email.lower().strip() # Normalize (lowercase and strip)
+        return hashlib.sha256(normalized_email.encode()).hexdigest() # Hash email for comparison with other users
 
     def save(self, *args, **kwargs):
+        """Encrypt email before saving"""
         if self.email and not self.email.startswith('gAAAAAB'):
             try:
                 if not hasattr(settings, 'ENCRYPTION_KEY'):
@@ -97,15 +106,6 @@ class CustomUser(AbstractUser):
                 logger.error(f"Error encrypting email for user {self.id}: {str(e)}")
         super().save(*args, **kwargs)
 
-    def anonymize(self):
-        self.username = f"deleted_user_{self.id}"
-        self.email = f"deleted_{self.id}@anonymous.com"
-        self.first_name = "Deleted"
-        self.last_name = "User"
-        self.profile_image = None
-        self.is_active = False
-        self.save()
-
     def get_last_activity(self):
         """
         Returns the most recent activity time from last_login, sessions or date_joined.
@@ -115,8 +115,7 @@ class CustomUser(AbstractUser):
         - Session activity records
         - Account creation date (as fallback)
         
-        Returns:
-            datetime: The most recent timestamp of user activity
+        This is used by cleanup tasks to determine if a user should be notified or deleted.
         """
         UserSession = apps.get_model('authentication', 'UserSession')
         
@@ -134,12 +133,7 @@ class CustomUser(AbstractUser):
         return last_activity
 
     def should_notify_inactivity(self):
-        """
-        Check if user should receive inactivity warning.
-        
-        Returns:
-            bool: True if user should be notified, False otherwise
-        """
+        """ Check if user should receive inactivity warning."""
         if self.inactivity_notified or not self.last_login:
             return False
             
@@ -148,12 +142,7 @@ class CustomUser(AbstractUser):
         return inactive_seconds >= settings.INACTIVITY_WARNING
 
     def is_inactive_for_too_long(self):
-        """
-        Check if user should be deleted due to inactivity.
-        
-        Returns:
-            bool: True if user should be deleted, False otherwise
-        """
+        """ Check if user should be deleted due to inactivity."""
         if not self.inactivity_notified or not self.inactivity_notification_date:
             return False
 

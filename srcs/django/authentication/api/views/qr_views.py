@@ -1,10 +1,10 @@
-import logging
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import login as auth_login
 from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views import View
-from django.utils.decorators import method_decorator
 from ...services.qr_service import QRService
+from django.views import View
+import logging
 import json
 
 logger = logging.getLogger(__name__)

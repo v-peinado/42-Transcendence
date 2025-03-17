@@ -1,10 +1,17 @@
-from celery import shared_task
 from authentication.services.cleanup_service import CleanupService
+from celery import shared_task
 import logging
+
+
+# A task is a function that can be run asynchronously.
+# To create a task, use the shared_task() decorator.
+# The task is then registered by the worker (Celery) and can be executed later.
+
+# Celery is a distributed task queue that is used to handle asynchronous tasks in Django web applications.
 
 logger = logging.getLogger(__name__)
 
-@shared_task
+@shared_task # Decorator to make this a Celery task
 def cleanup_inactive_users():
     """
     Celery task to clean up inactive users
@@ -12,7 +19,7 @@ def cleanup_inactive_users():
     """
     try:
         logger.info("🔄 ====== STARTING CLEANUP TASK ======")
-        result = CleanupService.cleanup_inactive_users()
+        result = CleanupService.cleanup_inactive_users() # Call the service method
         logger.info(f"✅ Task completed - Processing complete")
         logger.info("======= END OF CLEANUP TASK =======\n")
     except Exception as e:

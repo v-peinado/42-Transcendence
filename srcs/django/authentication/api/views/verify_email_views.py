@@ -1,8 +1,8 @@
-from django.views import View
-from django.http import JsonResponse
+from ...services.mail_service import EmailVerificationService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from ...services.mail_service import EmailVerificationService
+from django.http import JsonResponse
+from django.views import View
 
 
 @method_decorator(csrf_exempt, name="dispatch")

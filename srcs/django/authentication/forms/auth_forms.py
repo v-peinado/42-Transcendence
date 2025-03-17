@@ -1,7 +1,13 @@
-from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from authentication.models import CustomUser
+from django import forms
 
+# Forms are used to validate user input and to save data to the database
+# This form is used to register a new user, it extends the UserCreationForm class from Django.
+
+# It adds an email field and a privacy_policy field to the form fields.
+# The save method is overridden to set the user as inactive, 
+# (user will be activated after verifying the email)
 
 class RegistrationForm(UserCreationForm):
     """User registration form"""
