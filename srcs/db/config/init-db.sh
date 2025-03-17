@@ -2,14 +2,16 @@
 set -e
 
 # PostgreSQL Initialization Script
-# ------------------------------
+
 # This script handles the initial configuration of PostgreSQL when the container starts.
-# It only runs its configuration if postgresql.conf doesn't exist, ensuring idempotency.
-#
+# It only runs its configuration if postgresql.conf doesn't exist,
+# which allows for persistent configuration across container restarts.
+
 # Key functions:
+
 # 1. Network Configuration:
 #    - Sets 'listen_addresses' to '*' to allow connections from all interfaces
-#
+
 # 2. Performance Tuning:
 #    - checkpoint_timeout: Time between automatic WAL checkpoints (5 minutes)
 #    - checkpoint_completion_target: Spreads checkpoint load over time (90% of interval)
@@ -18,12 +20,12 @@ set -e
 #    - min_wal_size: Minimum size before WAL files are recycled
 #    - effective_cache_size: Estimate of available OS cache
 #    - maintenance_work_mem: Memory for maintenance operations
-#
+
 # 3. Security:
 #    - Copies pg_hba.conf for access control
 #    - Sets appropriate permissions (600) for security
 #    - Ensures postgres user owns configuration files
-#
+
 # Note: Most database initialization is handled by the official PostgreSQL
 # Docker image using environment variables (POSTGRES_USER, POSTGRES_PASSWORD, etc.)
 

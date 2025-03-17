@@ -1,6 +1,10 @@
 pid /tmp/nginx.pid;
 load_module modules/ngx_http_modsecurity_module.so;
 
+# Atention!
+# We use a template, because we need to load the IP_SERVER in this file,
+# and ".conf plain files" don´t accept macro variables!
+
 events {
     worker_connections 1024;
     multi_accept on;

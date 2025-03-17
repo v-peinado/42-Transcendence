@@ -8,7 +8,7 @@
 # - Token and key management
 # - Server status monitoring
 # - Security policy setup for Django and Nginx
-#
+
 # The script handles two operation modes:
 # 1. Development: Simplified configuration for testing
 # 2. Production: Secure configuration with token and unseal management
