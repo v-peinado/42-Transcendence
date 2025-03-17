@@ -4,6 +4,11 @@ from django.utils.html import escape
 from ..models import CustomUser
 from django import forms
 
+# Forms are used to validate user input and to display forms in the frontend
+# They are used in the views to handle user input and to interact with the database
+# This file contains forms related to the user model.
+# Each form represent a different action that can be performed by the user and a "column in the database".
+
 
 class UserForm(forms.ModelForm):
     password1 = forms.CharField(widget=forms.PasswordInput(), label="Contraseña")
