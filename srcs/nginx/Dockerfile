@@ -31,14 +31,9 @@ RUN apt-get update && \
 
 COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/conf/default.conf /etc/nginx/templates/default.conf.template
-# Agregar archivo de configuración dedicada para health check
+# Copiar el archivo de configuración de health check con alta prioridad
 COPY nginx/conf/health.conf /etc/nginx/conf.d/000-health.conf
-
-# Script para corregir el health check
-COPY nginx/health_fix.sh /usr/local/bin/health_fix.sh
-RUN chmod +x /usr/local/bin/health_fix.sh
 
 EXPOSE 8443
 
-# Modificar el comando para ejecutar el script de corrección
-CMD ["/bin/bash", "-c", "/usr/local/bin/health_fix.sh && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]
