@@ -1,13 +1,12 @@
-import socket
-import time
+from main.vault import load_vault_secrets
 import subprocess
-import os
-import sys
+import logging
 import django
 import shutil
-import logging
-from pathlib import Path
-from main.vault import load_vault_secrets
+import socket
+import time
+import sys
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,8 +16,8 @@ logger = logging.getLogger(__name__)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "main.settings")
 
 
-# Function to verify if the database service is available
 def wait_for_db(host, port):
+    """Wait for the database service to be available"""
     print(f"Waiting for database at {host}:{port} to be ready...")
     retries = 0
     max_retries = 30  # Maximum wait time of 1 minute
@@ -38,6 +37,8 @@ def wait_for_db(host, port):
 
 
 def wait_for_vault(max_attempts=30):
+    """Wait for the Vault secrets to be ready"""
+    
     print("Waiting for Vault secrets to be ready...")
     # Wait for Vault token file
     token_file = "/tmp/ssl/django_token"
@@ -70,8 +71,8 @@ def wait_for_vault(max_attempts=30):
     return False
 
 
-# Function to verify system user
 def check_system_user(username):
+    """Check if the system user exists"""
     try:
         result = subprocess.run(
             ["id", "-u", username],
@@ -79,15 +80,16 @@ def check_system_user(username):
             text=True,
             check=False
         )
-        return result.returncode == 0
+        return result.returncode == 0 # Return True if user exists
     except Exception as e:
         print(f"Error checking system user: {e}")
         return False
 
 
-# Function to execute a terminal command
 def run_command(command, check=True):
+    """Run a terminal command and return success status"""
     try:
+        # Run command (see commands in the below functions of this file)
         process = subprocess.run(command, shell=True, text=True, check=check, capture_output=True)
         print(f"Successfully executed: {command}")
         return True, process.stdout
@@ -153,6 +155,10 @@ def start_celery_services(celery_user):
         print(f"Error starting Celery services: {e}")
         return None, None
 
+# Worker is a process that runs the tasks in the background
+# Beat is a process that schedules tasks to be executed at a specific time
+# The worker and beat are started as separate processes to run in parallel with the Django server
+# but started in the same container with celery user
 
 def main():
     """Main function to start Django and Celery"""

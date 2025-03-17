@@ -1,18 +1,18 @@
 """URL configuration for main project."""
 
-from django.contrib import admin
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
 from django.core.exceptions import ImproperlyConfigured
-import os
+from django.conf.urls.static import static
+from django.urls import path, include
+from django.contrib import admin
+from django.conf import settings
 from chat import views
+import os
 
-# Check basic configuration
+# Check if basic configuration is correct
 if "authentication" not in settings.INSTALLED_APPS:
     raise ImproperlyConfigured("The 'authentication' app must be in INSTALLED_APPS")
 
-
+# Check if the environment is production
 def check_nginx_config():
     if not os.environ.get("DJANGO_DEVELOPMENT", False):  # Production environment check (put in .env)
         media_path = "/usr/share/nginx/html/media"
