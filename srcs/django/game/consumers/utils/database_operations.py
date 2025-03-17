@@ -11,13 +11,15 @@ class DatabaseOperations:
     
     @staticmethod
     @database_sync_to_async
-    def create_game(player1, player2=None):
+    def create_game(player1, player2):
         """Create a new game with the given players"""
         with transaction.atomic():
             game = Game.objects.create(
                 player1=player1,
                 player2=player2,
-                status='WAITING'
+                status='WAITING',
+                player1_ready=True,
+                player2_ready=True   
             )
             return game
 

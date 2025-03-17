@@ -1,153 +1,173 @@
 import json
 from django.contrib.auth import get_user_model
 from .base import ChatConsumer
+from .blockusers import BlockedUser  
 from channels.db import database_sync_to_async
-from chat.models import Message, PrivateChannelMembership, GroupMembership, PrivateChannel
+from chat.models import (
+    Message,
+    PrivateChannelMembership,
+    GroupMembership,
+    PrivateChannel,
+)
 import logging
-import asyncio
 import html
 
 User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-class MessagesConsumer:   
-    # Flujo de Mensajes
-    # Recepción del Mensaje:
 
-    # Cuando un cliente envía un mensaje a través del WebSocket, el método receive del consumidor lo recibe.
-    # El método receive procesa el mensaje y llama a handle_message con los datos del mensaje y el nombre del canal.
-    # Manejo del Mensaje:
+class MessagesConsumer:
+    """
+    Message Flow Pipeline:
 
-    # El método handle_message procesa el mensaje y llama a send_to_channel para enviar el mensaje al grupo de canales correspondiente.
-    # Si el mensaje es un mensaje directo (DM), handle_message verifica si el destinatario ha bloqueado al remitente antes de enviar el mensaje.
-    # Envío al Grupo de Canales:
+    1. Reception:
+    - Client sends message via WebSocket -> receive method processes it -> calls handle_message
 
-    # El método send_to_channel utiliza group_send para enviar el mensaje al grupo de canales.
-    # group_send envía un evento a todos los consumidores suscritos al grupo de canales especificado. El evento incluye el tipo de mensaje (type) y los datos del mensaje (user_id, username, message, channel_name).
-    # Manejo del Evento en el Consumidor:
+    2. Processing:
+    - handle_message processes data and calls send_to_channel
+    - checks if recipient has blocked sender before sending
 
-    # Cada consumidor en el grupo de canales recibe el evento y llama al método correspondiente basado en el tipo de mensaje (type).
-    # En este caso, el tipo de mensaje es chat_message, por lo que se llama al método chat_message en cada consumidor.
-    # Envío al Cliente:
+    3. Channel Distribution:
+    - send_to_channel uses group_send to broadcast to all consumers in the channel group
+    - Event includes message type and data (user_id, username, message, channel_name)
 
-    # El método chat_message toma los datos del evento y los envía al cliente a través del WebSocket utilizando self.send.
-    # self.send envía los datos al cliente en formato JSON.
-    
-    # Resumen del Flujo
-    # Cliente envía mensaje -> receive -> handle_message -> send_to_channel
-    # Envío al grupo de canales -> group_send -> chat_message
-    # Envío al cliente -> self.send
-    
+    4. Consumer Handling:
+    - Each consumer in the channel group receives the event
+    - Calls the method corresponding to the event type (chat_message)
+
+    5. Client Delivery:
+    - chat_message method formats data and sends to client via WebSocket (self.send)
+
+    Flow Summary: Client -> receive -> handle_message -> send_to_channel -> group_send -> chat_message -> self.send
+    """
     async def handle_message(self, data, channel_name):
-        message = data.get('message')
-        from_user = self.scope["user"] 
+        """
+        Handle a message sent by the user.
+        Determine if the message is a private message or a group message, if it is a private message, add the users to the group.
+        The prefix 'dm_' is used to identify private messages, followed by the user ids of the users in the conversation.
+        """
+        message = data.get("message")
+        from_user = self.scope["user"]
 
         if message:
-            # Sanitizar el mensaje para evitar XSS
             sanitized_message = html.escape(message)
-            
-            if channel_name.startswith('dm_'): # Si el canal es un mensaje directo
-                to_user_ids = channel_name.split('_')[1:] # [:1], asi extraemos el primer elemento de la lista, ej: [4 , 2]
-                # Usaremos map para aplicar el int() a cada elemento de la lista y guardarlo en user1_id = 4 y user2_id = 2
-                user1_id, user2_id = map(int, channel_name.split('_')[1:])
-                
+
+            if channel_name.startswith("dm_"):
+                to_user_ids = channel_name.split("_")[1:]
+                user1_id, user2_id = map(int, channel_name.split("_")[1:])                      # Map the user ids to integers, user1_id and user2_id
                 to_user_ids = [user1_id, user2_id]
 
-                # Si no existe el canal privado en el diccionario de canales privados, lo añadimos
-                # si no esta bloqueado, el nombre de canal se guardara en la db y se hara un add al grupo
-                # en la clase PrivateChatConsumer
-                # Si esta bloqueado no se guardara en la db y no se hara un add al grupo cuando se conecte, por lo
-                # hasta que no se vuelva a enviar un mensaje no se volvera a intentar añadir al grupo
-                ChatConsumer.private_channels[channel_name] = to_user_ids
-                    # Añadimos a ambos usuarios al canal privado
-                for user_id in to_user_ids:
+                ChatConsumer.private_channels[channel_name] = to_user_ids                       # Add the private channel to the private_channels dictionary
+
+                for user_id in to_user_ids:                                                     # Add the users to the group
                     if user_id in ChatConsumer.connected_users:
-                            await self.channel_layer.group_add(
-                                channel_name,
-                                ChatConsumer.connected_users[user_id]
-                            )
-            await self.save_message(from_user, channel_name, sanitized_message)
-            # Enviamos el mensaje al canal, el cual puede ser un canal privado o un grupo
-            # Al enviarlo al canal, se enviará a todos los consumidores suscritos al canal
-            await self.send_to_channel(channel_name, from_user.id, from_user.username, sanitized_message)
+                        await self.channel_layer.group_add(
+                            channel_name, ChatConsumer.connected_users[user_id]                 # If the user is blocked, the message will not be sent
+                        )
+            await self.save_message(from_user, channel_name, sanitized_message)                 # Save the message to the database
+
+            await self.send_to_channel(                                                         # Send the message to the channel
+                channel_name, from_user.id, from_user.username, sanitized_message
+            )
 
     async def send_to_channel(self, channel_name, user_id, username, message):
-        # Enviamos el mensaje al grupo del canal
+        """
+        Send a message to the channel. The message is sent to all consumers in the channel group.
+        If the recipient has blocked the sender, the message will not be sent.
+        """
         await self.channel_layer.group_send(
             channel_name,
             {
-                'type': 'chat_message',
-                'user_id': user_id,
-                'username': username,
-                'message': message,
-                'channel_name': channel_name,
-            }
+                "type": "chat_message",
+                "user_id": user_id,
+                "username": username,
+                "message": message,
+                "channel_name": channel_name,
+            },
         )
-    
-    # El evento chat_message es manejado por cada consumidor en el grupo del canal
+
     async def chat_message(self, event):
-        sender_id = event['user_id']
+        """
+        Method called when a message is received from the channel layer.
+        Send the message to the client.
+        If the sender is blocked, the message will not be sent.
+        """
+        sender_id = event["user_id"]
         sender_user = await self.get_user_by_id(sender_id)
 
-        # Si el mensaje proviene de un usuario bloqueado, no se mostrará
-        if await self.is_blocked(self.scope["user"].id, sender_user.id):
+        if await self.is_blocked(self.scope["user"].id, sender_user.id):                        # If the sender is blocked, return
             return
 
-        # Se envía el mensaje al cliente
-        await self.send(text_data=json.dumps({
-            'type': 'chat_message',
-            'user_id': sender_id,
-            'username': event['username'],
-            'message': event['message'],
-            'channel_name': event['channel_name'],
-        }))
-        
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "chat_message",
+                    "user_id": sender_id,
+                    "username": event["username"],
+                    "message": event["message"],
+                    "channel_name": event["channel_name"],
+                }
+            )
+        )
+
     async def load_unarchived_messages(self, user_id):
+        """
+        Load unarchived messages for the user. Archive messages are not sent to the user(Not implemented).
+        The messages are sent to the user in the order they were sent and to the correct channel.
+        """
         logger.info(f"Loading unarchived messages for user {user_id}")
         channels = await self.get_user_channels(user_id)
         for channel_name in channels:
-            messages = await self.get_unarchived_messages_filtered(user_id, channel_name)
-            logger.info(f"Loading {len(messages)} unarchived messages for channel {channel_name}")
+            messages = await self.get_unarchived_messages_filtered(                             # Filter out messages from blocked users
+                user_id, channel_name
+            )
+            logger.info(
+                f"Loading {len(messages)} unarchived messages for channel {channel_name}"
+            )
             for message in messages:
                 content = message.content
-                # Sanitizar también los mensajes antiguos al cargarlos
-                sanitized_content = html.escape(content) if not self.is_already_escaped(content) else content
-                logger.info(f"Sending message: {content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}")
-                await self.send(text_data=json.dumps({
-                    "type": "chat_message",
-                    "user_id": await self.get_user_id(message),
-                    "username": await self.get_username(message),
-                    "message": sanitized_content,
-                    "channel_name": message.channel_name,
-                    "timestamp": message.timestamp.isoformat()
-                }))
-                #await asyncio.sleep(0.1)  # Añadir un pequeño retraso de 100ms
+                sanitized_content = (
+                    html.escape(content)
+                    if not self.is_already_escaped(content)
+                    else content
+                )
+                logger.info(
+                    f"Sending message: {content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}"
+                )
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "chat_message",
+                            "user_id": await self.get_user_id(message),
+                            "username": await self.get_username(message),
+                            "message": sanitized_content,
+                            "channel_name": message.channel_name,
+                            "timestamp": message.timestamp.isoformat(),
+                        }
+                    )
+                )
 
     def is_already_escaped(self, text):
-        """Verifica si el texto ya está escapado"""
-        return '&lt;' in text or '&gt;' in text or '&quot;' in text or '&#' in text
+        """
+        Verify if the text is already escaped.
+        """
+        return "&lt;" in text or "&gt;" in text or "&quot;" in text or "&#" in text
 
     @database_sync_to_async
     def get_unarchived_messages_filtered(self, user_id, channel_name):
-        from .blockusers import BlockedUser  # Importar aquí para evitar importación circular
-        
-        # Obtener IDs de usuarios bloqueados
-        blocked_users = BlockedUser.objects.filter(
-            blocker_id=user_id
-        ).values_list('blocked_id', flat=True)
-        
-        # Filtrar mensajes excluyendo los de usuarios bloqueados
-        return list(Message.objects.filter(
-            channel_name=channel_name,
-            is_archived=False
-        ).exclude(
-            user_id__in=blocked_users
-        ).order_by('timestamp'))
+        """
+        This method filters out messages from blocked users.
+        """
+        blocked_users = BlockedUser.objects.filter(blocker_id=user_id).values_list(
+            "blocked_id", flat=True
+        )
 
-    @database_sync_to_async
-    def get_unarchived_messages(self, channel_name):
-        return list(Message.objects.filter(channel_name=channel_name, is_archived=False).order_by('timestamp'))
+        return list(
+            Message.objects.filter(channel_name=channel_name, is_archived=False)
+            .exclude(user_id__in=blocked_users)
+            .order_by("timestamp")
+        )
 
     @database_sync_to_async
     def get_user_id(self, message):
@@ -159,39 +179,24 @@ class MessagesConsumer:
 
     @database_sync_to_async
     def get_user_channels(self, user_id):
-        # Obtener los nombres de los canales privados a los que el usuario pertenece
+        """
+        Get the channels for the user, user the membership tables to get the channels.
+        """
         private_channels = PrivateChannelMembership.objects.filter(
             user_id=user_id
-        ).values_list('channel__name', flat=True)
-        
-        # Obtener los nombres de los canales de grupo a los que el usuario pertenece
-        group_channels = GroupMembership.objects.filter(
-            user_id=user_id
-        ).values_list('group__channel_name', flat=True)
-        
-        return list(private_channels) + list(group_channels) + ['chat_general']
-    
-    @database_sync_to_async   
+        ).values_list("channel__name", flat=True)
+
+        group_channels = GroupMembership.objects.filter(user_id=user_id).values_list(
+            "group__channel_name", flat=True
+        )
+
+        return list(private_channels) + list(group_channels) + ["chat_general"]
+
+    @database_sync_to_async
     def save_message(self, user, channel_name, content):
-        # Confirm channel_name and content are correct
         logger.info(f"Saving message to channel: {channel_name}, content: {content}")
         Message.objects.create(
             user=user,
             channel_name=channel_name,
             content=content,
-            # ensure default is_archived=False in the model
         )
-        
-    async def delete_private_msgs(self, data):
-        logger.info(f"Deleting private messages, channel_name: {data.get('name')}")
-        channel_name = data.get('name')
-        if not channel_name:
-            return
-
-        # Eliminar los mensajes asociados al canal
-        await self.delete_messages_by_channel_name(channel_name)
-
-    @database_sync_to_async
-    def delete_messages_by_channel_name(self, channel_name):
-        logger.info(f"NO RETORNA NULL,Deleting messages with channel_name: {channel_name}")
-        Message.objects.filter(channel_name=channel_name).delete()

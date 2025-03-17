@@ -1,11 +1,9 @@
 import json
 from django.contrib.auth import get_user_model
-from .base import ChatConsumer
 from channels.db import database_sync_to_async
-from chat.models import Message, PrivateChannelMembership, GroupMembership, PrivateChannel
 from game.models import Game
 import logging
-import asyncio
+from django.db import transaction
 
 User = get_user_model()
 
@@ -18,7 +16,6 @@ class ChallengeConsumer():
         to_user_username = data.get('to_username')
         to_user = await self.get_user_by_username(to_user_username)
 
-        # Según la acción, cambias algunos campos del mensaje
         if action == 'challenge':
             message = data.get('message', '')
         elif action == 'reject':
@@ -29,7 +26,6 @@ class ChallengeConsumer():
         else:
             return
 
-        # Mandas un solo evento distinto
         await self.channel_layer.group_send(
             channel_name,
             {
@@ -46,8 +42,6 @@ class ChallengeConsumer():
         )
 
     async def challenge_action_message(self, event):
-        """Un solo método para procesar y reenviar al cliente."""
-        # Se puede usar 'action' para adaptar la respuesta
         msg = {
             'type': 'challenge_action',
             'action': event['action'],
@@ -67,4 +61,13 @@ class ChallengeConsumer():
     
     @database_sync_to_async
     def create_game(self, player1, player2):
-        return Game.objects.create(player1=player1, player2=player2, status='WAITING')
+        """Create a new game with the given players"""
+        with transaction.atomic():
+            game = Game.objects.create(
+                player1=player1,
+                player2=player2,
+                status='WAITING',
+                player1_ready=True,
+                player2_ready=True 
+            )
+            return game

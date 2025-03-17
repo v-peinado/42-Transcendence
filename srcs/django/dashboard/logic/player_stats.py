@@ -1,5 +1,5 @@
-from django.db.models import Avg, Count, Sum
-from game.models import Game  # Importa el modelo Game desde la app correspondiente
+from django.db.models import Sum
+from game.models import Game
 
 def get_player_stats(user):
     games_played = Game.objects.filter(player1=user).count() + Game.objects.filter(player2=user).count()
@@ -11,7 +11,6 @@ def get_player_stats(user):
     total_points_conceded += Game.objects.filter(player2=user).aggregate(Sum('score_player1'))['score_player1__sum'] or 0
     avg_points_per_game = total_points_scored / games_played if games_played > 0 else 0
 
-    # Obtener la URL de la foto de perfil del usuario
     if user.profile_image:
         profile_picture_url = user.profile_image.url
     elif user.fortytwo_image:
@@ -27,7 +26,7 @@ def get_player_stats(user):
         'avg_points_per_game': avg_points_per_game,
         'total_points_scored': total_points_scored,
         'total_points_conceded': total_points_conceded,
-        'profile_picture_url': profile_picture_url,  # Agregar la URL de la foto de perfil
+        'profile_picture_url': profile_picture_url,
     }
 
 def get_player_games(user):
