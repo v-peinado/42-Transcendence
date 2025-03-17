@@ -2,7 +2,7 @@
 
 set -e  # Exit on error
 
-# Variables globales
+# Global variables
 TOKEN_FILE="/tmp/ssl/django_token"
 VAULT_ADDR="https://waf:8200"
 SECRET_PATH="v1/secret/data/django/database"
@@ -27,9 +27,10 @@ wait_for_vault() {
     return 1
 }
 
+# Wait for token to be created
 wait_for_token() {
     echo "Waiting for Vault token to be created..."
-    local max_attempts=60  # Aumentado para dar más tiempo
+    local max_attempts=60
     local attempt=1
 
     while [ $attempt -le $max_attempts ]; do
@@ -64,13 +65,13 @@ get_db_secrets() {
         return 1
     fi
 
-    # Verify response contains data
+    # Verify if the response contains the expected data
     if ! echo "$response" | jq -e '.data.data' > /dev/null 2>&1; then
         echo "❌ Error: Invalid response format from Vault"
         return 1
     fi
 
-    # Extract and verify values
+    # Extract and verify values from the response
     POSTGRES_DB=$(echo "$response" | jq -r '.data.data.NAME')
     POSTGRES_USER=$(echo "$response" | jq -r '.data.data.USER')
     POSTGRES_PASSWORD=$(echo "$response" | jq -r '.data.data.PASSWORD')
@@ -81,7 +82,7 @@ get_db_secrets() {
         return 1
     fi
 
-    # Export variables
+    # Export variables for use in the application
     export POSTGRES_DB
     export POSTGRES_USER
     export POSTGRES_PASSWORD
@@ -90,6 +91,7 @@ get_db_secrets() {
     return 0
 }
 
+# Wait for secrets to be stored in Vault
 wait_for_secrets() {
     echo "Waiting for Vault secrets to be stored..."
     local max_attempts=60
@@ -120,6 +122,7 @@ wait_for_secrets() {
     return 1
 }
 
+# Main function to orchestrate the secrets initialization process
 main() {
     echo "⏳ Starting Vault secrets initialization..."
     
@@ -143,7 +146,7 @@ main() {
         exit 1
     fi
 
-    # Verificar que las variables se han exportado correctamente
+    # Verify all required secrets are present
     if [ -z "$POSTGRES_DB" ] || [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ]; then
         echo "❌ Error: Required environment variables not set"
         exit 1
