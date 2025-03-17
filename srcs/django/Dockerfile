@@ -9,9 +9,6 @@ RUN apt-get update && apt-get install -y postgresql-client && \
 	mkdir -p /app/logs && \
 	chmod 777 /app/logs
 
-# Install Supervisor
-RUN apt-get update && apt-get install -y supervisor
-
 # Create celery user and setup directories
 RUN adduser --disabled-password --gecos '' celeryuser && \
 	mkdir -p /var/lib/celery /var/run/celery /var/log/celery && \
