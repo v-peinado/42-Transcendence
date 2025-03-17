@@ -26,7 +26,7 @@ SERVER_IP = os.environ.get("IP_SERVER", "localhost")
 
 # Basic project configuration
 SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
-DEBUG = os.environ.get("DEBUG", "True") == "True"
+DEBUG = os.environ.get("DEBUG", "True") == "False"
 
 # Define allowed hosts in production (by default, no hosts allowed)
 # ALLOWED_HOSTS = []
