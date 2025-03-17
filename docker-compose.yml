@@ -96,9 +96,11 @@ services:
       context: ./srcs
       dockerfile: waf/Dockerfile
     ports:
-      - "8082:8081"
-      - "8445:8444"
-      - "8200:8200"
+      - "8082:8081" # WAF (http redirect to https)
+      - "8445:8444" # WAF (https)
+      #- "8200:8200" # Vault (only for development)
+    expose:
+      - "8200" # Vault
     networks:
       - transcendence-backend
       - app-network
@@ -138,8 +140,10 @@ services:
   front:
     build: ./srcs/front
     container_name: front
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
+    expose:
+      - "3000"
     volumes:
       - ./srcs/front:/app
     networks:
