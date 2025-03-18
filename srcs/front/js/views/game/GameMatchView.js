@@ -277,28 +277,6 @@ export async function GameMatchView(gameId) {
 			});
 		}
 
-		function handleChatMessage(data) {
-			const chatMessages = document.getElementById('chatMessages');
-			if (!chatMessages) return;
-
-			const messageElement = document.createElement('div');
-			messageElement.className = 'chat-message';
-
-			// Identificar si el mensaje es del usuario o de otro jugador
-			const isCurrentUser = data.sender_id.toString() === userId;
-			if (isCurrentUser) {
-				messageElement.classList.add('own-message');
-			}
-
-			messageElement.innerHTML = `
-				<span class="message-sender">${isCurrentUser ? 'Tú' : data.sender}:</span>
-				<span class="message-content">${data.message}</span>
-			`;
-
-			chatMessages.appendChild(messageElement);
-			chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll al último mensaje
-		}
-
     function handleGameState(state) {
         if (!state) return;
         
@@ -480,87 +458,36 @@ export async function GameMatchView(gameId) {
 		}
 	}
 
-	function getDirection() {
-		if (playerSide === 'left') {
-			if (activeKeys.has('w')) return -1;
-			if (activeKeys.has('s')) return 1;
-		} else {
-			if (activeKeys.has('arrowup')) return -1;
-			if (activeKeys.has('arrowdown')) return 1;
-		}
-		return 0;
-	}
+    function getDirection() {
+        if (playerSide === 'left') {
+            if (activeKeys.has('w')) return -1;
+            if (activeKeys.has('s')) return 1;
+        } else {
+            if (activeKeys.has('arrowup')) return -1;
+            if (activeKeys.has('arrowdown')) return 1;
+        }
+        return 0;
+    }
 
     function setupControls() {
-		console.log(`Setting up controls for side: ${playerSide || 'not assigned'}`);
+        console.log('Configurando controles para lado:', playerSide);
+        // Iniciar el intervalo de movimiento continuo
+        movementInterval = setInterval(() => {
+            if (activeKeys.size > 0) {
+                const direction = getDirection();
+                const message = {
+                    type: 'move_paddle',
+                    direction: direction,
+                    side: playerSide,
+                    player_id: parseInt(userId)
+                };
+                socket.send(JSON.stringify(message));
+            }
+        }, 16);  // ~60 FPS
 
-		// Limpieza para evitar duplicados
-		if (movementInterval) {
-			clearInterval(movementInterval);
-			movementInterval = null;
-		}
-
-		document.removeEventListener('keydown', handleKeyDown);
-		document.removeEventListener('keyup', handleKeyUp);
-
-		// Reinicializar activeKeys
-		activeKeys = new Set();
-
-		// Verificar que tenemos lo necesario para configurar controles
-		if (!playerSide) return;
-
-		// Agregar event listeners
-		document.addEventListener('keydown', handleKeyDown);
-		document.addEventListener('keyup', handleKeyUp);
-
-		// Iniciar intervalo para movimiento continuo
-		movementInterval = setInterval(() => {
-			// Permitir movimiento tanto en estado "playing" como en "countdown"
-			if (activeKeys.size > 0 && gameState && (gameState.status === 'playing' || gameState.status === 'countdown')) {
-				const direction = getDirection();
-				if (direction !== 0) {  // Solo enviar si hay dirección
-					const message = {
-						type: 'move_paddle',
-						direction: direction,
-						side: playerSide,
-						player_id: parseInt(userId),
-						timestamp: Date.now()
-					};
-					gameReconnectionService.send(message);
-				}
-			}
-		}, 16);  // ~60 FPS
-
-		// Configurar chat
-		setupChat();
-	}
-
-	function setupChat() {
-		const chatInput = document.getElementById('chatInput');
-		const sendButton = document.getElementById('sendChatBtn');
-
-		if (!chatInput || !sendButton) return;
-
-		const sendChatMessage = () => {
-			const message = chatInput.value.trim();
-			if (message) {
-				gameReconnectionService.send({
-					type: 'chat_message',
-					message: message
-				});
-				chatInput.value = '';
-			}
-		};
-
-		sendButton.addEventListener('click', sendChatMessage);
-
-		chatInput.addEventListener('keypress', (e) => {
-			if (e.key === 'Enter') {
-				e.preventDefault();
-				sendChatMessage();
-			}
-		});
-	}
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+    }
 
     // Añadir después de la configuración inicial
     const gameWrapper = document.querySelector('.game-wrapper');
@@ -606,27 +533,24 @@ export async function GameMatchView(gameId) {
 
     // Cleanup mejorado
     return () => {
-		console.log('Cleaning up game view');
-
-		// Limpiar intervalos y event listeners
-		if (movementInterval) {
-			clearInterval(movementInterval);
-		}
-		document.removeEventListener('keydown', handleKeyDown);
-		document.removeEventListener('keyup', handleKeyUp);
+        if (movementInterval) {
+            clearInterval(movementInterval);
+        }
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
 
 		// Usar el servicio para desconectar WebSocket
 		gameReconnectionService.disconnect();
+        
+        // Eliminar el CSS si no hay otras vistas que lo usen
+        const cssLink = document.querySelector('link[href="/css/game.css"]');
+        if (cssLink) {
+            document.head.removeChild(cssLink);
+        }
 
-		// Eliminar el CSS si no hay otras vistas que lo usen
-		const cssLink = document.querySelector('link[href="/css/game.css"]');
-		if (cssLink) {
-			document.head.removeChild(cssLink);
-		}
-
-		document.removeEventListener('fullscreenchange', handleFullscreenChange);
-		document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-		document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-		document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-	};
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
 }
