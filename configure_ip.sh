@@ -61,37 +61,44 @@ detect_lan_ip() {
     return 1
 }
 
-echo "Detecting IP address..."
-# Capture just the IP address
-IP_ADDRESS=$(detect_lan_ip)
-echo "Detected IP address: $IP_ADDRESS"
-
-# Use manual IP if provided as argument
-if [ -n "$1" ]; then
-    IP_ADDRESS="$1"
-    echo "Using manual IP address: $IP_ADDRESS"
-fi
-
-# Check if we have a valid IP
-if [ "$IP_ADDRESS" = "localhost" ]; then
-    echo "Failed to detect a valid LAN IP address."
-    echo "For connectivity with other devices, you should specify your IP:"
-    echo "Example: ./configure_ip.sh 192.168.1.100"
-    echo ""
-    read -p "Continue with 'localhost'? (only this machine will connect) [y/N]: " choice
-    if [[ ! "$choice" =~ ^[yY]$ ]]; then
-        echo "Operation cancelled."
-        exit 1
-    fi
-fi
-
-echo "Updating IP_SERVER in .env file to: $IP_ADDRESS"
-
-# Check if .env file exists
+# Check if the .env file exists
 if [ ! -f "$ENV_FILE" ]; then
     echo "Error: .env file not found at $ENV_FILE"
     exit 1
 fi
+
+# Extract current IP_SERVER value from .env file
+CURRENT_IP=$(grep -o "IP_SERVER=.*" "$ENV_FILE" | cut -d'=' -f2)
+echo "Current IP_SERVER setting: $CURRENT_IP"
+
+# If script is run without arguments and current IP is not localhost, reset to localhost
+if [ -z "$1" ] && [ "$CURRENT_IP" != "localhost" ]; then
+    echo "Resetting IP_SERVER to 'localhost' (no argument provided and current IP is not localhost)"
+    IP_ADDRESS="localhost"
+else
+    # Use manual IP if provided as argument
+    if [ -n "$1" ]; then
+        IP_ADDRESS="$1"
+        echo "Using manual IP address: $IP_ADDRESS"
+    else
+        # Otherwise detect IP
+        echo "Detecting IP address..."
+        # Capture just the IP address
+        IP_ADDRESS=$(detect_lan_ip)
+        echo "Detected IP address: $IP_ADDRESS"
+    fi
+fi
+
+# Check if we have a valid IP
+if [ "$IP_ADDRESS" = "localhost" ]; then
+    echo "Using 'localhost' as IP_SERVER value."
+    echo "Only this machine will be able to connect to the application."
+else
+    # Additional IP validation could go here
+    echo "Using IP address: $IP_ADDRESS"
+fi
+
+echo "Updating IP_SERVER in .env file to: $IP_ADDRESS"
 
 # Update the IP_SERVER variable - with correct handling for macOS/Linux
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -111,6 +118,12 @@ else
     echo "⚠️ WARNING: Using 'localhost' - ONLY this machine can connect."
 fi
 
+echo ""
+echo "IP Configuration Behavior:"
+echo "- Running './configure_ip.sh' with no arguments:"
+echo "  * If current IP is 'localhost': Will attempt to detect and set your LAN IP."
+echo "  * If current IP is not 'localhost': Will reset back to 'localhost'."
+echo "- Running './configure_ip.sh <ip_address>': Will always set to specified IP."
 echo ""
 echo "Don't forget to:"
 echo "1. Update your 42 OAuth app Redirect URI to: https://$IP_ADDRESS:8445/login/"
