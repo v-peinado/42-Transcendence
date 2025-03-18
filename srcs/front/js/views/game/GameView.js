@@ -139,15 +139,20 @@ export default async function GameView() {
 
         // Event listeners para modos no disponibles
         const disabledModes = [
-            elements.aiBtn, 
             elements.onlineTournamentBtn, 
             elements.friendBtn
-        ].filter(btn => btn !== null); // Quitamos localTournamentBtn de la lista
+        ].filter(btn => btn !== null); // Quitamos aiBtn y localTournamentBtn de la lista
         
         // Agregar listener específico para torneo local
         elements.localTournamentBtn.addEventListener('click', () => {
             window.location.href = '/tournament/local';
         });
+
+        // Agregar listener para modo IA
+        elements.aiBtn.addEventListener('click', () => {
+            window.location.href = '/game/single-player';
+        });
+        elements.aiBtn.classList.remove('disabled'); // Habilitar el botón
 
         disabledModes.forEach(btn => {
             btn.addEventListener('click', () => {

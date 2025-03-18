@@ -1,5 +1,6 @@
 import { webSocketService } from '../../../services/WebSocketService.js';
 import { blockService } from '../../../services/BlockService.js';
+import { soundService } from '../../../services/SoundService.js';
 
 export class PrivateChat {
     constructor(container) {
@@ -10,10 +11,37 @@ export class PrivateChat {
         this.loadSavedChats();
         this.initializePrivateTabs();
         this.setupMainTabsListeners(); // Añadir esta línea
+        this.pendingChallenges = new Set();
 
         document.addEventListener('block-status-changed', () => {
             this.handleBlockStatusChange();
         });
+
+        // Agregar listener para challenge_action
+        webSocketService.on('challenge_action', (data) => {
+            this.handleChallengeAction(data);
+        });
+
+        // Agregar métodos para gestionar las respuestas de invitación
+        window.acceptChallenge = (fromUserId, fromUsername, channelName) => {
+            webSocketService.send({
+                type: 'challenge_action',
+                action: 'accept',
+                from_user_id: fromUserId,
+                to_username: localStorage.getItem('username'),
+                channel_name: channelName
+            });
+        };
+
+        window.rejectChallenge = (fromUserId, fromUsername, channelName) => {
+            webSocketService.send({
+                type: 'challenge_action',
+                action: 'reject',
+                from_user_id: fromUserId,
+                to_username: localStorage.getItem('username'),
+                channel_name: channelName
+            });
+        };
     }
 
     initializePrivateTabs() {
@@ -645,9 +673,14 @@ export class PrivateChat {
         chatContainer.innerHTML = `
             <div class="cw-private-chat-header">
                 <span class="cw-username">${username}</span>
-                <button class="cw-close-chat" title="Cerrar chat">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="cw-header-actions">
+                    <button class="cw-game-invite-btn" title="Invitar a jugar">
+                        <i class="fas fa-gamepad"></i>
+                    </button>
+                    <button class="cw-close-chat" title="Cerrar chat">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             <div class="cw-messages"></div>
             <div class="cw-input-container">
@@ -664,6 +697,14 @@ export class PrivateChat {
             </div>
         `;
 
+        // Configurar el botón de invitación
+        const inviteBtn = chatContainer.querySelector('.cw-game-invite-btn');
+        inviteBtn.onclick = () => {
+            if (!this.pendingChallenges.has(userId)) {
+                this.handleGameInvite(userId, username, channelName);
+            }
+        };
+
         // Cargar emojis en el picker
         const emojiPicker = chatContainer.querySelector('.cw-emoji-picker');
         if (emojiPicker) {
@@ -673,6 +714,89 @@ export class PrivateChat {
         this.container.querySelector('.cw-tab-content').appendChild(chatContainer);
         this.setupChatListeners(chatContainer, userId, channelName);
         return chatContainer;
+    }
+
+    handleGameInvite(userId, username, channelName) {
+        // Evitar múltiples invitaciones
+        if (this.pendingChallenges.has(userId)) {
+            return;
+        }
+
+        this.pendingChallenges.add(userId);
+
+        webSocketService.send({
+            type: 'challenge_action',
+            action: 'challenge',
+            from_user_id: parseInt(localStorage.getItem('user_id')),
+            to_username: username,
+            channel_name: channelName,
+            message: `${localStorage.getItem('username')} te ha invitado a jugar una partida!`
+        });
+
+        // Mensaje para el emisor
+        this.addMessageToChat(userId, {
+            content: '🎮 Has enviado una invitación para jugar',
+            user_id: parseInt(localStorage.getItem('user_id')),
+            username: 'Sistema',
+            isSystem: true
+        });
+
+        // Limpiar la invitación después de 1 minuto
+        setTimeout(() => {
+            this.pendingChallenges.delete(userId);
+        }, 60000);
+    }
+
+    handleChallengeAction(data) {
+        const { action, from_user_id, to_user_id, message, channel_name, game_id } = data;
+        const currentUserId = parseInt(localStorage.getItem('user_id'));
+        const otherUserId = currentUserId === from_user_id ? to_user_id : from_user_id;
+
+        if (action === 'challenge' && currentUserId === to_user_id) {
+            // Añadir botones de respuesta para el receptor
+            const responseButtons = `
+                <div class="cw-challenge-response">
+                    <button class="cw-accept-challenge" onclick="window.acceptChallenge(${from_user_id}, '${data.from_username}', '${channel_name}')">
+                        <i class="fas fa-check"></i> Aceptar
+                    </button>
+                    <button class="cw-reject-challenge" onclick="window.rejectChallenge(${from_user_id}, '${data.from_username}', '${channel_name}')">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
+                </div>
+            `;
+
+            this.addMessageToChat(from_user_id, {
+                content: message,
+                user_id: from_user_id,
+                username: data.from_username,
+                isSystem: true
+            });
+
+            this.addMessageToChat(from_user_id, {
+                content: responseButtons,
+                user_id: from_user_id,
+                username: 'Sistema',
+                isSystem: true
+            });
+        } else if (action === 'accept' || action === 'reject') {
+            // Mostrar respuesta para ambos usuarios
+            this.addMessageToChat(otherUserId, {
+                content: message,
+                user_id: from_user_id,
+                username: 'Sistema',
+                isSystem: true
+            });
+
+            if (action === 'accept' && game_id) {
+                // Cambiar la navegación para usar el router del cliente
+                setTimeout(() => {
+                    window.history.pushState(null, '', `/game/${game_id}`);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                }, 1500);
+            }
+        }
+
+        this.pendingChallenges.delete(otherUserId);
     }
 
     getCommonEmojis() {

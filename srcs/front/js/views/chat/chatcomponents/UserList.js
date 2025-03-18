@@ -1,6 +1,7 @@
 import { webSocketService } from '../../../services/WebSocketService.js';
 import { friendService } from '../../../services/FriendService.js';
 import { blockService } from '../../../services/BlockService.js';
+import { ChatUserProfile } from './ChatUserProfile.js';
 
 export class UserList {
     constructor(container) {
@@ -11,6 +12,7 @@ export class UserList {
         this.requestsContainer = container.querySelector('#requests-container');
         this.friendsContainer = container.querySelector('#friends-container');
         this.onlineUsers = new Set();
+        this.userProfile = new ChatUserProfile(container);
 
         // Suscribirse a eventos de WebSocket
         webSocketService.on('user_online', (data) => this.handleUserStatus(data.user_id, true));
@@ -154,44 +156,38 @@ export class UserList {
             return userElement;
         }
 
-        // Usuario normal o bloqueado por nosotros
-        userElement.innerHTML = `
-            <div class="cw-user-info">
-                <span class="cw-user-status online"></span> <!-- Siempre online porque está en la lista -->
-                <span class="cw-username">${user.username}</span>
-                ${isFriend ? '<i class="fas fa-star friend-star"></i>' : ''}
-                ${isBlocked ? '<i class="fas fa-ban text-danger"></i>' : ''}
-            </div>
-            <div class="cw-user-actions">
-                ${this.createUserActions(user)}
-            </div>
+        const userInfo = document.createElement('div');
+        userInfo.className = 'cw-user-info';
+        userInfo.innerHTML = `
+            <span class="cw-user-status online"></span>
+            <span class="cw-username">${user.username}</span>
+            ${isFriend ? '<i class="fas fa-star friend-star"></i>' : ''}
+            ${isBlocked ? '<i class="fas fa-ban text-danger"></i>' : ''}
         `;
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'cw-user-actions';
+        actionsDiv.innerHTML = this.createUserActions(user);
+
+        userElement.appendChild(userInfo);
+        userElement.appendChild(actionsDiv);
 
         this.attachUserEventListeners(userElement, user);
         return userElement;
     }
 
-    createUserActions(user, blockReason) {
+    createUserActions(user) {
+        // En lugar de crear un elemento DOM, vamos a devolver un string template
         const userId = parseInt(user.id);
         const isFriend = this.currentFriends.has(userId);
         const hasSentRequest = this.sentRequests.has(userId);
-        const requestData = this.sentRequestsData?.get(userId);
-    
-        // Si el otro usuario nos ha bloqueado
-        if (blockService.isBlockedByUser(userId)) {
-            return `
-                <div class="cw-block-status">
-                    <i class="fas fa-lock"></i>
-                    Este usuario te ha bloqueado
-                    <span class="cw-block-hint">No podrás enviarle mensajes ni verlo en línea</span>
-                </div>`;
-        }
-    
-        // Determinar si el usuario está bloqueado
         const isBlocked = blockService.hasBlockedUser(userId);
-    
+
         return `
             <div class="cw-user-actions-group">
+                <button class="cw-profile-btn" title="Ver perfil">
+                    <i class="fas fa-user"></i>
+                </button>
                 ${!isBlocked ? `
                     <button class="cw-chat-btn" title="Chat privado">
                         <i class="fas fa-comment"></i>
@@ -203,8 +199,8 @@ export class UserList {
                             </button>
                         ` : `
                             <button class="cw-cancel-request" 
-                                   title="Cancelar solicitud" 
-                                   data-request-id="${requestData?.request_id || requestData?.id}">
+                                title="Cancelar solicitud" 
+                                data-request-id="${this.sentRequestsData?.get(userId)?.request_id}">
                                 <i class="fas fa-clock"></i>
                             </button>
                         `}
@@ -247,6 +243,16 @@ export class UserList {
     attachUserEventListeners(userElement, user) {
         const userId = parseInt(user.id);
         
+        const profileBtn = userElement.querySelector('.cw-profile-btn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', async (e) => {
+                const data = await this.userProfile.fetchStats(userId);
+                if (data) {
+                    this.userProfile.showModal(data, e.currentTarget);
+                }
+            });
+        }
+
         // Manejar botón de bloqueo
         const blockBtn = userElement.querySelector('.cw-block-btn');
         if (blockBtn) {

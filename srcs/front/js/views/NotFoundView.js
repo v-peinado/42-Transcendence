@@ -1,65 +1,10 @@
 import { getNavbarHTML } from '../components/Navbar.js';
-import AuthService from '../services/AuthService.js';
-import GameService from '../services/GameService.js';
 
 export async function NotFoundView() {
-	console.log('NotFoundView cargada');
-	const app = document.getElementById('app');
-	const path = window.location.pathname;
-
-	// Comprobar si es una URL de juego
-	const gameMatch = path.match(/^\/game\/(\d+)$/);
-	if (gameMatch && localStorage.getItem('isAuthenticated') === 'true') {
-		// Si parece una URL de juego y el usuario está autenticado, 
-		// intentar verificar si es válida antes de redirigir
-		const gameId = gameMatch[1];
-		console.log(`Verificando partida ${gameId} antes de redirigir`);
-
-		try {
-			// Verificar si el usuario está autenticado
-			const userId = await AuthService.getUserId();
-			if (!userId) {
-				console.warn('Usuario no autenticado');
-				throw new Error('Usuario no autenticado');
-			}
-
-			// Verificar si la partida existe y si tiene acceso
-			const gameAccess = await GameService.verifyGameAccess(gameId);
-
-			// Si tenemos datos de reconexión en localStorage, intentar reconectar sin verificar API
-			const savedGameData = localStorage.getItem(`game_${gameId}`);
-			if (savedGameData) {
-				console.log('Encontrados datos de reconexión guardados', JSON.parse(savedGameData));
-
-				// Intentar cargar la vista de juego directamente
-				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
-				GameMatchView(gameId);
-				return;
-			}
-
-			if (gameAccess.exists && gameAccess.can_access) {
-				console.log('Partida válida, redirigiendo', gameAccess);
-
-				// Usar GameMatchView directamente
-				const GameMatchView = (await import('./game/GameMatchView.js')).GameMatchView;
-				GameMatchView(gameId);
-				return;
-			} else {
-				console.warn('Partida no válida o sin acceso', gameAccess);
-				// No redirigir, mostrar 404
-			}
-		} catch (error) {
-			console.error('Error al cargar la partida', error);
-		}
-	}
-
-	// Si no es una URL de juego, mostrar 404 normal
-	const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-	const userInfo = isAuthenticated ? await AuthService.getUserProfile() : null;
-	const navbarHtml = await getNavbarHTML(isAuthenticated, userInfo);
-
-	app.innerHTML = `
-        ${navbarHtml}
+    const app = document.getElementById('app');
+    
+    app.innerHTML = `
+        ${getNavbarHTML()}
         <div class="not-found-page">
             <div class="not-found-content">
                 <h1 class="error-title">404</h1>
