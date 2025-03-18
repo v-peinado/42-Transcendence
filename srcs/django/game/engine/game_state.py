@@ -1,7 +1,7 @@
 from .components.collision_manager import CollisionManager
 from .components.score_manager import ScoreManager
-from .entities.ball import Ball
 from .entities.paddle import Paddle
+from .entities.ball import Ball
 
 
 class GameState:

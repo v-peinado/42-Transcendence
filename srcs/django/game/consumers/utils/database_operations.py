@@ -1,8 +1,8 @@
+from channels.db import database_sync_to_async
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 from ...models import Game
-from channels.db import database_sync_to_async
 
 User = get_user_model()
 

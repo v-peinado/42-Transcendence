@@ -1,10 +1,10 @@
 from .shared_state import waiting_players, connected_players, game_states
 from .utils.database_operations import DatabaseOperations
 from .base import TranscendenceBaseConsumer
-import json
-import time
 import logging
 import asyncio
+import json
+import time
 
 logger = logging.getLogger(__name__) # Logger for this module
 
