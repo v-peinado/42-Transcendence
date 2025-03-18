@@ -2,9 +2,9 @@ from ..utils.database_operations import DatabaseOperations
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from ..shared_state import game_players
+import traceback
 import asyncio
 import time
-import traceback
 
 class MultiplayerHandler:
     """Handles multiplayer game logic"""
