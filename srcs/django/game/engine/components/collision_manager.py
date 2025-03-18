@@ -1,5 +1,5 @@
 import math
-
+import random
 
 class CollisionManager:
     def __init__(self, game_state):
@@ -23,7 +23,7 @@ class CollisionManager:
                     # Collision on the front side: calculate bounce angle
                     relative_intersect_y = ball.y - (paddle.y + paddle.height / 2)
                     normalized_intersect = relative_intersect_y / (paddle.height / 2)
-                    bounce_angle = normalized_intersect * (math.pi / 4)  # max bounce angle = 45 degrees
+                    bounce_angle = normalized_intersect * (math.pi / 4) + random.uniform(-0.05, 0.05) # max bounce angle = 45 degrees
 
                     # Update ball speed and position
                     speed = ball.base_speed
