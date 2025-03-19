@@ -1,14 +1,20 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Tournament(models.Model):
     name = models.CharField(max_length=100)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='created_tournaments', on_delete=models.CASCADE)
     create_at = models.DateTimeField(auto_now_add=True)
     max_match_points = models.IntegerField()
-    number_of_players = models.IntegerField()
+    number_of_players = models.IntegerField(
+        validators=[
+            MinValueValidator(2),  # Assuming you need at least 2 players
+            MaxValueValidator(10)  # Example: max 16 players
+        ]
+    )
     finished = models.BooleanField(default=False)
-    winner = models.CharField(max_length=50, null=True, blank=True)  # Permitir nulo y vacío
+    winner = models.CharField(max_length=50, null=True, blank=True)
 
 class TemporaryPlayer(models.Model):
     tournament = models.ForeignKey(Tournament, related_name='temporary_players', on_delete=models.CASCADE)
