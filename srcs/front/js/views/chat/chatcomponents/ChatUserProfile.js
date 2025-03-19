@@ -58,10 +58,9 @@ export class ChatUserProfile {
         }
 
         const { stats, games } = data;
-        const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${stats.username}`;
         
-        // Seleccionar la imagen con prioridad
-        const profileImage = stats.profile_image || stats.fortytwo_image || defaultAvatar;
+        // Seleccionar la imagen con prioridad usando los nuevos campos
+        const profileImage = stats.profile_image || stats.fortytwo_image || stats.avatar;
         
         // Determinar rango basado en victorias
         const rank = this.getUserRank(stats.games_won);
@@ -76,7 +75,7 @@ export class ChatUserProfile {
                         <img src="${profileImage}" 
                              alt="${stats.username}" 
                              class="cw-profile-avatar"
-                             onerror="this.src='${defaultAvatar}'">
+                             onerror="this.src='${stats.avatar}'">
                     </div>
                     <div class="cw-profile-info">
                         <h2>${stats.username}</h2>

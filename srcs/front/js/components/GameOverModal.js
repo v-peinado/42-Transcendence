@@ -5,25 +5,27 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
         return;
     }
 
-    // Elementos requeridos para el modo single player
+    // Elementos esenciales (siempre requeridos)
     const requiredElements = {
         winnerText: document.getElementById('winnerText'),
         finalPlayer1Name: document.getElementById('finalPlayer1Name'),
         finalPlayer2Name: document.getElementById('finalPlayer2Name'),
         player1Score: document.querySelector('.player1-score'),
         player2Score: document.querySelector('.player2-score'),
-        returnButton: document.getElementById('returnToLobby'),
-        playAgainButton: document.getElementById('playAgain')
+        returnToLobby: document.getElementById('returnToLobby') // Cambiar returnButton por returnToLobby
     };
 
-    // Verificar solo los elementos requeridos
+    // Verificar solo los elementos esenciales
     for (const [key, element] of Object.entries(requiredElements)) {
         if (!element) {
-            console.error(`Elemento ${key} no encontrado en el modal`);
+            console.error(`Elemento esencial ${key} no encontrado en el modal`);
             return;
         }
     }
 
+    // Elementos opcionales
+    const playAgainButton = document.getElementById('playAgain');
+    
     try {
         // Actualizar textos
         requiredElements.winnerText.textContent = `¡${winner} ha ganado!`;
@@ -56,8 +58,10 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
         }
 
         // Configurar botones
-        requiredElements.returnButton.onclick = () => window.location.href = '/game';
-        requiredElements.playAgainButton.onclick = () => window.location.reload();
+        requiredElements.returnToLobby.onclick = () => window.location.href = '/game'; // Cambiar returnButton por returnToLobby
+        if (playAgainButton) {
+            playAgainButton.style.display = 'none'; // Ocultarlo en matchmaking
+        }
 
         // Mostrar modal
         gameOverScreen.style.display = 'flex';
@@ -72,15 +76,16 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
 function updatePlayerAvatar(selector, player) {
     const avatarContainer = document.querySelector(selector);
     if (avatarContainer) {
-        if (player.profile_image) {
-            avatarContainer.innerHTML = `<img src="${player.profile_image}" alt="${player.username}" />`;
-        } else if (player.fortytwo_image) {
-            avatarContainer.innerHTML = `<img src="${player.fortytwo_image}" alt="${player.username}" />`;
-        } else if (player.is_cpu) {
-            avatarContainer.innerHTML = '<i class="fas fa-robot"></i>';
-        } else {
-            avatarContainer.innerHTML = '<i class="fas fa-user"></i>';
-        }
+        // Prioridad: 1. Foto de perfil, 2. Foto de 42, 3. Avatar generado
+        const avatarUrl = player.profile_image || 
+                         player.fortytwo_image || 
+                         `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.username}`;
+
+        avatarContainer.innerHTML = `
+            <img src="${avatarUrl}" 
+                 alt="${player.username}" 
+                 class="avatar-img"
+                 onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=${player.username}'"/>`;
     }
 }
 

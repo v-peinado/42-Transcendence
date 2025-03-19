@@ -2,51 +2,61 @@ import { loadHTML } from '../../utils/htmlLoader.js';
 import { soundService } from '../../services/SoundService.js';
 import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js'; // Añadir esta importación
-import { showGameOverModal } from '../../components/GameOverModal.js';
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
+import { showGameOverModal, hideGameOverModal } from '../../components/GameOverModal.js';
 
 export async function GameMatchView(gameId) {
-    // Validar que tenemos un gameId válido
-    if (!gameId || isNaN(parseInt(gameId))) {
-        console.error('GameMatchView: ID de partida inválido');
-        window.history.pushState(null, null, '/404');
-        const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
-        await NotFoundView();
-        return;
-    }
-
-    // Asegurarnos que estamos autenticados
-    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-    if (!isAuthenticated) {
-        console.error('GameMatchView: Usuario no autenticado');
-        window.location.href = '/login?redirect=/game/' + gameId;
-        return;
-    }
-
-    // Verificar si la partida existe y el usuario tiene acceso
-    try {
-        console.log('Verificando acceso a partida:', gameId);
-        const gameAccess = await GameService.verifyGameAccess(gameId);
-
-        if (!gameAccess.exists || !gameAccess.can_access) {
-            console.error('GameMatchView: Acceso a partida denegado:', gameAccess.message);
-            window.history.pushState(null, null, '/404');
-            const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
-            await NotFoundView();
-            return;
-        }
-    } catch (error) {
-        console.error('Error verificando acceso a partida:', error);
-    }
-
     console.log('Iniciando partida:', gameId);
+
+		// Validar que tenemos un gameId válido
+		if (!gameId || isNaN(parseInt(gameId))) {
+			console.error('GameMatchView: ID de partida inválido');
+			window.history.pushState(null, null, '/404');
+			const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
+			await NotFoundView();
+			return;
+		}
+	
+		// Asegurarnos que estamos autenticados
+		const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+		if (!isAuthenticated) {
+			console.error('GameMatchView: Usuario no autenticado');
+			window.location.href = '/login?redirect=/game/' + gameId;
+			return;
+		}
+	
+		// Verificar si la partida existe y el usuario tiene acceso
+		try {
+			console.log('Verificando acceso a partida:', gameId);
+			const gameAccess = await GameService.verifyGameAccess(gameId);
+	
+			if (!gameAccess.exists || !gameAccess.can_access) {
+				console.error('GameMatchView: Acceso a partida denegado:', gameAccess.message);
+				window.history.pushState(null, null, '/404');
+				const NotFoundView = (await import('../NotFoundView.js')).NotFoundView;
+				await NotFoundView();
+				return;
+			}
+		} catch (error) {
+			console.error('Error verificando acceso a partida:', error);
+		}
+	
     const app = document.getElementById('app');
     
     // Cargar navbar autenticado y template del juego
-    const [template, userInfo] = await Promise.all([
+    const [template, modalTemplate, userInfo] = await Promise.all([
         loadHTML('/views/game/templates/GameMatch.html'),
+        loadHTML('/views/game/templates/modals/GameOverModal.html'),
         AuthService.getUserProfile()
     ]);
+
+	// Si no pudimos obtener el perfil del usuario, redirigir al login
+	if (!userInfo || userInfo.error) {
+		console.error('GameMatchView: No se pudo cargar el perfil del usuario');
+		localStorage.removeItem('isAuthenticated');
+		window.location.href = '/login?redirect=/game/' + gameId;
+		return;
+	}
 
     // Obtener el navbar procesado y añadirlo
     const navbarHtml = await getNavbarHTML(true, userInfo);
@@ -59,12 +69,15 @@ export async function GameMatchView(gameId) {
     app.innerHTML = navbarHtml;
     app.appendChild(tempDiv.firstElementChild);
 
-    // Cargar CSS
-    if (!document.querySelector('link[href="/css/game.css"]')) {
-        const linkElem = document.createElement('link');
-        linkElem.rel = 'stylesheet';
-        linkElem.href = '/css/game.css';
-        document.head.appendChild(linkElem);
+    // Añadir el modal al contenedor
+    const modalsContainer = document.getElementById('modalsContainer');
+    if (modalsContainer) {
+        modalsContainer.innerHTML = modalTemplate;
+        // Asegurarnos que está oculto
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        if (gameOverScreen) {
+            gameOverScreen.style.display = 'none';
+        }
     }
 
     // Variables de estado
@@ -82,193 +95,200 @@ export async function GameMatchView(gameId) {
     canvas.width = 1000;
     canvas.height = 600;
 
-    // Establecer conexión WebSocket usando el servicio de reconexión
-    const socket = gameReconnectionService.setupConnection(gameId, {
-        onOpen: (reconnecting) => {
-            console.log(`Conexión WebSocket abierta. Reconectando: ${reconnecting}`);
-            const gameStatus = document.getElementById('gameStatus');
-            if (gameStatus) {
-                gameStatus.textContent = reconnecting ?
-                    '🔄 Reconectando a la partida...' : '🎮 Conectado - Esperando oponente...';
-            }
-        },
-        onMessage: (data) => {
-            switch (data.type) {
-                case 'game_info':
-                    console.log('Recibida información del juego:', data);
-                    if (!playerSide && userId) {
-                        if (userId === data.player1_id.toString()) {
-                            playerSide = 'left';
-                        } else if (userId === data.player2_id.toString()) {
-                            playerSide = 'right';
-                        }
+		// Establecer conexión WebSocket usando el servicio de reconexión
+		const socket = gameReconnectionService.setupConnection(gameId, {
+			onOpen: (reconnecting) => {
+				console.log(`Conexión WebSocket abierta. Reconectando: ${reconnecting}`);
+				const gameStatus = document.getElementById('gameStatus');
+				if (gameStatus) {
+					gameStatus.textContent = reconnecting ?
+						'🔄 Reconectando a la partida...' : '🎮 Conectado - Esperando oponente...';
+				}
+			},
+			onMessage: (data) => {
+				switch (data.type) {
+					case 'game_info':
+						console.log('Recibida información del juego:', data);
+						if (!playerSide && userId) {
+							if (userId === data.player1_id.toString()) {
+								playerSide = 'left';
+							} else if (userId === data.player2_id.toString()) {
+								playerSide = 'right';
+							}
 
-                        if (playerSide) {
-                            console.log('Lado del jugador determinado:', playerSide);
-                            gameReconnectionService.saveGameData(gameId, {
-                                playerSide,
-                                player1: data.player1,
-                                player2: data.player2,
-                                player1_id: data.player1_id,
-                                player2_id: data.player2_id
-                            });
+							if (playerSide) {
+								console.log('Lado del jugador determinado:', playerSide);
+								gameReconnectionService.saveGameData(gameId, {
+									playerSide,
+									player1: data.player1,
+									player2: data.player2,
+									player1_id: data.player1_id,
+									player2_id: data.player2_id
+								});
 
-                            // Actualizar nombres si están disponibles
-                            document.querySelector('#leftPlayerName').textContent = data.player1;
-                            document.querySelector('#rightPlayerName').textContent = data.player2;
+								// Actualizar nombres si están disponibles
+								document.querySelector('#leftPlayerName').textContent = data.player1;
+								document.querySelector('#rightPlayerName').textContent = data.player2;
 
-                            // Configurar controles inmediatamente
-                            setupControls();
-                        }
-                    }
-                    break;
+								 // Guardar IDs de los jugadores
+								document.querySelector('#leftPlayerName').dataset.playerId = data.player1_id;
+								document.querySelector('#rightPlayerName').dataset.playerId = data.player2_id;
 
-                case 'player_disconnected':
-                    showGameNotification(
-                        `${data.username || 'Jugador'} se ha desconectado temporalmente`,
-                        'warning',
-                        'fa-user-slash'
-                    );
-                    break;
+								// Configurar controles inmediatamente
+								setupControls();
+							}
+						}
+						break;
 
-                case 'player_reconnected':
-                    showGameNotification(
-                        `¡${data.username || 'Jugador'} ha vuelto a la partida!`,
-                        'success',
-                        'fa-user-check'
-                    );
-                    break;
+					case 'game_start':
+						console.log('Iniciando juego:', data);
+						// Actualizar nombres en todos los lugares necesarios
+						document.querySelector('#player1NamePreMatch').textContent = data.player1;
+						document.querySelector('#player2NamePreMatch').textContent = data.player2;
+						document.querySelector('#leftPlayerName').textContent = data.player1;
+						document.querySelector('#rightPlayerName').textContent = data.player2;
 
-                // ...existing switch cases...
-            }
-        },
-        onDisconnect: (attempt, max) => {
-            document.getElementById('gameStatus').textContent =
-                `🔄 Conexión perdida. Reintentando... (${attempt}/${max})`;
-        },
-        onReconnect: () => {
-            const gameStatus = document.getElementById('gameStatus');
-            if (gameStatus) {
-                gameStatus.textContent = '🎮 Reconectado!';
-            }
-            showGameNotification('¡Reconectado al juego!', 'success');
-        },
-        onReconnectFailed: () => {
-            document.getElementById('gameStatus').textContent = '❌ No se pudo reconectar';
-            showGameNotification('No se pudo reconectar. Intenta refrescar la página.', 'error');
-        }
-    });
+						// Asignar lado del jugador
+						if (userId === data.player1_id.toString()) {
+							playerSide = 'left';
+						} else if (userId === data.player2_id.toString()) {
+							playerSide = 'right';
+						}
 
-    async function showPreMatchSequence(player1, player2, playerSide) {
-        return new Promise(async (resolve) => {
-            const countdown = document.getElementById('countdown');
-            if (countdown) {
-                countdown.style.display = 'flex';
-                countdown.textContent = '';
-            }
+						// Guardar datos para posible reconexión
+						gameReconnectionService.saveGameData(gameId, {
+							playerSide,
+							player1: data.player1,
+							player2: data.player2,
+							player1_id: data.player1_id,
+							player2_id: data.player2_id
+						});
 
-            // Decimos al servidor que estamos listos para la cuenta atrás
-            socket.send(JSON.stringify({
-                type: 'ready_for_countdown'
-            }));
+						// Guardar IDs de los jugadores
+						document.querySelector('#leftPlayerName').dataset.playerId = data.player1_id;
+						document.querySelector('#rightPlayerName').dataset.playerId = data.player2_id;
 
-            resolve();
-        });
-    }
+						showPreMatchSequence(data.player1, data.player2, playerSide).then(() => {
+							setupControls();
+						});
+						break;
 
-    let gameStarted = false;
-    let countdownShown = false;
+					case 'game_state':
+						handleGameState(data.state);
+						break;
 
-    socket.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Mensaje recibido en GameMatchView:', data);
+					case 'game_finished':
+						handleGameEnd(data);
+						break;
 
-        switch(data.type) {
-            case 'game_start':
-                console.log('Iniciando juego:', data);
-                
-                // Verificar elementos antes de actualizar
-                const leftPlayerName = document.getElementById('leftPlayerName');
-                const rightPlayerName = document.getElementById('rightPlayerName');
+					case 'player_disconnected':
+						showGameNotification(
+							`${data.username || 'Jugador'} se ha desconectado temporalmente`,
+							'warning',
+							'fa-user-slash'
+						);
+						break;
 
-                if (leftPlayerName) leftPlayerName.textContent = data.player1;
-                if (rightPlayerName) rightPlayerName.textContent = data.player2;
+					case 'player_reconnected':
+						showGameNotification(
+							`¡${data.username || 'Jugador'} ha vuelto a la partida!`,
+							'success',
+							'fa-user-check'
+						);
+						break;
 
-                // Asignar lado del jugador
-                if (userId === data.player1_id.toString()) {
-                    playerSide = 'left';
-                } else if (userId === data.player2_id.toString()) {
-                    playerSide = 'right';
-                }
+					case 'chat_message':
+						handleChatMessage(data);
+						// También mostrar una notificación discreta si no es del usuario actual
+						if (data.sender_id.toString() !== userId) {
+							showGameNotification(
+								`Mensaje de ${data.sender}`,
+								'info',
+								'fa-comment'
+							);
+						}
+						break;
+				}
+			},
+			onDisconnect: (attempt, max) => {
+				document.getElementById('gameStatus').textContent =
+					`🔄 Conexión perdida. Reintentando... (${attempt}/${max})`;
+			},
+			onReconnect: () => {
+				const gameStatus = document.getElementById('gameStatus');
+				if (gameStatus) {
+					gameStatus.textContent = '🎮 Reconectado!';
+				}
+				showGameNotification('¡Reconectado al juego!', 'success');
+			},
+			onReconnectFailed: () => {
+				document.getElementById('gameStatus').textContent = '❌ No se pudo reconectar';
+				showGameNotification('No se pudo reconectar. Intenta refrescar la página.', 'error');
+			}
+		});
 
-                await showPreMatchSequence(data.player1, data.player2, playerSide);
-                setupControls();
-                break;
+		// Función mejorada para mostrar notificaciones en el juego
+		function showGameNotification(message, type = 'info', iconClass = 'fa-info-circle') {
+			const container = document.getElementById('gameNotificationsContainer');
+			if (!container) return;
 
-            case 'game_state':
-                if (!gameState) {
-                    console.log('Inicializando estado del juego');
-                    gameState = data.state;
-                }
-                handleGameState(data.state);
-                break;
-                
-            case 'game_finished':
-                handleGameEnd(data);
-                break;
-        }
-    };
+			const notification = document.createElement('div');
+			notification.className = `game-notification ${type}`;
 
-    async function handleGameStart(data) {
-        console.log('Game Start:', {
-            player1_id: data.player1_id,
-            player2_id: data.player2_id,
-            myId: userId
-        });
+			notification.innerHTML = `
+				<div class="notification-icon">
+					<i class="fas ${iconClass}"></i>
+				</div>
+				<div class="notification-content">${message}</div>
+			`;
 
-        // Actualizar avatares y nombres solo si existen los elementos
-        const player1Avatar = document.querySelector('.player-card:first-child .player-avatar');
-        const player2Avatar = document.querySelector('.player-card:last-child .player-avatar');
-        const playerInfo = document.getElementById('playerInfo');
-        const controlsInfo = document.getElementById('controlsInfo');
+			container.appendChild(notification);
 
-        // Actualizar información basada en el lado del jugador
-        if (userId === data.player1_id.toString()) {
-            playerSide = 'left';
-            if (playerInfo) playerInfo.textContent = `Tú eres el Jugador 1 (${data.player1})`;
-            if (controlsInfo) controlsInfo.textContent = 'Controles: W/S para arriba/abajo';
-        } else if (userId === data.player2_id.toString()) {
-            playerSide = 'right';
-            if (playerInfo) playerInfo.textContent = `Tú eres el Jugador 2 (${data.player2})`;
-            if (controlsInfo) controlsInfo.textContent = 'Controles: ↑/↓ para arriba/abajo';
-        }
+			// Mostrar con un pequeño retraso para permitir la animación
+			setTimeout(() => notification.classList.add('visible'), 10);
 
-        // Actualizar avatares si existen los elementos y la información
-        updateAvatars(data.player1_info, data.player2_info);
-    }
+			// Auto-eliminar después de unos segundos
+			setTimeout(() => {
+				notification.classList.add('fadeout');
+				setTimeout(() => {
+					if (notification.parentNode === container) {
+						container.removeChild(notification);
+					}
+				}, 300); // Tiempo para que termine la animación de salida
+			}, 3000);
+		}
 
-    // Nueva función para manejar la actualización de avatares
-    function updateAvatars(player1Info, player2Info) {
-        const avatarSelectors = {
-            player1: '.player-card:first-child .player-avatar',
-            player2: '.player-card:last-child .player-avatar',
-            finalPlayer1: '.player-column:first-child .player-avatar',
-            finalPlayer2: '.player-column:last-child .player-avatar'
-        };
+		async function showPreMatchSequence(player1, player2, playerSide) {
+			return new Promise(async (resolve) => {
+				const modal = document.getElementById('matchFoundModal');
+				const countdown = document.getElementById('countdown');
 
-        Object.entries(avatarSelectors).forEach(([player, selector]) => {
-            const avatarContainer = document.querySelector(selector);
-            const info = player.includes('player1') ? player1Info : player2Info;
-            
-            if (avatarContainer && info) {
-                if (info.profile_image) {
-                    avatarContainer.innerHTML = `<img src="${info.profile_image}" alt="Avatar" />`;
-                } else if (info.fortytwo_image) {
-                    avatarContainer.innerHTML = `<img src="${info.fortytwo_image}" alt="Avatar" />`;
-                }
-            }
-        });
-    }
+				// 1. Mostrar modal inicial
+				document.getElementById('player1NamePreMatch').textContent = player1;
+				document.getElementById('player2NamePreMatch').textContent = player2;
+				document.getElementById('playerControls').textContent =
+					playerSide === 'left' ? 'W / S' : '↑ / ↓';
+
+				modal.style.display = 'flex';
+				await new Promise(r => setTimeout(r, 2000));
+
+				// 2. Ocultar modal
+				modal.style.animation = 'fadeOut 0.5s ease-out';
+				await new Promise(r => setTimeout(r, 500));
+				modal.style.display = 'none';
+
+				// 3. Mostrar cuenta regresiva
+				countdown.style.display = 'flex';
+				countdown.textContent = '';
+
+				// 4. Decimos al servidor que estamos listos para la cuenta atrás
+				gameReconnectionService.send({
+					type: 'ready_for_countdown'
+				});
+
+				resolve();
+			});
+		}
 
     function handleGameState(state) {
         if (!state) return;
@@ -338,31 +358,99 @@ export async function GameMatchView(gameId) {
         }
     }
 
-    function handleGameEnd(data) {
-        const player1 = {
-            username: data.final_score?.player1_name || 'Jugador 1',
-            ...data.final_score?.player1_info
-        };
+    async function handleGameEnd(data) {
+        try {
+            // Usar los IDs que recibimos en game_info o game_start
+            const player1Id = document.querySelector('#leftPlayerName').dataset.playerId;
+            const player2Id = document.querySelector('#rightPlayerName').dataset.playerId;
+            const opponentId = playerSide === 'left' ? player2Id : player1Id;
 
-        const player2 = {
-            username: data.final_score?.player2_name || 'Jugador 2',
-            ...data.final_score?.player2_info
-        };
-
-        showGameOverModal(
-            data.winner,
-            player1,
-            player2,
-            {
-                player1: data.final_score?.player1 || 0,
-                player2: data.final_score?.player2 || 0
+            if (!opponentId) {
+                console.error('No se pudo obtener el ID del oponente');
+                // Mostrar modal con datos básicos...
+                return;
             }
-        );
-        
-        if (data.winner === playerSide) {
-            soundService.playVictory();
-        } else {
-            soundService.playDefeat();
+
+            // Obtener stats del oponente
+            const opponentResponse = await fetch(`/api/dashboard/player-stats-id/${opponentId}/`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (!opponentResponse.ok) {
+                throw new Error(`Error al obtener stats: ${opponentResponse.status}`);
+            }
+
+            const opponentData = await opponentResponse.json();
+
+            showGameOverModal(
+                data.winner_username,
+                playerSide === 'left' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: opponentData.stats.username,
+                        profile_image: opponentData.stats.profile_image,
+                        fortytwo_image: opponentData.stats.fortytwo_image,
+                        avatar: opponentData.stats.avatar
+                    },
+                playerSide === 'right' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: opponentData.stats.username,
+                        profile_image: opponentData.stats.profile_image,
+                        fortytwo_image: opponentData.stats.fortytwo_image,
+                        avatar: opponentData.stats.avatar
+                    },
+                {
+                    player1: data.final_score.left,
+                    player2: data.final_score.right
+                },
+                false
+            );
+        } catch (error) {
+            console.error('Error al obtener información del oponente:', error);
+            // Mostrar modal con información básica en caso de error
+            showGameOverModal(
+                data.winner_username,
+                playerSide === 'left' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: data.player2_username,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.player2_username}`
+                    },
+                playerSide === 'right' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: data.player1_username,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.player1_username}`
+                    },
+                {
+                    player1: data.final_score.left,
+                    player2: data.final_score.right
+                },
+                false
+            );
         }
     }
 
@@ -387,34 +475,53 @@ export async function GameMatchView(gameId) {
     }
 
     function handleKeyDown(e) {
-        e.preventDefault();
-        if (!playerSide) return;
+		// No procesar si el foco está en un input (para que el chat u otros campos funcionen)
+		if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-        const key = e.key.toLowerCase();
-        const isValidKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
-                          (playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
-        
-        if (!isValidKey) return;
+		// No procesar si no tenemos un lado asignado
+		if (!playerSide) return;
 
-        activeKeys.add(key);
-        // No enviamos mensaje aquí, el intervalo se encarga
-    }
+		// Permitir teclas durante el juego activo y también durante la cuenta atrás
+		if (!gameState || (gameState.status !== 'playing' && gameState.status !== 'countdown')) return;
+
+		const key = e.key.toLowerCase();
+		const isValidKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
+			(playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
+
+		if (!isValidKey) return;
+
+		e.preventDefault();
+		activeKeys.add(key);
+	}
 
     function handleKeyUp(e) {
-        const key = e.key.toLowerCase();
-        activeKeys.delete(key);
+		const key = e.key.toLowerCase();
+		activeKeys.delete(key);
 
-        // Si no hay teclas activas, enviar dirección 0
-        if (activeKeys.size === 0) {
-            const message = {
-                type: 'move_paddle',
-                direction: 0,
-                side: playerSide,
-                player_id: parseInt(userId)
-            };
-            socket.send(JSON.stringify(message));
-        }
-    }
+		// No procesar más si no tenemos un lado asignado
+		if (!playerSide) return;
+
+		// Determinar si es una tecla de movimiento para este jugador
+		const isMovementKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
+			(playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
+
+		// Si se soltó una tecla de movimiento o no quedan teclas activas, enviar comando
+		if (isMovementKey || activeKeys.size === 0) {
+			// Verificar direcciones restantes
+			const remainingDirection = getDirection();
+
+			// Enviar comando de dirección
+			const message = {
+				type: 'move_paddle',
+				direction: remainingDirection,
+				side: playerSide,
+				player_id: parseInt(userId),
+				timestamp: Date.now(),
+				force_stop: remainingDirection === 0 // Forzar parada si no hay más dirección
+			};
+			gameReconnectionService.send(message);
+		}
+	}
 
     function getDirection() {
         if (playerSide === 'left') {
@@ -482,24 +589,10 @@ export async function GameMatchView(gameId) {
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
     function handleFullscreenChange() {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement &&
+            !document.mozFullScreenElement && !document.msFullscreenElement) {
             gameWrapper.classList.remove('fullscreen');
             fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
-        }
-    }
-
-    // Verificar que todos los elementos críticos existen
-    const criticalElements = {
-        gameCanvas: document.getElementById('gameCanvas'),
-        gameOverScreen: document.getElementById('gameOverScreen'),
-        leftPlayerName: document.getElementById('leftPlayerName'),
-        rightPlayerName: document.getElementById('rightPlayerName')
-    };
-
-    for (const [name, element] of Object.entries(criticalElements)) {
-        if (!element) {
-            console.error(`Elemento crítico no encontrado: ${name}`);
-            // Podrías mostrar un mensaje de error al usuario aquí
         }
     }
 
@@ -507,56 +600,16 @@ export async function GameMatchView(gameId) {
     return () => {
         if (movementInterval) {
             clearInterval(movementInterval);
-            movementInterval = null;
         }
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
 
-        const cssLink = document.querySelector('link[href="/css/game.css"]');
-        if (cssLink) {
-            document.head.removeChild(cssLink);
-        }
+		// Usar el servicio para desconectar WebSocket
+		gameReconnectionService.disconnect();
 
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
         document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
         document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
         document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('keyup', handleKeyUp);
-
-        // Usar el servicio de reconexión para desconectar
-        gameReconnectionService.disconnect();
-
-        socket.close();
     };
-}
-
-// Función mejorada para mostrar notificaciones en el juego
-function showGameNotification(message, type = 'info', iconClass = 'fa-info-circle') {
-    const container = document.getElementById('gameNotificationsContainer');
-    if (!container) return;
-
-    const notification = document.createElement('div');
-    notification.className = `game-notification ${type}`;
-
-    notification.innerHTML = `
-        <div class="notification-icon">
-            <i class="fas ${iconClass}"></i>
-        </div>
-        <div class="notification-content">${message}</div>
-    `;
-
-    container.appendChild(notification);
-
-    // Mostrar con un pequeño retraso para permitir la animación
-    setTimeout(() => notification.classList.add('visible'), 10);
-
-    // Auto-eliminar después de unos segundos
-    setTimeout(() => {
-        notification.classList.add('fadeout');
-        setTimeout(() => {
-            if (notification.parentNode === container) {
-                container.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
 }
