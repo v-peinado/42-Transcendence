@@ -254,37 +254,6 @@
         0 0 50px rgba(79, 172, 254, 0.5);
 }
 
-/* Eliminar todas las secciones relacionadas con Game Over */
-/* Eliminar desde "Game Over Screen" hasta el final de sus estilos relacionados */
-.game-over-screen, 
-.game-over-content,
-.result-header,
-.result-icon,
-.victory-title,
-.score-container,
-.score-details,
-.player-column,
-.player-avatar,
-.player-name,
-.score,
-.score-divider,
-.player-column.winner,
-.player-column.winner::after,
-.player-column.winner .player-name,
-.player-column.winner .score,
-.result-icon-player,
-.player-column:not(.winner) .result-icon-player {
-    /* Eliminar estos estilos ya que ahora están en gameModal.css */
-}
-
-/* Eliminar todas las definiciones duplicadas de avatar */
-.player-avatar,
-.player-avatar img,
-.player-result .player-avatar,
-.player-result.winner .player-avatar,
-.player-result.loser .player-avatar {
-    /* Eliminar estos estilos ya que están en gameModal.css */
-}
 
 /* Ajustes de pantalla completa */
 .game-wrapper.fullscreen {

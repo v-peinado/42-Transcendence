@@ -76,9 +76,9 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
 function updatePlayerAvatar(selector, player) {
     const avatarContainer = document.querySelector(selector);
     if (avatarContainer) {
-        // Prioridad: 1. Foto de perfil, 2. Foto de 42, 3. Avatar generado
-        const avatarUrl = player.profile_image || 
-                         player.fortytwo_image || 
+        // Priorizar la imagen de 42
+        const avatarUrl = player.fortytwo_image || 
+                         player.profile_image || 
                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.username}`;
 
         avatarContainer.innerHTML = `

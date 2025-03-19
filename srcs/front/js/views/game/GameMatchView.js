@@ -4,6 +4,7 @@ import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js'; // Añadir esta importación
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
 import { showGameOverModal, hideGameOverModal } from '../../components/GameOverModal.js';
+import { matchFoundModalService } from '../../services/MatchFoundModalService.js';
 
 export async function GameMatchView(gameId) {
     console.log('Iniciando partida:', gameId);
@@ -260,33 +261,65 @@ export async function GameMatchView(gameId) {
 
 		async function showPreMatchSequence(player1, player2, playerSide) {
 			return new Promise(async (resolve) => {
-				const modal = document.getElementById('matchFoundModal');
-				const countdown = document.getElementById('countdown');
+				try {
+					// Obtener los IDs de los jugadores
+					const opponentId = playerSide === 'left' ? 
+						document.querySelector('#rightPlayerName').dataset.playerId : 
+						document.querySelector('#leftPlayerName').dataset.playerId;
 
-				// 1. Mostrar modal inicial
-				document.getElementById('player1NamePreMatch').textContent = player1;
-				document.getElementById('player2NamePreMatch').textContent = player2;
-				document.getElementById('playerControls').textContent =
-					playerSide === 'left' ? 'W / S' : '↑ / ↓';
+					// Obtener stats del oponente
+					const opponentResponse = await fetch(`/api/dashboard/player-stats-id/${opponentId}/`, {
+						method: 'GET',
+						headers: { 'Content-Type': 'application/json' },
+						credentials: 'include'
+					});
 
-				modal.style.display = 'flex';
-				await new Promise(r => setTimeout(r, 2000));
+					let opponentData = null;
+					if (opponentResponse.ok) {
+						opponentData = await opponentResponse.json();
+					}
 
-				// 2. Ocultar modal
-				modal.style.animation = 'fadeOut 0.5s ease-out';
-				await new Promise(r => setTimeout(r, 500));
-				modal.style.display = 'none';
+					// Mostrar el modal con la información correcta según el lado
+					await matchFoundModalService.showMatchFoundModal(
+						// El primer jugador (izquierda) siempre es player1
+						{
+							username: player1,
+							profile_image: playerSide === 'left' ? userInfo.profile_image : opponentData?.stats.profile_image,
+							fortytwo_image: playerSide === 'left' ? userInfo.fortytwo_image : opponentData?.stats.fortytwo_image,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player1}`
+						},
+						// El segundo jugador (derecha) siempre es player2
+						{
+							username: player2,
+							profile_image: playerSide === 'right' ? userInfo.profile_image : opponentData?.stats.profile_image,
+							fortytwo_image: playerSide === 'right' ? userInfo.fortytwo_image : opponentData?.stats.fortytwo_image,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player2}`
+						},
+						playerSide === 'left' ? 'W / S' : '↑ / ↓'
+					);
 
-				// 3. Mostrar cuenta regresiva
-				countdown.style.display = 'flex';
-				countdown.textContent = '';
+					// Decimos al servidor que estamos listos para la cuenta atrás
+					gameReconnectionService.send({
+						type: 'ready_for_countdown'
+					});
 
-				// 4. Decimos al servidor que estamos listos para la cuenta atrás
-				gameReconnectionService.send({
-					type: 'ready_for_countdown'
-				});
-
-				resolve();
+					resolve();
+				} catch (error) {
+					console.error('Error al obtener información del oponente:', error);
+					// Fallback con información básica
+					await matchFoundModalService.showMatchFoundModal(
+						{
+							username: player1,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player1}`
+						},
+						{
+							username: player2,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player2}`
+						},
+						playerSide === 'left' ? 'W / S' : '↑ / ↓'
+					);
+					resolve();
+				}
 			});
 		}
 
@@ -502,8 +535,8 @@ export async function GameMatchView(gameId) {
 		if (!playerSide) return;
 
 		// Determinar si es una tecla de movimiento para este jugador
-		const isMovementKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
-			(playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
+		const isMovementKey = (playerSide === 'left' && (key === 'w' || 's')) ||
+			(playerSide === 'right' && (key === 'arrowup' || 'arrowdown'));
 
 		// Si se soltó una tecla de movimiento o no quedan teclas activas, enviar comando
 		if (isMovementKey || activeKeys.size === 0) {
