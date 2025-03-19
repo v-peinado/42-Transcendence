@@ -2,16 +2,14 @@ from tournament.models import Tournament, TournamentMatch, TemporaryPlayer
 from chat.consumers.notifications import NotificationsConsumer
 from django.contrib.auth import get_user_model
 from itertools import combinations
-from datetime import datetime, timedelta
-import pytz
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 
 User = get_user_model()
 import logging
 
 logger = logging.getLogger(__name__)
 
-# python
 def create_tournament(name, creator_id, max_match_points, number_of_players, participants):
     number_of_players = int(number_of_players)
     if len(participants) != number_of_players:
@@ -27,7 +25,7 @@ def create_tournament(name, creator_id, max_match_points, number_of_players, par
     add_users_to_tournament(tournament, participants)
     create_tournament_matches(tournament)
 
-    # Notificar creación de torneo, mostrando las partidas planificadas (sin notificar cada partida por separado)
+    # Notify the creator of the tournament, including the participants and matches
     participants_str = ', '.join(participants)
     matches_str = ', '.join(f"{m.player1.username} vs {m.player2.username}" for m in tournament.matches.all())
     NotificationsConsumer.send_notification(
@@ -50,17 +48,16 @@ def create_tournament_matches(tournament):
             player1=player1,
             player2=player2,
         )
-    # No notifiques aquí para no saturar. Se notificará al comienzo del torneo y luego partida a partida.
 
 def start_tournament(tournament):
     """
-    Función opcional para marcar el inicio oficial del torneo y avisar sólo la primera partida.
+    Start the tournament by notifying the creator and the first match.
     """
     NotificationsConsumer.send_notification(
         tournament.creator.id,
         f"El torneo '{tournament.name}' ha empezado."
     )
-    # Notificar sólo la primera partida disponible
+    # Only notify the first match
     notify_next_match(tournament)
 
 def start_match(match):
@@ -78,6 +75,7 @@ def update_match_result(match, winner):
         f"La partida {match.player1.username} vs {match.player2.username} terminó. Ganó {winner.username}."
     )
     notify_next_match(match.tournament)
+    
 def check_tournament_winner(tournament):
     logger.info(f"Checking tournament winner for tournament ID: {tournament.id}")
     matches = tournament.matches.all()
@@ -122,8 +120,7 @@ def check_tournament_winner(tournament):
 
 def notify_next_match(tournament):
     """
-    Notifica solo la próxima partida pendiente en orden.
-    Llamar después de acabar una partida o al iniciar el torneo por primera vez.
+    Notify the creator of the next match in the tournament.
     """
     pendientes = tournament.matches.filter(played=False).order_by('id')
     if pendientes.exists():

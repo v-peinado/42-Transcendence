@@ -16,7 +16,6 @@ User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
-
 class MessagesConsumer:
     """
     Message Flow Pipeline:
@@ -132,9 +131,7 @@ class MessagesConsumer:
                     if not self.is_already_escaped(content)
                     else content
                 )
-                logger.info(
-                    f"Sending message: {content} with timestamp: {message.timestamp} from user: {await self.get_username(message)} in channel: {message.channel_name}"
-                )
+
                 await self.send(
                     text_data=json.dumps(
                         {
@@ -194,7 +191,6 @@ class MessagesConsumer:
 
     @database_sync_to_async
     def save_message(self, user, channel_name, content):
-        logger.info(f"Saving message to channel: {channel_name}, content: {content}")
         Message.objects.create(
             user=user,
             channel_name=channel_name,

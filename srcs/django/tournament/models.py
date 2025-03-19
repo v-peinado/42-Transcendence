@@ -11,13 +11,11 @@ class Tournament(models.Model):
     winner = models.CharField(max_length=50, null=True, blank=True)  # Permitir nulo y vacío
 
 class TemporaryPlayer(models.Model):
-    """ Participante que no requiere registro en el sistema. """
     tournament = models.ForeignKey(Tournament, related_name='temporary_players', on_delete=models.CASCADE)
     username = models.CharField(max_length=50)
 
 class TournamentMatch(models.Model):
     tournament = models.ForeignKey(Tournament, related_name='matches', on_delete=models.CASCADE)
-    # Reemplazar ForeignKey a usuario real por relación a TemporaryPlayer
     player1 = models.ForeignKey(TemporaryPlayer, related_name='matches_as_player1', on_delete=models.CASCADE)
     player2 = models.ForeignKey(TemporaryPlayer, related_name='matches_as_player2', on_delete=models.CASCADE)
     winner = models.ForeignKey(TemporaryPlayer, related_name='won_matches', null=True, blank=True, on_delete=models.SET_NULL)

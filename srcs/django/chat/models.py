@@ -1,15 +1,12 @@
-# srcs/django/chat/models.py
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-#settings.AUTH_USER_MODEL: Es una referencia al modelo de usuario personalizado definido en settings.py
-#se guarda la clave primaria del usuario
 class FriendRequest(models.Model):
     from_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='friend_requests_sent',
-        on_delete=models.CASCADE # Si se elimina un usuario, se eliminan todas sus solicitudes de amistad
+        on_delete=models.CASCADE
     )
     to_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -48,10 +45,13 @@ class Friendship(models.Model):
         if self.user1 == self.user2:
             raise ValidationError("Un usuario no puede ser amigo de sí mismo.")
 
-    # Sobreescribir el método save para validar los datos antes de guardar
+    """
+    Overrides save method to call clean() for custom validation and then call the base class save() method.
+    In this case, it raises a ValidationError if the user1 and user2 are the same.
+    """
     def save(self, *args, **kwargs):
-        self.clean()  # Llama a clean() para realizar validaciones personalizadas
-        super().save(*args, **kwargs)  # Llama al método save() de la clase base
+        self.clean() 
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user1} & {self.user2}"
@@ -79,10 +79,14 @@ class Group(models.Model):
     name = models.CharField(max_length=255)
     channel_name = models.CharField(max_length=255)  # Nombre único para Channels
 
-    # Sobreescribir el método save para asignar un nombre de canal si no se proporciona
+    """
+    Overrides save method to automatically assign a channel_name using the format
+    "chat_group_{id}" when none is provided. Saves twice when creating a channel_name:
+    first to get the ID, then to update just the channel_name field.
+    """
     def save(self, *args, **kwargs):
         if not self.channel_name:
-            super().save(*args, **kwargs)  # Guarda primero para obtener el ID
+            super().save(*args, **kwargs)  # Save first to get the ID
             self.channel_name = f"chat_group_{self.id}"
             super().save(update_fields=['channel_name'])
         else:
@@ -91,7 +95,7 @@ class Group(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='created_groups',
         on_delete=models.SET_NULL,
-        null=True  # Permitir valores nulos
+        null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -130,7 +134,7 @@ class PrivateChannel(models.Model):
         related_name='private_channels_user2',
         on_delete=models.CASCADE
     )
-    name = models.CharField(max_length=255, unique=True)  # Agregar el campo name
+    name = models.CharField(max_length=255, unique=True)
 
     class Meta:
         unique_together = ('user1', 'user2')

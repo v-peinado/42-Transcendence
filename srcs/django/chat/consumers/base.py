@@ -1,11 +1,15 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
+from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
-
+@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class ChatConsumer(AsyncWebsocketConsumer):
     connected_users = {}
     private_channels = {}

@@ -6,7 +6,6 @@ from channels.db import database_sync_to_async
 
 User = get_user_model()
 
-
 class PrivateConsumer:
     async def create_private_channel(self, data):
         user_1_id = data.get("user1_id")
