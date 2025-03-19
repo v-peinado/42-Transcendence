@@ -8,8 +8,6 @@ import logging
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
-@method_decorator(csrf_protect, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class ChatConsumer(AsyncWebsocketConsumer):
     connected_users = {}
     private_channels = {}

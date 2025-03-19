@@ -1,5 +1,4 @@
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_protect
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from django.shortcuts import render, redirect
@@ -8,32 +7,22 @@ from .models import Game
 
 User = get_user_model()
 
-@login_required
-@csrf_protect
 def single_player_view(request):
     return render(request, 'game/single_player.html')
 
-@login_required
-@csrf_protect
 def multi_player_view(request):
     return render(request, 'game/multi_player.html')
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
 class GameModesView(View):
     def get(self, request):
         """View to select game mode"""
         return render(request, "game/game_modes.html")
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
 class MatchmakingView(View):
     def get(self, request):
         """View to handle matchmaking"""
         return render(request, "game/matchmaking.html")
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
 class GameView(View):
     def get(self, request, game_id=None):
         """Unified view for creating/joining games"""

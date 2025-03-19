@@ -2,8 +2,8 @@ from django.shortcuts import get_object_or_404, render
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 import json
 from .models import Tournament, TournamentMatch, TemporaryPlayer
@@ -11,14 +11,12 @@ from .logic.tournament_logic import create_tournament, check_tournament_winner, 
 
 User = get_user_model()
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class TournamentMenuView(View):
     def get(self, request):
         return render(request, 'tournament_menu.html')
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class PlayedTournamentsView(View):
     def get(self, request):
         user = request.user
@@ -37,8 +35,7 @@ class PlayedTournamentsView(View):
             })
         return JsonResponse(data, safe=False)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class PendingTournamentsView(View):
     def get(self, request):
         user = request.user
@@ -61,8 +58,7 @@ class PendingTournamentsView(View):
                 })
         return JsonResponse(data, safe=False)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class CurrentUserView(View):
     def get(self, request):
         user = request.user
@@ -73,8 +69,7 @@ class CurrentUserView(View):
         }
         return JsonResponse(data)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class CreateTournamentView(View):
     def post(self, request):
         data = json.loads(request.body)
@@ -102,16 +97,14 @@ class CreateTournamentView(View):
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=400)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class DeleteTournamentView(View):
     def delete(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
         tournament.delete()
         return JsonResponse({'message': 'Torneo eliminado correctamente'})
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class StartTournamentView(View):
     def post(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
@@ -120,8 +113,7 @@ class StartTournamentView(View):
         start_tournament(tournament)
         return JsonResponse({'message': 'Torneo empezado correctamente'})
 
-@method_decorator(login_required, name='dispatch')   
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')  
 class StartMatchNotificationView(View):
     def post(self, request, match_id):
         match = get_object_or_404(TournamentMatch, id=match_id)
@@ -130,8 +122,7 @@ class StartMatchNotificationView(View):
         
         return JsonResponse({'message': 'Partida iniciada correctamente'})
 
-@method_decorator(login_required, name='dispatch')   
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')  
 class StartMatchView(View):
     def post(self, request, match_id):
         data = json.loads(request.body)
@@ -153,9 +144,8 @@ class StartMatchView(View):
         if match.played:
             update_match_result(match, match.winner) 
         return JsonResponse({'message': 'Partida guardada correctamente'})
-
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+    
+@method_decorator(csrf_exempt, name='dispatch')
 class DetermineTournamentWinnerView(View):
     def post(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
@@ -163,8 +153,7 @@ class DetermineTournamentWinnerView(View):
         
         return JsonResponse({'message': 'Ganador del torneo determinado correctamente'})
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class GetTournamentWinnerView(View):
     def get(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
@@ -174,8 +163,7 @@ class GetTournamentWinnerView(View):
         else:
             return JsonResponse({'error': 'El torneo no tiene un ganador aún.'}, status=400)
 
-@method_decorator(login_required, name='dispatch')
-@method_decorator(csrf_protect, name='dispatch')
+@method_decorator(csrf_exempt, name='dispatch')
 class TournamentMatchesView(View):
     def get(self, request, tournament_id):
         matches = TournamentMatch.objects.filter(tournament_id=tournament_id)
@@ -189,9 +177,8 @@ class TournamentMatchesView(View):
             'played': match.played,
         } for match in matches]
         return JsonResponse(data, safe=False)
-
-@method_decorator(login_required, name='dispatch')    
-@method_decorator(csrf_protect, name='dispatch')
+    
+@method_decorator(csrf_exempt, name='dispatch') 
 class TournamentDetailView(View):
     def get(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
