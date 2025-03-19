@@ -100,6 +100,85 @@
     font-size: 1.2rem;
 }
 
+/* Header actions container */
+.cw-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Game invite button */
+.cw-game-invite-btn {
+    background: none;
+    border: none;
+    color: #4CAF50;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.cw-game-invite-btn:hover {
+    background: rgba(76, 175, 80, 0.1);
+    transform: scale(1.1);
+}
+
+.cw-game-invite-btn i {
+    font-size: 1.1rem;
+}
+
+/* Challenge response container */
+.cw-challenge-response {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 8px 0;
+}
+
+/* Challenge response buttons */
+.cw-accept-challenge,
+.cw-reject-challenge {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.cw-accept-challenge {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+}
+
+.cw-reject-challenge {
+    background: rgba(244, 67, 54, 0.1);
+    color: #F44336;
+}
+
+.cw-accept-challenge:hover {
+    background: rgba(76, 175, 80, 0.2);
+    transform: translateY(-1px);
+}
+
+.cw-reject-challenge:hover {
+    background: rgba(244, 67, 54, 0.2);
+    transform: translateY(-1px);
+}
+
+/* System message styles */
+.cw-message-system {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-style: italic;
+    max-width: 100% !important;
+    align-self: center !important;
+    padding: 8px 16px;
+}
+
 /* Tab content */
 .cw-tab-content {
     flex: 1;
@@ -936,3 +1015,4 @@
         box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
     }
 }
+

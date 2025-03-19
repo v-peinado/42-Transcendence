@@ -14,6 +14,9 @@ import GameView from './views/game/GameView.js';
 import { GameMatchView } from './views/game/GameMatchView.js';
 import { DashboardView } from './views/dashboard/DashboardView.js';
 import { LocalTournamentView } from './views/tournament/LocalTournamentView.js';
+import { SinglePlayerGameView } from './views/game/SinglePlayerGameView.js';
+import TournamentService from './services/TournamentService.js';
+import { TournamentGameView } from './views/tournament/TournamentGameView.js';
 
 class Router {
     constructor() {
@@ -98,34 +101,63 @@ class Router {
         '/gdpr-settings/': GDPRSettingsView,
         '/game': GameView,
         '/game/': GameView,
-		'/game/:id': async (params) => {
-			try {
-				// Comprobar que el usuario está autenticado
-				const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-				if (!isAuthenticated) {
-					window.location.href = '/login?redirect=/game/' + params.id;
-					return;
-				}
+        '/game/:id': async (params) => {
+            try {
+                // Comprobar que el usuario está autenticado
+                const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+                if (!isAuthenticated) {
+                    window.location.href = '/login?redirect=/game/' + params.id;
+                    return;
+                }
 
-				// Verificar que el ID es un número
-				const gameId = parseInt(params.id);
-				if (isNaN(gameId)) {
-					await this.routes['/404']();
-					return;
-				}
+                // Verificar que el ID es un número
+                const gameId = parseInt(params.id);
+                if (isNaN(gameId)) {
+                    await this.routes['/404']();
+                    return;
+                }
 
-				// Cargar la vista de juego
-				await GameMatchView(params.id);
-			} catch (error) {
-				console.error('Error cargando partida:', error);
-				await this.routes['/404']();
-			}
-		},
+                // Cargar la vista de juego
+                await GameMatchView(params.id);
+            } catch (error) {
+                console.error('Error cargando partida:', error);
+                await this.routes['/404']();
+            }
+        },
         '/dashboard': DashboardView,
         '/dashboard/': DashboardView,
         '/tournament/local': LocalTournamentView,
         '/tournament/local/': LocalTournamentView,
-        '/tournament/game/:id': (params) => TournamentGameView(params.id),
+        // Primera ruta específica para el torneo
+        '/tournament/game/:tournamentId/:matchId': (params) => {
+            console.log('Cargando partida específica:', params);
+            return TournamentGameView(params.tournamentId, params.matchId);
+        },
+        // Luego la ruta general del torneo
+        '/tournament/game/:tournamentId': async (params) => {
+            console.log('Iniciando torneo:', params.tournamentId);
+            try {
+                // Primero iniciar el torneo
+                await TournamentService.startTournament(params.tournamentId);
+                // Obtener detalles después de iniciarlo
+                const tournament = await TournamentService.getTournamentDetails(params.tournamentId);
+                console.log('Detalles del torneo:', tournament);
+                
+                if (tournament.pending_matches && tournament.pending_matches.length > 0) {
+                    const match = tournament.pending_matches[0];
+                    console.log('Redirigiendo a primera partida:', match.id);
+                    window.location.href = `/tournament/game/${params.tournamentId}/${match.id}`;
+                } else {
+                    console.error('No hay partidas pendientes');
+                    window.location.href = '/tournament/local';
+                }
+            } catch (error) {
+                console.error('Error al iniciar torneo:', error);
+                window.location.href = '/tournament/local';
+            }
+        },
+        '/game/single-player': SinglePlayerGameView,
+        '/game/single-player/': SinglePlayerGameView,
         '/404': NotFoundView,
     };
 
@@ -216,6 +248,42 @@ class Router {
             return;
         }
 
+        // Manejar rutas de juego específicamente 
+        if (path.startsWith('/game/')) {
+            const gameMatch = path.match(/^\/game\/(\d+)$/);
+            if (gameMatch) {
+                const gameId = gameMatch[1];
+
+                // Verificar que es un número válido
+                if (!isNaN(parseInt(gameId))) {
+                    console.log('Cargando partida:', gameId);
+                    try {
+                        // Verificar autenticación primero
+                        if (localStorage.getItem('isAuthenticated') !== 'true') {
+                            window.location.href = '/login?redirect=' + path;
+                            return;
+                        }
+
+                        // Verificar si hay datos de sesión guardados (para reconexión)
+                        const savedData = localStorage.getItem(`game_${gameId}`);
+                        if (savedData) {
+                            console.log('Datos de reconexión encontrados para partida', {
+                                gameId,
+                                data: JSON.parse(savedData)
+                            });
+                        }
+
+                        // Intentar cargar la vista incluso si hay error de API
+                        await GameMatchView(gameId);
+                        return;
+                    } catch (error) {
+                        console.error('Error cargando partida inicial:', error);
+                        // Continuar al manejo normal de rutas que mostrará 404
+                    }
+                }
+            }
+        }
+
         // Manejar código de 42 primero
         const searchParams = new URLSearchParams(window.location.search);
         const code = searchParams.get('code');
@@ -280,41 +348,68 @@ class Router {
         // Reset data-page attribute
         document.body.removeAttribute('data-page');
 
-// Manejar rutas de juego específicamente
-if (path.startsWith('/game/')) {
-	const gameMatch = path.match(/^\/game\/(\d+)$/);
-	if (gameMatch) {
-		const gameId = gameMatch[1];
+        // Manejar rutas de juego específicamente
+        if (path.startsWith('/game/')) {
+            const gameMatch = path.match(/^\/game\/(\d+)$/);
+            if (gameMatch) {
+                const gameId = gameMatch[1];
 
-		// Verificar que es un número válido
-		if (!isNaN(parseInt(gameId))) {
-			console.log('Cargando partida:', gameId);
-			try {
-				// Verificar autenticación primero
-				if (localStorage.getItem('isAuthenticated') !== 'true') {
-					window.location.href = '/login?redirect=' + path;
-					return;
-				}
+                // Verificar que es un número válido
+                if (!isNaN(parseInt(gameId))) {
+                    console.log('Cargando partida:', gameId);
+                    try {
+                        // Verificar autenticación primero
+                        if (localStorage.getItem('isAuthenticated') !== 'true') {
+                            window.location.href = '/login?redirect=' + path;
+                            return;
+                        }
 
-				// Verificar si hay datos de sesión guardados (para reconexión)
-				const savedData = localStorage.getItem(`game_${gameId}`);
-				if (savedData) {
-					console.log('Datos de reconexión encontrados para partida', {
-						gameId,
-						data: JSON.parse(savedData)
-					});
-				}
+                        // Verificar si hay datos de sesión guardados (para reconexión)
+                        const savedData = localStorage.getItem(`game_${gameId}`);
+                        if (savedData) {
+                            console.log('Datos de reconexión encontrados para partida', {
+                                gameId,
+                                data: JSON.parse(savedData)
+                            });
+                        }
 
-				// Intentar cargar la vista incluso si hay error de API
-				await GameMatchView(gameId);
-				return;
-			} catch (error) {
-				console.error('Error cargando partida', error);
-				// Mostrar 404
-			}
-		}
-	}
-}
+                        // Intentar cargar la vista incluso si hay error de API
+                        await GameMatchView(gameId);
+                        return;
+                    } catch (error) {
+                        console.error('Error cargando partida', error);
+                        // Continuar al manejo normal de rutas que mostrará 404
+                    }
+                }
+            }
+        }
+
+        // Manejar rutas de torneo específicamente
+        if (path.startsWith('/tournament/game/')) {
+            const matches = path.match(/^\/tournament\/game\/(\d+)(?:\/(\d+))?$/);
+            if (matches) {
+                const [, tournamentId, matchId] = matches;
+                if (matchId) {
+                    // Ruta para partido específico
+                    await TournamentGameView(tournamentId, matchId);
+                } else {
+                    try {
+                        // Iniciar torneo y redirigir al primer partido
+                        await TournamentService.startTournament(tournamentId);
+                        const tournament = await TournamentService.getTournamentDetails(tournamentId);
+                        if (tournament.pending_matches && tournament.pending_matches.length > 0) {
+                            window.location.href = `/tournament/game/${tournamentId}/${tournament.pending_matches[0].id}`;
+                        } else {
+                            window.location.href = '/tournament/local';
+                        }
+                    } catch (error) {
+                        console.error('Error al iniciar torneo:', error);
+                        window.location.href = '/tournament/local';
+                    }
+                }
+                return;
+            }
+        }
 
         // Manejar login con código de 42
         if (path.startsWith('/login') && path.includes('code=')) {

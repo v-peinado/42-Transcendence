@@ -3,6 +3,8 @@ import { soundService } from '../../services/SoundService.js';
 import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js'; // Añadir esta importación
 import { gameReconnectionService } from '../../services/GameReconnectionService.js';
+import { showGameOverModal, hideGameOverModal } from '../../components/GameOverModal.js';
+import { matchFoundModalService } from '../../services/MatchFoundModalService.js';
 
 export async function GameMatchView(gameId) {
     console.log('Iniciando partida:', gameId);
@@ -43,8 +45,9 @@ export async function GameMatchView(gameId) {
     const app = document.getElementById('app');
     
     // Cargar navbar autenticado y template del juego
-    const [template, userInfo] = await Promise.all([
+    const [template, modalTemplate, userInfo] = await Promise.all([
         loadHTML('/views/game/templates/GameMatch.html'),
+        loadHTML('/views/game/templates/modals/GameOverModal.html'),
         AuthService.getUserProfile()
     ]);
 
@@ -67,12 +70,15 @@ export async function GameMatchView(gameId) {
     app.innerHTML = navbarHtml;
     app.appendChild(tempDiv.firstElementChild);
 
-    // Cargar CSS
-    if (!document.querySelector('link[href="/css/game.css"]')) {
-        const linkElem = document.createElement('link');
-        linkElem.rel = 'stylesheet';
-        linkElem.href = '/css/game.css';
-        document.head.appendChild(linkElem);
+    // Añadir el modal al contenedor
+    const modalsContainer = document.getElementById('modalsContainer');
+    if (modalsContainer) {
+        modalsContainer.innerHTML = modalTemplate;
+        // Asegurarnos que está oculto
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        if (gameOverScreen) {
+            gameOverScreen.style.display = 'none';
+        }
     }
 
     // Variables de estado
@@ -125,6 +131,10 @@ export async function GameMatchView(gameId) {
 								document.querySelector('#leftPlayerName').textContent = data.player1;
 								document.querySelector('#rightPlayerName').textContent = data.player2;
 
+								 // Guardar IDs de los jugadores
+								document.querySelector('#leftPlayerName').dataset.playerId = data.player1_id;
+								document.querySelector('#rightPlayerName').dataset.playerId = data.player2_id;
+
 								// Configurar controles inmediatamente
 								setupControls();
 							}
@@ -154,6 +164,10 @@ export async function GameMatchView(gameId) {
 							player1_id: data.player1_id,
 							player2_id: data.player2_id
 						});
+
+						// Guardar IDs de los jugadores
+						document.querySelector('#leftPlayerName').dataset.playerId = data.player1_id;
+						document.querySelector('#rightPlayerName').dataset.playerId = data.player2_id;
 
 						showPreMatchSequence(data.player1, data.player2, playerSide).then(() => {
 							setupControls();
@@ -247,33 +261,65 @@ export async function GameMatchView(gameId) {
 
 		async function showPreMatchSequence(player1, player2, playerSide) {
 			return new Promise(async (resolve) => {
-				const modal = document.getElementById('matchFoundModal');
-				const countdown = document.getElementById('countdown');
+				try {
+					// Obtener los IDs de los jugadores
+					const opponentId = playerSide === 'left' ? 
+						document.querySelector('#rightPlayerName').dataset.playerId : 
+						document.querySelector('#leftPlayerName').dataset.playerId;
 
-				// 1. Mostrar modal inicial
-				document.getElementById('player1NamePreMatch').textContent = player1;
-				document.getElementById('player2NamePreMatch').textContent = player2;
-				document.getElementById('playerControls').textContent =
-					playerSide === 'left' ? 'W / S' : '↑ / ↓';
+					// Obtener stats del oponente
+					const opponentResponse = await fetch(`/api/dashboard/player-stats-id/${opponentId}/`, {
+						method: 'GET',
+						headers: { 'Content-Type': 'application/json' },
+						credentials: 'include'
+					});
 
-				modal.style.display = 'flex';
-				await new Promise(r => setTimeout(r, 2000));
+					let opponentData = null;
+					if (opponentResponse.ok) {
+						opponentData = await opponentResponse.json();
+					}
 
-				// 2. Ocultar modal
-				modal.style.animation = 'fadeOut 0.5s ease-out';
-				await new Promise(r => setTimeout(r, 500));
-				modal.style.display = 'none';
+					// Mostrar el modal con la información correcta según el lado
+					await matchFoundModalService.showMatchFoundModal(
+						// El primer jugador (izquierda) siempre es player1
+						{
+							username: player1,
+							profile_image: playerSide === 'left' ? userInfo.profile_image : opponentData?.stats.profile_image,
+							fortytwo_image: playerSide === 'left' ? userInfo.fortytwo_image : opponentData?.stats.fortytwo_image,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player1}`
+						},
+						// El segundo jugador (derecha) siempre es player2
+						{
+							username: player2,
+							profile_image: playerSide === 'right' ? userInfo.profile_image : opponentData?.stats.profile_image,
+							fortytwo_image: playerSide === 'right' ? userInfo.fortytwo_image : opponentData?.stats.fortytwo_image,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player2}`
+						},
+						playerSide // Pasamos solo el lado del jugador, sin texto predefinido
+					);
 
-				// 3. Mostrar cuenta regresiva
-				countdown.style.display = 'flex';
-				countdown.textContent = '';
+					// Decimos al servidor que estamos listos para la cuenta atrás
+					gameReconnectionService.send({
+						type: 'ready_for_countdown'
+					});
 
-				// 4. Decimos al servidor que estamos listos para la cuenta atrás
-				gameReconnectionService.send({
-					type: 'ready_for_countdown'
-				});
-
-				resolve();
+					resolve();
+				} catch (error) {
+					console.error('Error al obtener información del oponente:', error);
+					// Fallback con información básica
+					await matchFoundModalService.showMatchFoundModal(
+						{
+							username: player1,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player1}`
+						},
+						{
+							username: player2,
+							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player2}`
+						},
+						playerSide === 'left' ? 'W / S' : '↑ / ↓'
+					);
+					resolve();
+				}
 			});
 		}
 
@@ -345,48 +391,100 @@ export async function GameMatchView(gameId) {
         }
     }
 
-    function handleGameEnd(data) {
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const winnerText = document.getElementById('winnerText');
-        const resultIcon = document.querySelector('.result-icon i');
-        const player1Score = document.querySelector('.player1-score');
-        const player2Score = document.querySelector('.player2-score');
-        
-        // Determinar jugadores según el lado
-        const leftPlayerName = document.querySelector('#leftPlayerName').textContent;
-        const rightPlayerName = document.querySelector('#rightPlayerName').textContent;
-        
-        // Actualizar nombres finales con los nombres correctos
-        document.getElementById('finalPlayer1Name').textContent = leftPlayerName;
-        document.getElementById('finalPlayer2Name').textContent = rightPlayerName;
-        
-        // Actualizar puntuaciones
-        player1Score.textContent = data.final_score.left;
-        player2Score.textContent = data.final_score.right;
-        
-        // Configurar estilo según victoria/derrota
-        if (data.winner === playerSide) {
-            gameOverScreen.classList.add('victory');
-            gameOverScreen.classList.remove('defeat');
-            winnerText.textContent = '¡Victoria!';
-            resultIcon.className = 'fas fa-trophy';
-        } else {
-            gameOverScreen.classList.add('defeat');
-            gameOverScreen.classList.remove('victory');
-            winnerText.textContent = 'Derrota';
-            resultIcon.className = 'fas fa-flag';
+    async function handleGameEnd(data) {
+        try {
+            // Usar los IDs que recibimos en game_info o game_start
+            const player1Id = document.querySelector('#leftPlayerName').dataset.playerId;
+            const player2Id = document.querySelector('#rightPlayerName').dataset.playerId;
+            const opponentId = playerSide === 'left' ? player2Id : player1Id;
+
+            if (!opponentId) {
+                console.error('No se pudo obtener el ID del oponente');
+                // Mostrar modal con datos básicos...
+                return;
+            }
+
+            // Obtener stats del oponente
+            const opponentResponse = await fetch(`/api/dashboard/player-stats-id/${opponentId}/`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+
+            if (!opponentResponse.ok) {
+                throw new Error(`Error al obtener stats: ${opponentResponse.status}`);
+            }
+
+            const opponentData = await opponentResponse.json();
+
+            showGameOverModal(
+                data.winner_username,
+                playerSide === 'left' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: opponentData.stats.username,
+                        profile_image: opponentData.stats.profile_image,
+                        fortytwo_image: opponentData.stats.fortytwo_image,
+                        avatar: opponentData.stats.avatar
+                    },
+                playerSide === 'right' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: opponentData.stats.username,
+                        profile_image: opponentData.stats.profile_image,
+                        fortytwo_image: opponentData.stats.fortytwo_image,
+                        avatar: opponentData.stats.avatar
+                    },
+                {
+                    player1: data.final_score.left,
+                    player2: data.final_score.right
+                },
+                false
+            );
+        } catch (error) {
+            console.error('Error al obtener información del oponente:', error);
+            // Mostrar modal con información básica en caso de error
+            showGameOverModal(
+                data.winner_username,
+                playerSide === 'left' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: data.player2_username,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.player2_username}`
+                    },
+                playerSide === 'right' ? 
+                    {
+                        username: userInfo.username,
+                        profile_image: userInfo.profile_image,
+                        fortytwo_image: userInfo.fortytwo_image,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`
+                    } : 
+                    {
+                        username: data.player1_username,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.player1_username}`
+                    },
+                {
+                    player1: data.final_score.left,
+                    player2: data.final_score.right
+                },
+                false
+            );
         }
-        
-        // Simplificar la configuración del botón de retorno
-        document.getElementById('returnToLobby').onclick = () => {
-            window.location.href = '/game';
-        };
-        
-        gameOverScreen.style.display = 'flex';
-        
-        // Animaciones de números
-        animateScore(player1Score, data.final_score.left);
-        animateScore(player2Score, data.final_score.right);
     }
 
     function animateScore(element, finalScore) {
@@ -541,12 +639,6 @@ export async function GameMatchView(gameId) {
 
 		// Usar el servicio para desconectar WebSocket
 		gameReconnectionService.disconnect();
-        
-        // Eliminar el CSS si no hay otras vistas que lo usen
-        const cssLink = document.querySelector('link[href="/css/game.css"]');
-        if (cssLink) {
-            document.head.removeChild(cssLink);
-        }
 
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
         document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);

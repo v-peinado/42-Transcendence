@@ -494,3 +494,45 @@
         transform: rotate(360deg);
     }
 }
+
+/* Estilos especiales para el selector de dificultad */
+.difficulty-modes {
+    margin-top: 2rem;
+}
+
+.game-mode-card[data-difficulty="easy"] .card-icon {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(79, 172, 254, 0.3));
+}
+
+.game-mode-card[data-difficulty="medium"] .card-icon {
+    background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+.game-mode-card[data-difficulty="hard"] .card-icon {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.3));
+}
+
+/* Ajustes para el modal de dificultad */
+#difficultyModal .match-found-content {
+    max-width: 1200px;
+    width: 90%;
+}
+
+#difficultyModal .game-modes-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+#difficultyModal .game-mode-card {
+    height: 280px;  /* Ajustamos la altura para que se vea mejor */
+    padding: 2rem;
+}
