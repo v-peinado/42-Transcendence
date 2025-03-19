@@ -236,55 +236,6 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     transform: translateY(-50%);
 }
 
-/* Avatar buttons */
-/* Eliminar o comentar estas reglas duplicadas
-.avatar-buttons {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem;
-}
-
-.avatar-buttons .btn {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-#restoreImageBtn {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(5px);
-}
-
-#restoreImageBtn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-#changeImageBtn {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: #0d6efd;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-*/
 
 #changeImageBtn:hover {
     transform: scale(1.1);
@@ -365,29 +316,88 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     border-color: #00ff9d;
 }
 
+/* Eliminar estilos redundantes */
 #navbarUserAvatar,
 #dropdownUserAvatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+}
+
+/* Navbar Avatar Styles - Implementación unificada y limpia */
+.navbar #nav-profile-image {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    padding: 0;
+    margin: 0;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Navbar Avatar Styles - Nueva implementación unificada */
+.navbar #nav-profile-image {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.navbar #nav-profile-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    transform: scale(1.02); /* Pequeño ajuste para evitar bordes blancos */
+}
+
+/* Hover state */
+.navbar #nav-profile-image:hover {
+    border-color: #00ff9d;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+/* Navbar Avatar Container */
+.nav-avatar-container {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-#navbarUserAvatar:hover,
-#dropdownUserAvatar:hover {
+/* Navbar Avatar Image - Nueva implementación */
+.navbar #nav-profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* Hover effect */
+.nav-avatar-container:hover {
     border-color: #00ff9d;
     transform: scale(1.05);
-}
-
-/* Avatar specific sizes */
-#navbarUserAvatar {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-}
-
-#dropdownUserAvatar {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
+    transition: all 0.3s ease;
 }
 
 /* Logo styles */
@@ -1380,4 +1390,21 @@ body[data-page="profile"] .navbar .btn-outline-danger:hover {
     background: rgba(var(--neon-danger-rgb), 0.2);
     border-color: var(--neon-danger);
     color: var(--neon-danger);
+}
+
+/* Animations */
+@keyframes buttonGlow {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes iconPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }

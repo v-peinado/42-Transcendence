@@ -1,4 +1,15 @@
 export function showGameOverModal(winner, player1, player2, scores, isTournament = false) {
+    // Salir del modo pantalla completa si está activo
+    if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+
     const gameOverScreen = document.getElementById('gameOverScreen');
     if (!gameOverScreen) {
         console.error('Modal de game over no encontrado');
@@ -27,8 +38,11 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
     const playAgainButton = document.getElementById('playAgain');
     
     try {
+        // Determinar el nombre del ganador basado en el username correcto
+        const winnerName = winner === player1.username ? player1.username : player2.username;
+        
         // Actualizar textos
-        requiredElements.winnerText.textContent = `¡${winner} ha ganado!`;
+        requiredElements.winnerText.textContent = `¡${winnerName} ha ganado!`;
         requiredElements.finalPlayer1Name.textContent = player1.username;
         requiredElements.finalPlayer2Name.textContent = player2.username;
         
@@ -42,14 +56,14 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
         console.log('Actualizando scores:', score1, score2); // Debug
 
         // Actualizar avatares
-        updatePlayerAvatar('.player-column:first-child .player-avatar', player1);
-        updatePlayerAvatar('.player-column:last-child .player-avatar', player2);
+        updatePlayerAvatar('.player-column:first-child', player1);
+        updatePlayerAvatar('.player-column:last-child', player2);
 
         // Aplicar estilos de ganador/perdedor
         const player1Result = document.querySelector('.player-column:first-child .player-result');
         const player2Result = document.querySelector('.player-column:last-child .player-result');
         
-        if (winner === player1.username) {
+        if (winnerName === player1.username) {
             player1Result.classList.add('winner');
             player2Result.classList.add('loser');
         } else {
@@ -69,14 +83,14 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
         gameOverScreen.style.visibility = 'visible';
     } catch (error) {
         console.error('Error al actualizar el modal:', error);
-        console.error('Scores recibidos:', scores); // Debug adicional
+        console.error('Datos recibidos:', { winner, player1, player2, scores }); // Debug adicional
     }
 }
 
 function updatePlayerAvatar(selector, player) {
-    const avatarContainer = document.querySelector(selector);
+    // Actualizar el selector para que busque específicamente la clase go-avatar
+    const avatarContainer = document.querySelector(`${selector} .go-avatar`);
     if (avatarContainer) {
-        // Priorizar la imagen de 42
         const avatarUrl = player.fortytwo_image || 
                          player.profile_image || 
                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.username}`;

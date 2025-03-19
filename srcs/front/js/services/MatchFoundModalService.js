@@ -15,7 +15,7 @@ class MatchFoundModalService {
         }
     }
 
-    async showMatchFoundModal(player1Info, player2Info, playerControls) {
+    async showMatchFoundModal(player1Info, player2Info, playerSide) {
         return new Promise(async (resolve) => {
             const modal = document.getElementById('matchFoundModal');
             const countdown = document.getElementById('countdown');
@@ -23,7 +23,10 @@ class MatchFoundModalService {
             // Actualizar información de jugadores
             document.getElementById('player1NamePreMatch').textContent = player1Info.username;
             document.getElementById('player2NamePreMatch').textContent = player2Info.username;
-            document.getElementById('playerControls').textContent = playerControls;
+            
+            // Mostrar los controles según el lado del jugador
+            document.getElementById('playerControls').textContent = 
+                playerSide === 'left' ? 'W / S' : '↑ / ↓';
 
             // Actualizar avatares
             this.updatePlayerAvatar('#player1Avatar', player1Info);

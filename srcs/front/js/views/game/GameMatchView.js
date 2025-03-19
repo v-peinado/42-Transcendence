@@ -295,7 +295,7 @@ export async function GameMatchView(gameId) {
 							fortytwo_image: playerSide === 'right' ? userInfo.fortytwo_image : opponentData?.stats.fortytwo_image,
 							avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${player2}`
 						},
-						playerSide === 'left' ? 'W / S' : '↑ / ↓'
+						playerSide // Pasamos solo el lado del jugador, sin texto predefinido
 					);
 
 					// Decimos al servidor que estamos listos para la cuenta atrás
@@ -535,8 +535,8 @@ export async function GameMatchView(gameId) {
 		if (!playerSide) return;
 
 		// Determinar si es una tecla de movimiento para este jugador
-		const isMovementKey = (playerSide === 'left' && (key === 'w' || 's')) ||
-			(playerSide === 'right' && (key === 'arrowup' || 'arrowdown'));
+		const isMovementKey = (playerSide === 'left' && (key === 'w' || key === 's')) ||
+			(playerSide === 'right' && (key === 'arrowup' || key === 'arrowdown'));
 
 		// Si se soltó una tecla de movimiento o no quedan teclas activas, enviar comando
 		if (isMovementKey || activeKeys.size === 0) {

@@ -112,10 +112,11 @@
     gap: 2rem;
 }
 
-/* Eliminar duplicados y mantener solo una definición de estilos para los avatares */
-.player-avatar {
-    width: 60px;
-    height: 60px;
+/* Shared Avatar Styles */
+.go-avatar,        /* GameOver avatar */
+.mf-avatar {       /* MatchFound avatar */
+    width: 80px;           /* Aumentado de 60px */
+    height: 80px;          /* Aumentado de 60px */
     border-radius: 50%;
     margin-bottom: 1rem;
     border: 3px solid #4776E6;
@@ -128,16 +129,29 @@
     justify-content: center;
 }
 
-.player-avatar:hover {
+.go-avatar:hover,
+.mf-avatar:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(71, 118, 230, 0.4);
 }
 
-.player-avatar img {
+.go-avatar img,
+.mf-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
+}
+
+/* Winner/Loser states for GameOver */
+.player-result.winner .go-avatar {
+    border: 4px solid #FFD700;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+}
+
+.player-result.loser .go-avatar {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: none;
 }
 
 .score {
@@ -388,4 +402,56 @@
 @keyframes crownFloat {
     0%, 100% { transform: translate(-50%, 0); }
     50% { transform: translate(-50%, -10px); }
+}
+
+/* Match Found Modal Styles */
+.mf-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(16, 23, 36, 0.97), rgba(20, 26, 40, 0.97));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.mf-content {
+    background: linear-gradient(135deg, #141b2d, #1a2236);
+    border-radius: 24px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: modalPop 0.5s ease-out;
+}
+
+.mf-players-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin: 2rem 0;
+}
+
+.mf-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mf-vs {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 2rem;
+    color: #4776E6;
+}
+
+.mf-controls-info {
+    text-align: center;
+    margin-top: 2rem;
+    color: #ffffff;
 }
