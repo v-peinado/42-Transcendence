@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+@login_required
 def player_stats_view(request):
     """
     Endpoint to get player statistics in JSON format.
@@ -27,6 +28,7 @@ def player_stats_view(request):
     ]
     return JsonResponse({'stats': stats, 'games': games_list})
 
+@login_required
 def player_stats_view_by_id(request, id):
     user = get_object_or_404(User, pk=id)
     stats = get_player_stats(user)
@@ -44,6 +46,7 @@ def player_stats_view_by_id(request, id):
     ]
     return JsonResponse({'stats': stats, 'games': games_list})
 
+@login_required
 def test_api_view(request):
     """
     Endpoint that renders the HTML template to test the API.

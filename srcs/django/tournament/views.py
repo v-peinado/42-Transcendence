@@ -12,11 +12,13 @@ from .logic.tournament_logic import create_tournament, check_tournament_winner, 
 User = get_user_model()
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class TournamentMenuView(View):
     def get(self, request):
         return render(request, 'tournament_menu.html')
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class PlayedTournamentsView(View):
     def get(self, request):
         user = request.user
@@ -36,6 +38,7 @@ class PlayedTournamentsView(View):
         return JsonResponse(data, safe=False)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class PendingTournamentsView(View):
     def get(self, request):
         user = request.user
@@ -59,6 +62,7 @@ class PendingTournamentsView(View):
         return JsonResponse(data, safe=False)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class CurrentUserView(View):
     def get(self, request):
         user = request.user
@@ -70,6 +74,7 @@ class CurrentUserView(View):
         return JsonResponse(data)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class CreateTournamentView(View):
     def post(self, request):
         data = json.loads(request.body)
@@ -98,6 +103,7 @@ class CreateTournamentView(View):
             return JsonResponse({'error': str(e)}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class DeleteTournamentView(View):
     def delete(self, request, tournament_id):
         tournament = get_object_or_404(Tournament, id=tournament_id)
@@ -105,24 +111,33 @@ class DeleteTournamentView(View):
         return JsonResponse({'message': 'Torneo eliminado correctamente'})
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class StartTournamentView(View):
     def post(self, request, tournament_id):
+        user = request.user
+        if not Tournament.objects.filter(id=tournament_id, creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver los partidos de este torneo'}, status=403)
         tournament = get_object_or_404(Tournament, id=tournament_id)
         tournament.started = True
         tournament.save()
         start_tournament(tournament)
         return JsonResponse({'message': 'Torneo empezado correctamente'})
 
-@method_decorator(csrf_exempt, name='dispatch')  
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')  
 class StartMatchNotificationView(View):
     def post(self, request, match_id):
+        user = request.user
+        if not Tournament.objects.filter(creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver los partidos de este torneo'}, status=403)
         match = get_object_or_404(TournamentMatch, id=match_id)
         
         start_match(match)
         
         return JsonResponse({'message': 'Partida iniciada correctamente'})
 
-@method_decorator(csrf_exempt, name='dispatch')  
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch') 
 class StartMatchView(View):
     def post(self, request, match_id):
         data = json.loads(request.body)
@@ -146,16 +161,24 @@ class StartMatchView(View):
         return JsonResponse({'message': 'Partida guardada correctamente'})
     
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class DetermineTournamentWinnerView(View):
     def post(self, request, tournament_id):
+        user = request.user
+        if not Tournament.objects.filter(id=tournament_id, creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver los partidos de este torneo'}, status=403)
         tournament = get_object_or_404(Tournament, id=tournament_id)
         check_tournament_winner(tournament)
         
         return JsonResponse({'message': 'Ganador del torneo determinado correctamente'})
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class GetTournamentWinnerView(View):
     def get(self, request, tournament_id):
+        user = request.user
+        if not Tournament.objects.filter(id=tournament_id, creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver los partidos de este torneo'}, status=403)
         tournament = get_object_or_404(Tournament, id=tournament_id)
         if tournament.winner:
             winner = tournament.winner
@@ -164,8 +187,12 @@ class GetTournamentWinnerView(View):
             return JsonResponse({'error': 'El torneo no tiene un ganador aún.'}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch')
 class TournamentMatchesView(View):
     def get(self, request, tournament_id):
+        user = request.user
+        if not Tournament.objects.filter(id=tournament_id, creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver los partidos de este torneo'}, status=403)
         matches = TournamentMatch.objects.filter(tournament_id=tournament_id)
         data = [{
             'id': match.id,
@@ -178,9 +205,13 @@ class TournamentMatchesView(View):
         } for match in matches]
         return JsonResponse(data, safe=False)
     
-@method_decorator(csrf_exempt, name='dispatch') 
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(login_required, name='dispatch') 
 class TournamentDetailView(View):
     def get(self, request, tournament_id):
+        user = request.user
+        if not Tournament.objects.filter(id=tournament_id, creator=user).exists():
+            return JsonResponse({'error': 'No tienes permiso para ver este torneo'}, status=403)
         tournament = get_object_or_404(Tournament, id=tournament_id)
         data = {
             'id': tournament.id,

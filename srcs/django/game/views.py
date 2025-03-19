@@ -7,22 +7,27 @@ from .models import Game
 
 User = get_user_model()
 
+@login_required
 def single_player_view(request):
     return render(request, 'game/single_player.html')
 
+@login_required
 def multi_player_view(request):
     return render(request, 'game/multi_player.html')
 
+@method_decorator(login_required, name='dispatch')
 class GameModesView(View):
     def get(self, request):
         """View to select game mode"""
         return render(request, "game/game_modes.html")
 
+@method_decorator(login_required, name='dispatch')
 class MatchmakingView(View):
     def get(self, request):
         """View to handle matchmaking"""
         return render(request, "game/matchmaking.html")
 
+@method_decorator(login_required, name='dispatch')
 class GameView(View):
     def get(self, request, game_id=None):
         """Unified view for creating/joining games"""
