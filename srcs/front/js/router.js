@@ -65,6 +65,41 @@ class Router {
             }
         });
     }
+    protectedRoutes = [
+        '/profile',
+        '/profile/',
+        '/gdpr-settings',
+        '/gdpr-settings/',
+        '/dashboard',
+        '/dashboard/',
+        '/tournament',
+        '/tournament/',
+    ];
+
+    checkProtectedRoute(path) {
+        const normalizedPath = path.split('?')[0];
+        //se excluyen las de juego, de momento
+        if (normalizedPath.match(/^\/game\/\d+$/)) {
+            return false;
+        }
+        
+        const isProtected = this.protectedRoutes.some(route => normalizedPath.startsWith(route));
+        if (isProtected) {
+            const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+            if (!isAuthenticated) {
+                window.location.href = `/login?redirect=${path}`;
+                return true;
+            }
+            // Verificar que el token es válido intentando obtener el perfil
+            AuthService.getUserProfile().catch(() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = `/login?redirect=${path}`;
+                return true;
+            });
+        }
+        return false;
+    }
 
     routes = {
         '/': async () => {
@@ -229,6 +264,11 @@ class Router {
         const path = window.location.pathname + window.location.search;
         console.log('Ruta inicial completa:', path);  // Debug
 
+        // Verificar rutas protegidas primero
+        if (this.checkProtectedRoute(path)) {
+            return;
+        }
+
         // Si estamos en la página principal, verificar autenticación primero
         if (path === '/' || path === '') {
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -344,6 +384,11 @@ class Router {
     async handleRoute() {
         const path = window.location.pathname + window.location.search;
         console.log('Manejando ruta completa:', path);
+
+        // Verificar rutas protegidas primero
+        if (this.checkProtectedRoute(path)) {
+            return;
+        }
 
         // Reset data-page attribute
         document.body.removeAttribute('data-page');
