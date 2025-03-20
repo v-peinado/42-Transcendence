@@ -1,6 +1,11 @@
 class SoundService {
     constructor() {
-        this.audioContext = null;
+        this.sounds = {
+            matchFound: new Audio('/sounds/match_found.mp3'),
+            countdown: new Audio('/sounds/countdown.mp3'),
+            victory: new Audio('/sounds/victory.mp3'),
+            defeat: new Audio('/sounds/defeat.mp3')  // Añadir sonido de derrota
+        };
     }
 
     init() {
@@ -69,6 +74,22 @@ class SoundService {
         
         oscillator.start();
         oscillator.stop(this.audioContext.currentTime + 0.2);
+    }
+
+    async playVictory() {
+        try {
+            await this.sounds.victory.play();
+        } catch (error) {
+            console.warn('Error reproduciendo sonido de victoria:', error);
+        }
+    }
+
+    async playDefeat() {
+        try {
+            await this.sounds.defeat.play();
+        } catch (error) {
+            console.warn('Error reproduciendo sonido de derrota:', error);
+        }
     }
 }
 

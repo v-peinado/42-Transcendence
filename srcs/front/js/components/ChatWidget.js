@@ -125,6 +125,7 @@ export class ChatWidget {
 
             // Inicializar componentes (eliminar duplicados y configurar correctamente)
             this.userList = new UserList(this.container);
+            this.userList.widget = this; // Añadir esta línea para pasar la referencia
             this.friendList = new FriendList(this.container);
             this.privateChat = new PrivateChat(this.container);
 
@@ -475,6 +476,27 @@ export class ChatWidget {
                 setTimeout(() => notification.remove(), 500);
             }, 5000);
         });
+
+        // Remover el listener duplicado y dejar solo este
+        webSocketService.on('notification', (data) => {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'cw-message cw-message-system';
+            messageElement.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                <span>${data.message}</span>
+                <small class="cw-message-time">${new Date(data.created_at).toLocaleTimeString()}</small>
+            `;
+            
+            const messagesContainer = this.container.querySelector('#widget-messages');
+            if (messagesContainer) {
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                if (this.isMinimized) {
+                    this.incrementUnreadCount();
+                }
+            }
+        });
     }
 
     requestInitialData() {
@@ -496,15 +518,24 @@ export class ChatWidget {
         const messageContent = data.message || data.content;
         if (!messageContent) return;
         
+        // Ignorar mensajes del sistema si no soy el creador del torneo
+        if (data.username === 'Sistema' && !data.is_tournament_creator) {
+            return;
+        }
+        
         const messageElement = document.createElement('div');
-        const messageClass = data.user_id === parseInt(localStorage.getItem('user_id')) 
-            ? 'cw-message cw-message-my' 
-            : 'cw-message cw-message-other';
+        const isSystemMessage = data.username === 'Sistema';
+        const messageClass = isSystemMessage ? 'cw-message cw-message-system' :
+            data.user_id === parseInt(localStorage.getItem('user_id')) 
+                ? 'cw-message cw-message-my' 
+                : 'cw-message cw-message-other';
         
         messageElement.className = messageClass;
         messageElement.innerHTML = `
+            ${isSystemMessage ? '<i class="fas fa-info-circle"></i>' : ''}
             <span class="cw-message-username">${data.username}</span>
-            ${messageContent}
+            <span class="cw-message-content">${messageContent}</span>
+            ${isSystemMessage ? `<small class="cw-message-time">${new Date(data.created_at).toLocaleTimeString()}</small>` : ''}
         `;
         
         const messagesContainer = this.container.querySelector('#widget-messages');

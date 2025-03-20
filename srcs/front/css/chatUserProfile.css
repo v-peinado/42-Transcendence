@@ -1,0 +1,389 @@
+/* Modal de estadísticas */
+.cw-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.cw-modal.show {
+    display: block;
+}
+
+.cw-modal-content {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 420px;
+    max-height: 85vh;
+    background: rgba(22, 28, 36, 0.98);
+    border: 1px solid rgba(66, 153, 225, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    color: white;
+    padding: 0;
+    overflow: hidden;
+}
+
+.cw-modal.show .cw-modal-content {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.cw-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+    margin-bottom: 12px;
+}
+
+.cw-modal-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.cw-close-modal {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.cw-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+}
+
+.cw-stats-summary {
+    margin-bottom: 15px;
+}
+
+.cw-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.cw-stat-box {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cw-stat-box:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #00bcd4;
+    transition: all 0.3s ease;
+}
+
+.cw-stat-box:hover .stat-icon {
+    transform: scale(1.1);
+    color: #4299e1;
+    background: rgba(66, 153, 225, 0.15);
+}
+
+.cw-stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #00bcd4;
+    margin-bottom: 0.3rem;
+}
+
+.cw-stat-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cw-stat-item {
+    padding: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cw-match-history {
+    max-height: 300px; /* Aumentamos la altura máxima */
+    overflow-y: auto;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(66, 153, 225, 0.15);
+    padding: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(66, 153, 225, 0.3) rgba(15, 23, 42, 0.6);
+}
+
+.cw-match-history::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cw-match-history::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 3px;
+}
+
+.cw-match-history::-webkit-scrollbar-thumb {
+    background-color: rgba(66, 153, 225, 0.3);
+    border-radius: 3px;
+    border: 2px solid transparent;
+}
+
+.cw-match-item {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cw-match-item:last-child {
+    border-bottom: none;
+}
+
+.cw-match-score {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.cw-match-player {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.cw-match-date {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: right;
+}
+
+/* Animaciones para el modal */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.cw-modal-content.animate {
+    animation: modalFadeIn 0.2s ease forwards;
+}
+
+/* Tabs específicas del perfil */
+.cw-profile-tabs {
+    display: flex;
+    gap: 0;
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(66, 153, 225, 0.2);
+    padding: 0 1.25rem;
+}
+
+.cw-profile-tab {
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 0.95rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cw-profile-tab i {
+    font-size: 1rem;
+}
+
+.cw-profile-tab:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.cw-profile-tab.active {
+    color: #4299e1;
+    border-bottom-color: #4299e1;
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.cw-profile-content {
+    display: none;
+    animation: fadeIn 0.2s ease;
+}
+
+.cw-profile-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.cw-profile-avatar-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+}
+
+.cw-avatar-container {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(66, 153, 225, 0.3);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cw-profile-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.cw-avatar-container:hover .cw-profile-avatar {
+    transform: scale(1.1);
+}
+
+.cw-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem 1.25rem;
+    background: rgba(15, 23, 42, 0.8);
+    border-top: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+.cw-close-btn {
+    padding: 0.5rem 1.5rem;
+    background: rgba(66, 153, 225, 0.15);
+    border: 1px solid rgba(66, 153, 225, 0.3);
+    border-radius: 6px;
+    color: #4299e1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cw-close-btn:hover {
+    background: rgba(66, 153, 225, 0.25);
+    transform: translateY(-1px);
+}
+
+/* Estilos para el badge de rango */
+.cw-rank-badge {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+
+.cw-profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.cw-rank-title {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+/* Estilos específicos para cada rango */
+.cw-rank-grandmaster {
+    background: linear-gradient(135deg, var(--bs-warning), #ff8c00);
+    color: white;
+}
+
+.cw-rank-elite {
+    background: linear-gradient(135deg, var(--bs-danger), #dc3545);
+    color: white;
+}
+
+.cw-rank-veteran {
+    background: linear-gradient(135deg, var(--bs-info), #0dcaf0);
+    color: white;
+}
+
+.cw-rank-intermediate {
+    background: linear-gradient(135deg, var(--bs-success), #198754);
+    color: white;
+}
+
+.cw-rank-novice {
+    background: linear-gradient(135deg, var(--bs-secondary), #6c757d);
+    color: white;
+}
+
+.cw-stat-box:nth-child(1) .stat-icon { 
+    background-color: rgba(40, 167, 69, 0.2); 
+    color: var(--bs-success); 
+}
+
+.cw-stat-box:nth-child(2) .stat-icon { 
+    background-color: rgba(255, 193, 7, 0.2); 
+    color: var(--bs-warning); 
+}
+
+.cw-stat-box:nth-child(3) .stat-icon { 
+    background-color: rgba(23, 162, 184, 0.2); 
+    color: var(--bs-info); 
+}
+
+.cw-stat-box:nth-child(4) .stat-icon { 
+    background-color: rgba(220, 53, 69, 0.2); 
+    color: var(--bs-danger); 
+}
+
+.cw-stat-box:nth-child(1) .cw-stat-value { color: var(--bs-success); }
+.cw-stat-box:nth-child(2) .cw-stat-value { color: var(--bs-warning); }
+.cw-stat-box:nth-child(3) .cw-stat-value { color: var(--bs-info); }
+.cw-stat-box:nth-child(4) .cw-stat-value { color: var(--bs-danger); }

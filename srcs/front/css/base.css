@@ -94,3 +94,39 @@ main {
 footer {
     flex-shrink: 0;
 }
+
+/* Botón de volver personalizado */
+.btn-back {
+    background: linear-gradient(135deg, #2b2b4d 0%, #1a1a38 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-back:hover {
+    background: linear-gradient(135deg, #373760 0%, #22224a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    color: white;
+}
+
+.btn-back:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-back i {
+    font-size: 1.1em;
+    transition: transform 0.3s ease;
+}
+
+.btn-back:hover i {
+    transform: translateX(-4px);
+}

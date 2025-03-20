@@ -36,26 +36,17 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" 
                        data-bs-toggle="dropdown" aria-expanded="false">
-                        <img id="nav-profile-image" alt="Avatar" class="rounded-circle" width="32" height="32">
+                        <div class="nav-avatar-container">
+                            <img id="nav-profile-image" alt="Avatar">
+                        </div>
                         <span id="nav-username"></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li class="px-3 py-2 d-flex align-items-center bg-dark-subtle">
-                            <img id="nav-profile-image-large" alt="Avatar" class="rounded-circle me-2" width="48" height="48">
-                            <div class="text-truncate">
-                                <div class="fw-bold" id="nav-username-large"></div>
-                                <small class="text-muted">Ver perfil</small>
-                            </div>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item" href="/profile" data-link>
                                 <i class="fas fa-user me-2"></i>Perfil
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="/settings" data-link>
-                                <i class="fas fa-cog me-2"></i>Configuración
                             </a>
                         </li>
                         <li>

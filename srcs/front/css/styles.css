@@ -5,7 +5,9 @@
 @import 'pages.css';
 @import 'tournament.css';
 @import 'chatWidget.css';
+@import 'chatUserProfile.css';
 @import 'dashboard.css';
 @import 'game.css';
 @import 'game-modes.css';
+@import 'gameModal.css';
 @import 'matchmaking.css';

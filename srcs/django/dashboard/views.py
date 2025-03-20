@@ -33,6 +33,13 @@ def player_stats_view_by_id(request, id):
     user = get_object_or_404(User, pk=id)
     stats = get_player_stats(user)
     games = get_player_games(user)
+
+     # Añadido por Ampi para poder ver las fotos de usuarios
+    stats['username'] = user.username
+    stats['profile_image'] = user.profile_image.url if user.profile_image else None
+    stats['fortytwo_image'] = user.fortytwo_image if user.fortytwo_image else None
+    stats['avatar'] = f"https://api.dicebear.com/7.x/avataaars/svg?seed={user.username}"
+    
     games_list = [
         {
             'player1': game.player1.username,
