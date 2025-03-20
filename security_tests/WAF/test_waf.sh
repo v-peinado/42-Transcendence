@@ -35,12 +35,12 @@ print_result() {
 }
 
 # Check if websocat is installed
-if ! command -v websocat &> /dev/null
-then
-    echo -e "${YELLOW}websocat is not installed. Installing...${NC}"
-    sudo apt-get update
-    sudo apt-get install -y websocat
-fi
+# if ! command -v websocat &> /dev/null
+# then
+#     echo -e "${YELLOW}websocat is not installed. Installing...${NC}"
+#     sudo apt-get update
+#     sudo apt-get install -y websocat
+# fi
 
 echo -e "${YELLOW}=== Starting WAF Security Tests ===${NC}"
 
@@ -238,30 +238,33 @@ print_result $STATUS
 
 echo -e "\n${YELLOW}11. Testing WebSockets${NC}"
 
-echo "Testing WebSocket connection for matchmaking without authentication..."
-websocat --insecure "wss://localhost:8445/ws/matchmaking/" -E -1
-if [ $? -eq 0 ]; then
-    echo -e "${RED}✗ WebSocket connection for matchmaking successful${NC}"
-else
-    RESULT=$(websocat --insecure "wss://localhost:8445/ws/matchmaking/" 2>&1)
-    if [[ "$RESULT" == *"Connection refused"* ]] || [[ "$RESULT" == *"403 Forbidden"* ]]; then
-        echo -e "${GREEN}✓ WebSocket connection for matchmaking denied${NC}"
-    else
-        echo -e "${RED}✗ WebSocket connection for matchmaking failed${NC}"
-    fi
-fi
 
-echo "Testing WebSocket connection for game without authentication..."
-websocat --insecure "wss://localhost:8445/ws/game/1/" -E -1
-if [ $? -eq 0 ]; then
-    echo -e "${RED}✗ WebSocket connection for game successful${NC}"
-else
-    RESULT=$(websocat --insecure "wss://localhost:8445/ws/game/1/" 2>&1)
-    if [[ "$RESULT" == *"Connection refused"* ]] || [[ "$RESULT" == *"403 Forbidden"* ]]; then
-        echo -e "${GREEN}✓ WebSocket connection for game denied${NC}"
-    else
-        echo -e "${RED}✗ WebSocket connection for game failed${NC}"
-    fi
-fi
+# Please only run this test if you have websocat installed
+
+# echo "Testing WebSocket connection for matchmaking without authentication..."
+# websocat --insecure "wss://localhost:8445/ws/matchmaking/" -E -1
+# if [ $? -eq 0 ]; then
+#     echo -e "${RED}✗ WebSocket connection for matchmaking successful${NC}"
+# else
+#     RESULT=$(websocat --insecure "wss://localhost:8445/ws/matchmaking/" 2>&1)
+#     if [[ "$RESULT" == *"Connection refused"* ]] || [[ "$RESULT" == *"403 Forbidden"* ]]; then
+#         echo -e "${GREEN}✓ WebSocket connection for matchmaking denied${NC}"
+#     else
+#         echo -e "${RED}✗ WebSocket connection for matchmaking failed${NC}"
+#     fi
+# fi
+
+# echo "Testing WebSocket connection for game without authentication..."
+# websocat --insecure "wss://localhost:8445/ws/game/1/" -E -1
+# if [ $? -eq 0 ]; then
+#     echo -e "${RED}✗ WebSocket connection for game successful${NC}"
+# else
+#     RESULT=$(websocat --insecure "wss://localhost:8445/ws/game/1/" 2>&1)
+#     if [[ "$RESULT" == *"Connection refused"* ]] || [[ "$RESULT" == *"403 Forbidden"* ]]; then
+#         echo -e "${GREEN}✓ WebSocket connection for game denied${NC}"
+#     else
+#         echo -e "${RED}✗ WebSocket connection for game failed${NC}"
+#     fi
+# fi
 
 echo -e "\n${YELLOW}=== WAF Security Tests Completed ===${NC}"
