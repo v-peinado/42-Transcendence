@@ -31,7 +31,7 @@ down_volumes:
 clean:
 	@echo "$(COLOR_GREEN)Limpiando recursos...$(COLOR_RESET)"
 	@docker system prune -f --all
-	@docker volume rm $$(docker volume ls -q | grep -v "postgres_data\|vault_data") 2>/dev/null || true
+	@docker volume rm $$(docker volume ls -q | grep -v "postgres_data\|vault_data\|django_media") 2>/dev/null || true
 	@docker network prune -f
 
 # Limpieza completa (preservando la base de datos)
@@ -40,7 +40,9 @@ fclean: down clean
 
 # Limpieza completa (incluyendo la base de datos)
 fcleandb: down_volumes clean
-	@echo "$(COLOR_GREEN)Limpieza completa finalizada (incluyendo base de datos)$(COLOR_RESET)"
+	@echo "$(COLOR_GREEN)Eliminando volumen de imágenes de perfil...$(COLOR_RESET)"
+	@docker volume rm transcendence_42_django_media 2>/dev/null || true
+	@echo "$(COLOR_GREEN)Limpieza completa finalizada (incluyendo base de datos y archivos de media)$(COLOR_RESET)"
 
 # Reinicio completo
 re: fclean all

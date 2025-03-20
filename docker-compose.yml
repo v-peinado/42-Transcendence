@@ -162,6 +162,7 @@ services:
 
 volumes:
   django_media:
+    name: django_media
   django_static:
   nginx_static:
   waf_logs:
