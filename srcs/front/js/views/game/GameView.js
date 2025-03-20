@@ -3,23 +3,40 @@ import AuthService from '../../services/AuthService.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { ChatWidget } from '../../components/ChatWidget.js';
+import { initializeMenuAnimations } from './GameMenuAnimations.js';
 
-export default async function GameView() {
+export default async function GameView(userInfo = null) {
     const app = document.getElementById('app');
-    app.innerHTML = ''; // Limpiar el contenido anterior
-    
-    // Cargar y añadir el navbar autenticado
-    const userInfo = await AuthService.getUserProfile();
-    const navbarHtml = await getNavbarHTML(true, userInfo);
-    const tempNavDiv = document.createElement('div');
-    tempNavDiv.innerHTML = navbarHtml;
-    app.appendChild(tempNavDiv.firstElementChild);
-    
-    // Cargar template del menú de juego
-    const template = await loadHTML('/views/game/templates/GameMenu.html');
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = template;
-    app.appendChild(tempDiv.firstElementChild);
+    const [template, navbarHtml] = await Promise.all([
+        loadHTML('/views/game/templates/GameMenu.html'),
+        loadHTML('/views/components/NavbarAuthenticated.html'),
+    ]);
+
+    app.innerHTML = navbarHtml + template;
+
+    // Actualizar la información del usuario en el navbar
+    if (userInfo) {
+        const navElement = document.querySelector('nav');
+        if (navElement) {
+            const profileImage = userInfo?.profile_image || 
+                               userInfo?.fortytwo_image || 
+                               `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+
+            navElement.querySelectorAll('#nav-profile-image, #nav-profile-image-large').forEach(img => {
+                img.src = profileImage;
+                img.onerror = () => img.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo?.username}`;
+            });
+
+            navElement.querySelectorAll('#nav-username, #nav-username-large').forEach(el => {
+                el.textContent = userInfo.username;
+            });
+        }
+
+        const usernameElement = document.getElementById('username-placeholder');
+        if (usernameElement) {
+            usernameElement.textContent = userInfo.username;
+        }
+    }
 
     // Esperar al siguiente ciclo del event loop para asegurar que el DOM está actualizado
     setTimeout(async () => {
@@ -175,6 +192,9 @@ export default async function GameView() {
                 card.style.setProperty('--y', `${y}%`);
             });
         });
+
+        // Inicializar animaciones después de renderizar
+        initializeMenuAnimations();
     }, 0);
 
     // Cleanup

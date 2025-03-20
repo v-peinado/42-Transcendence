@@ -103,24 +103,11 @@ class Router {
 
     routes = {
         '/': async () => {
-            const app = document.getElementById('app');
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-            
             if (isAuthenticated) {
-                try {
-                    const userInfo = await AuthService.getUserProfile();
-                    if (userInfo && !userInfo.error) {
-                        await this.renderHomePage(true, userInfo);
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error loading profile:', error);
-                }
-                // Si hay error, limpiar estado
-                localStorage.clear();
-                sessionStorage.clear();
+                window.location.href = '/game';
+                return;
             }
-            // Si no está autenticado o hubo error, mostrar página no autenticada
             await this.renderHomePage(false);
         },
         '/login': LoginView,
@@ -134,7 +121,20 @@ class Router {
         '/reset/:uid/:token': ResetPasswordView,
         '/gdpr-settings': GDPRSettingsView,
         '/gdpr-settings/': GDPRSettingsView,
-        '/game': GameView,
+        '/game': async () => {
+            try {
+                const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+                if (!isAuthenticated) {
+                    window.location.href = '/login?redirect=/game';
+                    return;
+                }
+                const userInfo = await AuthService.getUserProfile();
+                await GameView(userInfo);
+            } catch (error) {
+                console.error('Error loading game view:', error);
+                window.location.href = '/login';
+            }
+        },
         '/game/': GameView,
         '/game/:id': async (params) => {
             try {
@@ -273,17 +273,9 @@ class Router {
         if (path === '/' || path === '') {
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             if (isAuthenticated) {
-                try {
-                    const userInfo = await AuthService.getUserProfile();
-                    if (userInfo && !userInfo.error) {
-                        await this.renderHomePage(true, userInfo);
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error loading profile:', error);
-                }
+                window.location.href = '/game';
+                return;
             }
-            // Si no está autenticado o hay error, mostrar página normal
             await this.renderHomePage(false);
             return;
         }
