@@ -235,7 +235,7 @@ function setupProfileEvents() {
                 messageDiv.classList.add('alert-success');
                 messageDiv.innerHTML = `
                     <i class="fas fa-info-circle me-2"></i>
-                    Se ha enviado un email de verificación a ${newEmail}. 
+                    Se ha enviado un email de verificación a ${updates.email}. 
                     Por favor, revisa tu bandeja de entrada.
                 `;
             } else if (updates.current_password) {
@@ -513,10 +513,9 @@ function setupProfileEvents() {
     // Añadir el event listener para el botón QR
     document.getElementById('showQRBtn')?.addEventListener('click', async () => {
         try {
+            console.log('Iniciando generación de QR...');
             const template = document.getElementById('qrModalTemplate');
-            if (!template) {
-                throw new Error('Template QR no encontrado');
-            }
+            if (!template) throw new Error('Template QR no encontrado');
             
             // Clonar y añadir el modal al DOM
             const modalElement = template.content.cloneNode(true);
@@ -527,44 +526,49 @@ function setupProfileEvents() {
             modal.show();
             
             const username = localStorage.getItem('username');
-            const qrUrl = await AuthService.generateQR(username);
+            console.log('Generando QR para usuario:', username);
+            // Cambiar AuthService por Auth2FA
+            const qrUrl = await Auth2FA.generateQR(username);
+            console.log('QR URL generada:', qrUrl);
             
             const qrContainer = document.getElementById('qrContainer');
-            const qrImage = document.createElement('img');
+            const qrImage = new Image();
             qrImage.src = qrUrl;
             qrImage.alt = 'QR Code';
             qrImage.className = 'img-fluid';
             qrImage.style.maxWidth = '256px';
             
-            qrContainer.innerHTML = '';
-            qrContainer.appendChild(qrImage);
-            
-            // Event listeners para el QR
-            document.getElementById('downloadQRBtn')?.addEventListener('click', () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = qrImage.naturalWidth;
-                canvas.height = qrImage.naturalHeight;
-                ctx.drawImage(qrImage, 0, 0);
+            qrImage.onload = () => {
+                console.log('QR imagen cargada, dimensiones:', qrImage.naturalWidth, 'x', qrImage.naturalHeight);
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(qrImage);
                 
-                const link = document.createElement('a');
-                link.download = `qr-login-${username}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-            
-            document.getElementById('qrHelpBtn')?.addEventListener('click', () => {
-                const collapseElement = document.getElementById('qrInfoCollapse');
-                new bootstrap.Collapse(collapseElement, { toggle: true });
-            });
-            
-            // Limpiar cuando se cierre el modal
-            const modalInstance = document.getElementById('qrModal');
-            modalInstance.addEventListener('hidden.bs.modal', () => {
-                modalInstance.remove();
-            });
-            
+                const downloadBtn = document.getElementById('downloadQRBtn');
+                console.log('Botón de descarga encontrado:', !!downloadBtn);
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', () => {
+                        console.log('Click en botón de descarga');
+                        const canvas = document.createElement('canvas');
+                        canvas.width = qrImage.naturalWidth;
+                        canvas.height = qrImage.naturalHeight;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(qrImage, 0, 0);
+                        
+                        const link = document.createElement('a');
+                        link.download = `qr-login-${username}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        console.log('Iniciando descarga del QR');
+                        link.click();
+                    });
+                }
+            };
+
+            qrImage.onerror = (error) => {
+                console.error('Error al cargar la imagen QR:', error);
+            };
+
         } catch (error) {
+            console.error('Error al generar el código QR:', error);
             showAlert('Error al generar el código QR: ' + error.message, 'danger');
         }
     });

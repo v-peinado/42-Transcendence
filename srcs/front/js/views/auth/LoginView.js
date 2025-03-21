@@ -249,11 +249,7 @@ async function handle2FASubmit(e) {
     const username = sessionStorage.getItem('pendingUsername');
     
     try {
-        // Añadir logs para debugging
-        console.log('Enviando verificación 2FA:', { code, isFortytwoUser, username });
-        
         const result = await AuthService.verify2FACode(code, isFortytwoUser);
-        console.log('Resultado verificación 2FA:', result);
         
         if (result.status === 'success') {
             // Limpiar estado temporal solo después de una verificación exitosa
@@ -277,16 +273,42 @@ async function handle2FASubmit(e) {
             window.location.replace('/'); // Cambiado de '/profile' a '/'
             return;
         }
-
-        // Si llegamos aquí, hubo un error
-        throw new Error(result.message || 'Error en la verificación');
     } catch (error) {
         console.error('Error en verificación 2FA:', error);
+        
+        // Mejorar el manejo de errores para mostrar mensajes específicos
+        let errorMessage;
+        
+        // Verificar si el error viene con un mensaje específico del backend
+        if (error.response && error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+        } else if (error.message.includes('Demasiados intentos')) {
+            const seconds = error.message.match(/\d+/)[0];
+            const minutes = Math.floor(seconds / 60);
+            errorMessage = `Has realizado demasiados intentos. Por favor, espera ${minutes} minutos antes de intentarlo de nuevo.`;
+        } else {
+            // Si no hay un mensaje específico, mostrar el error completo en lugar de uno genérico
+            errorMessage = error.message || 'Ha ocurrido un error en la verificación';
+        }
+
         alertDiv.innerHTML = `
             <div class="alert alert-danger">
-                ${error.message || 'Error en la verificación del código'}
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${errorMessage}
             </div>
         `;
+
+        // Deshabilitar el botón si hay rate limit
+        if (error.message.includes('Demasiados intentos')) {
+            const submitButton = document.querySelector('#verify2FAForm button');
+            if (submitButton) {
+                submitButton.disabled = true;
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                    alertDiv.innerHTML = '';
+                }, parseInt(error.message.match(/\d+/)[0]) * 1000);
+            }
+        }
     }
 }
 
