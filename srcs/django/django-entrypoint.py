@@ -36,6 +36,34 @@ def wait_for_db(host, port):
     return False
 
 
+def verify_ssl_certificates():
+    """Verify that SSL certificates are available and readable"""
+    cert_file = "/tmp/ssl/transcendence.crt"
+    key_file = "/tmp/ssl/transcendence.key"
+    
+    if not os.path.exists(cert_file):
+        print(f"Error: SSL certificate file not found: {cert_file}")
+        return False
+    
+    if not os.path.exists(key_file):
+        print(f"Error: SSL key file not found: {key_file}")
+        return False
+    
+    # Check if files are readable
+    try:
+        with open(cert_file, 'r') as f:
+            cert_content = f.read()
+            if not cert_content:
+                print(f"Error: SSL certificate file is empty: {cert_file}")
+                return False
+    except Exception as e:
+        print(f"Error reading SSL certificate file: {e}")
+        return False
+    
+    print("SSL certificates verified successfully.")
+    return True
+
+
 def wait_for_vault(max_attempts=30):
     """Wait for the Vault secrets to be ready"""
     
@@ -174,6 +202,11 @@ def main():
             print(f"Error: Required system user '{celery_user}' not found")
             sys.exit(1)
         print("Info: Required system user verified successfully")
+
+        # Verify SSL certificates
+        if not verify_ssl_certificates():
+            print("Warning: SSL certificates verification failed")
+            # Continue anyway as this is not a fatal error
 
         # Wait for services
         if not wait_for_db(db_host, db_port):

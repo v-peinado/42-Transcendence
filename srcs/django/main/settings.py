@@ -127,6 +127,12 @@ DATABASES = {
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "password"),
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
+        "OPTIONS": {
+            "sslmode": "prefer",  # Cambiado de "verify-ca" a "prefer" para más flexibilidad
+            "sslrootcert": "/tmp/ssl/transcendence.crt",
+            "sslcert": "/tmp/ssl/transcendence.crt",
+            "sslkey": "/tmp/ssl/transcendence.key",
+        }
     }
 }
 

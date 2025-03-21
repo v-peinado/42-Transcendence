@@ -40,6 +40,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ssl_certs:/tmp/ssl:ro
     depends_on:
+      ssl-manager:
+        condition: service_completed_successfully
       waf:
         condition: service_healthy
     entrypoint:
@@ -47,16 +49,30 @@ services:
       - -c
       - |
         /usr/local/bin/get-vault-secrets.sh
-        docker-entrypoint.sh postgres
+        # Config directory for certificates (NOT inside data directory)
+        mkdir -p /var/lib/postgresql/ssl
+        cp /tmp/ssl/transcendence.crt /var/lib/postgresql/ssl/server.crt
+        cp /tmp/ssl/transcendence.key /var/lib/postgresql/ssl/server.key
+        chmod 600 /var/lib/postgresql/ssl/server.key
+        chmod 644 /var/lib/postgresql/ssl/server.crt
+        chown -R postgres:postgres /var/lib/postgresql/ssl
+        # Make PostgreSQL reload its configuration after startup
+        docker-entrypoint.sh postgres &
+        # Wait for PostgreSQL to start
+        sleep 5
+        # Check if SSL is enabled
+        PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SHOW ssl;" | grep -q "on" || echo "WARNING: SSL not enabled"
+        # Keep the container running
+        wait $!
     env_file:
       - ./srcs/.env
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost" ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s # Extended startup period
 
   nginx:
     build:
