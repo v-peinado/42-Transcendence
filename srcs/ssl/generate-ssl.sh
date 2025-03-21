@@ -137,7 +137,7 @@ generate_certificates() {
         return 1
     fi
 
-    # Hacer que la clave sea legible por todos los contenedores (solo para desarrollo/propósitos académicos)
+	# Make the key readable by all containers 
     if ! chmod 644 "$KEY_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $KEY_FILE"
         return 1
