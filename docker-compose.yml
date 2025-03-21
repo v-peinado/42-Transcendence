@@ -45,14 +45,14 @@ services:
       waf:
         condition: service_healthy
     env_file:
-      - ./srcs/.env
+      - ./srcs/.env # only for root, we use vault for the rest of the users (see Dockerfile)
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost" ]
-      interval: 15s
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s # Extended startup period
+      start_period: 10s
 
   nginx:
     build:

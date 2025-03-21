@@ -15,7 +15,7 @@ RUN usermod -a -G ssl-cert postgres
 # Set PostgreSQL initialization parameters
 ENV POSTGRES_INITDB_ARGS="--auth-local=md5 --auth-host=md5"
 
-# Copy config files and essential scripts
+# Copy config files
 COPY config/init-db.sh /docker-entrypoint-initdb.d/
 COPY config/pg_hba.conf /tmp/
 COPY config/get-vault-secrets.sh /usr/local/bin/
@@ -24,7 +24,7 @@ COPY optimize-ssl.sh /usr/local/bin/
 COPY fix-certificate-permissions.sh /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
-# Set permissions with correct execution flags
+# Set permissions
 RUN chmod 755 /docker-entrypoint-initdb.d/init-db.sh && \
 	chmod 755 /usr/local/bin/get-vault-secrets.sh && \
 	chmod 755 /usr/local/bin/check-ssl-from-django.sh && \
