@@ -129,7 +129,7 @@ DATABASES = {
         "PORT": os.environ.get("SQL_PORT", "5432"),
         "OPTIONS": {
             # Configuración SSL extremadamente simplificada para resolver el problema de permisos
-            "sslmode": "require",  # Requerir SSL pero sin verificar certificados
+            "sslmode": "require",  # Requerir SSL pero sin verificar certificados ya que estan auto-firmados
             # Removemos todas las referencias a archivos de certificados
             "application_name": "django_app",
             "connect_timeout": 30,
