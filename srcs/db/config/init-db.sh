@@ -44,14 +44,25 @@ min_wal_size = 80MB
 effective_cache_size = 1GB
 maintenance_work_mem = 128MB
 
-# SSL Configuration
+# SSL Configuration - Enhanced for better compatibility
 ssl = on
 ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'
 ssl_prefer_server_ciphers = on
 ssl_min_protocol_version = 'TLSv1.2'
 ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'
+# Force SSL for all connections via pg_hba.conf instead of here
 EOF
+
+    # Add debug options to log SSL activity if in a debug environment
+    if [ "${DEBUG:-false}" = "true" ]; then
+        cat >> "${PGDATA}/postgresql.conf" <<EOF
+# Debug options for SSL
+log_connections = on
+log_hostname = on
+ssl_passphrase_command = ''
+EOF
+    fi
 
     # Copy pg_hba.conf
     cp /tmp/pg_hba.conf "${PGDATA}/pg_hba.conf"
@@ -79,6 +90,70 @@ EOF
     fi
 fi
 
+# Agregar configuración SSL explícita para asegurar que 'ssl = on' siempre está activado
+# Este paso es crítico y será ejecutado en cada inicio del contenedor
+if grep -q "ssl = off" "${PGDATA}/postgresql.conf" 2>/dev/null; then
+    echo "Encontrada configuración 'ssl = off', cambiando a 'ssl = on'..."
+    sed -i 's/ssl = off/ssl = on/' "${PGDATA}/postgresql.conf"
+elif ! grep -q "ssl = on" "${PGDATA}/postgresql.conf" 2>/dev/null; then
+    echo "No se encontró configuración de SSL, agregando 'ssl = on'..."
+    echo "ssl = on" >> "${PGDATA}/postgresql.conf"
+fi
+
+# Verificar otras configuraciones SSL y agregarlas si no existen
+for setting in "ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'" \
+               "ssl_key_file = '/var/lib/postgresql/ssl/server.key'" \
+               "ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'"; do
+    key=$(echo "$setting" | cut -d= -f1 | tr -d ' ')
+    if ! grep -q "$key" "${PGDATA}/postgresql.conf" 2>/dev/null; then
+        echo "Agregando configuración SSL faltante: $setting"
+        echo "$setting" >> "${PGDATA}/postgresql.conf"
+    fi
+done
+
+# Make sure SSL directory exists outside the main function for startup checks
+if [ ! -d "/var/lib/postgresql/ssl" ]; then
+    mkdir -p /var/lib/postgresql/ssl
+    echo "Created SSL directory at /var/lib/postgresql/ssl"
+fi
+
+# Ensure certificate directory has proper ownership
+chown -R postgres:postgres /var/lib/postgresql/ssl 2>/dev/null || echo "Warning: Could not change ownership of SSL directory"
+
+# Special handling for SSL certificate permissions
+if [ -f "/tmp/ssl/transcendence.crt" ] && [ -f "/tmp/ssl/transcendence.key" ]; then
+    echo "Found SSL certificates in /tmp/ssl, ensuring they are properly configured..."
+    
+    # Try multiple methods to ensure the file is readable
+    if [ -r "/tmp/ssl/transcendence.key" ]; then
+        echo "Key file is readable, copying directly"
+        cp -f /tmp/ssl/transcendence.crt /var/lib/postgresql/ssl/server.crt
+        cp -f /tmp/ssl/transcendence.key /var/lib/postgresql/ssl/server.key
+    else
+        echo "Key file is not readable, trying with cat"
+        cat /tmp/ssl/transcendence.crt > /var/lib/postgresql/ssl/server.crt || echo "Failed to copy certificate"
+        cat /tmp/ssl/transcendence.key > /var/lib/postgresql/ssl/server.key || echo "Failed to copy key file"
+    fi
+    
+    chmod 600 /var/lib/postgresql/ssl/server.key
+    chmod 644 /var/lib/postgresql/ssl/server.crt
+    chown postgres:postgres /var/lib/postgresql/ssl/server.crt /var/lib/postgresql/ssl/server.key
+    echo "SSL certificates properly configured"
+else
+    echo "ERROR: SSL certificates not found at /tmp/ssl/"
+    ls -la /tmp/ssl/ || echo "Directory does not exist"
+fi
+
+# Ensure certificates are copied every time container starts, not just at initialization
+if [ -f "/tmp/ssl/transcendence.crt" ] && [ -f "/tmp/ssl/transcendence.key" ]; then
+    cp /tmp/ssl/transcendence.crt /var/lib/postgresql/ssl/server.crt
+    cp /tmp/ssl/transcendence.key /var/lib/postgresql/ssl/server.key
+    chmod 600 /var/lib/postgresql/ssl/server.key
+    chmod 644 /var/lib/postgresql/ssl/server.crt
+    chown postgres:postgres /var/lib/postgresql/ssl/server.crt /var/lib/postgresql/ssl/server.key
+    echo "Certificates copied successfully on startup"
+fi
+
 # Add an extra check to verify SSL configuration after initialization
 echo "Verifying PostgreSQL SSL configuration..."
 if [ -f "/var/lib/postgresql/ssl/server.crt" ] && [ -f "/var/lib/postgresql/ssl/server.key" ]; then
@@ -92,3 +167,7 @@ else
     chmod 644 /var/lib/postgresql/ssl/server.crt
     chown postgres:postgres /var/lib/postgresql/ssl/server.crt /var/lib/postgresql/ssl/server.key
 fi
+
+# Mostrar la configuración SSL actual para verificar
+echo "Configuración SSL actual en postgresql.conf:"
+grep -E "ssl|SSL" "${PGDATA}/postgresql.conf" || echo "No se encontró configuración SSL"

@@ -16,9 +16,10 @@ RUN apt-get update && \
 	modsecurity-crs \
 	jq \
 	bash \
+	ssl-cert \
 	netcat-traditional \
 	gettext-base && \ 
-curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
+	curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
 	unzip vault.zip && \
 	mv vault /usr/local/bin/ && \
 	rm vault.zip && \
@@ -49,6 +50,11 @@ curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_V
 	touch /var/log/vault/audit.log && \
 	chmod 640 /var/log/vault/audit.log && \
 	chown -R nginxuser:nginxuser /var/log/vault/audit.log
+
+# Create group for SSL certificate access and add root to it 
+RUN groupadd -r ssl-cert || true && \
+	usermod -a -G ssl-cert root && \
+	usermod -a -G ssl-cert nginxuser
 
 # Copy configuration files
 COPY waf/vault/config.conf /etc/vault.d/config.hcl

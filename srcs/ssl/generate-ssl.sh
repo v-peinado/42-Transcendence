@@ -131,14 +131,24 @@ generate_certificates() {
     fi
     rm -f /tmp/openssl.err
 
+    # Definir permisos más permisivos para que todos los contenedores puedan leer estos archivos
     if ! chmod 644 "$CERT_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $CERT_FILE"
         return 1
     fi
 
-    if ! chmod 600 "$KEY_FILE" 2>/dev/null; then
+    # Hacer que la clave sea legible por todos los contenedores (solo para desarrollo/propósitos académicos)
+    if ! chmod 644 "$KEY_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $KEY_FILE"
         return 1
+    fi
+    
+    # Asegurarse de que los permisos de grupo permitan la lectura
+    # Solo intentarlo si existe el grupo ssl-cert
+    if getent group ssl-cert > /dev/null 2>&1; then
+        chown root:ssl-cert "$CERT_FILE" "$KEY_FILE" 2>/dev/null || log_info "Could not set group ownership (not critical)"
+    else
+        log_info "Group ssl-cert not found, skipping group ownership settings"
     fi
     
     # Store in Vault if configured
