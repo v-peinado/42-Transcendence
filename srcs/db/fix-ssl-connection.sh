@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Script para diagnosticar y corregir problemas de conexión SSL en PostgreSQL
-
 set -e
 
-# Colores para salida
+# Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[0;33m'

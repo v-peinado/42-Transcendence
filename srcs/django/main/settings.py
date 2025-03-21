@@ -128,10 +128,11 @@ DATABASES = {
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
         "OPTIONS": {
-            "sslmode": "require",  # Cambiado de "prefer" a "require" para forzar conexiones SSL
-            "sslrootcert": "/tmp/ssl/transcendence.crt",
-            "sslcert": "/tmp/ssl/transcendence.crt",
-            "sslkey": "/tmp/ssl/transcendence.key",
+            # Configuración SSL extremadamente simplificada para resolver el problema de permisos
+            "sslmode": "require",  # Requerir SSL pero sin verificar certificados
+            # Removemos todas las referencias a archivos de certificados
+            "application_name": "django_app",
+            "connect_timeout": 30,
         }
     }
 }

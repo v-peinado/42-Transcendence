@@ -79,8 +79,8 @@ EOF
 }
 
 # Verificar que estamos ejecutando como postgres
-if [ "$(whoami)" != "postgres" ]; then
-  log "ERROR" "Este script debe ser ejecutado como usuario postgres"
+if [ "$(whoami)" != "postgres" ] && [ "$(whoami)" != "root" ]; then
+  log "ERROR" "Este script debe ser ejecutado como usuario postgres o root"
   exit 1
 fi
 

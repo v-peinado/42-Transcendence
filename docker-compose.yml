@@ -38,7 +38,7 @@ services:
       - transcendence-backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ssl_certs:/tmp/ssl:ro
+      - ssl_certs:/tmp/ssl:rw
     depends_on:
       ssl-manager:
         condition: service_completed_successfully
@@ -51,6 +51,9 @@ services:
         /usr/local/bin/get-vault-secrets.sh
         # Config directory for certificates (NOT inside data directory)
         mkdir -p /var/lib/postgresql/ssl
+        # Fix certificate permissions first
+        /usr/local/bin/fix-certificate-permissions.sh
+
         # Try copying with different permissions and fallback options
         if [ -r "/tmp/ssl/transcendence.crt" ] && [ -r "/tmp/ssl/transcendence.key" ]; then
           echo "Certificate files are readable, proceeding with copy"
