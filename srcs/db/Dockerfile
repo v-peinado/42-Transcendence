@@ -19,17 +19,13 @@ ENV POSTGRES_INITDB_ARGS="--auth-local=md5 --auth-host=md5"
 COPY config/init-db.sh /docker-entrypoint-initdb.d/
 COPY config/pg_hba.conf /tmp/
 COPY config/get-vault-secrets.sh /usr/local/bin/
-COPY check-ssl-from-django.sh /usr/local/bin/
-COPY optimize-ssl.sh /usr/local/bin/
-COPY fix-certificate-permissions.sh /usr/local/bin/
+COPY ssl_library.sh /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
 # Set permissions
 RUN chmod 755 /docker-entrypoint-initdb.d/init-db.sh && \
 	chmod 755 /usr/local/bin/get-vault-secrets.sh && \
-	chmod 755 /usr/local/bin/check-ssl-from-django.sh && \
-	chmod 755 /usr/local/bin/optimize-ssl.sh && \
-	chmod 755 /usr/local/bin/fix-certificate-permissions.sh && \
+	chmod 755 /usr/local/bin/ssl_library.sh && \
 	chmod 755 /usr/local/bin/entrypoint.sh && \
 	chown -R postgres:postgres /docker-entrypoint-initdb.d/ && \
 	mkdir -p /var/lib/postgresql/ssl && \
