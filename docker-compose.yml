@@ -68,35 +68,94 @@ services:
         chmod 644 /var/lib/postgresql/ssl/server.crt
         chown -R postgres:postgres /var/lib/postgresql/ssl
 
-        # Iniciar PostgreSQL sin los argumentos -c ssl=on inicialmente
+        # Método para arreglar la configuración de PostgreSQL si ya existe
+        if [ -f "/var/lib/postgresql/data/postgresql.conf" ]; then
+          echo "Verificando postgresql.conf para eliminar configuraciones incorrectas..."
+          # Crear un backup
+          cp "/var/lib/postgresql/data/postgresql.conf" "/var/lib/postgresql/data/postgresql.conf.bak"
+          
+          # Eliminar cualquier línea duplicada o mal formateada relacionada con SSL
+          sed -i '/^ssl[^=]*=[^=]*=[^=]*/d' "/var/lib/postgresql/data/postgresql.conf"
+          sed -i '/^ssl.*=.*=.*/d' "/var/lib/postgresql/data/postgresql.conf"
+          
+          # Eliminar configuraciones SSL existentes para evitar duplicados
+          sed -i '/^ssl =/d' "/var/lib/postgresql/data/postgresql.conf"
+          sed -i '/^ssl_cert_file =/d' "/var/lib/postgresql/data/postgresql.conf"
+          sed -i '/^ssl_key_file =/d' "/var/lib/postgresql/data/postgresql.conf"
+          sed -i '/^ssl_ca_file =/d' "/var/lib/postgresql/data/postgresql.conf"
+          sed -i '/^ssl_ciphers =/d' "/var/lib/postgresql/data/postgresql.conf"
+          
+          # Agregar configuración SSL correcta
+          echo "" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "# SSL Configuration - Added $(date)" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "ssl = on" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "ssl_key_file = '/var/lib/postgresql/ssl/server.key'" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'" >> "/var/lib/postgresql/data/postgresql.conf"
+          echo "log_connections = on" >> "/var/lib/postgresql/data/postgresql.conf"
+          
+          echo "Configuración SSL actualizada correctamente."
+        fi
+
+        # Iniciar PostgreSQL
         docker-entrypoint.sh postgres &
-        PG_PID=$!
+        db_pid=$!
+        export PG_PID=$db_pid
 
         # Esperar a que PostgreSQL esté completamente inicializado
-        sleep 15
+        echo "Esperando inicialización completa de PostgreSQL..."
+        max_attempts=30
+        attempt=1
+        while ! pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -q; do
+          echo "PostgreSQL aún no está listo - esperando... (Intento $attempt de $max_attempts)"
+          attempt=$((attempt + 1))
+          if [ $attempt -gt $max_attempts ]; then
+            echo "ERROR: PostgreSQL no pudo iniciar después de $max_attempts intentos"
+            if [ -f "/var/lib/postgresql/data/postgresql.conf" ]; then
+              echo "Mostrando las últimas 20 líneas de postgresql.conf:"
+              tail -n 20 "/var/lib/postgresql/data/postgresql.conf"
+              
+              echo "Restaurando backup de postgresql.conf si existe..."
+              if [ -f "/var/lib/postgresql/data/postgresql.conf.bak" ]; then
+                cp "/var/lib/postgresql/data/postgresql.conf.bak" "/var/lib/postgresql/data/postgresql.conf"
+                echo "Backup restaurado, intentando reiniciar PostgreSQL..."
+                docker-entrypoint.sh postgres &
+                db_pid=$!
+                sleep 10
+              fi
+            fi
+            break
+          fi
+          sleep 2
+        done
 
-        # Verificar y cambiar la configuración SSL después de que PostgreSQL haya iniciado
-        psql -U $POSTGRES_USER -d $POSTGRES_DB -c "ALTER SYSTEM SET ssl = 'on';" || echo "No se pudo cambiar la configuración SSL"
-        psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT pg_reload_conf();" || echo "No se pudo recargar la configuración"
+        # Si PostgreSQL está listo, verificar configuración SSL
+        if pg_isready -h localhost -U $POSTGRES_USER -d $POSTGRES_DB -q; then
+          echo "Verificando configuración de PostgreSQL SSL con psql..."
+          current_ssl_status=$(PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -At -c "SHOW ssl;" 2>/dev/null || echo "off")
+          echo "Estado SSL actual: $current_ssl_status"
 
-        # Verificar configuración SSL
-        echo "Verificando configuración de PostgreSQL SSL..."
-        # Primero intentar sin SSL para asegurar que la base de datos está funcionando
-        PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -h localhost -c "SELECT 1;" && \
-          echo "✅ Conexión a la base de datos exitosa" || echo "❌ ADVERTENCIA: Falló la conexión a la base de datos"
+          if [ "$current_ssl_status" != "on" ]; then
+            echo "SSL no está activado. Intentando activar mediante SQL..."
+            # Intentar activar SSL a través de SQL
+            PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -c "ALTER SYSTEM SET ssl = 'on';" 2>/dev/null
+            PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT pg_reload_conf();" 2>/dev/null
+          fi
 
-        # Verificar estado de SSL
-        PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SHOW ssl;" && \
-          echo "✅ Configuración SSL: mostrada arriba" || echo "❌ ADVERTENCIA: No se pudo verificar SSL"
+          # Prueba de conexión SSL explícita
+          echo "Verificando conexión SSL..."
+          if PGSSLMODE=require PGPASSWORD=$POSTGRES_PASSWORD psql -U $POSTGRES_USER -d $POSTGRES_DB -h localhost -c "SELECT 'Conexión SSL exitosa';" 2>/dev/null; then
+            echo "✅ Prueba de conexión SSL exitosa"
+          else
+            echo "❌ Prueba de conexión SSL fallida"
+          fi
+        else
+          echo "ERROR: PostgreSQL no está disponible para verificación SSL"
+        fi
 
-        # Intentar una conexión SSL explícita
-        PGPASSWORD=$POSTGRES_PASSWORD PGSSLMODE=require psql -U $POSTGRES_USER -d $POSTGRES_DB -h localhost \
-          -c "SELECT 'Conexión SSL exitosa';" && \
-          echo "✅ Prueba de conexión SSL exitosa" || \
-          echo "❌ ADVERTENCIA: Falló la prueba de conexión SSL"
-
-        # Mantener el contenedor funcionando
-        wait $PG_PID
+        # Mantener el contenedor funcionando con el PID correcto
+        wait $db_pid
     env_file:
       - ./srcs/.env
     restart: always

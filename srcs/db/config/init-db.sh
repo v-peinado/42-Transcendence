@@ -44,14 +44,17 @@ min_wal_size = 80MB
 effective_cache_size = 1GB
 maintenance_work_mem = 128MB
 
-# SSL Configuration - Enhanced for better compatibility
+# SSL Configuration - Habilitada explícitamente (no comentada)
 ssl = on
 ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'
 ssl_prefer_server_ciphers = on
 ssl_min_protocol_version = 'TLSv1.2'
 ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'
-# Force SSL for all connections via pg_hba.conf instead of here
+
+# Additional SSL settings to improve compatibility
+ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
+ssl_ecdh_curve = 'prime256v1'
 EOF
 
     # Add debug options to log SSL activity if in a debug environment
@@ -63,6 +66,15 @@ log_hostname = on
 ssl_passphrase_command = ''
 EOF
     fi
+
+    # Add debug options to log SSL activity
+    cat >> "${PGDATA}/postgresql.conf" <<EOF
+# Debug options for SSL and connection problems
+log_connections = on
+log_min_messages = warning
+log_min_error_statement = warning
+log_min_duration_statement = 500
+EOF
 
     # Copy pg_hba.conf
     cp /tmp/pg_hba.conf "${PGDATA}/pg_hba.conf"
@@ -90,26 +102,37 @@ EOF
     fi
 fi
 
-# Agregar configuración SSL explícita para asegurar que 'ssl = on' siempre está activado
-# Este paso es crítico y será ejecutado en cada inicio del contenedor
-if grep -q "ssl = off" "${PGDATA}/postgresql.conf" 2>/dev/null; then
-    echo "Encontrada configuración 'ssl = off', cambiando a 'ssl = on'..."
-    sed -i 's/ssl = off/ssl = on/' "${PGDATA}/postgresql.conf"
-elif ! grep -q "ssl = on" "${PGDATA}/postgresql.conf" 2>/dev/null; then
-    echo "No se encontró configuración de SSL, agregando 'ssl = on'..."
-    echo "ssl = on" >> "${PGDATA}/postgresql.conf"
-fi
+# Asegurar que la configuración SSL esté activada y no comentada
+if [ -f "${PGDATA}/postgresql.conf" ]; then
+    echo "Verificando y ajustando configuración SSL en postgresql.conf..."
 
-# Verificar otras configuraciones SSL y agregarlas si no existen
-for setting in "ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'" \
-               "ssl_key_file = '/var/lib/postgresql/ssl/server.key'" \
-               "ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'"; do
-    key=$(echo "$setting" | cut -d= -f1 | tr -d ' ')
-    if ! grep -q "$key" "${PGDATA}/postgresql.conf" 2>/dev/null; then
-        echo "Agregando configuración SSL faltante: $setting"
-        echo "$setting" >> "${PGDATA}/postgresql.conf"
-    fi
-done
+    # Crear copia de seguridad
+    cp "${PGDATA}/postgresql.conf" "${PGDATA}/postgresql.conf.bak"
+    
+    # Eliminar líneas comentadas que podrían causar confusión
+    sed -i '/^#ssl = /d' "${PGDATA}/postgresql.conf"
+    
+    # Buscar y eliminar cualquier configuración SSL existente para evitar duplicados
+    # o posibles sintaxis incorrectas
+    sed -i '/^ssl =/d' "${PGDATA}/postgresql.conf"
+    sed -i '/^ssl_cert_file =/d' "${PGDATA}/postgresql.conf"
+    sed -i '/^ssl_key_file =/d' "${PGDATA}/postgresql.conf"
+    sed -i '/^ssl_ca_file =/d' "${PGDATA}/postgresql.conf"
+    sed -i '/^ssl_ciphers =/d' "${PGDATA}/postgresql.conf"
+    sed -i '/^log_connections =/d' "${PGDATA}/postgresql.conf"
+    
+    # Agregar configuración SSL limpia al final del archivo
+    echo "" >> "${PGDATA}/postgresql.conf"
+    echo "# SSL Configuration - Added by init script $(date)" >> "${PGDATA}/postgresql.conf"
+    echo "ssl = on" >> "${PGDATA}/postgresql.conf"
+    echo "ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'" >> "${PGDATA}/postgresql.conf"
+    echo "ssl_key_file = '/var/lib/postgresql/ssl/server.key'" >> "${PGDATA}/postgresql.conf"
+    echo "ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'" >> "${PGDATA}/postgresql.conf"
+    echo "ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'" >> "${PGDATA}/postgresql.conf"
+    echo "log_connections = on" >> "${PGDATA}/postgresql.conf"
+    
+    echo "Configuración SSL reconstruida limpiamente"
+fi
 
 # Make sure SSL directory exists outside the main function for startup checks
 if [ ! -d "/var/lib/postgresql/ssl" ]; then

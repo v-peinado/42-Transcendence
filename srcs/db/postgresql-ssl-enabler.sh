@@ -39,92 +39,91 @@ enable_ssl() {
     return 1
   fi
   
-  log "INFO" "Verificando la configuración SSL actual..."
-  current_ssl=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SHOW ssl;")
-  log "INFO" "Configuración SSL actual: $current_ssl"
-  
-  if [[ "$current_ssl" == *"on"* ]]; then
-    log "INFO" "SSL ya está activado en PostgreSQL"
-  else
-    log "WARN" "SSL está desactivado, intentando activarlo..."
+  log "INFO" "Verificando certificados SSL..."
+  if [ ! -f "/var/lib/postgresql/ssl/server.crt" ] || [ ! -f "/var/lib/postgresql/ssl/server.key" ]; then
+    log "ERROR" "Certificados SSL no encontrados. Copiando desde /tmp/ssl si están disponibles..."
+    mkdir -p /var/lib/postgresql/ssl
     
-    # Primero, verificar la presencia de los certificados
-    if [ ! -f "/var/lib/postgresql/ssl/server.crt" ] || [ ! -f "/var/lib/postgresql/ssl/server.key" ]; then
-      log "ERROR" "Certificados SSL no encontrados en la ubicación esperada"
-      return 1
-    fi
-    
-    # Intentar activar SSL a través de ALTER SYSTEM
-    if psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER SYSTEM SET ssl = 'on';" 2>/dev/null; then
-      log "INFO" "Configuración SSL cambiada exitosamente"
-      
-      # Establecer otras configuraciones SSL necesarias
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER SYSTEM SET ssl_cert_file = '/var/lib/postgresql/ssl/server.crt';"
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER SYSTEM SET ssl_key_file = '/var/lib/postgresql/ssl/server.key';"
-      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER SYSTEM SET ssl_ca_file = '/var/lib/postgresql/ssl/server.crt';"
-      
-      # Recargar la configuración
-      log "INFO" "Recargando configuración de PostgreSQL..."
-      if psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT pg_reload_conf();" | grep -q 't'; then
-        log "INFO" "Configuración de PostgreSQL recargada exitosamente"
-      else
-        log "ERROR" "Error al recargar la configuración de PostgreSQL"
-        return 1
-      fi
+    if [ -f "/tmp/ssl/transcendence.crt" ] && [ -f "/tmp/ssl/transcendence.key" ]; then
+      cp /tmp/ssl/transcendence.crt /var/lib/postgresql/ssl/server.crt
+      cp /tmp/ssl/transcendence.key /var/lib/postgresql/ssl/server.key
+      chmod 600 /var/lib/postgresql/ssl/server.key
+      chmod 644 /var/lib/postgresql/ssl/server.crt
+      chown -R postgres:postgres /var/lib/postgresql/ssl
+      log "INFO" "Certificados copiados exitosamente"
     else
-      log "ERROR" "No se pudo cambiar la configuración SSL a través de SQL"
-      log "WARN" "Intentando modificar directamente postgresql.conf..."
-      
-      # Obtener la ubicación de postgresql.conf
-      conf_file=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SHOW config_file;")
-      conf_file=$(echo $conf_file | tr -d ' ')
-      
-      if [ -w "$conf_file" ]; then
-        log "INFO" "Modificando $conf_file directamente..."
-        # Hacer una copia de seguridad
-        cp "$conf_file" "${conf_file}.bak"
-        
-        # Reemplazar o agregar ssl = on
-        if grep -q "ssl = " "$conf_file"; then
-          sed -i 's/ssl = off/ssl = on/' "$conf_file"
-        else
-          echo "ssl = on" >> "$conf_file"
-        fi
-        
-        # Reiniciar PostgreSQL
-        log "WARN" "Es necesario reiniciar PostgreSQL para aplicar los cambios"
-        return 0
-      else
-        log "ERROR" "No se puede escribir en el archivo de configuración: $conf_file"
-        return 1
-      fi
-    fi
-    
-    # Verificar nuevamente la configuración SSL
-    new_ssl=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SHOW ssl;")
-    if [[ "$new_ssl" == *"on"* ]]; then
-      log "INFO" "✅ SSL activado exitosamente"
-    else
-      log "ERROR" "❌ SSL sigue desactivado después de los intentos de activación"
+      log "ERROR" "Certificados no encontrados en /tmp/ssl"
       return 1
     fi
   fi
   
-  # Intentar una conexión SSL
-  log "INFO" "Probando conexión SSL..."
-  if PGSSLMODE=require psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h localhost -c "SELECT 'SSL connection successful';" 2>/dev/null; then
-    log "INFO" "✅ Conexión SSL exitosa"
+  log "INFO" "Verificando la configuración SSL actual en postgresql.conf..."
+  if [ -f "${PGDATA}/postgresql.conf" ]; then
+    # Eliminar líneas comentadas que podrían causar confusión
+    sed -i '/^#ssl = /d' "${PGDATA}/postgresql.conf"
+    
+    # Asegurarse de que ssl = on está presente y no comentado
+    if grep -q "^ssl = off" "${PGDATA}/postgresql.conf"; then
+      sed -i 's/^ssl = off/ssl = on/' "${PGDATA}/postgresql.conf"
+      log "INFO" "Cambiada configuración 'ssl = off' a 'ssl = on'"
+    elif ! grep -q "^ssl = on" "${PGDATA}/postgresql.conf"; then
+      echo "ssl = on" >> "${PGDATA}/postgresql.conf"
+      log "INFO" "Agregada configuración 'ssl = on'"
+    fi
+    
+    # Configurar las rutas de los certificados SSL
+    for param in "ssl_cert_file" "ssl_key_file" "ssl_ca_file"; do
+      file_path="/var/lib/postgresql/ssl/server.crt"
+      if [ "$param" = "ssl_key_file" ]; then
+        file_path="/var/lib/postgresql/ssl/server.key"
+      fi
+      
+      # Eliminar entradas comentadas
+      sed -i "/^#$param = /d" "${PGDATA}/postgresql.conf"
+      
+      # Verificar si existe la configuración
+      if ! grep -q "^$param = " "${PGDATA}/postgresql.conf"; then
+        echo "$param = '$file_path'" >> "${PGDATA}/postgresql.conf"
+        log "INFO" "Agregada configuración $param = '$file_path'"
+      fi
+    done
+    
+    log "INFO" "Configuración SSL en postgresql.conf modificada. Se requiere recargar la configuración."
   else
-    log "ERROR" "❌ Falló la conexión SSL"
-    log "WARN" "Es posible que se requiera un reinicio completo de PostgreSQL"
+    log "ERROR" "No se encontró postgresql.conf"
     return 1
   fi
   
-  log "INFO" "Proceso de activación de SSL completado"
+  log "INFO" "Intentando activar SSL a través de SQL..."
+  if psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "ALTER SYSTEM SET ssl = 'on';" 2>/dev/null; then
+    log "INFO" "Configuración SSL cambiada exitosamente en PostgreSQL"
+  else
+    log "WARN" "No se pudo cambiar la configuración SSL a través de SQL"
+  fi
+  
+  log "INFO" "Intentando recargar la configuración de PostgreSQL..."
+  if psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT pg_reload_conf();" | grep -q 't'; then
+    log "INFO" "Configuración de PostgreSQL recargada exitosamente"
+  else
+    log "WARN" "No se pudo recargar la configuración de PostgreSQL"
+    log "WARN" "Es posible que se requiera reiniciar PostgreSQL para aplicar los cambios"
+  fi
+  
+  log "INFO" "Verificando estado actual de SSL..."
+  current_ssl=$(psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SHOW ssl;")
+  log "INFO" "Estado actual de SSL: $current_ssl"
+  
+  if [[ "$current_ssl" == *"on"* ]]; then
+    log "INFO" "✅ SSL está activado correctamente"
+  else
+    log "WARN" "❌ SSL sigue desactivado después de los intentos de activación"
+    log "WARN" "Se recomienda reiniciar PostgreSQL"
+  fi
+  
+  log "INFO" "Proceso completado"
   return 0
 }
 
-# Función principal
 main() {
   # Si no hay variables de entorno cargadas, intentar cargarlas
   if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_DB" ]; then
@@ -139,13 +138,13 @@ main() {
   
   # Ejecutar la activación de SSL
   if enable_ssl; then
-    log "INFO" "SSL activado correctamente en PostgreSQL"
+    log "INFO" "Proceso de activación de SSL completado correctamente"
     exit 0
   else
-    log "ERROR" "No se pudo activar SSL en PostgreSQL"
+    log "ERROR" "Error en el proceso de activación de SSL"
     exit 1
   fi
 }
 
-# Ejecutar la función principal
+# Ejecutar función principal
 main "$@"
