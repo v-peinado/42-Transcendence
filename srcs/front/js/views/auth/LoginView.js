@@ -233,7 +233,23 @@ async function handleFormSubmit(e) {
         if (result.status === 'success') {
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('username', result.username || username);
-            window.location.replace('/'); // Cambiado de '/profile' a '/'
+            
+            // Mostrar pantalla de carga
+            app.innerHTML = getNavbarHTML(false);
+            const loadingTemplate = document.getElementById('loading42Template');
+            if (loadingTemplate) {
+                const loadingScreen = loadingTemplate.content.cloneNode(true);
+                loadingScreen.querySelector('h4').textContent = 'Preparando tu experiencia de juego...';
+                app.appendChild(loadingScreen);
+            }
+
+            // Dar tiempo para que se muestre la pantalla de carga
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            // Precargar GameView mientras se muestra la carga
+            await import('../game/GameView.js');
+            
+            window.location.replace('/');
             return;
         }
         
