@@ -128,9 +128,8 @@ DATABASES = {
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
         "OPTIONS": {
-            # Configuración SSL extremadamente simplificada para resolver el problema de permisos
-            "sslmode": "require",  # Requerir SSL pero sin verificar certificados ya que estan auto-firmados
-            # Removemos todas las referencias a archivos de certificados
+            # SSL/TLS configuration for PostgreSQL database
+            "sslmode": "require",  # require because we are using SSL/TLS auto signed certificates
             "application_name": "django_app",
             "connect_timeout": 30,
         }

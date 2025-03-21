@@ -41,16 +41,14 @@ fi
 log "INFO" "Loading credentials from Vault..."
 /usr/local/bin/get-vault-secrets.sh
 
-# Prepare PostgreSQL SSL directory
+# Prepare PostgreSQL SSL directory and certificates
 log "INFO" "Setting up SSL configuration..."
 mkdir -p /var/lib/postgresql/ssl
 chmod 755 /var/lib/postgresql/ssl
 chown postgres:postgres /var/lib/postgresql/ssl
 
-# Fix certificate permissions
-configure_cert_permissions
-
-# Copy certificates to PostgreSQL directory
+# Fix certificate permissions and copy to PostgreSQL directory
+configure_cert_permissions > /dev/null 2>&1
 if ! copy_certs_to_postgres; then
   log "ERROR" "Failed to copy certificates"
   exit 1
@@ -58,13 +56,10 @@ fi
 
 # Configure PostgreSQL if data directory exists
 if [ -f "${PGDATA}/postgresql.conf" ]; then
-  # Configure SSL in postgresql.conf
-  configure_postgresql_ssl
-  
-  # Configure pg_hba.conf for SSL connections
-  configure_pghba_ssl
+  configure_postgresql_ssl > /dev/null 2>&1
+  configure_pghba_ssl > /dev/null 2>&1
 fi
 
-# Start PostgreSQL
+# Start PostgreSQL with reduced logging
 log "INFO" "Starting PostgreSQL..."
 exec docker-entrypoint.sh postgres

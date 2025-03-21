@@ -131,7 +131,7 @@ generate_certificates() {
     fi
     rm -f /tmp/openssl.err
 
-    # Definir permisos más permisivos para que todos los contenedores puedan leer estos archivos
+	# Define more permissive permissions so all containers can read these files (Auto sign the certificate)
     if ! chmod 644 "$CERT_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $CERT_FILE"
         return 1
@@ -143,8 +143,8 @@ generate_certificates() {
         return 1
     fi
     
-    # Asegurarse de que los permisos de grupo permitan la lectura
-    # Solo intentarlo si existe el grupo ssl-cert
+	# Enssure that group permissions allow reading
+	# Only attempt if the ssl-cert group exists
     if getent group ssl-cert > /dev/null 2>&1; then
         chown root:ssl-cert "$CERT_FILE" "$KEY_FILE" 2>/dev/null || log_info "Could not set group ownership (not critical)"
     else

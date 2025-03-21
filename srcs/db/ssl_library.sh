@@ -49,7 +49,8 @@ log_section() {
 
 # Configure permissions for SSL certificates and keys
 configure_cert_permissions() {
-  log_section "Configuring SSL certificate permissions"
+  # Only log at the section level, not every file detail
+  log "INFO" "Configuring SSL certificate permissions..."
 
   # Locations where certificates might be stored
   local cert_locations=(
@@ -60,59 +61,40 @@ configure_cert_permissions() {
   # Process each location
   for location in "${cert_locations[@]}"; do
     if [ -d "$location" ]; then
-      log "INFO" "Checking certificates in $location..."
-      
-      # Process certificate files
+      # Process certificate files (silently)
       for cert in "$location"/*.crt; do
         if [ -f "$cert" ]; then
-          log "INFO" "Setting permissions for $cert"
-          chmod 644 "$cert" || log "WARN" "Failed to set permissions for $cert"
-          
+          chmod 644 "$cert" > /dev/null 2>&1
           if [ "$(id -u)" = "0" ]; then
             if [[ "$cert" == "/var/lib/postgresql"* ]]; then
-              chown postgres:postgres "$cert" || log "WARN" "Failed to change ownership of $cert"
+              chown postgres:postgres "$cert" > /dev/null 2>&1
             fi
-          fi
-          
-          if [ -f "$cert" ]; then
-            log "INFO" "✅ Updated permissions: $(stat -c "%a %U:%G" "$cert")"
           fi
         fi
       done
       
-      # Process key files
+      # Process key files (silently)
       for key in "$location"/*.key; do
         if [ -f "$key" ]; then
-          log "INFO" "Setting permissions for $key"
-          
           if [[ "$key" == "/var/lib/postgresql"* ]]; then
-            chmod 600 "$key" || log "WARN" "Failed to set permissions for $key"
+            chmod 600 "$key" > /dev/null 2>&1
             if [ "$(id -u)" = "0" ]; then
-              chown postgres:postgres "$key" || log "WARN" "Failed to change ownership of $key"
+              chown postgres:postgres "$key" > /dev/null 2>&1
             fi
           else
-            log "WARN" "Setting permissions for shared key (development only)"
-            
             if getent group ssl-cert > /dev/null; then
-              chown root:ssl-cert "$key" || log "WARN" "Failed to change ownership of $key"
-              chmod 640 "$key" || log "WARN" "Failed to set permissions for $key"
+              chown root:ssl-cert "$key" > /dev/null 2>&1
+              chmod 640 "$key" > /dev/null 2>&1
             else
-              log "WARN" "ssl-cert group not found, setting minimum permissions"
-              chmod 644 "$key" || log "WARN" "Failed to set permissions for $key"
+              chmod 644 "$key" > /dev/null 2>&1
             fi
-          fi
-          
-          if [ -f "$key" ]; then
-            log "INFO" "✅ Updated permissions: $(stat -c "%a %U:%G" "$key")"
           fi
         fi
       done
-    else
-      log "WARN" "Directory $location does not exist"
     fi
   done
 
-  log "INFO" "Certificate permission configuration completed"
+  log "INFO" "Certificate permissions configured"
 }
 
 # Copy certificates from shared location to PostgreSQL directory
@@ -141,7 +123,7 @@ copy_certs_to_postgres() {
 # PostgreSQL Configuration
 # -----------------------------------------------------------
 
-# Configure SSL settings in postgresql.conf
+# Configure SSL settings in postgresql.conf - with reduced output
 configure_postgresql_ssl() {
   log "INFO" "Configuring SSL in postgresql.conf..."
   
@@ -151,12 +133,12 @@ configure_postgresql_ssl() {
   fi
   
   # Create backup
-  cp -f "${PGDATA}/postgresql.conf" "${PGDATA}/postgresql.conf.bak.$(date +%s)"
+  cp -f "${PGDATA}/postgresql.conf" "${PGDATA}/postgresql.conf.bak.$(date +%s)" > /dev/null 2>&1
   
   # Remove any existing SSL configuration
-  sed -i '/^ssl.*=/d' "${PGDATA}/postgresql.conf"
-  sed -i '/SSL Configuration/d' "${PGDATA}/postgresql.conf"
-  sed -i '/^log_connections/d' "${PGDATA}/postgresql.conf"
+  sed -i '/^ssl.*=/d' "${PGDATA}/postgresql.conf" > /dev/null 2>&1
+  sed -i '/SSL Configuration/d' "${PGDATA}/postgresql.conf" > /dev/null 2>&1
+  sed -i '/^log_connections/d' "${PGDATA}/postgresql.conf" > /dev/null 2>&1
   
   # Add clean SSL configuration
   cat >> "${PGDATA}/postgresql.conf" << EOF
@@ -166,20 +148,12 @@ ssl = on
 ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'
 ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'
-
-# SSL Protocol settings
 ssl_min_protocol_version = 'TLSv1.2'
-ssl_max_protocol_version = 'TLSv1.3'
-ssl_prefer_server_ciphers = off
-
-# Compatible ciphers
 ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
-
-# Monitoring
 log_connections = on
 EOF
 
-  log "INFO" "SSL configuration added to postgresql.conf"
+  log "INFO" "SSL configuration updated"
 }
 
 # Configure pg_hba.conf for SSL connections

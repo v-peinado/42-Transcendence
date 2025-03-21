@@ -1,9 +1,9 @@
 FROM alpine:latest
 
-# Instalar herramientas necesarias y crear grupo ssl-cert
+# Install required tools
 RUN apk update && \
 	apk add --no-cache openssl bash && \
-	# Crear el grupo ssl-cert para mantener consistencia con otros contenedores
+	# Create ssl-cert group and add root user to it
 	addgroup -S ssl-cert
 
 COPY generate-ssl.sh /usr/local/bin/
