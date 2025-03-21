@@ -49,18 +49,19 @@ for location in "${CERT_LOCATIONS[@]}"; do
       if [ -f "$cert" ]; then
         # Los certificados deben ser legibles pero no modificables excepto por el propietario
         log "INFO" "Configurando permisos para $cert"
-        chmod 644 "$cert"
+        chmod 644 "$cert" || log "WARN" "No se pudieron establecer permisos para $cert"
+        
         # Asegurar propietario correcto si estamos como root
         if [ "$(id -u)" = "0" ]; then
           # Si el certificado está en /var/lib/postgresql, establecer postgres como propietario
           if [[ "$cert" == "/var/lib/postgresql"* ]]; then
-            chown postgres:postgres "$cert"
-          else
-            # Para certificados en /tmp, permitir que los contenedores puedan leerlos
-            chmod 644 "$cert"
+            chown postgres:postgres "$cert" || log "WARN" "No se pudo cambiar el propietario de $cert"
           fi
         fi
-        log "INFO" "✅ Permisos actualizados: $(stat -c "%a %U:%G" "$cert")"
+        
+        if [ -f "$cert" ]; then
+          log "INFO" "✅ Permisos actualizados: $(stat -c "%a %U:%G" "$cert")"
+        fi
       fi
     done
     
@@ -69,49 +70,37 @@ for location in "${CERT_LOCATIONS[@]}"; do
       if [ -f "$key" ]; then
         # Las claves privadas DEBEN ser muy restrictivas
         log "INFO" "Configurando permisos para $key"
+        
         # Determinar los permisos según la ubicación y el propietario
         if [[ "$key" == "/var/lib/postgresql"* ]]; then
           # Para claves en PostgreSQL
-          chmod 600 "$key"
+          chmod 600 "$key" || log "WARN" "No se pudieron establecer permisos para $key"
           if [ "$(id -u)" = "0" ]; then
-            chown postgres:postgres "$key"
+            chown postgres:postgres "$key" || log "WARN" "No se pudo cambiar el propietario de $key"
           fi
         else
           # Para claves en /tmp/ssl que son accedidas por varios contenedores
-          # Esto no es óptimo para producción pero facilita el desarrollo
           log "WARN" "Configurando permisos para clave compartida (solo para desarrollo)"
-          chmod 600 "$key"
+          
           # Si el grupo ssl-cert existe, usarlo para compartir claves
           if getent group ssl-cert > /dev/null; then
-            chown root:ssl-cert "$key"
-            chmod 640 "$key"  # Permitir lectura por el grupo pero no por otros
+            chown root:ssl-cert "$key" || log "WARN" "No se pudo cambiar el propietario de $key"
+            chmod 640 "$key" || log "WARN" "No se pudieron establecer permisos para $key"
           else
             log "WARN" "Grupo ssl-cert no encontrado, configurando permisos mínimos"
-            chmod 644 "$key"  # Solución temporal para desarrollo
+            chmod 644 "$key" || log "WARN" "No se pudieron establecer permisos para $key"
           fi
         fi
-        log "INFO" "✅ Permisos actualizados: $(stat -c "%a %U:%G" "$key")"
+        
+        if [ -f "$key" ]; then
+          log "INFO" "✅ Permisos actualizados: $(stat -c "%a %U:%G" "$key")"
+        fi
       fi
     done
   else
     log "WARN" "El directorio $location no existe"
   fi
 done
-
-# Ahora intentar copiar los certificados a ubicaciones compartidas en /tmp
-if [ -f "/var/lib/postgresql/ssl/server.crt" ] && [ -f "/var/lib/postgresql/ssl/server.key" ]; then
-  log "INFO" "Copiando certificados de PostgreSQL a /tmp/ssl para compartir..."
-  mkdir -p /tmp/ssl
-  cp /var/lib/postgresql/ssl/server.crt /tmp/ssl/postgres.crt
-  cp /var/lib/postgresql/ssl/server.key /tmp/ssl/postgres.key
-  chmod 644 /tmp/ssl/postgres.crt
-  chmod 600 /tmp/ssl/postgres.key
-  if getent group ssl-cert > /dev/null; then
-    chown root:ssl-cert /tmp/ssl/postgres.key
-    chmod 640 /tmp/ssl/postgres.key
-  fi
-  log "INFO" "✅ Certificados copiados y configurados en /tmp/ssl"
-fi
 
 log "INFO" "=============================================="
 log "INFO" "Verificación de permisos completada"
