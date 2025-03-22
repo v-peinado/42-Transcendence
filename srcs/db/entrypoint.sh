@@ -41,13 +41,16 @@ fi
 log "INFO" "Loading credentials from Vault..."
 echo "⏳ Starting Vault secrets initialization..."
 
-# Wait for Vault to be initialized and token to be available
+# Wait for Vault to be initialized and token to be available with progressive backoff
 wait_for_vault() {
     echo "Waiting for Vault to be ready..."
-    max_attempts=45
+    max_attempts=20
     attempt=1
     
     while [ $attempt -le $max_attempts ]; do
+        # Calculate wait time with progressive backoff (starts at 2s, caps at 10s)
+        wait_time=$(( 2 * (attempt < 5 ? attempt : 5) ))
+        
         # Check if token file exists
         if [ -f "/tmp/ssl/django_token" ]; then
             token=$(cat /tmp/ssl/django_token)
@@ -60,9 +63,9 @@ wait_for_vault() {
             fi
         fi
         
-        echo "⏳ Attempt $attempt of $max_attempts - Vault is unavailable, sleeping..."
+        echo "⏳ Attempt $attempt of $max_attempts - Vault is unavailable, waiting ${wait_time}s..."
         attempt=$((attempt + 1))
-        sleep 5
+        sleep $wait_time
     done
     
     echo "❌ Error: Timeout waiting for Vault"

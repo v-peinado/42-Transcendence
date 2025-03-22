@@ -161,9 +161,7 @@ def load_vault_secrets():
     success = 0 # initialize success
     total = len(paths) # total number of paths
 
-    # Wait for vault to be fully ready
-    time.sleep(5)  # Give vault time to initialize
-
+    # Intentar leer los secretos inmediatamente, sin espera adicional
     for name, path in paths.items():
         logger.info(f"⌛️Attempting to read {path}...")
         secrets = wait_for_secrets(client, path)

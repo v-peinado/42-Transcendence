@@ -105,7 +105,12 @@ services:
     env_file:
       - ./srcs/.env
     command: >
-      sh -c "sleep 10 && envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && 
+      sh -c "until [ -f /tmp/ssl/transcendence.crt ] && [ -f /tmp/ssl/transcendence.key ]; do 
+               echo 'Waiting for SSL certificates...'; 
+               sleep 2; 
+             done && 
+             echo 'SSL certificates found, starting WAF...' && 
+             envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && 
              nginx -g 'daemon off;'"
     restart: always
     depends_on:
