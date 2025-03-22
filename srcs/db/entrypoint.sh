@@ -37,8 +37,42 @@ else
   exit 1
 fi
 
-# Load credentials from Vault
+# Wait for Vault to be ready
 log "INFO" "Loading credentials from Vault..."
+echo "⏳ Starting Vault secrets initialization..."
+
+# Wait for Vault to be initialized and token to be available
+wait_for_vault() {
+    echo "Waiting for Vault to be ready..."
+    max_attempts=45
+    attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        # Check if token file exists
+        if [ -f "/tmp/ssl/django_token" ]; then
+            token=$(cat /tmp/ssl/django_token)
+            if [ -n "$token" ]; then
+                # Verify we can connect to Vault
+                if curl -s -k -H "X-Vault-Token: $token" https://vault:8200/v1/sys/health > /dev/null; then
+                    echo "✅ Vault is ready and token is available"
+                    return 0
+                fi
+            fi
+        fi
+        
+        echo "⏳ Attempt $attempt of $max_attempts - Vault is unavailable, sleeping..."
+        attempt=$((attempt + 1))
+        sleep 5
+    done
+    
+    echo "❌ Error: Timeout waiting for Vault"
+    return 1
+}
+
+# Call the function to wait for Vault
+wait_for_vault
+
+# Get secrets from Vault
 /usr/local/bin/get-vault-secrets.sh
 
 # Prepare PostgreSQL SSL directory and certificates
