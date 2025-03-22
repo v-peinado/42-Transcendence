@@ -346,40 +346,33 @@ function setupProfileEvents() {
     document.getElementById('imageInput')?.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         const alertEl = document.getElementById('imageAlert');
+        const input = e.target;
         
         if (file) {
-            // Validar tamaño y tipo
-            if (file.size > 5 * 1024 * 1024) {
-                alertEl.className = 'alert alert-danger';
-                alertEl.textContent = 'La imagen no debe superar 2MB';
-                alertEl.style.display = 'block';
-                return;
-            }
-
-            if (!file.type.startsWith('image/')) {
-                alertEl.className = 'alert alert-danger';
-                alertEl.textContent = 'Por favor, selecciona una imagen válida';
-                alertEl.style.display = 'block';
-                return;
-            }
-
             try {
+                // Validar tamaño y tipo
+                if (file.size > 5 * 1024 * 1024) {
+                    alertEl.className = 'alert alert-danger';
+                    alertEl.textContent = 'La imagen no debe superar 2MB';
+                    alertEl.style.display = 'block';
+                    return;
+                }
+
+                if (!file.type.startsWith('image/')) {
+                    alertEl.className = 'alert alert-danger';
+                    alertEl.textContent = 'Por favor, selecciona una imagen válida';
+                    alertEl.style.display = 'block';
+                    return;
+                }
+
                 const userInfo = await AuthService.updateProfileImage(file);
                 
                 if (userInfo && userInfo.profile_image) {
-                    // Actualizar todas las instancias de la imagen con la URL del backend
+                    // Actualizar todas las instancias de la imagen inmediatamente
                     const imageUrl = userInfo.profile_image;
-                    
-                    const imageElements = [
-                        document.getElementById('profileImage'),
-                        document.getElementById('navbarUserAvatar'),
-                        document.getElementById('dropdownUserAvatar')
-                    ];
-
+                    const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
                     imageElements.forEach(el => {
-                        if (el) {
-                            el.src = imageUrl;
-                        }
+                        if (el) el.src = imageUrl;
                     });
 
                     alertEl.className = 'alert alert-success';
@@ -387,11 +380,11 @@ function setupProfileEvents() {
                 } else {
                     throw new Error('Error al actualizar la imagen');
                 }
-                
-                alertEl.style.display = 'block';
             } catch (error) {
                 alertEl.className = 'alert alert-danger';
                 alertEl.textContent = error.message;
+            } finally {
+                input.value = '';
                 alertEl.style.display = 'block';
             }
         }
@@ -399,39 +392,32 @@ function setupProfileEvents() {
 
     document.getElementById('restoreImageBtn')?.addEventListener('click', async () => {
         const alertEl = document.getElementById('imageAlert');
+        const imageInput = document.getElementById('imageInput');
         
         try {
             const userInfo = await AuthService.updateProfile({ restore_image: true });
             
-            // Actualizar la imagen mostrada inmediatamente con la respuesta del backend
-            const profileImage = document.getElementById('profileImage');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const dropdownAvatar = document.getElementById('dropdownUserAvatar');
+            // Actualizar todas las instancias de la imagen inmediatamente
+            const imageUrl = userInfo.profile_image || 
+                           userInfo.fortytwo_image || 
+                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
             
-            const imageUrl = userInfo.profile_image || // usar la imagen del perfil si existe
-                            userInfo.fortytwo_image || // o la imagen de 42 si es usuario de 42
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`; // o dicebear como último recurso
-            
-            const imageElements = [profileImage, navbarAvatar, dropdownAvatar];
+            const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
             imageElements.forEach(el => {
-                if (el) {
-                    el.src = imageUrl;
-                    // Solo usar dicebear como fallback si la imagen principal falla
-                    el.onerror = function() {
-                        const username = localStorage.getItem('username');
-                        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-                    };
-                }
+                if (el) el.src = imageUrl;
             });
 
             alertEl.className = 'alert alert-success';
             alertEl.textContent = 'Imagen restaurada correctamente';
-            alertEl.style.display = 'block';
+            
+            // Resetear el input
+            if (imageInput) imageInput.value = '';
+            
         } catch (error) {
             alertEl.className = 'alert alert-danger';
             alertEl.textContent = error.message;
-            alertEl.style.display = 'block';
         }
+        alertEl.style.display = 'block';
     });
 
     // Actualizar el event listener para el botón de 2FA
