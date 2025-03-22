@@ -44,6 +44,7 @@ validate_env_vars() {
         "SSL_KEY_SIZE"
     )
 
+	# Check if the required environment variables are defined
     local missing_vars=()
     for var in "${required_vars[@]}"; do
         if [ -z "${!var}" ]; then
@@ -131,14 +132,24 @@ generate_certificates() {
     fi
     rm -f /tmp/openssl.err
 
+	# Define more permissive permissions so all containers can read these files (Auto sign the certificate)
     if ! chmod 644 "$CERT_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $CERT_FILE"
         return 1
     fi
 
-    if ! chmod 600 "$KEY_FILE" 2>/dev/null; then
+	# Make the key readable by all containers 
+    if ! chmod 644 "$KEY_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $KEY_FILE"
         return 1
+    fi
+    
+	# Enssure that group permissions allow reading
+	# Only attempt if the ssl-cert group exists
+    if getent group ssl-cert > /dev/null 2>&1; then
+        chown root:ssl-cert "$CERT_FILE" "$KEY_FILE" 2>/dev/null || log_info "Could not set group ownership (not critical)"
+    else
+        log_info "Group ssl-cert not found, skipping group ownership settings"
     fi
     
     # Store in Vault if configured

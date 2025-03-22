@@ -127,6 +127,12 @@ DATABASES = {
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "password"),
         "HOST": os.environ.get("SQL_HOST", "localhost"),
         "PORT": os.environ.get("SQL_PORT", "5432"),
+        "OPTIONS": {
+            # SSL/TLS configuration for PostgreSQL database
+            "sslmode": "require",  # require because we are using SSL/TLS auto signed certificates
+            "application_name": "django_app",
+            "connect_timeout": 30,
+        }
     }
 }
 

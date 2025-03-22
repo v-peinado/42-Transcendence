@@ -38,18 +38,14 @@ services:
       - transcendence-backend
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ssl_certs:/tmp/ssl:ro
+      - ssl_certs:/tmp/ssl:rw
     depends_on:
+      ssl-manager:
+        condition: service_completed_successfully
       waf:
         condition: service_healthy
-    entrypoint:
-      - /bin/bash
-      - -c
-      - |
-        /usr/local/bin/get-vault-secrets.sh
-        docker-entrypoint.sh postgres
     env_file:
-      - ./srcs/.env
+      - ./srcs/.env # only for root, we use vault for the rest of the users (see Dockerfile)
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost" ]

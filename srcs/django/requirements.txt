@@ -1,5 +1,5 @@
 Django>=4.2.4                    # Python web framework
-psycopg2-binary>=2.9.6           # PostgreSQL database adapter
+psycopg2-binary>=2.9.6           # PostgreSQL database adapter with SSL support
 gunicorn>=20.1.0                 # Production-grade WSGI server
 qrcode>=7.3.1                    # QR code generator
 pillow>=10.0.0                   # Image processing library
