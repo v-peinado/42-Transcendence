@@ -13,7 +13,6 @@ SSL_DIR="/ssl"
 KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
 CONF_FILE="${SSL_DIR}/openssl.cnf"
-PERMISSIONS=${PERMISSIONS:-755}
 
 cleanup() {
     if [ $? -ne 0 ]; then
