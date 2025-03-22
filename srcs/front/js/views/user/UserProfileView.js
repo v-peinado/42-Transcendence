@@ -351,7 +351,7 @@ function setupProfileEvents() {
             // Validar tamaño y tipo
             if (file.size > 5 * 1024 * 1024) {
                 alertEl.className = 'alert alert-danger';
-                alertEl.textContent = 'La imagen no debe superar 5MB';
+                alertEl.textContent = 'La imagen no debe superar 2MB';
                 alertEl.style.display = 'block';
                 return;
             }
