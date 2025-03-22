@@ -293,34 +293,37 @@ function setupProfileEvents() {
                 // 5. Añadir event listener al botón de confirmar
                 document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
                     try {
+                        const button = document.getElementById('confirmDeleteBtn');
+                        button.disabled = true;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+
                         const password = userInfo.is_fortytwo_user ? null : 
                                        document.getElementById('deleteAccountPassword')?.value;
                         
-                        // Solo verificar contraseña para usuarios no-42
                         if (!userInfo.is_fortytwo_user && !password) {
                             throw new Error('Debes introducir tu contraseña para eliminar tu cuenta');
                         }
 
                         const result = await AuthGDPR.deleteAccount(password);
-                        console.log('Resultado de deleteAccount:', result);
 
-                        if (result.success) {
-                            const modal = bootstrap.Modal.getInstance(modalElement);
-                            modal.hide();
-                            localStorage.clear();
-                            sessionStorage.clear();
-                            window.location.href = '/';
+                        if (result.status === 'success') {
+                            showAlert('Tu cuenta será eliminada correctamente', 'success');
+                            setTimeout(() => {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.href = '/';
+                            }, 1500);
+                        } else {
+                            throw new Error(result.message || 'Error al eliminar la cuenta');
                         }
                     } catch (error) {
-                        const messageDiv = document.getElementById('modalMessage');
-                        if (messageDiv) {
-                            messageDiv.classList.remove('d-none');
-                            messageDiv.classList.add('alert', 'alert-danger');
-                            messageDiv.innerHTML = `
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                ${error.message || 'Error al eliminar la cuenta'}
-                            `;
-                        }
+                        console.error('Error al eliminar cuenta:', error);
+                        showAlert(error.message, 'danger');
+                        
+                        // Restaurar el botón
+                        const button = document.getElementById('confirmDeleteBtn');
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta';
                     }
                 });
             }
