@@ -44,6 +44,7 @@ validate_env_vars() {
         "SSL_KEY_SIZE"
     )
 
+	# Check if the required environment variables are defined
     local missing_vars=()
     for var in "${required_vars[@]}"; do
         if [ -z "${!var}" ]; then

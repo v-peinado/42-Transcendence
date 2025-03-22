@@ -60,6 +60,6 @@ if [ -f "${PGDATA}/postgresql.conf" ]; then
   configure_pghba_ssl > /dev/null 2>&1
 fi
 
-# Start PostgreSQL with reduced logging
+# Start PostgreSQL
 log "INFO" "Starting PostgreSQL..."
 exec docker-entrypoint.sh postgres

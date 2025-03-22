@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
 	ssl-cert \
 	&& rm -rf /var/lib/apt/lists/*
 
-# Add postgres user to ssl-cert group for certificate access
+# Postgres user to ssl-cert group for certificate access
 RUN usermod -a -G ssl-cert postgres
 
 # Set PostgreSQL initialization parameters
