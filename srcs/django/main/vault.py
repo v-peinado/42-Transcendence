@@ -21,10 +21,10 @@ _secrets_cache = {}  # Cache for secrets
 class VaultClient:
     def __init__(self):
         
-		# Wait for token file
+        # Wait for token file
         token_file = "/tmp/ssl/django_token" # store token...
         
-		# Read token from file
+        # Read token from file
         try:
             with open(token_file, "r") as f:
                 token = f.read().strip()
@@ -32,15 +32,15 @@ class VaultClient:
             logger.error(f"Error reading Vault token: {e}")
             token = None
 
-        # Config client with token
+        # Config client with token - Updated URL to point to vault service
         with warnings.catch_warnings(): # Ignore warnings of self-signed certificate
             warnings.simplefilter("ignore")
-            self.client = hvac.Client(url="https://waf:8200", verify=False, token=token) # Connect to Vault
+            self.client = hvac.Client(url="https://vault:8200", verify=False, token=token) # Connect to Vault
 
     def _is_vault_sealed(self) -> bool:
         """Check if the Vault server is sealed"""
         try:
-            response = requests.get("https://waf:8200/v1/sys/seal-status", verify=False) 
+            response = requests.get("https://vault:8200/v1/sys/seal-status", verify=False) 
             return response.json().get("sealed", True) # Check if the server is sealed and return True if it is and False if it is not
         except Exception: # If there is an exception, return True too (to wait for unseal)
             return True
@@ -103,7 +103,7 @@ def get_client():
         return None
 
     try:
-        client = hvac.Client(url="https://waf:8200", token=token, verify=False)
+        client = hvac.Client(url="https://vault:8200", token=token, verify=False)
 
         if not client.is_authenticated():
             logger.error("❌Failed to authenticate with token")
@@ -161,9 +161,7 @@ def load_vault_secrets():
     success = 0 # initialize success
     total = len(paths) # total number of paths
 
-    # Wait for vault to be fully ready
-    time.sleep(5)  # Give vault time to initialize
-
+    # Intentar leer los secretos inmediatamente, sin espera adicional
     for name, path in paths.items():
         logger.info(f"⌛️Attempting to read {path}...")
         secrets = wait_for_secrets(client, path)

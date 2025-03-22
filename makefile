@@ -116,7 +116,7 @@ help:
 	@echo "  http://$(IP_SERVER):3000      - Acceso directo al frontend"
 	@echo "  http://$(IP_SERVER):8000      - Acceso directo al backend"
 	@echo "  https://$(IP_SERVER):8200     - Panel acceso a Vault"
-	@echo "                            * Ver waf/vault/init-vault.sh para más información"
+	@echo "                            * Ver srcs/vault/scripts/vault-init.sh para más información"
 	@echo ""
 	@echo "  http://$(IP_SERVER):8000/game           - Crea una sala y accede al juego (debes loguearte primero)"
 	@echo "  http://$(IP_SERVER):8000/game/{id-sala} - Accede a la sala creada previamente (debes loguearte primero)"

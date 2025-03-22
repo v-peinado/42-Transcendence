@@ -164,10 +164,10 @@ http {
             }
         }
 
-        # Vault Configuration
+        # Vault Configuration - Updated to proxy to vault service
         location /vault/ {
             limit_req zone=global_limit burst=5 nodelay;
-            proxy_pass https://localhost:8200;
+            proxy_pass https://vault:8200;
     		proxy_ssl_verify off;
     		proxy_ssl_session_reuse on;
             proxy_ssl_protocols TLSv1.2 TLSv1.3;

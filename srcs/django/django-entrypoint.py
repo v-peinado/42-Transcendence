@@ -65,17 +65,22 @@ def verify_ssl_certificates():
 
 
 def wait_for_vault(max_attempts=30):
-    """Wait for the Vault secrets to be ready"""
+    """Wait for the Vault secrets to be ready with exponential backoff"""
     
     print("Waiting for Vault secrets to be ready...")
     # Wait for Vault token file
     token_file = "/tmp/ssl/django_token"
     attempts = 0
     
-    while attempts < max_attempts and not os.path.exists(token_file):
-        print(f"Waiting for Vault token file... ({attempts + 1}/{max_attempts})")
+    while attempts < max_attempts:
+        if os.path.exists(token_file):
+            print(f"Found token file after {attempts + 1} attempts")
+            break
+            
+        wait_time = min(2 * (1.5 ** attempts), 10)  # Exponential backoff with max 10s
+        print(f"Waiting for Vault token file... (Attempt {attempts + 1}/{max_attempts}, next wait: {wait_time:.1f}s)")
         attempts += 1
-        time.sleep(2)
+        time.sleep(wait_time)
     
     if not os.path.exists(token_file):
         print("Error: Vault token file not found")

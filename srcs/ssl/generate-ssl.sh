@@ -133,13 +133,13 @@ generate_certificates() {
     rm -f /tmp/openssl.err
 
 	# Define more permissive permissions so all containers can read these files (Auto sign the certificate)
-    if ! chmod 644 "$CERT_FILE" 2>/dev/null; then
+    if ! chmod 666 "$CERT_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $CERT_FILE"
         return 1
     fi
 
 	# Make the key readable by all containers 
-    if ! chmod 644 "$KEY_FILE" 2>/dev/null; then
+    if ! chmod 666 "$KEY_FILE" 2>/dev/null; then
         log_error "Error setting permissions for $KEY_FILE"
         return 1
     fi

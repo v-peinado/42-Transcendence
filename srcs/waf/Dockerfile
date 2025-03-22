@@ -1,16 +1,13 @@
-# ModSecurity-CRS instance with nginx and vault
+# ModSecurity-CRS instance with nginx
 FROM owasp/modsecurity-crs:nginx
 
 # Image configuration
 USER root
 
-ARG VAULT_VERSION=1.15.2
-
 # Combine installation, configuration and cleanup in a single layer
 RUN apt-get update && \
 	apt-get install -y --no-install-recommends \
 	curl \
-	unzip \
 	openssl \
 	libmodsecurity3 \
 	modsecurity-crs \
@@ -19,17 +16,11 @@ RUN apt-get update && \
 	ssl-cert \
 	netcat-traditional \
 	gettext-base && \ 
-	curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip && \
-	unzip vault.zip && \
-	mv vault /usr/local/bin/ && \
-	rm vault.zip && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* && \
 	# Create directories and user
 	mkdir -p \
 	/var/log/modsecurity \
-	/var/log/vault \
-	/etc/vault.d/data \
 	/etc/nginx/modsecurity.d \
 	/etc/nginx/modsecurity/rules \
 	/etc/modsecurity/crs \
@@ -38,44 +29,25 @@ RUN apt-get update && \
 	useradd -r -s /sbin/nologin nginxuser || true && \
 	chown -R nginxuser:nginxuser \
 	/var/log/modsecurity \
-	/var/log/vault \
-	/etc/vault.d \
 	/tmp/ssl \
 	/tmp/modsecurity \
 	/etc/nginx/modsecurity.d \
-	/etc/nginx/modsecurity && \
-	chmod 755 /etc/vault.d && \
-	chmod 750 /etc/vault.d/data && \
-	chmod -R 755 /var/log/vault && \
-	touch /var/log/vault/audit.log && \
-	chmod 640 /var/log/vault/audit.log && \
-	chown -R nginxuser:nginxuser /var/log/vault/audit.log
+	/etc/nginx/modsecurity
 
 # Create group for SSL certificate access and add root to it 
 RUN groupadd -r ssl-cert || true && \
 	usermod -a -G ssl-cert root && \
 	usermod -a -G ssl-cert nginxuser
 
-# Copy configuration files
-COPY waf/vault/config.conf /etc/vault.d/config.hcl
-COPY waf/vault/scripts/vault-setup.sh /usr/local/bin/
-COPY waf/vault/scripts/vault-config.sh /usr/local/bin/
-COPY waf/vault/scripts/vault-init.sh /usr/local/bin/
-COPY waf/vault/scripts/vault-secrets.sh /usr/local/bin/
-COPY waf/vault/scripts/logger.sh /usr/local/bin/
-COPY ssl/generate-ssl.sh /usr/local/bin/
-COPY ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
-COPY waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
-COPY waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
-COPY waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
+# Copy configuration files - Updated paths for new structure
+COPY srcs/ssl/generate-ssl.sh /usr/local/bin/
+COPY srcs/ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
+COPY srcs/waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
+COPY srcs/waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
+COPY srcs/waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
 
 # Configure permissions
 RUN chmod +x \
-	/usr/local/bin/vault-setup.sh \
-	/usr/local/bin/vault-config.sh \
-	/usr/local/bin/vault-init.sh \
-	/usr/local/bin/vault-secrets.sh \
-	/usr/local/bin/logger.sh \
 	/usr/local/bin/generate-ssl.sh \
 	/docker-entrypoint.d/20-generate-ssl.sh && \
 	ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf && \
@@ -85,16 +57,11 @@ RUN chmod +x \
 
 # Environment variables
 ENV MODSECURITY=On \
-	VAULT_ADDR=https://127.0.0.1:8200 \
-	VAULT_SKIP_VERIFY=true \
 	PATH="${PATH}:/usr/local/bin"
 
 # Application ports
-EXPOSE 8081 8200 8445
+EXPOSE 8081 8444 8445
 
 # Container HEALTHCHECK
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-	CMD curl -f -k https://localhost:8444/health || exit 1
-
-# Update startup command
-CMD ["sh", "-c", "/usr/local/bin/vault-setup.sh"]
+	CMD curl -f -k --max-time 1 http://localhost:8081/health || exit 1

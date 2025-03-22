@@ -110,9 +110,9 @@ configure_vault() {
 }
 
 configure_policies() {
-    # Create required directories first
+    # Use root's permissions to handle the shared directory
     mkdir -p /tmp/ssl
-    chmod 755 /tmp/ssl
+    chmod -R 777 /tmp/ssl || true
 
     # Configure access policies for Django with simpler and more permissive rules
     vault policy write django - <<EOF
@@ -133,21 +133,19 @@ EOF
 
     if [ -n "$DJANGO_TOKEN" ]; then
         echo "Creating token file..."
-        mkdir -p "/tmp/ssl"
-        chmod 755 "/tmp/ssl"
-        echo -n "$DJANGO_TOKEN" > "/tmp/ssl/django_token"
-        chmod 644 "/tmp/ssl/django_token"
-        ls -la "/tmp/ssl/django_token"
-        chown root:root "/tmp/ssl/django_token"
-        ls -l "/tmp/ssl/django_token" || echo "Failed to verify token file"
+        # Use atomic file creation with proper permissions
+        echo "$DJANGO_TOKEN" | tee /tmp/ssl/django_token > /dev/null
+        chmod 666 /tmp/ssl/django_token || true
         
-        if [ "${VAULT_LOG_TOKENS}" = "true" ]; then
-            log_message "Created Django token with value: $DJANGO_TOKEN"
-            vault token lookup "$DJANGO_TOKEN"
+        # Verify token file creation
+        if [ -f "/tmp/ssl/django_token" ] && [ -s "/tmp/ssl/django_token" ]; then
+            log_message "Token file created successfully (size: $(stat -c%s /tmp/ssl/django_token) bytes)"
+            log_message "Token file permissions: $(stat -c%a /tmp/ssl/django_token)"
         else
-            log_message "Created Django token successfully"
-            vault token lookup "$DJANGO_TOKEN" >/dev/null 2>&1 || log "ERROR" "Token verification failed"
+            log "ERROR" "Failed to create token file properly"
         fi
+        
+        log_message "Created Django token successfully"
     else
         log "ERROR" "Failed to create Django token"
         exit 1

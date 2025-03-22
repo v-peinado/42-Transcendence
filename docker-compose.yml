@@ -19,7 +19,7 @@ services:
       - django_media:/app/media:rw
       - ssl_certs:/tmp/ssl:ro
     depends_on:
-      waf:
+      vault:
         condition: service_healthy
       db:
         condition: service_healthy
@@ -42,7 +42,7 @@ services:
     depends_on:
       ssl-manager:
         condition: service_completed_successfully
-      waf:
+      vault:
         condition: service_healthy
     env_file:
       - ./srcs/.env # only for root, we use vault for the rest of the users (see Dockerfile)
@@ -89,39 +89,67 @@ services:
 
   waf:
     build:
-      context: ./srcs
-      dockerfile: waf/Dockerfile
+      context: .
+      dockerfile: srcs/waf/Dockerfile
     ports:
       - "8082:8081" # WAF (http redirect to https)
       - "8445:8444" # WAF (https)
-      #- "8200:8200" # Vault (only for development)
-    expose:
-      - "8200" # Vault
     networks:
       - transcendence-backend
       - app-network
     volumes:
-      - ssl_certs:/tmp/ssl:rw
+      - ssl_certs:/tmp/ssl:ro
       - waf_logs:/var/log/nginx
-      - vault_data:/etc/vault.d/data
       - django_media:/usr/share/nginx/html/media:rw
       - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
     env_file:
       - ./srcs/.env
     command: >
-      sh -c "envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf &&
-             /usr/local/bin/vault-setup.sh"
+      sh -c "until [ -f /tmp/ssl/transcendence.crt ] && [ -f /tmp/ssl/transcendence.key ]; do 
+               echo 'Waiting for SSL certificates...'; 
+               sleep 2; 
+             done && 
+             echo 'SSL certificates found, starting WAF...' && 
+             envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && 
+             nginx -g 'daemon off;'"
     restart: always
     depends_on:
       ssl-manager:
         condition: service_completed_successfully
+      vault:
+        condition: service_healthy
+      web:
+        condition: service_started
     healthcheck:
       test:
         - "CMD-SHELL"
-        - "curl -k https://localhost:8200/v1/sys/health || curl -k --fail --max-time 1 http://localhost:8081/health || exit 0"
+        - "curl -k --fail --max-time 1 http://localhost:8081/health || exit 0"
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 15s
+
+  vault:
+    build:
+      context: .
+      dockerfile: srcs/vault/Dockerfile
+    ports:
+      - "8200:8200" # Vault UI
+    expose:
+      - "8200" # Vault API
+    networks:
+      - transcendence-backend
+    volumes:
+      - ssl_certs:/tmp/ssl
+      - vault_data:/etc/vault.d/data
+    env_file:
+      - ./srcs/.env
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "vault status -tls-skip-verify || exit 0" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
       start_period: 15s
 
   redis:
