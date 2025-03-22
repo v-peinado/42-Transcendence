@@ -1,6 +1,7 @@
 import AuthService from '../AuthService.js';
 import { AuthUtils } from './AuthUtils.js';
 import { messages } from '../../translations.js';
+import RateLimitService from '../RateLimitService.js';
 
 export class AuthCore {
     static async login(username, password, remember = false) {
@@ -21,47 +22,114 @@ export class AuthCore {
                 body: JSON.stringify({ username, password, remember }),
                 credentials: 'include'
             });
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(AuthUtils.mapBackendError(data.message || 'default').html);
-            }
 
-            if (data.status === 'pending_2fa') {
-                return { 
-                    status: 'pending_2fa',
-                    message: data.message || 'Se requiere verificación en dos pasos'
-                };
-            }
-            
-            if (data.status === 'success') {
-                localStorage.setItem('isAuthenticated', 'true');
-                localStorage.setItem('username', username);
+            let responseText;
+            try {
+                // Primero guardamos el texto de la respuesta
+                responseText = await response.text();
                 
-                // Solo añadir esta línea para el ID de usuario
-                if (data.user_id) {
-                    localStorage.setItem('user_id', data.user_id.toString());
+                // Intentamos parsear como JSON
+                const data = JSON.parse(responseText);
+                console.log('Login response:', data);
+
+                if (!response.ok) {
+                    // Manejar rate limit
+                    if (responseText.includes('Demasiados intentos')) {
+                        const match = responseText.match(/(\d+) segundos/);
+                        if (match) {
+                            const seconds = parseInt(match[1]);
+                            const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                            
+                            return {
+                                status: 'rate_limit',
+                                remaining_time: seconds,
+                                title: messages.AUTH.RATE_LIMIT.TITLE,
+                                message: messages.AUTH.RATE_LIMIT.MESSAGES.login.replace('{time}', formattedTime)
+                            };
+                        }
+                    }
+
+                    // Manejar credenciales incorrectas
+                    if (data.message?.[0] === 'Incorrect username or password') {
+                        throw new Error(messages.AUTH.ERRORS.INVALID_CREDENTIALS);
+                    }
+
+                    // Otros errores
+                    const errorMessage = Array.isArray(data.message) 
+                        ? data.message[0] 
+                        : (data.message || messages.AUTH.ERRORS.DEFAULT);
+                    throw new Error(errorMessage);
+                }
+
+                if (data.status === 'pending_2fa') {
+                    return { 
+                        status: 'pending_2fa',
+                        message: data.message || 'Se requiere verificación en dos pasos'
+                    };
                 }
                 
-                if (data.two_factor_enabled) {
-                    localStorage.setItem('two_factor_enabled', 'true');
+                if (data.status === 'success') {
+                    localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('username', username);
+                    
+                    // Solo añadir esta línea para el ID de usuario
+                    if (data.user_id) {
+                        localStorage.setItem('user_id', data.user_id.toString());
+                    }
+                    
+                    if (data.two_factor_enabled) {
+                        localStorage.setItem('two_factor_enabled', 'true');
+                    }
+
+                    return {
+                        status: 'success',
+                        message: 'Login exitoso',
+                        username: data.username,
+                        redirect: '/',
+                        require_2fa: data.require_2fa
+                    };
                 }
 
-                return {
-                    status: 'success',
-                    message: 'Login exitoso',
-                    username: data.username,
-                    redirect: '/',
-                    require_2fa: data.require_2fa
-                };
-            }
-
-            throw new Error(AuthUtils.mapBackendError('default').html);
-        } catch (error) {
-            if (!error.message.includes('alert')) {
                 throw new Error(AuthUtils.mapBackendError('default').html);
+            } catch (e) {
+                // Si no es JSON válido pero contiene el mensaje de rate limit
+                if (responseText.includes('Demasiados intentos')) {
+                    const match = responseText.match(/(\d+) segundos/);
+                    if (match) {
+                        const seconds = parseInt(match[1]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.login.replace('{time}', formattedTime)
+                        };
+                    }
+                }
+                throw new Error(responseText);
             }
+        } catch (error) {
+            console.log('Login error caught:', error); // Debug log
+            
+            // Si ya es un objeto rate_limit, retornarlo directamente
+            if (error.status === 'rate_limit') {
+                return error;
+            }
+            
+            // Si el error contiene el mensaje de rate limit, procesarlo
+            if (typeof error.message === 'string' && error.message.includes('Too many attempts')) {
+                const seconds = parseInt(error.message.match(/\d+/)[0]);
+                const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                
+                return {
+                    status: 'rate_limit',
+                    remaining_time: seconds,
+                    title: messages.AUTH.RATE_LIMIT.TITLE,
+                    message: messages.AUTH.RATE_LIMIT.LOGIN_MESSAGE.replace('{time}', formattedTime)
+                };
+            }
+
             throw error;
         }
     }

@@ -1,4 +1,6 @@
 import AuthService from '../AuthService.js';
+import RateLimitService from '../RateLimitService.js';
+import { messages } from '../../translations.js';
 
 export class AuthEmail {
     static async verifyEmail(uid, token) {
@@ -13,15 +15,46 @@ export class AuthEmail {
                 credentials: 'include'
             });
             
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.message || 'Error en la verificación');
+            let responseText;
+            try {
+                responseText = await response.text();
+                const data = JSON.parse(responseText);
+                
+                if (!response.ok) {
+                    // Verificar rate limit
+                    if (responseText.includes('Please wait') && responseText.includes('seconds')) {
+                        const seconds = parseInt(responseText.match(/\d+/)[0]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification.replace('{time}', formattedTime)
+                        };
+                    }
+                    throw new Error(data.message || 'Error en la verificación');
+                }
+                return data;
+            } catch (e) {
+                // Si es error de rate limit
+                if (responseText.includes('Please wait') && responseText.includes('seconds')) {
+                    const seconds = parseInt(responseText.match(/\d+/)[0]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    
+                    return {
+                        status: 'rate_limit',
+                        remaining_time: seconds,
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification.replace('{time}', formattedTime)
+                    };
+                }
+                throw new Error(responseText);
             }
-
-            const data = await response.json();
-            console.log('Respuesta verificación:', data);
-            return data;
         } catch (error) {
+            if (RateLimitService.isRateLimited(error)) {
+                return RateLimitService.handleRateLimit(error, 'email_verification');
+            }
             console.error('Error verificación:', error);
             throw error;
         }
@@ -40,20 +73,50 @@ export class AuthEmail {
                 credentials: 'include'
             });
 
-            console.log('Respuesta del servidor:', response.status);
-            const data = await response.json();
-            console.log('Datos de verificación:', data);
+            let responseText;
+            try {
+                responseText = await response.text();
+                const data = JSON.parse(responseText);
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Error en la verificación');
+                if (!response.ok) {
+                    // Verificar si es rate limit
+                    if (responseText.includes('Please wait') && responseText.includes('seconds')) {
+                        const seconds = parseInt(responseText.match(/\d+/)[0]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification.replace('{time}', formattedTime)
+                        };
+                    }
+                    throw new Error(data.message || 'Error en la verificación');
+                }
+                console.log('Respuesta del servidor:', response.status);
+                console.log('Datos de verificación:', data);
+
+                await AuthService.getUserProfile();
+
+                return {
+                    success: true,
+                    message: data.message || 'Email actualizado correctamente'
+                };
+            } catch (e) {
+                // Si el texto contiene mensaje de rate limit
+                if (responseText && responseText.includes('Please wait')) {
+                    const seconds = parseInt(responseText.match(/\d+/)[0]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    
+                    return {
+                        status: 'rate_limit',
+                        remaining_time: seconds,
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification.replace('{time}', formattedTime)
+                    };
+                }
+                throw new Error(responseText);
             }
-
-            await AuthService.getUserProfile();
-
-            return {
-                success: true,
-                message: data.message || 'Email actualizado correctamente'
-            };
         } catch (error) {
             console.error('Error verificación cambio email:', error);
             throw error;

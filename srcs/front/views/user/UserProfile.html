@@ -1,4 +1,5 @@
 <input type="file" id="imageInput" accept="image/*" style="display: none">
+<div id="imageAlert" class="alert" style="display: none;"></div>
 <div id="alertContainer" class="alert-container position-fixed top-0 end-0 p-3"></div>
 
 <div class="profile-section">
@@ -492,6 +493,10 @@
                         <button type="button" 
                                 class="btn btn-link text-info ms-2 p-0"
                                 id="qrHelpBtn"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#qrInfoCollapse"
+                                aria-expanded="false"
+                                aria-controls="qrInfoCollapse"
                                 style="line-height: 1;">
                             <i class="fas fa-question-circle"></i>
                         </button>
@@ -508,6 +513,13 @@
                                     <p>Escanea este código QR desde otro dispositivo para iniciar sesión al instante.</p>
                                 </div>
                             </div>
+                            <div class="info-section">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="info-content">
+                                    <h6>Validez del código</h6>
+                                    <p>Este código QR es válido durante 8 horas y puede usarse hasta 3 veces.</p>
+                                </div>
+                            </div>
                             <div class="security-section">
                                 <i class="fas fa-shield-alt text-warning"></i>
                                 <div class="info-content">
@@ -522,8 +534,8 @@
                             <!-- El QR se generará aquí -->
                         </div>
                     </div>
-                    <button class="btn btn-info">
-                        <i class="fas fa-download me-2"></i>Guardar código
+                    <button class="btn btn-info" id="downloadQRBtn">
+                        <i class="fas fa-download me-2"></i>Descargar QR
                     </button>
                 </div>
                 <div class="modal-footer border-top border-info">

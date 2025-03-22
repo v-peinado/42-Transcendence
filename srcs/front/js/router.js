@@ -105,8 +105,17 @@ class Router {
         '/': async () => {
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             if (isAuthenticated) {
-                window.location.href = '/game';
-                return;
+                try {
+                    const userInfo = await AuthService.getUserProfile();
+                    if (userInfo && !userInfo.error) {
+                        window.location.href = '/game';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                }
+                localStorage.clear();
+                sessionStorage.clear();
             }
             await this.renderHomePage(false);
         },
@@ -201,7 +210,7 @@ class Router {
         app.textContent = '';
         
         const [pageHtml, navbarHtml, footerHtml] = await Promise.all([
-            loadHTML(isAuthenticated ? '/views/home/AuthenticatedHome.html' : '/views/home/HomePage.html'),
+            loadHTML('/views/home/HomePage.html'),  // Ya no necesitamos la condición para AuthenticatedHome
             loadHTML(isAuthenticated ? '/views/components/NavbarAuthenticated.html' : '/views/components/NavbarUnauthorized.html'),
             loadHTML('/views/components/Footer.html')
         ]);
@@ -262,21 +271,32 @@ class Router {
 
     async handleInitialRoute() {
         const path = window.location.pathname + window.location.search;
-        console.log('Ruta inicial completa:', path);  // Debug
-
-        // Verificar rutas protegidas primero
-        if (this.checkProtectedRoute(path)) {
-            return;
-        }
+        console.log('Ruta inicial completa:', path);
 
         // Si estamos en la página principal, verificar autenticación primero
         if (path === '/' || path === '') {
             const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
             if (isAuthenticated) {
-                window.location.href = '/game';
-                return;
+                try {
+                    // Primero obtenemos los datos del usuario
+                    const userInfo = await AuthService.getUserProfile();
+                    if (userInfo && !userInfo.error) {
+                        // Una vez que tenemos los datos, redirigimos a /game
+                        window.location.href = '/game';
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    localStorage.clear();
+                    sessionStorage.clear();
+                }
             }
             await this.renderHomePage(false);
+            return;
+        }
+
+        // Verificar rutas protegidas primero
+        if (this.checkProtectedRoute(path)) {
             return;
         }
 

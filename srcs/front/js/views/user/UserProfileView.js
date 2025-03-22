@@ -230,6 +230,20 @@ function setupProfileEvents() {
 
             const result = await AuthService.updateProfile(updates);
             
+            if (result.status === 'rate_limit') {
+                messageDiv.classList.remove('d-none', 'alert-success');
+                messageDiv.classList.add('alert-warning');
+                messageDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">${result.title}</h6>
+                            <span>${result.message}</span>
+                        </div>
+                    </div>`;
+                return;
+            }
+
             if (result.requiresVerification) {
                 messageDiv.classList.remove('d-none', 'alert-danger');
                 messageDiv.classList.add('alert-success');
@@ -293,34 +307,37 @@ function setupProfileEvents() {
                 // 5. Añadir event listener al botón de confirmar
                 document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
                     try {
+                        const button = document.getElementById('confirmDeleteBtn');
+                        button.disabled = true;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+
                         const password = userInfo.is_fortytwo_user ? null : 
                                        document.getElementById('deleteAccountPassword')?.value;
                         
-                        // Solo verificar contraseña para usuarios no-42
                         if (!userInfo.is_fortytwo_user && !password) {
                             throw new Error('Debes introducir tu contraseña para eliminar tu cuenta');
                         }
 
                         const result = await AuthGDPR.deleteAccount(password);
-                        console.log('Resultado de deleteAccount:', result);
 
-                        if (result.success) {
-                            const modal = bootstrap.Modal.getInstance(modalElement);
-                            modal.hide();
-                            localStorage.clear();
-                            sessionStorage.clear();
-                            window.location.href = '/';
+                        if (result.status === 'success') {
+                            showAlert('Tu cuenta será eliminada correctamente', 'success');
+                            setTimeout(() => {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.href = '/';
+                            }, 1500);
+                        } else {
+                            throw new Error(result.message || 'Error al eliminar la cuenta');
                         }
                     } catch (error) {
-                        const messageDiv = document.getElementById('modalMessage');
-                        if (messageDiv) {
-                            messageDiv.classList.remove('d-none');
-                            messageDiv.classList.add('alert', 'alert-danger');
-                            messageDiv.innerHTML = `
-                                <i class="fas fa-exclamation-circle me-2"></i>
-                                ${error.message || 'Error al eliminar la cuenta'}
-                            `;
-                        }
+                        console.error('Error al eliminar cuenta:', error);
+                        showAlert(error.message, 'danger');
+                        
+                        // Restaurar el botón
+                        const button = document.getElementById('confirmDeleteBtn');
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Eliminar Cuenta';
                     }
                 });
             }
@@ -343,40 +360,33 @@ function setupProfileEvents() {
     document.getElementById('imageInput')?.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         const alertEl = document.getElementById('imageAlert');
+        const input = e.target;
         
         if (file) {
-            // Validar tamaño y tipo
-            if (file.size > 5 * 1024 * 1024) {
-                alertEl.className = 'alert alert-danger';
-                alertEl.textContent = 'La imagen no debe superar 5MB';
-                alertEl.style.display = 'block';
-                return;
-            }
-
-            if (!file.type.startsWith('image/')) {
-                alertEl.className = 'alert alert-danger';
-                alertEl.textContent = 'Por favor, selecciona una imagen válida';
-                alertEl.style.display = 'block';
-                return;
-            }
-
             try {
+                // Validar tamaño y tipo
+                if (file.size > 5 * 1024 * 1024) {
+                    alertEl.className = 'alert alert-danger';
+                    alertEl.textContent = 'La imagen no debe superar 2MB';
+                    alertEl.style.display = 'block';
+                    return;
+                }
+
+                if (!file.type.startsWith('image/')) {
+                    alertEl.className = 'alert alert-danger';
+                    alertEl.textContent = 'Por favor, selecciona una imagen válida';
+                    alertEl.style.display = 'block';
+                    return;
+                }
+
                 const userInfo = await AuthService.updateProfileImage(file);
                 
                 if (userInfo && userInfo.profile_image) {
-                    // Actualizar todas las instancias de la imagen con la URL del backend
+                    // Actualizar todas las instancias de la imagen inmediatamente
                     const imageUrl = userInfo.profile_image;
-                    
-                    const imageElements = [
-                        document.getElementById('profileImage'),
-                        document.getElementById('navbarUserAvatar'),
-                        document.getElementById('dropdownUserAvatar')
-                    ];
-
+                    const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
                     imageElements.forEach(el => {
-                        if (el) {
-                            el.src = imageUrl;
-                        }
+                        if (el) el.src = imageUrl;
                     });
 
                     alertEl.className = 'alert alert-success';
@@ -384,11 +394,11 @@ function setupProfileEvents() {
                 } else {
                     throw new Error('Error al actualizar la imagen');
                 }
-                
-                alertEl.style.display = 'block';
             } catch (error) {
                 alertEl.className = 'alert alert-danger';
                 alertEl.textContent = error.message;
+            } finally {
+                input.value = '';
                 alertEl.style.display = 'block';
             }
         }
@@ -396,39 +406,32 @@ function setupProfileEvents() {
 
     document.getElementById('restoreImageBtn')?.addEventListener('click', async () => {
         const alertEl = document.getElementById('imageAlert');
+        const imageInput = document.getElementById('imageInput');
         
         try {
             const userInfo = await AuthService.updateProfile({ restore_image: true });
             
-            // Actualizar la imagen mostrada inmediatamente con la respuesta del backend
-            const profileImage = document.getElementById('profileImage');
-            const navbarAvatar = document.getElementById('navbarUserAvatar');
-            const dropdownAvatar = document.getElementById('dropdownUserAvatar');
+            // Actualizar todas las instancias de la imagen inmediatamente
+            const imageUrl = userInfo.profile_image || 
+                           userInfo.fortytwo_image || 
+                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
             
-            const imageUrl = userInfo.profile_image || // usar la imagen del perfil si existe
-                            userInfo.fortytwo_image || // o la imagen de 42 si es usuario de 42
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`; // o dicebear como último recurso
-            
-            const imageElements = [profileImage, navbarAvatar, dropdownAvatar];
+            const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
             imageElements.forEach(el => {
-                if (el) {
-                    el.src = imageUrl;
-                    // Solo usar dicebear como fallback si la imagen principal falla
-                    el.onerror = function() {
-                        const username = localStorage.getItem('username');
-                        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
-                    };
-                }
+                if (el) el.src = imageUrl;
             });
 
             alertEl.className = 'alert alert-success';
             alertEl.textContent = 'Imagen restaurada correctamente';
-            alertEl.style.display = 'block';
+            
+            // Resetear el input
+            if (imageInput) imageInput.value = '';
+            
         } catch (error) {
             alertEl.className = 'alert alert-danger';
             alertEl.textContent = error.message;
-            alertEl.style.display = 'block';
         }
+        alertEl.style.display = 'block';
     });
 
     // Actualizar el event listener para el botón de 2FA
@@ -841,4 +844,70 @@ function createUserInfoElement(userInfo) {
     statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
     
     return element;
+}
+
+async function handleEmailChange(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const alertContainer = document.getElementById('profileAlert');
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    
+    try {
+        submitButton.disabled = true;
+        const result = await AuthService.updateProfile({ email });
+        
+        if (result.status === 'rate_limit') {
+            alertContainer.innerHTML = `
+                <div class="alert alert-warning fade show">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">${result.title}</h6>
+                            <span>${result.message}</span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            setTimeout(() => {
+                submitButton.disabled = false;
+                alertContainer.innerHTML = '';
+            }, result.remaining_time * 1000);
+            return;
+        }
+
+        if (result.success || result.requiresVerification) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-success fade show">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">¡Email actualizado!</h6>
+                            <span>Se ha enviado un email de verificación a ${email}</span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+    } catch (error) {
+        submitButton.disabled = false;
+        alertContainer.innerHTML = `
+            <div class="alert alert-danger fade show">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Error</h6>
+                        <span>${error.message || 'Error al actualizar el email'}</span>
+                    </div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            alertContainer.innerHTML = '';
+        }, 5000);
+    } finally {
+        submitButton.disabled = false;
+    }
 }

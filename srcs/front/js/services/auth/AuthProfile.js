@@ -1,4 +1,6 @@
 import AuthService from '../AuthService.js';
+import RateLimitService from '../RateLimitService.js';
+import { messages } from '../../translations.js';
 import { Auth2FA } from './Auth2FA.js';
 
 export class AuthProfile {
@@ -55,18 +57,6 @@ export class AuthProfile {
 
     static async updateProfile(userData) {
         try {
-            const data = {};
-            if (userData.email) data.email = userData.email;
-            if (userData.current_password) {
-                data.current_password = userData.current_password;
-                data.new_password1 = userData.new_password1;
-                data.new_password2 = userData.new_password2;
-            }
-            // Añadir el flag de restauración si existe
-            if (userData.restore_image) {
-                data.restore_image = true;
-            }
-
             const response = await fetch(`${AuthService.API_URL}/profile/`, {
                 method: 'POST',
                 headers: {
@@ -74,29 +64,51 @@ export class AuthProfile {
                     'Accept': 'application/json',
                     'X-CSRFToken': AuthService.getCSRFToken()
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify(userData),
                 credentials: 'include'
             });
 
-            const responseData = await response.json();
-            console.log('Respuesta actualización:', responseData);
+            let responseText = await response.text();
+            try {
+                // Si hay error, verificar primero si es rate limit
+                if (!response.ok && responseText.includes('Please wait')) {
+                    const seconds = parseInt(responseText.match(/\d+/)[0]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    
+                    return {
+                        status: 'rate_limit',
+                        remaining_time: seconds,
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification
+                            .replace('{time}', formattedTime)
+                    };
+                }
 
-            if (!response.ok) {
-                throw new Error(responseData.message || responseData.error || 'Error actualizando perfil');
+                // Intentar parsear como JSON
+                const data = JSON.parse(responseText);
+                
+                if (!response.ok) {
+                    throw new Error(data.error || data.message || 'Error actualizando perfil');
+                }
+
+                return data;
+            } catch (e) {
+                if (responseText.includes('Please wait')) {
+                    const seconds = parseInt(responseText.match(/\d+/)[0]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    
+                    return {
+                        status: 'rate_limit',
+                        remaining_time: seconds,
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.email_verification
+                            .replace('{time}', formattedTime)
+                    };
+                }
+                throw new Error(responseText);
             }
-
-            // Si estamos restaurando la imagen, forzar una recarga del perfil
-            if (userData.restore_image) {
-                return await AuthService.getUserProfile();
-            }
-
-            return {
-                success: true,
-                message: responseData.message,
-                requiresVerification: userData.email ? true : false
-            };
         } catch (error) {
-            console.error('Error en updateProfile:', error);
+            console.error('Error updating profile:', error);
             throw error;
         }
     }

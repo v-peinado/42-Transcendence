@@ -7,6 +7,7 @@ import { Auth2FA } from './auth/Auth2FA.js';
 import { AuthEmail } from './auth/AuthEmail.js';
 import { AuthPassword } from './auth/AuthPassword.js';
 import { AuthRegister } from './auth/AuthRegister.js';
+import RateLimitService from './RateLimitService.js';
 
 class AuthService {
     static API_URL = '/api';
@@ -48,6 +49,18 @@ class AuthService {
     
     static requestPasswordReset = AuthPassword.requestPasswordReset;
     static resetPassword = AuthPassword.resetPassword;
+
+    // Rate Limit methods
+    static formatRateLimitTime = RateLimitService.formatTimeRemaining;
+    static getRateLimitMessage = RateLimitService.getMessage;
+
+    static handleRateLimit(error, action = 'login') {
+        if (error.response?.status === 429) {
+            const seconds = error.response.data.remaining_time || 900;
+            return RateLimitService.getActionMessage(action, { seconds });
+        }
+        return null;
+    }
 
     static async getUserId() {
         try {

@@ -113,6 +113,36 @@ class AuthGDPR {
 			?.split('=')[1];
 		return cookieValue || '';
 	}
+
+    static async deleteAccount(password = null) {
+        try {
+            const response = await fetch('/api/profile/delete-account/', {  // Corregir la ruta
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify({ confirm_password: password }),
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    throw new Error(data.message || 'Error al eliminar la cuenta');
+                } else {
+                    throw new Error('Error de servidor al eliminar la cuenta');
+                }
+            }
+
+            const data = await response.json();
+            return { status: 'success', ...data };  // Asegurar que siempre devolvemos un objeto con status
+        } catch (error) {
+            console.error('Error en deleteAccount:', error);
+            throw error;
+        }
+    }
 }
 
 export { AuthGDPR };
