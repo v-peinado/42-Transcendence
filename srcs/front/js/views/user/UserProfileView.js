@@ -230,6 +230,20 @@ function setupProfileEvents() {
 
             const result = await AuthService.updateProfile(updates);
             
+            if (result.status === 'rate_limit') {
+                messageDiv.classList.remove('d-none', 'alert-success');
+                messageDiv.classList.add('alert-warning');
+                messageDiv.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">${result.title}</h6>
+                            <span>${result.message}</span>
+                        </div>
+                    </div>`;
+                return;
+            }
+
             if (result.requiresVerification) {
                 messageDiv.classList.remove('d-none', 'alert-danger');
                 messageDiv.classList.add('alert-success');
@@ -830,4 +844,70 @@ function createUserInfoElement(userInfo) {
     statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
     
     return element;
+}
+
+async function handleEmailChange(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const alertContainer = document.getElementById('profileAlert');
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    
+    try {
+        submitButton.disabled = true;
+        const result = await AuthService.updateProfile({ email });
+        
+        if (result.status === 'rate_limit') {
+            alertContainer.innerHTML = `
+                <div class="alert alert-warning fade show">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">${result.title}</h6>
+                            <span>${result.message}</span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            setTimeout(() => {
+                submitButton.disabled = false;
+                alertContainer.innerHTML = '';
+            }, result.remaining_time * 1000);
+            return;
+        }
+
+        if (result.success || result.requiresVerification) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-success fade show">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">¡Email actualizado!</h6>
+                            <span>Se ha enviado un email de verificación a ${email}</span>
+                        </div>
+                    </div>
+                </div>`;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 5000);
+        }
+    } catch (error) {
+        submitButton.disabled = false;
+        alertContainer.innerHTML = `
+            <div class="alert alert-danger fade show">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Error</h6>
+                        <span>${error.message || 'Error al actualizar el email'}</span>
+                    </div>
+                </div>
+            </div>`;
+        
+        setTimeout(() => {
+            alertContainer.innerHTML = '';
+        }, 5000);
+    } finally {
+        submitButton.disabled = false;
+    }
 }

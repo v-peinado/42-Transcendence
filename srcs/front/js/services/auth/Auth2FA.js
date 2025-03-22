@@ -1,4 +1,6 @@
 import AuthService from '../AuthService.js';
+import RateLimitService from '../RateLimitService.js';
+import { messages } from '../../translations.js';
 
 export class Auth2FA {
     static get isEnabled() {
@@ -83,8 +85,6 @@ export class Auth2FA {
                 `${AuthService.API_URL}/auth/42/verify-2fa/` :
                 `${AuthService.API_URL}/verify-2fa/`;
             
-            console.log('Usando endpoint:', endpoint);
-
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -96,10 +96,51 @@ export class Auth2FA {
                 credentials: 'include'
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                // Si no podemos parsear el JSON, intentamos obtener el texto
+                const text = await response.text();
+                console.log('Raw response:', text);
+                
+                // Verificar si es un error de rate limit
+                if (text.includes('Demasiados intentos')) {
+                    const match = text.match(/(\d+) segundos/);
+                    if (match) {
+                        const seconds = parseInt(match[1]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                        };
+                    }
+                }
+                throw new Error(text);
+            }
+
+            console.log('2FA response:', data);
 
             if (!response.ok) {
-                throw new Error(data.error || data.message || 'Código inválido');
+                // Detectar rate limit por el mensaje
+                if (data.message && Array.isArray(data.message)) {
+                    const msg = data.message[0];
+                    if (msg.includes('Too many attempts')) {
+                        const seconds = parseInt(msg.match(/\d+/)[0]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                        };
+                    }
+                }
+                throw new Error(data.message || 'Error en la verificación');
             }
 
             if (data.status === 'success') {
@@ -118,7 +159,42 @@ export class Auth2FA {
 
             return data;
         } catch (error) {
-            console.error('Error en verify2FA:', error);
+            console.error('2FA error details:', error);
+            
+            // Verificar si el mensaje de error contiene información de rate limit
+            if (error.message && error.message.includes('Demasiados intentos')) {
+                const match = error.message.match(/(\d+) segundos/);
+                if (match) {
+                    const seconds = parseInt(match[1]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    
+                    return {
+                        status: 'rate_limit',
+                        remaining_time: seconds,
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                    };
+                }
+            }
+
+            // Si el error ya viene formateado como rate limit, devolverlo
+            if (error.status === 'rate_limit') {
+                return error;
+            }
+
+            // Si el mensaje contiene "Too many attempts", procesarlo
+            if (typeof error.message === 'string' && error.message.includes('Too many attempts')) {
+                const seconds = parseInt(error.message.match(/\d+/)[0]);
+                const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                
+                return {
+                    status: 'rate_limit',
+                    remaining_time: seconds,
+                    title: messages.AUTH.RATE_LIMIT.TITLE,
+                    message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                };
+            }
+
             throw error;
         }
     }
