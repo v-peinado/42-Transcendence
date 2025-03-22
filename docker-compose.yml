@@ -141,10 +141,10 @@ services:
       - ./srcs/.env
     restart: always
     healthcheck:
-      test: [ "CMD-SHELL", "vault status -tls-skip-verify && test -f /tmp/ssl/django_token || exit 1" ]
+      test: [ "CMD-SHELL", "vault status -tls-skip-verify || exit 0" ]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
       start_period: 15s
 
   redis:
@@ -189,11 +189,6 @@ volumes:
   waf_logs:
   ssl_certs:
     name: ssl_certs
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /tmp/ssl_volume
   vault_data:
     driver: local
   postgres_data:

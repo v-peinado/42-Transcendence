@@ -27,6 +27,17 @@ RUN apk add --no-cache \
 	&& touch /var/log/vault/audit.log \
 	&& chmod 666 /var/log/vault/audit.log
 
+# Ensure the directories exist and have proper permissions
+RUN mkdir -p /var/log/vault \
+	/etc/vault.d/data \
+	/tmp/ssl && \
+	chmod -R 777 /var/log/vault \
+	/etc/vault.d \
+	/etc/vault.d/data \
+	/tmp/ssl && \
+	touch /var/log/vault/audit.log && \
+	chmod 666 /var/log/vault/audit.log
+
 # Copy configuration files for vault
 COPY srcs/vault/config.conf /etc/vault.d/config.hcl
 COPY srcs/vault/scripts/ /usr/local/bin/
@@ -61,5 +72,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 # Don't use unprivileged user (run as root)
 # Removed: USER vaultuser
 
-# Start Vault
-CMD ["/usr/local/bin/vault-setup.sh"]
+# Set the startup command with permissions check
+CMD ["sh", "-c", "chmod -R 777 /tmp/ssl || true && /usr/local/bin/vault-setup.sh"]

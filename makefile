@@ -10,14 +10,7 @@ COLOR_RESET = \033[0m
 export $(shell sed 's/=.*//' srcs/.env 2>/dev/null)
 
 # Regla por defecto
-all: prepare up help
-
-# Prepara el sistema (crea directorios y establece permisos)
-prepare:
-	@echo "$(COLOR_GREEN)Preparando el sistema para el despliegue...$(COLOR_RESET)"
-	@mkdir -p /tmp/ssl_volume
-	@chmod -R 777 /tmp/ssl_volume
-	@echo "$(COLOR_GREEN)✅ Sistema preparado$(COLOR_RESET)"
+all: up help
 
 # Levanta los servicios
 up:
@@ -131,4 +124,4 @@ help:
 	@echo "  http://$(IP_SERVER):8000/api/ninja/docs - Apis"
 	@echo ""
 
-.PHONY: all up down clean fclean re help down_volumes fcleandb view-users logs view-table prepare
+.PHONY: all up down clean fclean re help down_volumes fcleandb view-users logs view-table
