@@ -104,14 +104,7 @@ services:
       - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
     env_file:
       - ./srcs/.env
-    command: >
-      sh -c "until [ -f /tmp/ssl/transcendence.crt ] && [ -f /tmp/ssl/transcendence.key ]; do 
-               echo 'Waiting for SSL certificates...'; 
-               sleep 2; 
-             done && 
-             echo 'SSL certificates found, starting WAF...' && 
-             envsubst '$$IP_SERVER' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && 
-             nginx -g 'daemon off;'"
+    command: [ "/usr/local/bin/entrypoint.sh" ]
     restart: always
     depends_on:
       ssl-manager:

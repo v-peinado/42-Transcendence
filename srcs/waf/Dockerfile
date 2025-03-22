@@ -45,11 +45,12 @@ COPY srcs/ssl/generate-ssl.sh /docker-entrypoint.d/20-generate-ssl.sh
 COPY srcs/waf/modsecurity/modsecurity.conf /etc/nginx/modsecurity.d/
 COPY srcs/waf/modsecurity/rules/ /etc/nginx/modsecurity/rules/
 COPY srcs/waf/modsecurity/crs-setup.conf /etc/modsecurity/crs/crs-setup.conf
+COPY srcs/waf/entrypoint.sh /usr/local/bin/
 
-# Configure permissions
-RUN chmod +x \
-	/usr/local/bin/generate-ssl.sh \
-	/docker-entrypoint.d/20-generate-ssl.sh && \
+# Configure permissions with explicit chmod to ensure entrypoint is executable
+RUN chmod 755 /usr/local/bin/generate-ssl.sh && \
+	chmod 755 /docker-entrypoint.d/20-generate-ssl.sh && \
+	chmod 755 /usr/local/bin/entrypoint.sh && \
 	ln -sf /etc/nginx/modsecurity/rules/main.conf /etc/nginx/modsecurity.d/main.conf && \
 	chmod 644 /etc/nginx/modsecurity.d/* \
 	/etc/nginx/modsecurity/rules/* \
