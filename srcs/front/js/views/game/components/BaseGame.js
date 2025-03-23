@@ -55,6 +55,13 @@ export class BaseGame {
         const centerX = this.canvas.width / 2;
         const centerY = this.canvas.height / 2;
 
+        // Añadir botón de pausa
+        const pauseButton = document.createElement('button');
+        pauseButton.className = 'pause-button';
+        pauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+        pauseButton.onclick = () => this.togglePause();
+        this.canvas.parentElement.appendChild(pauseButton);
+
         this.ball = new Ball(centerX, centerY, 10);
         this.ball.setSpeed(this.difficulty.BALL_SPEED, this.difficulty.BALL_SPEED);
 
@@ -206,6 +213,12 @@ export class BaseGame {
         this.gameEnded = true;
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
+        }
+        
+        // Eliminar el botón de pausa
+        const pauseButton = document.querySelector('.pause-button');
+        if (pauseButton) {
+            pauseButton.remove();
         }
         
         // Eliminar event listeners
