@@ -66,8 +66,10 @@ function createProfileContainer(userInfo) {
     img.id = 'profileImage';
     img.className = 'profile-avatar rounded-circle';
     img.alt = 'Profile';
-    img.src = userInfo.profile_image || userInfo.fortytwo_image || 
-             `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+    // Si hay profile_image personalizada, usarla sin importar si es usuario de 42
+    img.src = userInfo.profile_image || 
+              (userInfo.is_fortytwo_user ? userInfo.fortytwo_image : 
+              `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`);
 
     const buttonsContainer = document.createElement('div');
     buttonsContainer.className = 'avatar-buttons';
@@ -372,9 +374,11 @@ function setupProfileEvents() {
                     return;
                 }
 
-                if (!file.type.startsWith('image/')) {
+                // Validar formato
+                const allowedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedFormats.includes(file.type)) {
                     alertEl.className = 'alert alert-danger';
-                    alertEl.textContent = 'Por favor, selecciona una imagen válida';
+                    alertEl.textContent = 'Formato no válido. Se permiten: JPG, PNG, GIF y WEBP';
                     alertEl.style.display = 'block';
                     return;
                 }
@@ -382,7 +386,7 @@ function setupProfileEvents() {
                 const userInfo = await AuthService.updateProfileImage(file);
                 
                 if (userInfo && userInfo.profile_image) {
-                    // Actualizar todas las instancias de la imagen inmediatamente
+                    // Actualizar todas las instancias de la imagen
                     const imageUrl = userInfo.profile_image;
                     const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
                     imageElements.forEach(el => {
@@ -396,7 +400,12 @@ function setupProfileEvents() {
                 }
             } catch (error) {
                 alertEl.className = 'alert alert-danger';
-                alertEl.textContent = error.message;
+                // Manejar específicamente el error de formato WebP
+                if (error.message.includes('<html>')) {
+                    alertEl.textContent = 'El formato WebP no está soportado. Por favor, usa JPG, PNG o GIF.';
+                } else {
+                    alertEl.textContent = error.message || 'Error al actualizar la imagen';
+                }
             } finally {
                 input.value = '';
                 alertEl.style.display = 'block';
@@ -409,22 +418,28 @@ function setupProfileEvents() {
         const imageInput = document.getElementById('imageInput');
         
         try {
-            const userInfo = await AuthService.updateProfile({ restore_image: true });
+            // Esperamos la respuesta del backend con la imagen restaurada
+            const response = await AuthService.updateProfile({ restore_image: true });
             
-            // Actualizar todas las instancias de la imagen inmediatamente
-            const imageUrl = userInfo.profile_image || 
-                           userInfo.fortytwo_image || 
-                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+            // Obtenemos la información actualizada del usuario después de restaurar
+            const userInfo = await AuthService.getUserProfile();
             
+            // Para usuarios de 42, usamos siempre fortytwo_image si existe
+            const imageUrl = userInfo.is_fortytwo_user ? 
+                userInfo.fortytwo_image : 
+                (userInfo.profile_image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`);
+
+            // Actualizamos todas las instancias de la imagen
             const imageElements = document.querySelectorAll('#profileImage, #navbarUserAvatar, #dropdownUserAvatar');
             imageElements.forEach(el => {
-                if (el) el.src = imageUrl;
+                if (el) {
+                    el.src = imageUrl;
+                }
             });
 
             alertEl.className = 'alert alert-success';
             alertEl.textContent = 'Imagen restaurada correctamente';
             
-            // Resetear el input
             if (imageInput) imageInput.value = '';
             
         } catch (error) {
@@ -814,20 +829,24 @@ async function handleDataDeletion() {
 }
 
 function createUserInfoElement(userInfo) {
-    // Obtener el template
     const template = document.getElementById('userInfoTemplate');
     if (!template) {
         throw new Error('Template no encontrado');
     }
     
-    // Clonar el template
     const element = template.content.cloneNode(true);
-    
-    // Actualizar los elementos
     const profileImage = element.querySelector('#profileImage');
-    profileImage.src = userInfo.profile_image || 
-                      userInfo.fortytwo_image || 
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+    
+    // Determinar la imagen correcta - profile_image tiene prioridad
+    let imageUrl = userInfo.profile_image;
+    if (!imageUrl) {
+        imageUrl = userInfo.is_fortytwo_user ? 
+            userInfo.fortytwo_image : 
+            `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+    }
+    
+    profileImage.src = imageUrl;
+    
     const statusBadge = element.querySelector('#profileStatus .badge');
     statusBadge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
     statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
