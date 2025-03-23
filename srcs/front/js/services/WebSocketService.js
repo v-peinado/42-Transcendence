@@ -36,7 +36,6 @@ class WebSocketService {
                 });
 
                 this.socket.onopen = () => {
-                    console.log('WebSocket conectado');
                     this.isConnecting = false;
                     
                     // Solicitar lista de usuarios online al conectar
@@ -55,9 +54,7 @@ class WebSocketService {
                 this.socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
-                        console.log('WebSocket mensaje recibido:', data); // Añadir este log
                         const listeners = this.listeners.get(data.type) || [];
-                        console.log('Listeners para tipo', data.type, ':', listeners.length); // Añadir este log
                         listeners.forEach(callback => callback(data));
                     } catch (error) {
                         console.error('Error parsing message:', error);
@@ -97,7 +94,6 @@ class WebSocketService {
 
     send(message) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-            console.log('Socket no conectado, encolando mensaje:', message); // Añadir este log
             this.messageQueue.push(message);
             if (!this.isConnecting) {
                 this.connect();
@@ -128,7 +124,6 @@ class WebSocketService {
                 formattedMessage = { ...message };
         }
         
-        console.log('Enviando mensaje WebSocket:', formattedMessage); // Mejorado el mensaje de log
         this.socket.send(JSON.stringify(formattedMessage));
     }
 

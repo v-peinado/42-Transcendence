@@ -8,9 +8,35 @@ export class Paddle {
         this.speed = 7;
     }
 
-    draw(ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(this.pos.x, this.pos.y, this.width, this.height);
+    draw(ctx, theme) {
+        if (theme.glow) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = theme.glow;
+        }
+
+        ctx.fillStyle = theme.color;
+        if (theme.pixelated) {
+            this.drawPixelated(ctx, theme);
+        } else {
+            ctx.fillRect(this.pos.x, this.pos.y, theme.width, theme.height);
+        }
+
+        // Restaurar contexto
+        ctx.shadowBlur = 0;
+    }
+
+    drawPixelated(ctx, theme) {
+        const pixelSize = 4;
+        for (let y = 0; y < theme.height; y += pixelSize) {
+            for (let x = 0; x < theme.width; x += pixelSize) {
+                ctx.fillRect(
+                    this.pos.x + x,
+                    this.pos.y + y,
+                    pixelSize - 1,
+                    pixelSize - 1
+                );
+            }
+        }
     }
 
     move(direction) {

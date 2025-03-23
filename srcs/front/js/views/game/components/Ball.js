@@ -3,6 +3,7 @@ export class Ball {
         this.pos = { x, y };
         this.vel = { x: 0, y: 0 };
         this.radius = radius;
+        this.trailPoints = [];
     }
 
     setSpeed(speedX, speedY) {
@@ -16,12 +17,43 @@ export class Ball {
         this.pos.y = y;
     }
 
-    draw(ctx) {
+    draw(ctx, theme) {
+        // Dibujar trail si está activo
+        if (theme.trail) {
+            this.drawTrail(ctx, theme);
+        }
+
+        // Aplicar glow si existe
+        if (theme.glow) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = theme.glow;
+        }
+
+        ctx.fillStyle = theme.color;
         ctx.beginPath();
-        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
+        ctx.arc(this.pos.x, this.pos.y, theme.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.closePath();
+
+        // Restaurar contexto
+        ctx.shadowBlur = 0;
+
+        // Actualizar trail
+        if (theme.trail) {
+            this.trailPoints.unshift({x: this.pos.x, y: this.pos.y});
+            if (this.trailPoints.length > 5) {
+                this.trailPoints.pop();
+            }
+        }
+    }
+
+    drawTrail(ctx, theme) {
+        this.trailPoints.forEach((point, index) => {
+            const alpha = (1 - index / this.trailPoints.length) * 0.3;
+            ctx.fillStyle = `${theme.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, theme.size * (1 - index / this.trailPoints.length), 0, Math.PI * 2);
+            ctx.fill();
+        });
     }
 
     update() {

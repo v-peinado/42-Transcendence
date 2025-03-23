@@ -1,0 +1,635 @@
+/* Theme Modal Styles */
+.theme-selector {
+    margin: 2rem 0;
+}
+
+.theme-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+    padding: 0.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Mejoras en los botones de tema */
+.theme-btn {
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 50px;
+    width: 100%;
+}
+
+.theme-btn i {
+    font-size: 1.4rem;
+    transition: transform 0.2s ease;
+    min-width: 24px;
+    text-align: center;
+}
+
+.theme-btn span {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+/* Colores específicos para cada tema */
+.game-theme-btn[data-theme="classic"] i {
+    background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="neon"] i {
+    background: linear-gradient(135deg, #00ff00 0%, #00ffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="retro"] i {
+    background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="cyberpunk"] i {
+    background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="matrix"] i {
+    background: linear-gradient(135deg, #00ff00 0%, #003300 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="synthwave"] i {
+    background: linear-gradient(135deg, #ff2d95 0%, #2de2e6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="outrun"] i {
+    background: linear-gradient(135deg, #ffd319 0%, #ff2975 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-btn[data-theme="cosmic"] i {
+    background: linear-gradient(135deg, #7b2ff7 0%, #00eaff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Efectos hover y active */
+.theme-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.theme-btn:hover i {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.theme-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.theme-btn.active span {
+    opacity: 1;
+}
+
+/* Animación de selección */
+.theme-btn.active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, 
+        rgba(255, 255, 255, 0.8) 0%,
+        transparent 100%);
+    opacity: 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { opacity: 0.3; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.8); }
+}
+
+/* Mejoras en los botones de acción */
+#resumeButton, #quitButton {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+#resumeButton {
+    background: linear-gradient(145deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+#resumeButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.5);
+}
+
+#quitButton {
+    background: transparent;
+    color: #ff5656;
+    border: 1px solid rgba(255, 86, 86, 0.5);
+    margin-top: 0.5rem;
+}
+
+#quitButton:hover {
+    background: rgba(255, 86, 86, 0.1);
+    border-color: rgba(255, 86, 86, 0.8);
+    transform: translateY(-2px);
+}
+
+/* Pause Modal Styles */
+.pause-menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.pause-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: white;
+}
+
+.modal-title i {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Pause Modal Styles - Con nombres más específicos */
+.game-pause-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.game-pause-content {
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    animation: pauseModalSlide 0.3s ease-out;
+}
+
+.game-pause-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.game-pause-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: white;
+}
+
+.game-pause-title i {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-theme-selector {
+    margin: 2rem 0;
+}
+
+.game-theme-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+    padding: 0.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.game-theme-btn {
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 50px;
+    width: 100%;
+}
+
+.game-theme-btn i {
+    font-size: 1.4rem;
+    transition: transform 0.2s ease;
+    min-width: 24px;
+    text-align: center;
+}
+
+.game-theme-btn span {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex-grow: 1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.game-pause-actions {
+    margin-top: 2rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+/* Actualizar los selectores de los botones */
+.game-pause-resume-btn,
+.game-pause-quit-btn {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-pause-resume-btn {
+    background: linear-gradient(145deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.game-pause-quit-btn {
+    background: transparent;
+    color: #ff5656;
+    border: 1px solid rgba(255, 86, 86, 0.5);
+}
+
+/* Actualizar los efectos hover */
+.game-theme-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.game-theme-btn:hover i {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.game-theme-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.game-pause-resume-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.5);
+}
+
+.game-pause-quit-btn:hover {
+    background: rgba(255, 86, 86, 0.1);
+    border-color: rgba(255, 86, 86, 0.8);
+    transform: translateY(-2px);
+}
+
+/* Actualizar la animación */
+@keyframes pauseModalSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Theme-specific styles */
+.theme-classic .game-field {
+    background: rgba(16, 19, 34, 0.95);
+}
+
+.theme-neon .game-field {
+    background: rgba(0, 0, 0, 0.95);
+    box-shadow: inset 0 0 50px rgba(0, 255, 255, 0.2);
+}
+
+.theme-retro .game-field {
+    background: #111111;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.theme-cyberpunk .game-field {
+    background: #000000;
+    box-shadow: inset 0 0 100px rgba(255, 0, 255, 0.2);
+}
+
+.theme-matrix .game-field {
+    background: #000000;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-matrix .game-field::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(0deg, 
+        rgba(0, 255, 0, 0.1) 25%,
+        transparent 75%);
+    pointer-events: none;
+}
+
+.theme-synthwave .game-field {
+    background: #240b36;
+    box-shadow: inset 0 0 100px rgba(255, 45, 149, 0.3);
+    background-image: 
+        linear-gradient(rgba(45, 226, 230, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 226, 230, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.theme-outrun .game-field {
+    background: linear-gradient(180deg, #411e5c 0%, #ff2975 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-outrun .game-field::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        linear-gradient(90deg, transparent 0%, rgba(255, 211, 25, 0.1) 50%, transparent 100%),
+        linear-gradient(0deg, transparent 0%, rgba(255, 41, 117, 0.1) 100%);
+    background-size: 100% 100%, 100% 100%;
+    transform-origin: bottom;
+    transform: perspective(500px) rotateX(60deg);
+    pointer-events: none;
+}
+
+.theme-outrun .game-field::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        repeating-linear-gradient(90deg,
+            rgba(255, 211, 25, 0.1) 0px,
+            rgba(255, 211, 25, 0.1) 2px,
+            transparent 2px,
+            transparent 40px
+        );
+    background-size: 40px 100%;
+    transform-origin: bottom;
+    transform: perspective(500px) rotateX(60deg);
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+}
+
+.theme-cosmic .game-field {
+    background: #0a001a;
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-cosmic .game-field::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(circle at 30% 50%, rgba(123, 47, 247, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 70% 50%, rgba(0, 234, 255, 0.2) 0%, transparent 50%);
+    filter: blur(30px);
+    animation: nebulaFloat 15s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+.theme-cosmic .game-field::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        radial-gradient(1px 1px at 50% 50%, white 0%, transparent 100%),
+        radial-gradient(2px 2px at 30% 30%, white 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 70%, white 0%, transparent 100%);
+    opacity: 0.3;
+    animation: starsTwinkle 4s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes gridMove {
+    from { transform: perspective(500px) rotateX(60deg) translateY(0%); }
+    to { transform: perspective(500px) rotateX(60deg) translateY(100%); }
+}
+
+@keyframes nebulaFloat {
+    0% { transform: translate(-5%, -5%) scale(1.1); }
+    100% { transform: translate(5%, 5%) scale(0.9); }
+}
+
+@keyframes starsTwinkle {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+    100% { opacity: 0.3; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .theme-options {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+        max-width: 400px;
+    }
+
+    .theme-btn {
+        padding: 0.7rem 1rem;
+    }
+
+    .theme-btn i {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .theme-options {
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+    }
+
+    .theme-btn {
+        padding: 1rem;
+    }
+
+    .theme-btn i {
+        font-size: 1.5rem;
+    }
+}
+
+/* Botones de acción del modal de pausa */
+.game-pause-actions {
+    margin-top: 2rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.game-pause-resume-btn,
+.game-pause-quit-btn {
+    width: 100%;
+    padding: 1.2rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+}
+
+.game-pause-resume-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-pause-resume-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 75%);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-100%);
+}
+
+.game-pause-resume-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(79, 172, 254, 0.5);
+}
+
+.game-pause-resume-btn:hover::before {
+    transform: translateX(100%);
+}
+
+.game-pause-quit-btn {
+    background: rgba(255, 86, 86, 0.1);
+    color: #ff5656;
+    border: 2px solid rgba(255, 86, 86, 0.3);
+    transition: all 0.3s ease;
+}
+
+.game-pause-quit-btn:hover {
+    background: rgba(255, 86, 86, 0.15);
+    border-color: rgba(255, 86, 86, 0.8);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 86, 86, 0.2);
+}
+
+.game-pause-resume-btn i,
+.game-pause-quit-btn i {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.game-pause-resume-btn:hover i {
+    transform: scale(1.2) translateX(2px);
+}
+
+.game-pause-quit-btn:hover i {
+    transform: scale(1.2) translateX(-2px);
+}
