@@ -2,6 +2,7 @@ import AuthService from '../../services/AuthService.js';
 import { AuthUtils } from '../../services/auth/AuthUtils.js';
 import { messages } from '../../translations.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
+import RateLimitService from '../../services/RateLimitService.js';
 
 export async function LoginView() {
     // Limpiar estado inicial
@@ -227,12 +228,19 @@ async function handleFormSubmit(e) {
     const submitButton = e.target.querySelector('button[type="submit"]');
     
     alertDiv.innerHTML = '';
-    submitButton.disabled = true;
     
     try {
         const result = await AuthService.login(username, password, remember);
         
+        if (result.status === 'success') {
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('username', username);
+            window.location.replace('/game');
+            return;
+        }
+
         if (result.status === 'rate_limit') {
+            submitButton.disabled = true;
             alertDiv.innerHTML = `
                 <div class="alert alert-warning fade show">
                     <div class="d-flex align-items-center">
@@ -244,35 +252,39 @@ async function handleFormSubmit(e) {
                     </div>
                 </div>`;
             
-            submitButton.disabled = true;
             setTimeout(() => {
                 submitButton.disabled = false;
                 alertDiv.innerHTML = '';
             }, result.remaining_time * 1000);
             return;
         }
-        
-        // ... resto del código existente ...
+
     } catch (error) {
         console.log('Form submit complete error:', error);
         
-        if (typeof error.message === 'string' && error.message.startsWith('{')) {
-            try {
+        // Si es un error de credenciales inválidas
+        if (error.message === messages.AUTH.ERRORS.INVALID_CREDENTIALS) {
+            alertDiv.innerHTML = AuthUtils.mapBackendError(messages.AUTH.ERRORS.INVALID_CREDENTIALS).html;
+            return;
+        }
+        
+        // Si el error viene como JSON string
+        try {
+            if (typeof error.message === 'string' && error.message.startsWith('{')) {
                 const parsedError = JSON.parse(error.message);
                 if (parsedError.status === 'error') {
                     if (parsedError.message === "['Incorrect username or password']") {
-                        showError(messages.AUTH.ERRORS.INVALID_CREDENTIALS);
+                        alertDiv.innerHTML = AuthUtils.mapBackendError(messages.AUTH.ERRORS.INVALID_CREDENTIALS).html;
                         return;
                     }
                 }
-            } catch (e) {
-                console.error('Error parsing error message:', e);
             }
+        } catch (e) {
+            console.error('Error parsing error message:', e);
         }
-        
-        showError(error.message || messages.AUTH.ERRORS.DEFAULT);
-    } finally {
-        submitButton.disabled = false;
+
+        // Para cualquier otro tipo de error
+        alertDiv.innerHTML = AuthUtils.mapBackendError(messages.AUTH.ERRORS.DEFAULT).html;
     }
 }
 

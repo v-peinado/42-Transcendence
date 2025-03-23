@@ -16,12 +16,6 @@ export const messages = {
         },
         RATE_LIMIT: {
             TITLE: "Acceso bloqueado temporalmente",
-            LOGIN_BLOCKED: "Por tu seguridad, hemos bloqueado temporalmente el acceso",
-            TOO_MANY_ATTEMPTS: "Has realizado demasiados intentos fallidos",
-            WAIT_TIME: "Por favor, espera {time} antes de intentarlo de nuevo",
-            REMAINING_ATTEMPTS: "Te quedan {attempts} intentos",
-            LOGIN_MESSAGE: "Por seguridad, hemos bloqueado temporalmente tus intentos de inicio de sesión. Podrás intentarlo nuevamente en {time}.",
-            TWO_FACTOR_MESSAGE: "Has realizado demasiados intentos de verificación 2FA. Por favor, espera {time} antes de intentarlo nuevamente.",
             MESSAGES: {
                 login: "Por seguridad, hemos bloqueado temporalmente tus intentos de inicio de sesión. Podrás intentarlo nuevamente en {time}.",
                 two_factor: "Has realizado demasiados intentos de verificación 2FA. Por favor, espera {time} antes de intentarlo de nuevo.",
