@@ -8,11 +8,12 @@ from .privatechat import PrivateConsumer
 from .challenge import ChallengeConsumer
 from .notifications import NotificationsConsumer
 from .xss_patterns import XSS_PATTERNS
+# Update imports to include new functions
+from .xss_sanitization import detect_xss, render_code_safely, is_already_processed
 import re
 import json
-import html
-from django.contrib.auth import get_user_model
 import logging
+from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -39,40 +40,36 @@ class MainChatConsumer(
         Implements defense-in-depth by:
         1. Checking raw text for XSS patterns before JSON parsing
         2. Sanitizing the parsed data structure recursively
-
-        This dual protection prevents both parser-level attacks and context-specific
-        payloads embedded within valid JSON structures.
+        3. Neutralizing potential malicious content while preserving message flow
         """
         try:
-            if await self.contains_xss(text_data):                                              # Check for XSS patterns in the raw text
+            xss_detected_raw = detect_xss(text_data)                                            # Check for XSS patterns in the raw text
+            
+            if xss_detected_raw:
                 logger.warning(
-                    f"XSS attempt detected in raw data from user {self.user_id}: {text_data[:100]}..."
+                    f"XSS attempt detected in raw data from user {self.user_id}"
                 )
-                await self.send(
+                await self.send(                                                                # Notify the user of the detected XSS                                                              
                     text_data=json.dumps(
-                        {"type": "error", "message": "Contenido no permitido detectado"}
+                        {"type": "warning", "message": "Potentially malicious content detected"}
                     )
                 )
-                return
-
+            
             data = json.loads(text_data)
-            sanitized_data = await self.sanitize_data(data)                                     # Sanitize the data from the message
-
-            if sanitized_data.get("xss_detected", False):                                       # Check for XSS patterns in the sanitized data
-                logger.warning(f"XSS attempt detected in JSON from user {self.user_id}")
-                await self.send(
-                    text_data=json.dumps(
-                        {
-                            "type": "error",
-                            "message": "Contenido no permitido detectado en el mensaje",
-                        }
-                    )
-                )
-                return
-
+            
+            full_xss_check_result = await self.check_xss_in_data(data)                          # Check for XSS in all fields, including message
+            
+            
+            if data.get("type") == "chat_message":
+                sanitized_data = await self.sanitize_non_message_fields(data)                   # For chat messages, sanitize everything except the message content
+                if full_xss_check_result.get("has_xss_in_message", False):                      # If the message field has XSS, mark it for messages.py to know
+                    sanitized_data["_has_xss_in_message"] = True
+            else:
+                sanitized_data = await self.sanitize_data(data)                                 # For other types of data, sanitize everything as before
+            
             message_type = sanitized_data.get("type")
             channel_name = sanitized_data.get("channel_name")
-
+            
             if hasattr(self, "handle_message_type"):                                            # Check if the consumer has a message handler
                 await self.handle_message_type(
                     message_type, sanitized_data, channel_name
@@ -82,60 +79,106 @@ class MainChatConsumer(
             logger.error(f"Invalid JSON received from user {self.user_id}")
             await self.send(
                 text_data=json.dumps(
-                    {"type": "error", "message": "Formato de mensaje inválido"}
+                    {"type": "error", "message": "Invalid message format"}
                 )
             )
 
     async def contains_xss(self, text):
         """
-        Check if the raw text contains any XSS patterns
+        Check if the raw text contains any XSS patterns.
+        Uses the improved detection function.
         """
-        if text is None:
-            return False
+        return detect_xss(text)
 
-        text_lower = text.lower()
+    async def check_xss_in_data(self, data):
+        """
+        Check for XSS in all fields including message, but don't sanitize.
+        Returns information about XSS presence in different parts of the data.
+        """
+        result = {"has_xss": False, "has_xss_in_message": False}
+        
+        if isinstance(data, dict):                                                              # Handle dictionaries of data
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):                                             # Recursively check nested dictionaries and lists                   
+                    sub_result = await self.check_xss_in_data(value)                            # Check for XSS in the nested data
+                    if sub_result.get("has_xss", False):                                        # If XSS is found, mark the parent data as having XSS           
+                        result["has_xss"] = True                                                
+                elif isinstance(value, str):
+                    if await self.contains_xss(value):
+                        result["has_xss"] = True
+                        if key == "message" and data.get("type") == "chat_message":
+                            result["has_xss_in_message"] = True
+        
+        elif isinstance(data, list):
+            for item in data:
+                if isinstance(item, (dict, list)):
+                    sub_result = await self.check_xss_in_data(item)
+                    if sub_result.get("has_xss", False):
+                        result["has_xss"] = True
+                elif isinstance(item, str):
+                    if await self.contains_xss(item):
+                        result["has_xss"] = True
+        
+        return result
 
-        for pattern in self.xss_patterns:
-            if re.search(pattern, text_lower, re.IGNORECASE):
-                return True
-
-        return False
+    async def sanitize_non_message_fields(self, data):
+        """
+        Sanitize only non-message fields in chat messages.
+        This prevents sanitizing the actual message content that will be stored.
+        """
+        if not isinstance(data, dict):
+            return data
+            
+        sanitized = {}
+        for key, value in data.items():
+            if key == "message" and data.get("type") == "chat_message":
+                sanitized[key] = value
+            elif isinstance(value, (dict, list)):
+                sanitized[key] = await self.sanitize_data(value)                                
+            elif isinstance(value, str):
+                if await self.contains_xss(value):
+                    sanitized[key] = render_code_safely(value)
+                else:
+                    sanitized[key] = value
+            else:
+                sanitized[key] = value
+                
+        return sanitized
 
     async def sanitize_data(self, data):
         """
-        Recursively sanitize the data structure to prevent XSS attacks, mean to be used after JSON parsing
-        Recursive function that sanitizes all strings in a JSON-like data structure, is important the recursive
-        nature of this function to sanitize deeply nested data structures.
+        Recursively sanitizes data to prevent XSS attacks.
+        Uses the render_code_safely function to display code as text.
         """
-        if isinstance(data, dict):                                                              # Handle dictionaries of data
-            sanitized = {}                                                                      # Create a new dictionary to store the sanitized data
+        if isinstance(data, dict):
+            sanitized = {}
             for key, value in data.items():
-                safe_key = key                                                                  # Sanitize the key, but keep the original for nested dictionaries
-                if isinstance(value, (dict, list)):                                             # Recursively sanitize nested dictionaries and lists
-                    sanitized[safe_key] = await self.sanitize_data(value)
-                elif isinstance(value, str):                                                    # Sanitize strings
-                    if await self.contains_xss(value):                                          # Check for XSS patterns                                          
-                        sanitized["xss_detected"] = True                                        # Mark the data as containing XSS
-                        return sanitized
-                    sanitized[safe_key] = html.escape(value)                                    # Escape html characters to prevent XSS
+                if isinstance(value, (dict, list)):
+                    sanitized[key] = await self.sanitize_data(value)
+                elif isinstance(value, str):
+                    if await self.contains_xss(value):
+                        sanitized[key] = render_code_safely(value)
+                    else:
+                        sanitized[key] = value
                 else:
-                    sanitized[safe_key] = value
+                    sanitized[key] = value
             return sanitized
+            
         elif isinstance(data, list):
-            sanitized = []                                                                      # Handle lists of data, similar to dictionaries
+            sanitized = []
             for item in data:
                 if isinstance(item, (dict, list)):
-                    result = await self.sanitize_data(item)
-                    if isinstance(result, dict) and result.get("xss_detected", False):
-                        return {"xss_detected": True}
-                    sanitized.append(result)
+                    sanitized.append(await self.sanitize_data(item))
                 elif isinstance(item, str):
                     if await self.contains_xss(item):
-                        return {"xss_detected": True}
-                    sanitized.append(html.escape(item))
+                        # Use our improved render_code_safely function
+                        sanitized.append(render_code_safely(item))
+                    else:
+                        sanitized.append(item)
                 else:
                     sanitized.append(item)
             return sanitized
+            
         return data
 
     async def handle_message_type(self, message_type, data, channel_name):

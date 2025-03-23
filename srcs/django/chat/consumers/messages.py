@@ -10,7 +10,8 @@ from chat.models import (
     PrivateChannel,
 )
 import logging
-import html
+# Import XSS detection and sanitization
+from .xss_sanitization import detect_xss, render_code_safely, is_already_processed
 
 User = get_user_model()
 
@@ -43,14 +44,21 @@ class MessagesConsumer:
     async def handle_message(self, data, channel_name):
         """
         Handle a message sent by the user.
-        Determine if the message is a private message or a group message, if it is a private message, add the users to the group.
+        Stores the original message in the database and sanitizes it only when sending to clients.
         The prefix 'dm_' is used to identify private messages, followed by the user ids of the users in the conversation.
         """
         message = data.get("message")
         from_user = self.scope["user"]
 
         if message:
-            sanitized_message = html.escape(message)
+            is_dangerous = data.get("_has_xss_in_message", False)                               # Check if chatconsumers.py already detected XSS
+            if not is_dangerous:
+                is_dangerous = detect_xss(message)
+            await self.save_message(from_user, channel_name, message)                           # Store the ORIGINAL message in the database (not sanitized)   
+            if is_dangerous:                                                                    # If the message contains dangerous code, sanitize it BEFORE sending
+                sanitized_message = render_code_safely(message)
+            else:
+                sanitized_message = message
 
             if channel_name.startswith("dm_"):
                 to_user_ids = channel_name.split("_")[1:]
@@ -60,13 +68,12 @@ class MessagesConsumer:
                 ChatConsumer.private_channels[channel_name] = to_user_ids                       # Add the private channel to the private_channels dictionary
 
                 for user_id in to_user_ids:                                                     # Add the users to the group
-                    if user_id in ChatConsumer.connected_users:
+                    if user_id in ChatConsumer.connected_users:                                 
                         await self.channel_layer.group_add(
-                            channel_name, ChatConsumer.connected_users[user_id]                 # If the user is blocked, the message will not be sent
+                            channel_name, ChatConsumer.connected_users[user_id]
                         )
-            await self.save_message(from_user, channel_name, sanitized_message)                 # Save the message to the database
-
-            await self.send_to_channel(                                                         # Send the message to the channel
+            
+            await self.send_to_channel(
                 channel_name, from_user.id, from_user.username, sanitized_message
             )
 
@@ -98,13 +105,15 @@ class MessagesConsumer:
         if await self.is_blocked(self.scope["user"].id, sender_user.id):                        # If the sender is blocked, return
             return
 
+        message = event["message"]                                                              # The message is already sanitized from send_to_channel
+
         await self.send(
             text_data=json.dumps(
                 {
                     "type": "chat_message",
                     "user_id": sender_id,
                     "username": event["username"],
-                    "message": event["message"],
+                    "message": message,
                     "channel_name": event["channel_name"],
                 }
             )
@@ -114,23 +123,24 @@ class MessagesConsumer:
         """
         Load unarchived messages for the user. Archive messages are not sent to the user(Not implemented).
         The messages are sent to the user in the order they were sent and to the correct channel.
+        Sanitizes messages when loading them from the database, not before storing them.
         """
         logger.info(f"Loading unarchived messages for user {user_id}")
         channels = await self.get_user_channels(user_id)
         for channel_name in channels:
-            messages = await self.get_unarchived_messages_filtered(                             # Filter out messages from blocked users
+            messages = await self.get_unarchived_messages_filtered(                             # Get the unarchived messages for the user, filtered by blocked users
                 user_id, channel_name
             )
             logger.info(
                 f"Loading {len(messages)} unarchived messages for channel {channel_name}"
             )
             for message in messages:
-                content = message.content
-                sanitized_content = (
-                    html.escape(content)
-                    if not self.is_already_escaped(content)
-                    else content
-                )
+                content = message.content                                                       # Get the original content from the database
+            
+                if detect_xss(content):                                                         # Detect if it contains dangerous code
+                    sanitized_content = render_code_safely(content)                             # Sanitize only if necessary
+                else:
+                    sanitized_content = content                                                 # Don't modify safe content
 
                 await self.send(
                     text_data=json.dumps(
@@ -149,7 +159,7 @@ class MessagesConsumer:
         """
         Verify if the text is already escaped.
         """
-        return "&lt;" in text or "&gt;" in text or "&quot;" in text or "&#" in text
+        return is_already_processed(text)
 
     @database_sync_to_async
     def get_unarchived_messages_filtered(self, user_id, channel_name):
