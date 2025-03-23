@@ -601,7 +601,6 @@ export class UserList {
     // Método para establecer el callback de chat
     onUserChat(callback) {
         this.onChatClick = callback;
-        console.log('Callback de chat configurado:', !!callback);
     }
 
     // Método para actualizar el estado de un usuario específico

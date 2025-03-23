@@ -100,9 +100,7 @@ export class Auth2FA {
             try {
                 data = await response.json();
             } catch (e) {
-                // Si no podemos parsear el JSON, intentamos obtener el texto
                 const text = await response.text();
-                console.log('Raw response:', text);
                 
                 // Verificar si es un error de rate limit
                 if (text.includes('Demasiados intentos')) {
@@ -204,14 +202,27 @@ export class Auth2FA {
             const response = await fetch(`${AuthService.API_URL}/generate-qr/${username}/`, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'image/png',
+                    'Accept': '*/*',
                     'X-CSRFToken': AuthService.getCSRFToken()
                 },
                 credentials: 'include'
             });
 
             if (!response.ok) {
-                throw new Error('Error generando código QR');
+                try {
+                    const errorData = await response.json();
+                    if (errorData.error?.includes('Demasiados intentos')) {
+                        const seconds = parseInt(errorData.error.match(/(\d+)/)[0]);
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        throw new Error(`Has excedido el límite de generación de códigos QR (10 por hora). Por favor, espera ${formattedTime} antes de intentarlo de nuevo.`);
+                    }
+                    throw new Error(errorData.error || 'Error al generar el código QR');
+                } catch (e) {
+                    if (e.message.includes('Demasiados intentos')) {
+                        throw e;
+                    }
+                    throw new Error('No se pudo generar el código QR. Por favor, inténtalo más tarde.');
+                }
             }
 
             const blob = await response.blob();
@@ -238,7 +249,37 @@ export class Auth2FA {
             const data = await response.json();
             
             if (!response.ok) {
-                throw new Error(data.message || 'Error al validar QR');
+                if (data.error?.includes('límite máximo de 3 usos')) {
+                    return {
+                        status: 'error',
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.qr_uses
+                    };
+                }
+                if (data.error?.includes('Demasiados intentos')) {
+                    const seconds = parseInt(data.error.match(/(\d+)/)[0]);
+                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                    return {
+                        status: 'error',
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.qr_validation.replace('{time}', formattedTime)
+                    };
+                }
+                if (data.error?.includes('expirado')) {
+                    return {
+                        status: 'error',
+                        title: messages.AUTH.RATE_LIMIT.TITLE,
+                        message: messages.AUTH.RATE_LIMIT.MESSAGES.qr_expired
+                    };
+                }
+                if (data.error?.includes('no es válido')) {
+                    return {
+                        status: 'error',
+                        title: 'Error de validación',
+                        message: 'El código QR no es válido o ha sido manipulado'
+                    };
+                }
+                throw new Error(data.error || 'Error al validar QR');
             }
 
             if (data.require_2fa) {
@@ -255,7 +296,11 @@ export class Auth2FA {
             };
         } catch (error) {
             console.error('Error en validateQR:', error);
-            throw error;
+            return {
+                status: 'error',
+                title: 'Error',
+                message: error.message || 'Error al validar QR'
+            };
         }
     }
 

@@ -4,6 +4,7 @@ import { loadHTML } from '../../utils/htmlLoader.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { ChatWidget } from '../../components/ChatWidget.js';
 import { initializeMenuAnimations } from './GameMenuAnimations.js';
+import { GameThemes, getThemeIcon } from './components/GameThemes.js';
 
 export default async function GameView(userInfo = null) {
     const app = document.getElementById('app');
@@ -192,6 +193,64 @@ export default async function GameView(userInfo = null) {
                 card.style.setProperty('--y', `${y}%`);
             });
         });
+
+        // Añadir el manejo del botón de personalización
+        const customizeBtn = document.getElementById('customizeGameBtn');
+        if (customizeBtn) {
+            customizeBtn.addEventListener('click', () => {
+                const pauseMenu = document.createElement('div');
+                pauseMenu.id = 'themeMenu';
+                pauseMenu.className = 'game-pause-modal';
+                
+                const themeButtons = Object.entries(GameThemes).map(([key, theme]) => `
+                    <button data-theme="${key}" class="game-theme-btn ${localStorage.getItem('pongTheme') === JSON.stringify(theme) ? 'active' : ''}">
+                        <i class="fas ${getThemeIcon(key)}"></i>
+                        <span>${theme.name}</span>
+                    </button>
+                `).join('');
+
+                pauseMenu.innerHTML = `
+                    <div class="game-pause-content">
+                        <div class="game-pause-header">
+                            <h2 class="game-pause-title">
+                                <i class="fas fa-paint-brush me-2"></i>
+                                Personaliza tu juego
+                            </h2>
+                            <p class="text-white-50 mb-0 mt-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Los temas se aplicarán en Torneo Local y Modo IA
+                            </p>
+                        </div>
+                        <div class="game-theme-selector">
+                            <div class="game-theme-options">
+                                ${themeButtons}
+                            </div>
+                        </div>
+                        <div class="game-pause-actions">
+                            <button class="game-pause-resume-btn">
+                                <i class="fas fa-check me-2"></i>Aceptar
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(pauseMenu);
+                
+                // Event listeners del menú
+                pauseMenu.querySelector('.game-pause-resume-btn').onclick = () => {
+                    pauseMenu.remove();
+                };
+
+                pauseMenu.querySelectorAll('.game-theme-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        const theme = GameThemes[btn.dataset.theme];
+                        localStorage.setItem('pongTheme', JSON.stringify(theme));
+                        pauseMenu.querySelectorAll('.game-theme-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    }
+                });
+            });
+        }
 
         // Inicializar animaciones después de renderizar
         initializeMenuAnimations();

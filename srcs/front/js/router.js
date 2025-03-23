@@ -271,7 +271,6 @@ class Router {
 
     async handleInitialRoute() {
         const path = window.location.pathname + window.location.search;
-        console.log('Ruta inicial completa:', path);
 
         // Si estamos en la página principal, verificar autenticación primero
         if (path === '/' || path === '') {

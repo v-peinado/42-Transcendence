@@ -1,16 +1,14 @@
 export function initializeMenuAnimations() {
-    const username = localStorage.getItem('username');
-    document.getElementById('username-placeholder').textContent = username;
+    const welcomeMessage = document.querySelector('.welcome-message');
+    const menuContainer = document.querySelector('.game-menu-container');
 
+    // Añadir las clases para las animaciones después de un breve retraso
     setTimeout(() => {
-        const welcomeMessage = document.querySelector('.welcome-message');
-        const gameMenu = document.querySelector('.game-menu-container');
-        
-        // Forzar un reflow
-        welcomeMessage.offsetHeight;
-        gameMenu.offsetHeight;
-        
-        welcomeMessage.classList.add('fade-out');
-        gameMenu.classList.add('slide-up');
-    }, 1500); // Aumentado el tiempo de espera inicial
+        if (welcomeMessage) {
+            welcomeMessage.classList.add('fade-out');
+        }
+        if (menuContainer) {
+            menuContainer.classList.add('slide-up');
+        }
+    }, 500);
 }
