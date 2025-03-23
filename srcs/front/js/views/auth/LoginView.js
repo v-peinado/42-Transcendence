@@ -259,6 +259,12 @@ async function handleFormSubmit(e) {
             return;
         }
 
+        // Añadir manejo de 2FA
+        if (result.status === 'pending_2fa') {
+            handlePending2FA(username);
+            return;
+        }
+
     } catch (error) {
         console.log('Form submit complete error:', error);
         
@@ -288,13 +294,27 @@ async function handleFormSubmit(e) {
     }
 }
 
+// Actualiza handlePending2FA para asegurar que el modal existe
 function handlePending2FA(username) {
+    // Primero verificar si necesitamos añadir el template del modal
+    if (!document.getElementById('twoFactorModal')) {
+        const twoFactorModalTemplate = document.getElementById('twoFactorModalTemplate');
+        if (twoFactorModalTemplate) {
+            document.body.appendChild(twoFactorModalTemplate.content.cloneNode(true));
+        }
+    }
+
     sessionStorage.setItem('pendingAuth', 'true');
     sessionStorage.setItem('pendingUsername', username);
+    
     const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
     modal.show();
-    document.getElementById('code').value = '';
-    document.getElementById('code').focus();
+    
+    const codeInput = document.getElementById('code');
+    if (codeInput) {
+        codeInput.value = '';
+        codeInput.focus();
+    }
 }
 
 async function handle2FASubmit(e) {
@@ -397,8 +417,10 @@ function handleScanQRClick() {
 }
 
 async function handleScanQRWithCamera() {
+    const alertDiv = document.getElementById('qrScannerAlert');
     try {
         const container = document.getElementById('qrScannerContainer');
+        const alertDiv = document.getElementById('qrScannerAlert');
         if (!container) {
             throw new Error('Contenedor del scanner no encontrado');
         }
@@ -433,32 +455,10 @@ async function handleScanQRWithCamera() {
                     // Detener el escaneo
                     stream.getTracks().forEach(track => track.stop());
                     
-                    // Ocultar el modal del scanner
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
-                    modal.hide();
-                    
-                    // Procesar el código QR
+                    // Procesar el código QR sin cerrar el modal aquí
                     const username = code.data;
-                    AuthService.validateQR(username)
-                        .then(result => {
-                            if (result.success) {
-                                if (result.require_2fa) {
-                                    sessionStorage.setItem('pendingAuth', 'true');
-                                    sessionStorage.setItem('pendingUsername', username);
-                                    const twoFactorModal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
-                                    twoFactorModal.show();
-                                } else {
-                                    localStorage.setItem('isAuthenticated', 'true');
-                                    localStorage.setItem('username', username);
-                                    window.location.replace('/'); // Cambiado de '/profile' a '/'
-                                }
-                            } else {
-                                throw new Error(result.error || 'Error validando el QR');
-                            }
-                        })
-                        .catch(error => {
-                            alert('Error al validar el QR: ' + error.message);
-                        });
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+                    processQRCode(username, modal);
                     return;
                 }
             }
@@ -478,14 +478,75 @@ async function handleScanQRWithCamera() {
 
     } catch (error) {
         console.error('Error en la cámara:', error);
-        alert('Error al acceder a la cámara: ' + error.message);
+        if (alertDiv) {
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Error al acceder a la cámara: ${error.message}
+                </div>`;
+        }
+    }
+}
+
+// Nueva función para procesar el código QR
+async function processQRCode(username, modal) {
+    const alertDiv = document.getElementById('qrScannerAlert');
+    try {
+        const result = await AuthService.validateQR(username);
+        
+        if (result.status === 'error') {
+            if (alertDiv) {
+                alertDiv.innerHTML = `
+                    <div class="alert alert-${result.title === messages.AUTH.RATE_LIMIT.TITLE ? 'warning' : 'danger'}">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-${result.title === messages.AUTH.RATE_LIMIT.TITLE ? 'exclamation-triangle' : 'exclamation-circle'} fa-2x me-3"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">${result.title}</h6>
+                                <span>${result.message}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            return;
+        }
+
+        if (result.success) {
+            // Solo cerramos el modal en caso de éxito
+            modal.hide();
+            
+            if (result.require_2fa) {
+                sessionStorage.setItem('pendingAuth', 'true');
+                sessionStorage.setItem('pendingUsername', username);
+                const twoFactorModal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+                twoFactorModal.show();
+            } else {
+                localStorage.setItem('isAuthenticated', 'true');
+                localStorage.setItem('username', username);
+                window.location.replace('/');
+            }
+        }
+    } catch (error) {
+        if (alertDiv) {
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Error</h6>
+                            <span>${error.message || 'Error al validar QR'}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }
     }
 }
 
 async function handleQRFileUpload(e) {
     const file = e.target.files[0];
+    const alertDiv = document.getElementById('qrScannerAlert');
     if (file) {
         try {
+            const alertDiv = document.getElementById('qrScannerAlert');
             // Crear un canvas para procesar la imagen
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -508,6 +569,29 @@ async function handleQRFileUpload(e) {
                         const result = await AuthService.validateQR(username);
                         console.log('Resultado validación QR:', result);
                         
+                        if (result.status === 'rate_limit') {
+                            if (alertDiv) {
+                                alertDiv.innerHTML = `
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>${result.title}</strong><br>
+                                        ${result.message}
+                                    </div>`;
+                            }
+                            return;
+                        }
+                        
+                        if (result.status === 'error' && result.showInModal) {
+                            if (alertDiv) {
+                                alertDiv.innerHTML = `
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        ${result.message}
+                                    </div>`;
+                            }
+                            return;
+                        }
+
                         if (result.success) {
                             if (result.require_2fa) {
                                 // Configurar y mostrar 2FA
@@ -527,17 +611,35 @@ async function handleQRFileUpload(e) {
                             throw new Error(result.error || 'Error validando el QR');
                         }
                     } catch (error) {
-                        console.error('Error en validación QR:', error);
-                        alert('Error al validar el QR: ' + error.message);
+                        if (alertDiv) {
+                            alertDiv.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    ${error.message}
+                                </div>`;
+                        }
                     }
                 } else {
-                    alert('No se pudo detectar un código QR válido en la imagen');
+                    if (alertDiv) {
+                        alertDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                No se pudo detectar un código QR válido en la imagen
+                            </div>`;
+                    }
                 }
             };
             
             img.src = URL.createObjectURL(file);
         } catch (error) {
-            alert('Error al procesar el archivo: ' + error.message);
+            const alertDiv = document.getElementById('qrScannerAlert');
+            if (alertDiv) {
+                alertDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Error al procesar el archivo: ${error.message}
+                    </div>`;
+            }
         }
     }
 }

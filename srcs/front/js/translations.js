@@ -21,7 +21,11 @@ export const messages = {
                 two_factor: "Has realizado demasiados intentos de verificación 2FA. Por favor, espera {time} antes de intentarlo de nuevo.",
                 password_reset: "Has enviado demasiadas solicitudes de restablecimiento de contraseña. Por favor, espera {time}.",
                 email_verification: "Has solicitado demasiadas verificaciones de email. Inténtalo de nuevo en {time}.",
-                qr_generation: "Has generado demasiados códigos QR. Por favor, espera {time} antes de generar otro."
+                qr_generation: "Has generado demasiados códigos QR. Por favor, espera {time} antes de generar otro.",
+                qr_validation: "Has realizado demasiados intentos de validación QR. Por favor, espera {time} antes de intentarlo de nuevo.",
+                qr_uses: "Has alcanzado el límite máximo de 3 usos para este QR. Genera uno nuevo.",
+                qr_expired: "El código QR ha expirado (válido por 8 horas). Por favor, genera uno nuevo.",
+                email_send: "Has realizado demasiados intentos de envío de códigos. Por favor, espera {time} antes de solicitar otro código."
             }
         },
         ERRORS: {

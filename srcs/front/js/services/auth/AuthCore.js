@@ -91,6 +91,12 @@ export class AuthCore {
                 return RateLimitService.getMessage('login', seconds);
             }
 
+            // Verificar si es un error de rate limit de envío de email
+            if (error.message?.includes("Demasiados intentos") && error.message?.includes("segundos")) {
+                const seconds = parseInt(error.message.match(/\d+/)[0]);
+                return RateLimitService.getMessage('email_send', seconds);
+            }
+
             throw error;
         }
     }
