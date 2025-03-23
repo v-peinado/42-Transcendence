@@ -29,6 +29,13 @@ RUN apt-get update && \
 	/var/log/nginx \
 	/usr/share/nginx/html
 
+# Use certificates from shared volume /tmp/ssl/
+RUN mv /docker-entrypoint.d/10-generate-certificate.sh /docker-entrypoint.d/10-generate-certificate.sh.original || true && \
+	echo '#!/bin/sh' > /docker-entrypoint.d/10-generate-certificate.sh && \
+	echo 'echo "Using certificates from shared volume /tmp/ssl/"' >> /docker-entrypoint.d/10-generate-certificate.sh && \
+	echo 'exit 0' >> /docker-entrypoint.d/10-generate-certificate.sh && \
+	chmod +x /docker-entrypoint.d/10-generate-certificate.sh
+
 COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
 
