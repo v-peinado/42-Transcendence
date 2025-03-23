@@ -15,7 +15,6 @@ services:
     networks:
       - transcendence-backend
     volumes:
-      - django_static:/app/static
       - django_media:/app/media:rw
       - ssl_certs:/tmp/ssl:ro
     depends_on:

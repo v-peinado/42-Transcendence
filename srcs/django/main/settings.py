@@ -228,11 +228,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# Static and media files (images, videos, etc.)
-# In production, these files should be served by NGINX
-# and will be configured in the Nginx configuration file (comment or remove these lines)
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
+# Static and media files (profile images)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 FILE_UPLOAD_PERMISSIONS = 0o644
@@ -246,11 +242,6 @@ STATICFILES_FINDERS = [
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static_custom"),
 ]
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static_collected")
-ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 # Eliminar o simplificar a solo Django admin
 STATICFILES_APPS_ORDER = [

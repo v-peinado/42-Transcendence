@@ -131,29 +131,6 @@ def run_command(command, check=True):
         return False, e.stderr
 
 
-def setup_static_files():
-    """Create and setup directories for static files"""
-    try:
-        # Create directories
-        os.makedirs("/app/static_custom", exist_ok=True)
-        
-        # Clear static files and collect new ones
-        static_dir = "/app/static"
-        if os.path.exists(static_dir):
-            for item in os.listdir(static_dir):
-                item_path = os.path.join(static_dir, item)
-                if os.path.isdir(item_path):
-                    shutil.rmtree(item_path)
-                else:
-                    os.remove(item_path)
-        
-        success, _ = run_command("python manage.py collectstatic --noinput --clear")
-        return success
-    except Exception as e:
-        print(f"Error setting up static files: {e}")
-        return False
-
-
 def setup_celery(celery_user):
     """Setup directories and permissions for Celery"""
     try:
@@ -223,9 +200,6 @@ def main():
         # Setup Django
         django.setup()
         load_vault_secrets()
-
-        # Setup static files
-        setup_static_files()
 
         # Run migrations directly
         run_command("python manage.py makemigrations")

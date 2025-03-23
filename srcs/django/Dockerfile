@@ -18,10 +18,9 @@ RUN adduser --disabled-password --gecos '' celeryuser && \
 # Copy application files
 COPY . .
 COPY django-entrypoint.py /app/
-RUN chmod +x /app/django-entrypoint.py
 
-# Set proper permissions for app directory
-RUN chown -R celeryuser:celeryuser /app
+RUN chmod +x /app/django-entrypoint.py && \
+	chown -R celeryuser:celeryuser /app
 
 # Setup entry script
 ENV USE_DAPHNE=True
