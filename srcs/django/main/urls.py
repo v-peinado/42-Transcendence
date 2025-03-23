@@ -5,7 +5,6 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
-from chat import views
 import os
 
 # Check if basic configuration is correct
@@ -31,8 +30,6 @@ urlpatterns = [
     path('api/tournament/', include('tournament.urls')),
     # API endpoints (production)
     path("api/", include("authentication.api.urls")),
-    # Chat
-    path("chat/", views.chat, name="chat"),
     # Game
     path("game/", include("game.urls")),
     # API dashboard
@@ -43,7 +40,5 @@ urlpatterns = [
 if settings.DEBUG:
     # Serve media files in development
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    # Serve static files in development
-    # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 else:
     check_nginx_config()

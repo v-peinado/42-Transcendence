@@ -228,6 +228,9 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# Encryption key settings for GDPR compliance
+ENCRYPTION_KEY = get_encryption_key()
+
 # Static and media files (profile images)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -279,9 +282,6 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 ACCOUNT_EMAIL_VERIFICATION = (
     "mandatory"  # Email address verification is required to activate the account
 )
-
-# Encryption key settings for GDPR compliance
-ENCRYPTION_KEY = get_encryption_key()
 
 # Frontend settings
 FRONTEND_URL = f"https://{SERVER_IP}:8445"
