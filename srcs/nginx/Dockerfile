@@ -30,9 +30,7 @@ RUN apt-get update && \
 	/usr/share/nginx/html
 
 COPY nginx/conf/nginx.conf /etc/nginx/nginx.conf
-COPY nginx/conf/default.conf /etc/nginx/templates/default.conf.template
-# Copiar el archivo de configuración de health check con alta prioridad
-COPY nginx/conf/health.conf /etc/nginx/conf.d/000-health.conf
+COPY nginx/conf/default.conf /etc/nginx/templates/conf.d/default.conf.template
 
 EXPOSE 8443
 

@@ -59,6 +59,7 @@ RUN chmod +x \
 
 # Environment variables
 ENV VAULT_ADDR='https://127.0.0.1:8200' \
+	# disable TLS verification (self-signed certificates)
 	VAULT_SKIP_VERIFY=true \
 	PATH="${PATH}:/usr/local/bin"
 
