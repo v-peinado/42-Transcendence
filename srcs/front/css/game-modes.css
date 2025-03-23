@@ -537,7 +537,6 @@
     padding: 2rem;
 }
 
-
 .welcome-message {
     position: fixed;
     top: 50%;
@@ -568,6 +567,140 @@
 .game-menu-container.slide-up {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* Nuevo botón de personalización */
+.customize-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    color: white;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.customize-button i {
+    font-size: 1rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.customize-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.2);
+}
+
+/* Ajuste del botón de personalización */
+.customize-button {
+    position: absolute;
+    top: -20px;  /* Cambiado de 20px a -20px */
+    right: 20px;
+    z-index: 100;
+    background: linear-gradient(145deg, 
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 0.8rem 1.2rem;
+    color: white;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.customize-button i {
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: transform 0.3s ease;
+}
+
+.customize-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(79, 172, 254, 0.3);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(79, 172, 254, 0.2);
+}
+
+.customize-button:hover i {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Ajuste responsive */
+@media (max-width: 768px) {
+    .customize-button {
+        top: -15px;
+        right: 15px;
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .customize-button i {
+        font-size: 1rem;
+    }
+
+    .display-4 {
+        font-size: 1.8rem;
+    }
+
+    .d-flex.align-items-center {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+/* Ajuste del header del menú */
+.menu-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.menu-header h1 {
+    margin: 0;
+    display: inline-block;
+}
+
+.menu-header .customize-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Ajuste responsive */
+@media (max-width: 768px) {
+    .menu-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .menu-header .customize-button {
+        position: relative;
+        right: auto;
+        top: auto;
+        transform: none;
+    }
 }
 
 /* Responsive adjustments */

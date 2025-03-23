@@ -1,5 +1,5 @@
 <div class="hero-section">
-    <div class="container">
+    <div class="container position-relative"> <!-- Añadido position-relative -->
         <!-- Mensaje de bienvenida -->
         <div class="welcome-message">
             <h1 class="display-4 fw-bold">¡Hola, <span id="username-placeholder"></span>!</h1>
@@ -9,7 +9,13 @@
         <div class="game-menu-container">
             <div class="row justify-content-center">
                 <div class="col-md-10 text-center">
-                    <h1 class="display-4 text-gradient mb-4">Elige tu modo</h1>
+                    <div class="menu-header position-relative mb-4">
+                        <h1 class="display-4 text-gradient">Elige tu modo</h1>
+                        <button class="customize-button" id="customizeGameBtn">
+                            <i class="fas fa-paint-brush"></i>
+                            Personalizar tema
+                        </button>
+                    </div>
                     <div class="game-modes">
                         <div class="game-modes-grid">
                             <!-- Classic Matchmaking -->

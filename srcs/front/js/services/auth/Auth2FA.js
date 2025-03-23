@@ -100,9 +100,7 @@ export class Auth2FA {
             try {
                 data = await response.json();
             } catch (e) {
-                // Si no podemos parsear el JSON, intentamos obtener el texto
                 const text = await response.text();
-                console.log('Raw response:', text);
                 
                 // Verificar si es un error de rate limit
                 if (text.includes('Demasiados intentos')) {

@@ -3,16 +3,11 @@ import { Auth2FA } from '../../services/auth/Auth2FA.js';
 import { AuthGDPR } from '../../services/auth/AuthGDPR.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 
-const VALID_VIEWS = [
-    '/views/user/UserProfile.html',
-];
-
 export async function UserProfileView() {
     document.body.setAttribute('data-page', 'profile');
     const app = document.getElementById('app');
     
     try {
-        // 1. Obtener datos necesarios
         const [userInfo, twoFactorStatus] = await Promise.all([
             AuthService.getUserProfile(),
             Auth2FA.get2FAStatus()
@@ -20,123 +15,125 @@ export async function UserProfileView() {
         const viewHtml = await fetch('/views/user/UserProfile.html').then(r => r.text());
         const navbar = await getNavbarHTML(true, userInfo, true);
 
-        // 2. Crear contenedor temporal para parsear el HTML de forma segura
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = navbar + viewHtml;
+        // Renderizar vista base
+        renderBaseView(app, navbar, viewHtml);
         
-        // 3. Limpiar y actualizar el DOM de forma segura
-        while (app.firstChild) app.removeChild(app.firstChild);
-        while (tempDiv.firstChild) app.appendChild(tempDiv.firstChild);
-
-        // 4. Actualizar el perfil usando createElement
-        const userInfoContainer = document.getElementById('userInfo');
-        if (userInfoContainer) {
-            const spinner = userInfoContainer.querySelector('#loadingSpinner');
-            if (spinner) spinner.remove();
-
-            // Crear elementos de forma segura
-            const container = document.createElement('div');
-            container.className = 'text-center';
-
-            // Avatar container
-            const avatarContainer = document.createElement('div');
-            avatarContainer.className = 'position-relative mb-4 avatar-container';
-
-            const img = document.createElement('img');
-            img.id = 'profileImage';
-            img.className = 'profile-avatar rounded-circle';
-            img.alt = 'Profile';
-            img.src = userInfo.profile_image || userInfo.fortytwo_image || 
-                     `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
-
-            const buttonsContainer = document.createElement('div');
-            buttonsContainer.className = 'avatar-buttons';
-
-            // Botones
-            const changeBtn = document.createElement('button');
-            changeBtn.id = 'changeImageBtn';
-            changeBtn.className = 'btn btn-sm btn-primary rounded-circle';
-            changeBtn.innerHTML = '<i class="fas fa-camera"></i>';
-
-            const restoreBtn = document.createElement('button');
-            restoreBtn.id = 'restoreImageBtn';
-            restoreBtn.className = 'btn btn-sm btn-outline-light rounded-circle';
-            restoreBtn.innerHTML = '<i class="fas fa-undo"></i>';
-
-            // Username y email
-            const username = document.createElement('h3');
-            username.id = 'profileUsername';
-            username.className = 'mb-2';
-            username.textContent = userInfo.username;
-
-            const email = document.createElement('p');
-            email.id = 'profileEmail';
-            email.className = 'text-muted mb-3';
-            email.textContent = userInfo.email;
-
-            // Status badge
-            const statusContainer = document.createElement('div');
-            statusContainer.id = 'profileStatus';
-            statusContainer.className = 'status-badge mb-4';
-
-            const badge = document.createElement('span');
-            badge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
-            badge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
-
-            // Construir la estructura
-            buttonsContainer.appendChild(changeBtn);
-            buttonsContainer.appendChild(restoreBtn);
-            avatarContainer.appendChild(img);
-            avatarContainer.appendChild(buttonsContainer);
-            statusContainer.appendChild(badge);
-
-            container.appendChild(avatarContainer);
-            container.appendChild(username);
-            container.appendChild(email);
-            container.appendChild(statusContainer);
-
-            userInfoContainer.appendChild(container);
-        }
-
-        // Actualizar estado del botón 2FA
-        const toggle2FABtn = document.getElementById('toggle2FABtn');
-        const buttonText = document.getElementById('2faButtonText');
-        if (toggle2FABtn && buttonText) {
-            toggle2FABtn.dataset.enabled = twoFactorStatus.toString();
-            buttonText.textContent = twoFactorStatus ? 'Desactivar 2FA' : 'Activar 2FA';
-            toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
-            toggle2FABtn.classList.add(twoFactorStatus ? 'btn-outline-warning' : 'btn-outline-info');
-        }
-
-        // 5. Inicializar funcionalidad
+        // Renderizar información del usuario
+        await renderUserInfo(userInfo);
+        
+        // Configurar 2FA
+        setupTwoFactorAuth(twoFactorStatus);
+        
+        // Inicializar funcionalidades
         initializeTabs();
         setupProfileEvents();
         updateFormFields(userInfo);
 
     } catch (error) {
         console.error('Error loading profile view:', error);
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-danger m-3';
-        errorDiv.textContent = `Error cargando el perfil: ${error.message}`;
-        app.appendChild(errorDiv);
+        showError(app, error);
     }
-
-    console.log('Templates disponibles:', {
-        userInfoTemplate: document.getElementById('userInfoTemplate'),
-        profileModals: document.getElementById('profileModals'),
-        alertTemplate: document.getElementById('alertTemplate')
-    });
 }
 
-function cleanupTemplates() {
-    const templates = document.querySelectorAll('template');
-    templates.forEach(template => {
-        if (template.id.startsWith('userInfo') || 
-            template.id.startsWith('alert') || 
-            template.id.startsWith('modal')) {
-            template.remove();
-        }
-    });
+function renderBaseView(app, navbar, viewHtml) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = navbar + viewHtml;
+    app.innerHTML = '';
+    while (tempDiv.firstChild) app.appendChild(tempDiv.firstChild);
+}
+
+async function renderUserInfo(userInfo) {
+    const userInfoContainer = document.getElementById('userInfo');
+    if (!userInfoContainer) return;
+
+    const spinner = userInfoContainer.querySelector('#loadingSpinner');
+    if (spinner) spinner.remove();
+
+    // Crear elementos UI
+    const container = createProfileContainer(userInfo);
+    userInfoContainer.appendChild(container);
+}
+
+function createProfileContainer(userInfo) {
+    const container = document.createElement('div');
+    container.className = 'text-center';
+
+    // Avatar container
+    const avatarContainer = document.createElement('div');
+    avatarContainer.className = 'position-relative mb-4 avatar-container';
+
+    const img = document.createElement('img');
+    img.id = 'profileImage';
+    img.className = 'profile-avatar rounded-circle';
+    img.alt = 'Profile';
+    img.src = userInfo.profile_image || userInfo.fortytwo_image || 
+             `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.username}`;
+
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'avatar-buttons';
+
+    // Botones
+    const changeBtn = document.createElement('button');
+    changeBtn.id = 'changeImageBtn';
+    changeBtn.className = 'btn btn-sm btn-primary rounded-circle';
+    changeBtn.innerHTML = '<i class="fas fa-camera"></i>';
+
+    const restoreBtn = document.createElement('button');
+    restoreBtn.id = 'restoreImageBtn';
+    restoreBtn.className = 'btn btn-sm btn-outline-light rounded-circle';
+    restoreBtn.innerHTML = '<i class="fas fa-undo"></i>';
+
+    // Username y email
+    const username = document.createElement('h3');
+    username.id = 'profileUsername';
+    username.className = 'mb-2';
+    username.textContent = userInfo.username;
+
+    const email = document.createElement('p');
+    email.id = 'profileEmail';
+    email.className = 'text-muted mb-3';
+    email.textContent = userInfo.email;
+
+    // Status badge
+    const statusContainer = document.createElement('div');
+    statusContainer.id = 'profileStatus';
+    statusContainer.className = 'status-badge mb-4';
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${userInfo.is_active ? 'bg-success' : 'bg-warning'}`;
+    badge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
+
+    // Construir la estructura
+    buttonsContainer.appendChild(changeBtn);
+    buttonsContainer.appendChild(restoreBtn);
+    avatarContainer.appendChild(img);
+    avatarContainer.appendChild(buttonsContainer);
+    statusContainer.appendChild(badge);
+
+    container.appendChild(avatarContainer);
+    container.appendChild(username);
+    container.appendChild(email);
+    container.appendChild(statusContainer);
+
+    return container;
+}
+
+function setupTwoFactorAuth(twoFactorStatus) {
+    const toggle2FABtn = document.getElementById('toggle2FABtn');
+    const buttonText = document.getElementById('2faButtonText');
+    if (!toggle2FABtn || !buttonText) return;
+
+    toggle2FABtn.dataset.enabled = twoFactorStatus.toString();
+    buttonText.textContent = twoFactorStatus ? 'Desactivar 2FA' : 'Activar 2FA';
+    toggle2FABtn.classList.remove('btn-outline-info', 'btn-outline-warning');
+    toggle2FABtn.classList.add(twoFactorStatus ? 'btn-outline-warning' : 'btn-outline-info');
+}
+
+function showError(container, error) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger m-3';
+    errorDiv.textContent = `Error cargando el perfil: ${error.message}`;
+    container.appendChild(errorDiv);
 }
 
 function initializeTabs() {
@@ -516,7 +513,6 @@ function setupProfileEvents() {
     // Añadir el event listener para el botón QR
     document.getElementById('showQRBtn')?.addEventListener('click', async () => {
         try {
-            console.log('Iniciando generación de QR...');
             const template = document.getElementById('qrModalTemplate');
             if (!template) throw new Error('Template QR no encontrado');
             
@@ -529,10 +525,7 @@ function setupProfileEvents() {
             modal.show();
             
             const username = localStorage.getItem('username');
-            console.log('Generando QR para usuario:', username);
-            // Cambiar AuthService por Auth2FA
             const qrUrl = await Auth2FA.generateQR(username);
-            console.log('QR URL generada:', qrUrl);
             
             const qrContainer = document.getElementById('qrContainer');
             const qrImage = new Image();
@@ -542,15 +535,12 @@ function setupProfileEvents() {
             qrImage.style.maxWidth = '256px';
             
             qrImage.onload = () => {
-                console.log('QR imagen cargada, dimensiones:', qrImage.naturalWidth, 'x', qrImage.naturalHeight);
                 qrContainer.innerHTML = '';
                 qrContainer.appendChild(qrImage);
                 
                 const downloadBtn = document.getElementById('downloadQRBtn');
-                console.log('Botón de descarga encontrado:', !!downloadBtn);
                 if (downloadBtn) {
                     downloadBtn.addEventListener('click', () => {
-                        console.log('Click en botón de descarga');
                         const canvas = document.createElement('canvas');
                         canvas.width = qrImage.naturalWidth;
                         canvas.height = qrImage.naturalHeight;
@@ -560,7 +550,6 @@ function setupProfileEvents() {
                         const link = document.createElement('a');
                         link.download = `qr-login-${username}.png`;
                         link.href = canvas.toDataURL('image/png');
-                        console.log('Iniciando descarga del QR');
                         link.click();
                     });
                 }
@@ -600,36 +589,6 @@ function setupProfileEvents() {
             window.location.replace('/');
         }
     }
-
-	// Añadir manejador para el botón de descarga GDPR
-	const setupGDPRTab = () => {
-		const downloadDataBtn = document.getElementById('downloadDataBtn');
-		if (downloadDataBtn) {
-			downloadDataBtn.addEventListener('click', async () => {
-				try {
-					// Mostrar indicador de carga
-					downloadDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Descargando...';
-					downloadDataBtn.disabled = true;
-
-					// Importante: Usar directamente AuthGDPR en lugar de AuthService
-					const result = await AuthGDPR.downloadUserData();
-
-					if (result.status === 'error') {
-						showAlert('danger', 'Error al descargar datos', result.message);
-					} else {
-						showAlert('success', 'Datos descargados', 'Tus datos personales han sido descargados');
-					}
-				} catch (error) {
-					console.error('Error downloading data:', error);
-					showAlert('danger', 'Error', 'Ha ocurrido un error al descargar tus datos');
-				} finally {
-					// Restaurar el botón
-					downloadDataBtn.innerHTML = '<i class="fas fa-download me-2"></i>Descargar mis datos';
-					downloadDataBtn.disabled = false;
-				}
-			});
-		}
-	};
 }
 
 // Función auxiliar para mostrar alertas
@@ -844,70 +803,4 @@ function createUserInfoElement(userInfo) {
     statusBadge.textContent = userInfo.is_active ? 'Activo' : 'Pendiente';
     
     return element;
-}
-
-async function handleEmailChange(e) {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const alertContainer = document.getElementById('profileAlert');
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    
-    try {
-        submitButton.disabled = true;
-        const result = await AuthService.updateProfile({ email });
-        
-        if (result.status === 'rate_limit') {
-            alertContainer.innerHTML = `
-                <div class="alert alert-warning fade show">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">${result.title}</h6>
-                            <span>${result.message}</span>
-                        </div>
-                    </div>
-                </div>`;
-            
-            setTimeout(() => {
-                submitButton.disabled = false;
-                alertContainer.innerHTML = '';
-            }, result.remaining_time * 1000);
-            return;
-        }
-
-        if (result.success || result.requiresVerification) {
-            alertContainer.innerHTML = `
-                <div class="alert alert-success fade show">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-check-circle fa-2x me-3"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">¡Email actualizado!</h6>
-                            <span>Se ha enviado un email de verificación a ${email}</span>
-                        </div>
-                    </div>
-                </div>`;
-            
-            setTimeout(() => {
-                alertContainer.innerHTML = '';
-            }, 5000);
-        }
-    } catch (error) {
-        submitButton.disabled = false;
-        alertContainer.innerHTML = `
-            <div class="alert alert-danger fade show">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-exclamation-circle fa-2x me-3"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1">Error</h6>
-                        <span>${error.message || 'Error al actualizar el email'}</span>
-                    </div>
-                </div>
-            </div>`;
-        
-        setTimeout(() => {
-            alertContainer.innerHTML = '';
-        }, 5000);
-    } finally {
-        submitButton.disabled = false;
-    }
 }

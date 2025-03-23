@@ -24,7 +24,6 @@ export class AuthProfile {
             }
 
             const data = await response.json();
-            console.log('Respuesta getUserProfile:', data);
 
             // Usar el estado almacenado si el servidor no proporciona uno
             const two_factor_enabled = data.two_factor_enabled !== undefined ? 
