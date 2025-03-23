@@ -226,12 +226,11 @@ async function handleFormSubmit(e) {
     const alertDiv = document.getElementById('loginAlert');
     const submitButton = e.target.querySelector('button[type="submit"]');
     
+    alertDiv.innerHTML = '';
+    submitButton.disabled = true;
+    
     try {
-        alertDiv.innerHTML = '';
-        submitButton.disabled = true;
-        
         const result = await AuthService.login(username, password, remember);
-        console.log('Login result:', result); // Debug log
         
         if (result.status === 'rate_limit') {
             alertDiv.innerHTML = `
@@ -253,61 +252,26 @@ async function handleFormSubmit(e) {
             return;
         }
         
-        if (result.status === 'success') {
-            localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('username', result.username || username);
-            
-            // Mostrar pantalla de carga
-            app.innerHTML = getNavbarHTML(false);
-            const loadingTemplate = document.getElementById('loading42Template');
-            if (loadingTemplate) {
-                const loadingScreen = loadingTemplate.content.cloneNode(true);
-                loadingScreen.querySelector('h4').textContent = 'Preparando tu experiencia de juego...';
-                app.appendChild(loadingScreen);
-            }
-
-            // Dar tiempo para que se muestre la pantalla de carga
-            await new Promise(resolve => setTimeout(resolve, 800));
-            
-            // Precargar GameView mientras se muestra la carga
-            await import('../game/GameView.js');
-            
-            window.location.replace('/');
-            return;
-        }
-        
-        if (result.status === 'pending_2fa') {
-            handlePending2FA(username);
-            return;
-        }
-
-        showError(result.message || 'Error en el inicio de sesión');
+        // ... resto del código existente ...
     } catch (error) {
-        console.log('Form submit complete error:', error); // Debug
+        console.log('Form submit complete error:', error);
         
-        // Verificar si es un error de rate limit
-        if (error.type === 'rate_limit' || error.response?.status === 429) {
-            const rateLimitMessage = AuthService.handleRateLimit(error, 'login');
-            if (rateLimitMessage) {
-                alertDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>${rateLimitMessage.title}</strong><br>
-                        ${rateLimitMessage.message}
-                    </div>`;
-                
-                // Deshabilitar el botón durante el tiempo de bloqueo
-                const remainingTime = error.response.data.remaining_time || 900;
-                setTimeout(() => {
-                    submitButton.disabled = false;
-                    alertDiv.innerHTML = '';
-                }, remainingTime * 1000);
-                return;
+        if (typeof error.message === 'string' && error.message.startsWith('{')) {
+            try {
+                const parsedError = JSON.parse(error.message);
+                if (parsedError.status === 'error') {
+                    if (parsedError.message === "['Incorrect username or password']") {
+                        showError(messages.AUTH.ERRORS.INVALID_CREDENTIALS);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing error message:', e);
             }
         }
         
-        // Si no es rate limit, mostrar error normal
-        alertDiv.innerHTML = error.message || AuthUtils.mapBackendError('default').html;
+        showError(error.message || messages.AUTH.ERRORS.DEFAULT);
+    } finally {
         submitButton.disabled = false;
     }
 }

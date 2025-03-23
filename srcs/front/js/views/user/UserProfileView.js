@@ -241,7 +241,8 @@ function setupProfileEvents() {
                 return;
             }
 
-            if (result.requiresVerification) {
+            // Si hay cambio de email, mostrar siempre el mensaje de verificación
+            if (updates.email) {
                 messageDiv.classList.remove('d-none', 'alert-danger');
                 messageDiv.classList.add('alert-success');
                 messageDiv.innerHTML = `
@@ -250,6 +251,7 @@ function setupProfileEvents() {
                     Por favor, revisa tu bandeja de entrada.
                 `;
             } else if (updates.current_password) {
+                // Mostrar mensaje de contraseña actualizada
                 messageDiv.classList.remove('d-none', 'alert-danger');
                 messageDiv.classList.add('alert-success');
                 messageDiv.innerHTML = `
@@ -257,16 +259,17 @@ function setupProfileEvents() {
                     ${result.message || 'Tu contraseña ha sido actualizada correctamente'}
                 `;
                 
-                // Limpiar los campos de contraseña
+                // Limpiar campos de contraseña
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword1').value = '';
                 document.getElementById('newPassword2').value = '';
-                
-                // Ocultar el mensaje después de 3 segundos y cerrar el modal
-                setTimeout(() => {
-                    messageDiv.classList.add('d-none');
-                }, 3000);
             }
+
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(() => {
+                messageDiv.classList.add('d-none');
+            }, 5000);
+
         } catch (error) {
             const messageDiv = document.getElementById('editProfileMessage');
             messageDiv.classList.remove('d-none', 'alert-success');

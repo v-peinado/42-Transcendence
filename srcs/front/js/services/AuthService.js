@@ -8,6 +8,7 @@ import { AuthEmail } from './auth/AuthEmail.js';
 import { AuthPassword } from './auth/AuthPassword.js';
 import { AuthRegister } from './auth/AuthRegister.js';
 import RateLimitService from './RateLimitService.js';
+import { messages } from '../translations.js';
 
 class AuthService {
     static API_URL = '/api';
@@ -60,6 +61,17 @@ class AuthService {
             return RateLimitService.getActionMessage(action, { seconds });
         }
         return null;
+    }
+
+    static mapLoginError(error) {
+        console.log('Mapping error:', error); // Debug
+        
+        // Si el error viene como array serializado en string
+        if (typeof error.message === 'string' && 
+            error.message.includes('Incorrect username or password')) {
+            return messages.AUTH.ERRORS.INVALID_CREDENTIALS;
+        }
+        return error.message || messages.AUTH.ERRORS.DEFAULT;
     }
 
     static async getUserId() {

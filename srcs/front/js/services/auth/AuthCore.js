@@ -6,10 +6,7 @@ import RateLimitService from '../RateLimitService.js';
 export class AuthCore {
     static async login(username, password, remember = false) {
         try {
-            // Limpiar completamente cualquier estado previo
             await AuthUtils.clearSession();
-            
-            // Esperar un momento para asegurar que todo está limpio
             await new Promise(resolve => setTimeout(resolve, 100));
             
             const response = await fetch(`${AuthService.API_URL}/login/`, {
@@ -23,23 +20,25 @@ export class AuthCore {
                 credentials: 'include'
             });
 
-            let responseText;
+            const responseText = await response.text();
+            let data;
+            
             try {
-                // Primero guardamos el texto de la respuesta
-                responseText = await response.text();
-                
-                // Intentamos parsear como JSON
-                const data = JSON.parse(responseText);
+                data = JSON.parse(responseText);
                 console.log('Login response:', data);
 
                 if (!response.ok) {
-                    // Manejar rate limit
-                    if (responseText.includes('Demasiados intentos')) {
-                        const match = responseText.match(/(\d+) segundos/);
-                        if (match) {
-                            const seconds = parseInt(match[1]);
+                    // Procesar el error según su tipo
+                    if (data.status === 'error') {
+                        // Caso 1: Error de credenciales incorrectas
+                        if (data.message === "['Incorrect username or password']") {
+                            throw new Error(messages.AUTH.ERRORS.INVALID_CREDENTIALS);
+                        }
+                        
+                        // Caso 2: Error de rate limit
+                        if (data.message.includes('Too many attempts')) {
+                            const seconds = parseInt(data.message.match(/\d+/)[0]);
                             const formattedTime = RateLimitService.formatTimeRemaining(seconds);
-                            
                             return {
                                 status: 'rate_limit',
                                 remaining_time: seconds,
@@ -47,18 +46,19 @@ export class AuthCore {
                                 message: messages.AUTH.RATE_LIMIT.MESSAGES.login.replace('{time}', formattedTime)
                             };
                         }
+                    } else if (data.status === 'rate_limit') {
+                        const seconds = data.remaining_time;
+                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+                        return {
+                            status: 'rate_limit',
+                            remaining_time: seconds,
+                            title: messages.AUTH.RATE_LIMIT.TITLE,
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.login.replace('{time}', formattedTime)
+                        };
                     }
 
-                    // Manejar credenciales incorrectas
-                    if (data.message?.[0] === 'Incorrect username or password') {
-                        throw new Error(messages.AUTH.ERRORS.INVALID_CREDENTIALS);
-                    }
-
-                    // Otros errores
-                    const errorMessage = Array.isArray(data.message) 
-                        ? data.message[0] 
-                        : (data.message || messages.AUTH.ERRORS.DEFAULT);
-                    throw new Error(errorMessage);
+                    // Si no es ningún caso especial, lanzar el error tal cual
+                    throw new Error(JSON.stringify(data));
                 }
 
                 if (data.status === 'pending_2fa') {
