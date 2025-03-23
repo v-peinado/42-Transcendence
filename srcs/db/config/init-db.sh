@@ -7,10 +7,17 @@ set -e
 # It only runs its configuration if postgresql.conf doesn't exist,
 # which allows for persistent configuration across container restarts.
 
-# Key functions:
+# Note: Most database initialization is handled by the official PostgreSQL
+# Docker image using environment variables (POSTGRES_USER, POSTGRES_PASSWORD, etc.)
+
+if [ ! -f "${PGDATA}/postgresql.conf" ]; then
+    # Basic PostgreSQL configuration
+    cat >> "${PGDATA}/postgresql.conf" <<EOF
 
 # 1. Network Configuration:
 #    - Sets 'listen_addresses' to '*' to allow connections from all interfaces
+
+listen_addresses = '*'
 
 # 2. Performance Tuning:
 #    - checkpoint_timeout: Time between automatic WAL checkpoints (5 minutes)
@@ -21,20 +28,6 @@ set -e
 #    - effective_cache_size: Estimate of available OS cache
 #    - maintenance_work_mem: Memory for maintenance operations
 
-# 3. Security:
-#    - Copies pg_hba.conf for access control
-#    - Sets appropriate permissions (600) for security
-#    - Ensures postgres user owns configuration files
-
-# Note: Most database initialization is handled by the official PostgreSQL
-# Docker image using environment variables (POSTGRES_USER, POSTGRES_PASSWORD, etc.)
-
-if [ ! -f "${PGDATA}/postgresql.conf" ]; then
-    # Basic PostgreSQL configuration
-    cat >> "${PGDATA}/postgresql.conf" <<EOF
-listen_addresses = '*'
-
-# Performance tuning
 checkpoint_timeout = 300
 checkpoint_completion_target = 0.9
 checkpoint_warning = 30s
@@ -44,6 +37,10 @@ effective_cache_size = 1GB
 maintenance_work_mem = 128MB
 
 # SSL Configuration
+#    - Copy pg_hba.conf for access control
+#    - Sets appropriate permissions (600) for security
+#    - Ensures postgres user owns configuration files
+
 ssl = on
 ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'
@@ -53,6 +50,7 @@ ssl_min_protocol_version = 'TLSv1.2'
 ssl_prefer_server_ciphers = on
 
 # Log only essential connection information
+
 log_connections = on
 log_min_messages = warning
 log_min_error_statement = error
@@ -86,12 +84,10 @@ else
     echo "ERROR: SSL certificates not found in /tmp/ssl/"
 fi
 
-# Verify SSL configuration is not duplicated in existing postgresql.conf
-if [ -f "${PGDATA}/postgresql.conf" ]; then
-    # Create a clean SSL configuration section only if needed
-    if ! grep -q "^ssl = on" "${PGDATA}/postgresql.conf"; then
-        echo "Adding SSL configuration to postgresql.conf..."
-        cat >> "${PGDATA}/postgresql.conf" <<EOF
+# Verify SSL configuration exists in postgresql.conf
+if [ -f "${PGDATA}/postgresql.conf" ] && ! grep -q "^ssl = on" "${PGDATA}/postgresql.conf"; then
+    echo "Adding SSL configuration to postgresql.conf..."
+    cat >> "${PGDATA}/postgresql.conf" <<EOF
 
 # SSL Configuration - Added $(date)
 ssl = on
@@ -99,6 +95,7 @@ ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'
 ssl_ca_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
+ssl_min_protocol_version = 'TLSv1.2'
+ssl_prefer_server_ciphers = on
 EOF
-    fi
 fi

@@ -18,8 +18,8 @@ ENV POSTGRES_INITDB_ARGS="--auth-local=md5 --auth-host=md5"
 # Copy config files
 COPY config/init-db.sh /docker-entrypoint-initdb.d/
 COPY config/pg_hba.conf /tmp/
-COPY config/get-vault-secrets.sh /usr/local/bin/
-COPY ssl_library.sh /usr/local/bin/
+COPY vault/get-vault-secrets.sh /usr/local/bin/
+COPY ssl/ssl_library.sh /usr/local/bin/
 COPY entrypoint.sh /usr/local/bin/
 
 # Set permissions
