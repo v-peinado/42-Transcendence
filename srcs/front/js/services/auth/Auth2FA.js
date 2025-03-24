@@ -79,12 +79,21 @@ export class Auth2FA {
 
     static async verify2FACode(code, isFortytwoUser = false) {
         try {
-            console.log('Verificando código 2FA:', { code, isFortytwoUser });
-            
+            if (!navigator.onLine) {
+                return {
+                    status: 'error',
+                    title: 'Error de conexión',
+                    message: 'No hay conexión a internet'
+                };
+            }
+
             const endpoint = isFortytwoUser ? 
                 `${AuthService.API_URL}/auth/42/verify-2fa/` :
                 `${AuthService.API_URL}/verify-2fa/`;
             
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -93,52 +102,47 @@ export class Auth2FA {
                     'X-CSRFToken': AuthService.getCSRFToken()
                 },
                 body: JSON.stringify({ code }),
-                credentials: 'include'
+                credentials: 'include',
+                signal: controller.signal
             });
 
-            let data;
-            try {
-                data = await response.json();
-            } catch (e) {
-                const text = await response.text();
-                
-                // Verificar si es un error de rate limit
-                if (text.includes('Demasiados intentos')) {
-                    const match = text.match(/(\d+) segundos/);
-                    if (match) {
-                        const seconds = parseInt(match[1]);
-                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
-                        
-                        return {
-                            status: 'rate_limit',
-                            remaining_time: seconds,
-                            title: messages.AUTH.RATE_LIMIT.TITLE,
-                            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
-                        };
-                    }
-                }
-                throw new Error(text);
-            }
+            clearTimeout(timeoutId);
 
-            console.log('2FA response:', data);
+            let data = await response.json();
 
             if (!response.ok) {
-                // Detectar rate limit por el mensaje
-                if (data.message && Array.isArray(data.message)) {
-                    const msg = data.message[0];
-                    if (msg.includes('Too many attempts')) {
-                        const seconds = parseInt(msg.match(/\d+/)[0]);
-                        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
-                        
+                // Si es error 400, es código inválido
+                if (response.status === 400) {
+                    // Llevar la cuenta de intentos en sessionStorage
+                    const attempts = parseInt(sessionStorage.getItem('2fa_attempts') || '0') + 1;
+                    sessionStorage.setItem('2fa_attempts', attempts.toString());
+
+                    if (attempts >= 3) {
+                        // Si alcanza el límite, mostrar mensaje de bloqueo
                         return {
                             status: 'rate_limit',
-                            remaining_time: seconds,
+                            remaining_time: 900, // 15 minutos
                             title: messages.AUTH.RATE_LIMIT.TITLE,
-                            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor
+                                .replace('{time}', RateLimitService.formatTimeRemaining(900))
                         };
                     }
+
+                    // Si aún no alcanza el límite, mostrar intentos restantes
+                    return {
+                        status: 'error',
+                        title: 'Código incorrecto',
+                        message: `Código incorrecto. Te quedan ${3 - attempts} intentos.`
+                    };
                 }
-                throw new Error(data.message || 'Error en la verificación');
+
+                // Si es rate limit
+                if (data.error?.includes('Demasiados intentos')) {
+                    const seconds = parseInt(data.error.match(/(\d+)/)[0]);
+                    return Auth2FA._formatRateLimitResponse(seconds);
+                }
+
+                throw new Error(data.error || data.message || 'Error en la verificación');
             }
 
             if (data.status === 'success') {
@@ -146,7 +150,6 @@ export class Auth2FA {
                 if (data.username) {
                     localStorage.setItem('username', data.username);
                 }
-                // Añadir esta línea para asegurar que el estado del 2FA se mantiene
                 localStorage.setItem('two_factor_enabled', 'true');
                 return {
                     status: 'success',
@@ -156,45 +159,71 @@ export class Auth2FA {
             }
 
             return data;
+
         } catch (error) {
             console.error('2FA error details:', error);
             
-            // Verificar si el mensaje de error contiene información de rate limit
-            if (error.message && error.message.includes('Demasiados intentos')) {
-                const match = error.message.match(/(\d+) segundos/);
-                if (match) {
-                    const seconds = parseInt(match[1]);
-                    const formattedTime = RateLimitService.formatTimeRemaining(seconds);
-                    
-                    return {
-                        status: 'rate_limit',
-                        remaining_time: seconds,
-                        title: messages.AUTH.RATE_LIMIT.TITLE,
-                        message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
-                    };
-                }
-            }
-
-            // Si el error ya viene formateado como rate limit, devolverlo
-            if (error.status === 'rate_limit') {
-                return error;
-            }
-
-            // Si el mensaje contiene "Too many attempts", procesarlo
-            if (typeof error.message === 'string' && error.message.includes('Too many attempts')) {
-                const seconds = parseInt(error.message.match(/\d+/)[0]);
-                const formattedTime = RateLimitService.formatTimeRemaining(seconds);
-                
+            if (error.name === 'AbortError') {
                 return {
-                    status: 'rate_limit',
-                    remaining_time: seconds,
-                    title: messages.AUTH.RATE_LIMIT.TITLE,
-                    message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)
+                    status: 'error',
+                    title: 'Tiempo de espera agotado',
+                    message: 'El servidor está tardando demasiado en responder'
                 };
             }
 
-            throw error;
+            return {
+                status: 'error',
+                title: 'Error de verificación',
+                message: messages.AUTH.ERRORS.INVALID_2FA_CODE
+            };
         }
+    }
+
+    static _formatRateLimitResponse(seconds) {
+        if (!seconds || isNaN(seconds)) {
+            return {
+                status: 'error',
+                title: 'Error de verificación',
+                message: 'Error al procesar el límite de intentos'
+            };
+        }
+
+        const formattedTime = RateLimitService.formatTimeRemaining(seconds);
+        return {
+            status: 'rate_limit',
+            remaining_time: seconds,
+            title: messages.AUTH.RATE_LIMIT.TITLE,
+            message: messages.AUTH.RATE_LIMIT.MESSAGES.two_factor
+                .replace('{time}', formattedTime)
+                .replace('{attempts}', '3')  // Añadir número de intentos al mensaje
+        };
+    }
+
+    static _handleVerificationError(error) {
+        if (!error) {
+            return {
+                status: 'error',
+                title: 'Error desconocido',
+                message: 'Ha ocurrido un error al verificar el código'
+            };
+        }
+
+        console.error('2FA error details:', error);
+
+        // Verificar rate limit en el mensaje de error
+        const rateLimitMatch = error.message?.match(/(?:Demasiados intentos|Too many attempts).*?(\d+)/i);
+        if (rateLimitMatch) {
+            return Auth2FA._formatRateLimitResponse(parseInt(rateLimitMatch[1]));
+        }
+
+        // Para cualquier otro error, mostrar mensaje específico si existe
+        return {
+            status: 'error',
+            title: 'Error de verificación',
+            message: error.message && error.message !== 'Error en la verificación' 
+                ? error.message 
+                : 'El código introducido no es correcto'
+        };
     }
 
     static async generateQR(username) {

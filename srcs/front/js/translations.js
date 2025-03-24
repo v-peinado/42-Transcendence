@@ -15,10 +15,10 @@ export const messages = {
             BUTTON: "Verificar"
         },
         RATE_LIMIT: {
-            TITLE: "Acceso bloqueado temporalmente",
+            TITLE: "Usuario bloqueado",
             MESSAGES: {
                 login: "Por seguridad, hemos bloqueado temporalmente tus intentos de inicio de sesión. Podrás intentarlo nuevamente en {time}.",
-                two_factor: "Has realizado demasiados intentos de verificación 2FA. Por favor, espera {time} antes de intentarlo de nuevo.",
+                two_factor: "Por razones de seguridad, tu cuenta ha sido bloqueada temporalmente. Podrás intentarlo de nuevo en {time}.",
                 password_reset: "Has enviado demasiadas solicitudes de restablecimiento de contraseña. Por favor, espera {time}.",
                 email_verification: "Has solicitado demasiadas verificaciones de email. Inténtalo de nuevo en {time}.",
                 qr_generation: "Has generado demasiados códigos QR. Por favor, espera {time} antes de generar otro.",
@@ -35,6 +35,7 @@ export const messages = {
             NO_SESSION: 'No hay sesión activa',
             PRIVACY_POLICY: 'Debes aceptar la política de privacidad',
             RATE_LIMIT: "Has excedido el número máximo de intentos",
+            INVALID_2FA_CODE: 'El código de verificación introducido no es correcto',
             DEFAULT: 'Ha ocurrido un error inesperado'
         }
     }
