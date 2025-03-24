@@ -125,8 +125,8 @@ services:
     build:
       context: .
       dockerfile: srcs/vault/Dockerfile
-    ports:
-      - "8200:8200" # Vault UI
+    # ports:
+    #   - "8200:8200" # Vault UI
     expose:
       - "8200" # Vault API
     networks:

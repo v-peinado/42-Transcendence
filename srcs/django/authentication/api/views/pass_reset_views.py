@@ -19,7 +19,13 @@ class PasswordResetAPIView(View):
             else:
                 data = json.loads(request.body)
 
-            email = data.get("email")
+            email = data.get("email", "").strip().lower()
+            if not email:
+                return JsonResponse(
+                    {"status": "error", "message": "Email no proporcionado"},
+                    status=400
+                )
+                
             # Generate token and verification data
             token_data = PasswordService.initiate_password_reset(email)
 
