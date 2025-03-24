@@ -36,15 +36,56 @@ export async function LoginView() {
     if (code) {
         console.log('Código 42 detectado:', code);
         
-        // Limpiar vista y mostrar loading
-        app.innerHTML = getNavbarHTML(false);
-        const loadingTemplate = document.getElementById('loading42Template');
-        if (loadingTemplate) {
-            app.appendChild(loadingTemplate.content.cloneNode(true));
-        }
-
         try {
+            // Limpiar vista y mostrar loading
+            app.innerHTML = getNavbarHTML(false);
+            const loadingTemplate = document.getElementById('loading42Template');
+            if (loadingTemplate) {
+                app.appendChild(loadingTemplate.content.cloneNode(true));
+            }
+
+            // Verificar si ya aceptó GDPR previamente
+            const hasAcceptedGDPR = localStorage.getItem('42_gdpr_accepted');
             const result = await AuthService.handle42Callback(code);
+            
+            // Solo agregar el modal al DOM si es necesario
+            if (!hasAcceptedGDPR && !result.returning_user) {
+                const gdpr42ModalTemplate = document.getElementById('gdpr42ModalTemplate');
+                if (gdpr42ModalTemplate) {
+                    app.appendChild(gdpr42ModalTemplate.content.cloneNode(true));
+                }
+
+                const gdpr42ModalElement = document.getElementById('gdpr42Modal');
+                if (!gdpr42ModalElement) {
+                    throw new Error('Modal GDPR no encontrado');
+                }
+                
+                const gdpr42Modal = new bootstrap.Modal(gdpr42ModalElement, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                
+                // Esperar respuesta del usuario
+                await new Promise((resolve, reject) => {
+                    const acceptBtn = document.getElementById('accept42GDPRBtn');
+                    if (acceptBtn) {
+                        acceptBtn.onclick = () => {
+                            localStorage.setItem('42_gdpr_accepted', 'true');
+                            gdpr42Modal.hide();
+                            resolve(true);
+                        };
+                    }
+                    
+                    gdpr42ModalElement.addEventListener('hidden.bs.modal', () => {
+                        if (!localStorage.getItem('42_gdpr_accepted')) {
+                            reject('GDPR not accepted');
+                        }
+                    });
+                    
+                    gdpr42Modal.show();
+                });
+            }
+
             console.log('Resultado 42 callback:', result);
 
             // Obtener los templates necesarios primero
@@ -118,6 +159,11 @@ export async function LoginView() {
         } catch (error) {
             console.error('Error en autenticación 42:', error);
             
+            if (error === 'GDPR not accepted' || error.message === 'GDPR not accepted') {
+                window.location.replace('/login');
+                return;
+            }
+
             if (error.message?.includes('invalid_grant')) {
                 window.location.replace('/login');
                 return;
@@ -321,6 +367,7 @@ async function handle2FASubmit(e) {
     e.preventDefault();
     const code = document.getElementById('code').value;
     const alertDiv = document.getElementById('verify2FAAlert');
+    const submitButton = e.target.querySelector('button');
     const isFortytwoUser = sessionStorage.getItem('fortytwo_user') === 'true';
     const username = sessionStorage.getItem('pendingUsername');
     
@@ -330,22 +377,39 @@ async function handle2FASubmit(e) {
         if (result.status === 'rate_limit') {
             alertDiv.innerHTML = `
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>${result.title}</strong><br>
-                    ${result.message}
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-lock fa-2x me-3"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Usuario bloqueado</h6>
+                            <span>Por razones de seguridad, tu cuenta ha sido bloqueada temporalmente. Podrás intentarlo de nuevo en ${RateLimitService.formatTimeRemaining(result.remaining_time)}.</span>
+                        </div>
+                    </div>
                 </div>`;
 
-            const submitButton = document.querySelector('#verify2FAForm button');
-            if (submitButton) {
-                submitButton.disabled = true;
-                setTimeout(() => {
-                    submitButton.disabled = false;
-                    alertDiv.innerHTML = '';
-                }, result.remaining_time * 1000);
-            }
+            // Deshabilitar botón y limpiar código
+            submitButton.disabled = true;
+            document.getElementById('code').value = '';
+            setTimeout(() => {
+                submitButton.disabled = false;
+                alertDiv.innerHTML = '';
+            }, result.remaining_time * 1000);
             return;
         }
-        
+
+        if (result.status === 'error') {
+            alertDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>${result.title}</strong><br>
+                        ${result.message}
+                    </div>
+                </div>`;
+            document.getElementById('code').value = '';
+            document.getElementById('code').focus();
+            return;
+        }
+
         if (result.status === 'success') {
             // Limpiar estado temporal solo después de una verificación exitosa
             sessionStorage.clear(); // Limpiar todo el sessionStorage
@@ -369,25 +433,31 @@ async function handle2FASubmit(e) {
             return;
         }
     } catch (error) {
-        console.error('2FA error details:', error);
-        
         if (error.response?.status === 429 || 
             (error.message && error.message.includes('Too many attempts'))) {
+            // Cerrar modal en caso de rate limit
+            if (twoFactorModal) {
+                twoFactorModal.hide();
+            }
+            
             const seconds = error.response?.data?.remaining_time || 900;
             const formattedTime = RateLimitService.formatTimeRemaining(seconds);
             
-            alertDiv.innerHTML = `
+            mainAlertDiv.innerHTML = `
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>${messages.AUTH.RATE_LIMIT.TITLE}</strong><br>
                     ${messages.AUTH.RATE_LIMIT.MESSAGES.two_factor.replace('{time}', formattedTime)}
                 </div>`;
 
-            submitButton.disabled = true;
-            setTimeout(() => {
-                submitButton.disabled = false;
-                alertDiv.innerHTML = '';
-            }, seconds * 1000);
+            const loginButton = document.querySelector('#loginForm button[type="submit"]');
+            if (loginButton) {
+                loginButton.disabled = true;
+                setTimeout(() => {
+                    loginButton.disabled = false;
+                    mainAlertDiv.innerHTML = '';
+                }, seconds * 1000);
+            }
             return;
         }
 

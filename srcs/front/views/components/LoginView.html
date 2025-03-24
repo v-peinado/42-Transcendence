@@ -199,6 +199,44 @@
     </div>
 </template>
 
+<!-- Template para modal GDPR 42 -->
+<template id="gdpr42ModalTemplate">
+    <div class="modal fade" id="gdpr42Modal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-light">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Política de Privacidad - 42
+                    </h5>
+                </div>
+                <div class="modal-body text-light">
+                    <div class="mb-4">
+                        <p>Para poder usar la autenticación de 42, necesitamos:</p>
+                        <ul>
+                            <li>Acceder a tu información básica de 42</li>
+                            <li>Tu email para verificación y comunicaciones importantes</li>
+                            <li>Tu nombre de usuario para identificarte en el juego</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        De acuerdo con GDPR, puedes solicitar la eliminación de tus datos en cualquier momento.
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="accept42GDPRBtn">
+                        <i class="fas fa-check me-2"></i>Aceptar y Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
 <template id="errorTemplate">
     <div class="alert alert-danger">
         <p>${message}</p>
