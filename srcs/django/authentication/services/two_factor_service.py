@@ -9,7 +9,6 @@ from ..models import CustomUser
 import secrets
 import logging
 import random
-import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class TwoFactorService:
     
     @staticmethod
     def generate_2fa_code(user):
-        """Generates a temporary 2FA code using JWT"""
+        """Generates a temporary 2FA code"""
         try:
             # Check if user is valid
             if not user:
@@ -47,20 +46,6 @@ class TwoFactorService:
                 
             # Generate 6-digit 2FA code
             code = str(random.randint(100000, 999999))
-
-            # Create JWT payload
-            payload = {
-                "user_id": user.id,
-                "code": code,
-                "exp": datetime.utcnow() + timedelta(minutes=5),
-                "iat": datetime.utcnow(),
-                "type": "2fa",
-            }
-
-            # Generate JWT token
-            token = jwt.encode(
-                payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-            )
             
             # Save code and time to user object
             user.last_2fa_code = code
@@ -77,7 +62,7 @@ class TwoFactorService:
             rate_limiter.reset_limit(user_id, 'two_factor')
             logger.info(f"2FA code generated for user {user_id}: {code}")
             
-            return {"token": token, "code": code}
+            return {"code": code}
 
         except ValueError as e:
             # Re-raise ValueError for rate limiting
@@ -87,8 +72,8 @@ class TwoFactorService:
             raise ValueError(f"Error al generar código 2FA: {str(e)}")
 
     @staticmethod
-    def verify_2fa_code(user, token_or_code):
-        """Verifies if the 2FA code/token is valid"""
+    def verify_2fa_code(user, code):
+        """Verifies if the 2FA code is valid"""
         # Verify that user is a CustomUser object
         if not isinstance(user, CustomUser):
             try:
@@ -106,62 +91,29 @@ class TwoFactorService:
                 logger.warning(f"User {user_id} does not have 2FA enabled")
                 return False
                 
-            if not token_or_code:
-                logger.warning(f"No token/code provided for user {user_id}")
+            if not code:
+                logger.warning(f"No code provided for user {user_id}")
                 return False
             
             # Log verification attempt
             logger.debug(f"Verifying 2FA for user {user_id}. Last code time: {user.last_2fa_time}")
-            logger.debug(f"Input token/code type: {type(token_or_code)}")
-
-            result = False
             
-            # Attempt to decode JWT token
-            try:
-                logger.debug(f"Attempting JWT verification for user {user_id}")
-                payload = jwt.decode(
-                    token_or_code, 
-                    settings.JWT_SECRET_KEY, 
-                    algorithms=[settings.JWT_ALGORITHM]
-                )
+            # Verify code is numeric and 6 digits
+            if not (isinstance(code, str) and code.isdigit() and len(code) == 6):
+                logger.warning(f"Invalid code format for user {user_id}: {code}")
+                return False
                 
-                # Verify token attributes
-                if payload.get("type") != "2fa":
-                    logger.warning(f"Invalid token type for user {user_id}: {payload.get('type')}")
-                    return False
-                    
-                if payload.get("user_id") != user.id:
-                    logger.warning(f"Token user_id mismatch for user {user_id}: {payload.get('user_id')} != {user.id}")
-                    return False
-                
-                logger.info(f"JWT 2FA verification successful for user {user_id}")
-                result = True
-                
-            except (jwt.InvalidTokenError, AttributeError, TypeError, ValueError) as e:
-                # If JWT verification fails, try direct code comparison
-                logger.info(f"JWT verification failed, trying direct code for user {user_id}: {str(e)}")
-                
-                # Refresh user object to get latest code and time
-                user.refresh_from_db()
-                
-                # Check if user has last_2fa_code and last_2fa_time attributes
-                if not hasattr(user, 'last_2fa_code') or user.last_2fa_code is None:
-                    logger.error(f"User {user_id} missing last_2fa_code attribute or it's None")
-                    return False
-                
-                if not hasattr(user, 'last_2fa_time') or user.last_2fa_time is None:
-                    logger.error(f"User {user_id} missing last_2fa_time attribute or it's None")
-                    return False
-                
-                # Check if the code is expired
-                time_diff = timezone.now() - user.last_2fa_time
-                if time_diff.total_seconds() > 300:  # 5 minutes
-                    logger.warning(f"2FA code expired for user {user_id} (diff: {time_diff.total_seconds()}s)")
-                    return False
-                
-                # Compare the code directly
-                result = user.last_2fa_code == token_or_code
-                logger.info(f"Direct code verification for user {user_id}: {result} (input: {token_or_code}, stored: {user.last_2fa_code})")
+            # Refresh user object to get latest code and time
+            user.refresh_from_db()
+            
+            # Check if the code is expired
+            time_diff = timezone.now() - user.last_2fa_time
+            if time_diff.total_seconds() > 300:  # 5 minutes
+                logger.warning(f"2FA code expired for user {user_id} (diff: {time_diff.total_seconds()}s)")
+                return False
+            
+            # Compare the code directly
+            result = user.last_2fa_code == code
             
             # Reset rate limit after successful verification
             if result:

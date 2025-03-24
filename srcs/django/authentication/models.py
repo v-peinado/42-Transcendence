@@ -10,11 +10,6 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
     all_objects = models.Manager()
     
-    # Para la autenticación 2FA
-    two_factor_enabled = models.BooleanField(default=False)
-    two_factor_secret = models.CharField(max_length=100, null=True, blank=True)
-    last_2fa_code = models.CharField(max_length=6, null=True, blank=True)
-    last_2fa_time = models.DateTimeField(null=True, blank=True)
     
     def soft_delete(self):
         self.deleted_at = timezone.now()

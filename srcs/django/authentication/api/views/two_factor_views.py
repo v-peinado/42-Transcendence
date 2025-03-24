@@ -45,17 +45,17 @@ class Verify2FAAPIView(View):
                     # if the data is not in JSON format, try to get it from POST
                     data = request.POST
 
-            # Obtaining the verification data from the request (code)
-            verification_data = data.get("code")
+            # Obtaining the verification code from the request
+            code = data.get("code")
             
-            if not verification_data:
-                logger.warning(f"No verification data provided for user {user.id}")
+            if not code:
+                logger.warning(f"No code provided for user {user.id}")
                 return JsonResponse({"error": "Código no proporcionado"}, status=400)
                 
             logger.info(f"Attempting 2FA verification for user {user.id}")
             
             # Verifying the 2FA code
-            if TwoFactorService.verify_2fa_code(user, verification_data):
+            if TwoFactorService.verify_2fa_code(user, code):
                 # Cleaning the session keys
                 TwoFactorService.clean_session_keys(request.session)
                 auth_login(request, user)
