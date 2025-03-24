@@ -151,7 +151,7 @@ services:
     networks:
       - transcendence-backend
     restart: always
-    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ] # We don't need persistence
 
   front:
     build: ./srcs/front

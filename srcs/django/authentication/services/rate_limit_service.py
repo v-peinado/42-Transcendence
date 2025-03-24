@@ -78,7 +78,7 @@ class RateLimitService:
             # Check if user is blocked first
             block_key = f"{key}:blocked"
             if self.redis_client.exists(block_key):
-                ttl = int(self.redis_client.ttl(block_key))
+                ttl = int(self.redis_client.ttl(block_key)) # Time to live
                 logger.warning(f"Access blocked for {identifier} on {action}. Remaining block time: {ttl}s")
                 return True, ttl
 
@@ -107,7 +107,7 @@ class RateLimitService:
             return False, limits['max_attempts']
 
     def reset_limit(self, identifier: str, action: str):
-        """ Reset the rate limit for the identifier on the action when the window expires """
+        """ Reset the rate limit for the identifier on the action (after successful action) """
         try:
             key = self._get_key(identifier, action)
             self.redis_client.delete(key)

@@ -1,6 +1,9 @@
 """
 ASGI config for main project.
 
+Asinchronous Server Gateway Interface (ASGI) 
+is a standard interface between web servers and Python applications or frameworks.
+
 It exposes the ASGI callable as a module-level variable named ``application``.
 
 For more information on this file, see

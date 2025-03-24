@@ -1,6 +1,7 @@
 from authentication.services.cleanup_service import CleanupService
 from celery import shared_task
 import logging
+import os
 
 
 # A task is a function that can be run asynchronously.
@@ -19,7 +20,46 @@ def cleanup_inactive_users():
     """
     try:
         logger.info("🔄 ====== STARTING CLEANUP TASK ======")
-        result = CleanupService.cleanup_inactive_users() # Call the service method
+        
+        # Verify database connection configuration
+        celery_user = os.environ.get("CELERY_USER", "celeryuser")
+        
+        # Log all SSL-related environment variables
+        ssl_vars = {
+            "PGSSLMODE": os.environ.get("PGSSLMODE", "Not set"),
+            "PGSSLCERT": os.environ.get("PGSSLCERT", "Not set"),
+            "PGSSLKEY": os.environ.get("PGSSLKEY", "Not set"),
+            "PGSSLROOTCERT": os.environ.get("PGSSLROOTCERT", "Not set"),
+            "PGSERVICEFILE": os.environ.get("PGSERVICEFILE", "Not set"),
+            "PGSERVICE": os.environ.get("PGSERVICE", "Not set"),
+        }
+        
+        #logger.info(f"PostgreSQL SSL configuration: {ssl_vars}")
+        
+        # Check if PostgreSQL certificate exists
+        cert_paths = [
+            os.environ.get("PGSSLCERT", f"/home/{celery_user}/.postgresql/postgresql.crt"),
+            f"/home/{celery_user}/.postgresql/postgresql.crt",
+            "/root/.postgresql/postgresql.crt",
+        ]
+        
+        # Check each path and permissions
+        for path in cert_paths:
+            exists = os.path.exists(path)
+            readable = os.access(path, os.R_OK) if exists else False
+            #logger.info(f"Certificate path {path}: exists={exists}, readable={readable}")
+            
+            if exists and readable:
+                logger.info(f"Using PostgreSQL certificate: {path}")
+                break
+        
+        # Override SSL mode to disable SSL if having issues
+        # Uncomment for testing:
+        # os.environ["PGSSLMODE"] = "disable"
+        # logger.info("*** IMPORTANT: SSL has been DISABLED for debugging purposes ***")
+        
+        # Run the cleanup service
+        result = CleanupService.cleanup_inactive_users()
         logger.info(f"✅ Task completed - Processing complete")
         logger.info("======= END OF CLEANUP TASK =======\n")
     except Exception as e:

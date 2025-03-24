@@ -1,5 +1,6 @@
 from authentication.models.user import CustomUser, PreviousPassword
 from authentication.models.session import UserSession
+from django.contrib.auth.models import AbstractUser
 
 __all__ = ['CustomUser', 'PreviousPassword', 'UserSession']
 

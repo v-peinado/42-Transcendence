@@ -9,7 +9,6 @@ from ..models import CustomUser
 import secrets
 import logging
 import random
-import jwt
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class TwoFactorService:
     
     @staticmethod
     def generate_2fa_code(user):
-        """Generates a temporary 2FA code using JWT"""
+        """Generates a temporary 2FA code"""
         try:
             # Check if user is valid
             if not user:
@@ -47,47 +46,40 @@ class TwoFactorService:
                 
             # Generate 6-digit 2FA code
             code = str(random.randint(100000, 999999))
-
-            # Create JWT payload
-            payload = {
-                "user_id": user.id,
-                "code": code,
-                "exp": datetime.utcnow() + timedelta(minutes=5),
-                "iat": datetime.utcnow(),
-                "type": "2fa",
-            }
-
-            # Generate JWT token
-            token = jwt.encode(
-                payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-            )
-
-            # Save code and timestamp
+            
+            # Save code and time to user object
             user.last_2fa_code = code
             user.last_2fa_time = timezone.now()
-            user.save()
+            user.save(update_fields=['last_2fa_code', 'last_2fa_time'])
+            
+            # Verify that the code was saved correctly
+            user.refresh_from_db()
+            if not user.last_2fa_code or not user.last_2fa_time:
+                logger.error(f"Failed to save 2FA code for user {user_id}")
+                raise ValueError("Error al guardar el código 2FA")
             
             # Reset rate limit after successful code generation
             rate_limiter.reset_limit(user_id, 'two_factor')
-            logger.info(f"2FA code generated for user {user_id}")
+            logger.info(f"2FA code generated for user {user_id}: {code}")
             
-            return code
+            return {"code": code}
 
         except ValueError as e:
             # Re-raise ValueError for rate limiting
             raise e
         except Exception as e:
-            logger.error(f"Error generating 2FA code: {str(e)}")
+            logger.error(f"Error generating 2FA code: {str(e)}", exc_info=True)
             raise ValueError(f"Error al generar código 2FA: {str(e)}")
 
     @staticmethod
     def verify_2fa_code(user, code):
-        """Verifies if the 2FA code is valid using JWT"""
+        """Verifies if the 2FA code is valid"""
         # Verify that user is a CustomUser object
         if not isinstance(user, CustomUser):
             try:
                 user = CustomUser.objects.get(id=user)
             except (ValueError, CustomUser.DoesNotExist):
+                logger.error(f"User not found: {user}")
                 return False
                 
         try:
@@ -95,38 +87,69 @@ class TwoFactorService:
             user_id = user.id
             TwoFactorService._check_rate_limit(user_id)
             
-            if not user.two_factor_secret or not code:
+            if not user.two_factor_secret:
+                logger.warning(f"User {user_id} does not have 2FA enabled")
                 return False
-
-            # Check expiration time
+                
+            if not code:
+                logger.warning(f"No code provided for user {user_id}")
+                return False
+            
+            # Log verification attempt
+            logger.debug(f"Verifying 2FA for user {user_id}. Last code time: {user.last_2fa_time}")
+            
+            # Verify code is numeric and 6 digits
+            if not (isinstance(code, str) and code.isdigit() and len(code) == 6):
+                logger.warning(f"Invalid code format for user {user_id}: {code}")
+                return False
+                
+            # Refresh user object to get latest code and time
+            user.refresh_from_db()
+            
+            # Check if the code is expired
             time_diff = timezone.now() - user.last_2fa_time
             if time_diff.total_seconds() > 300:  # 5 minutes
+                logger.warning(f"2FA code expired for user {user_id} (diff: {time_diff.total_seconds()}s)")
                 return False
-
+            
+            # Compare the code directly
             result = user.last_2fa_code == code
             
-            # If verification is successful, reset the rate limit
+            # Reset rate limit after successful verification
             if result:
                 rate_limiter = RateLimitService()
                 rate_limiter.reset_limit(user_id, 'two_factor')
-                logger.info(f"2FA code verified successfully for user {user_id}")
+                logger.info(f"2FA verification successful for user {user_id}")
+            else:
+                logger.warning(f"2FA verification failed for user {user_id}")
                 
             return result
 
-        except ValueError:
+        except ValueError as e:
             # Rate limiting error
+            logger.warning(f"Rate limit error for user {user.id}: {str(e)}")
             return False
-        except Exception:
-            logger.error(f"Error verifying 2FA code for user {user.id}")
+        except Exception as e:
+            logger.error(f"Error verifying 2FA code for user {user.id}: {str(e)}", exc_info=True)
             return False
 
     @staticmethod
-    def send_2fa_code(user, code):
+    def send_2fa_code(user, code_data):
         """Sends the 2FA code via email"""
         try:
             # Check rate limiting before sending email
             user_id = user.id
             TwoFactorService._check_rate_limit(user_id, 'email_send')
+            
+            # Extract code from code_data, which could be dict or string
+            if isinstance(code_data, dict):
+                code = code_data.get('code')
+            else:
+                code = code_data
+                
+            if not code:
+                logger.error(f"No code provided for sending to user {user_id}")
+                raise ValueError("Código 2FA no proporcionado")
             
             subject = "Tu código de verificación PongOrama"
             context = {"user": user, "code": code}
@@ -155,7 +178,7 @@ class TwoFactorService:
     def enable_2fa(user):
         """Enables 2FA for a user"""
         try:
-            user.two_factor_secret = secrets.token_hex(16)
+            user.two_factor_secret = secrets.token_hex(16) # 16 bytes
 
             user.two_factor_enabled = True
             user.save()

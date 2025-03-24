@@ -1,8 +1,8 @@
+from main.celery import setup_celery, get_worker_command, get_beat_command
 from main.vault import load_vault_secrets
 import subprocess
 import logging
 import django
-import shutil
 import socket
 import time
 import sys
@@ -131,44 +131,23 @@ def run_command(command, check=True):
         return False, e.stderr
 
 
-def setup_celery(celery_user):
-    """Setup directories and permissions for Celery"""
-    try:
-        # Create required directories
-        os.makedirs("/var/lib/celery", exist_ok=True)
-        
-        # Set ownership
-        run_command(f"chown -R {celery_user}:{celery_user} /var/lib/celery")
-        
-        # Export environment variable for Celery beat
-        os.environ["CELERYBEAT_SCHEDULE_FILENAME"] = "/var/lib/celery/celerybeat-schedule"
-        
-        return True
-    except Exception as e:
-        print(f"Error setting up Celery: {e}")
-        return False
-
-
 def start_celery_services(celery_user):
     """Start Celery worker and beat"""
     try:
-        # Start worker with the celery user
-        worker_cmd = f"su -m {celery_user} -c 'celery -A main worker --loglevel=info'"
+        # Get commands from celery.py
+        worker_cmd = get_worker_command(celery_user)
+        beat_cmd = get_beat_command(celery_user)
+        
+        # Start worker
         worker_process = subprocess.Popen(worker_cmd, shell=True)
         
-        # Start beat with the celery user
-        beat_cmd = f"su -m {celery_user} -c 'celery -A main beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule'"
+        # Start beat
         beat_process = subprocess.Popen(beat_cmd, shell=True)
         
         return worker_process, beat_process
     except Exception as e:
         print(f"Error starting Celery services: {e}")
         return None, None
-
-# Worker is a process that runs the tasks in the background
-# Beat is a process that schedules tasks to be executed at a specific time
-# The worker and beat are started as separate processes to run in parallel with the Django server
-# but started in the same container with celery user
 
 def main():
     """Main function to start Django and Celery"""
@@ -209,8 +188,8 @@ def main():
         run_command("python manage.py makemigrations game")
         run_command("python manage.py migrate --no-input")
 
-        # Setup Celery
-        if setup_celery(celery_user):
+        # Setup Celery (using the function from main.celery)
+        if setup_celery():
             # Start Celery services
             worker_process, beat_process = start_celery_services(celery_user)
             if not worker_process or not beat_process:

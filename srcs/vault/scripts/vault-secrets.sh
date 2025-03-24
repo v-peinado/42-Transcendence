@@ -68,8 +68,17 @@ store_secrets() {
         ENCRYPTION_KEY="${ENCRYPTION_KEY}" >/dev/null 2>&1 && \
         log_secret "django/gdpr"
 
+    # Celery settings
+    vault kv put secret/django/celery \
+        CELERY_USER="${CELERY_USER}" \
+        CELERY_PGSSLMODE="${CELERY_PGSSLMODE}" \
+        CELERY_PGAPPNAME="${CELERY_PGAPPNAME}" \
+        CELERY_PGSSLCERT="${CELERY_PGSSLCERT}" \
+        CELERY_PGSSLKEY="${CELERY_PGSSLKEY}" >/dev/null 2>&1 && \
+        log_secret "django/celery"
+
     # Verify all secrets were stored
-    for path in "database" "oauth" "email" "settings" "jwt" "gdpr"; do
+    for path in "database" "oauth" "email" "settings" "jwt" "gdpr" "celery"; do
         if ! vault kv get secret/django/${path} >/dev/null 2>&1; then
             log "ERROR" "Failed to verify secret: django/${path}"
             return 1
