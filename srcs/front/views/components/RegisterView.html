@@ -81,33 +81,64 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="privacy-content">
-                        <h4>Información General</h4>
-                        <p>Al registrarte en nuestra plataforma, recopilamos y procesamos cierta información personal tuya:</p>
-                        <ul>
-                            <li>Nombre de usuario</li>
-                            <li>Dirección de email</li>
-                            <li>Información de perfil (avatar, estados, etc.)</li>
-                            <li>Datos de juego y estadísticas</li>
-                        </ul>
+                    <div class="gdpr-sections">
+                        <!-- Datos recopilados -->
+                        <div class="section mb-4">
+                            <h6><i class="fas fa-database text-primary me-2"></i>Datos que almacenamos</h6>
+                            <div class="ps-4 text-muted">
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Nombre de usuario y correo electrónico para identificación</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Datos de inicio de sesión y actividad de la cuenta</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Imagen de perfil (opcional)</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Información de autenticación de dos factores (si está activada)</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Datos de integración con 42 (si aplica)</div>
+                            </div>
+                        </div>
 
-                        <h4>Uso de la Información</h4>
-                        <p>Utilizamos tu información para:</p>
-                        <ul>
-                            <li>Gestionar tu cuenta y proporcionar nuestros servicios</li>
-                            <li>Permitir la interacción con otros usuarios</li>
-                            <li>Mantener estadísticas de juego</li>
-                            <li>Mejorar la experiencia de usuario</li>
-                        </ul>
+                        <!-- Uso de datos -->
+                        <div class="section mb-4">
+                            <h6><i class="fas fa-tasks text-info me-2"></i>Cómo usamos tus datos</h6>
+                            <div class="ps-4 text-muted">
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Autenticación y gestión de tu cuenta</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Comunicaciones importantes sobre tu cuenta y seguridad</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Mejora de nuestros servicios y experiencia de usuario</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Cumplimiento de obligaciones legales y regulatorias</div>
+                            </div>
+                        </div>
 
-                        <h4>Tus Derechos</h4>
-                        <p>Tienes derecho a:</p>
-                        <ul>
-                            <li>Acceder a tus datos personales</li>
-                            <li>Rectificar tus datos</li>
-                            <li>Solicitar la eliminación de tu cuenta</li>
-                            <li>Oponerte al procesamiento de tus datos</li>
-                        </ul>
+                        <!-- Tus derechos -->
+                        <div class="section mb-4">
+                            <h6><i class="fas fa-user-shield text-success me-2"></i>Tus derechos</h6>
+                            <div class="ps-4 text-muted">
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Derecho de acceso: Puedes descargar todos tus datos personales</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Derecho al olvido: Puedes solicitar la eliminación de tu cuenta</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Derecho de rectificación: Puedes modificar tus datos personales</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Derecho de portabilidad: Puedes exportar tus datos en formato JSON</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Derecho de oposición: Puedes desactivar funcionalidades opcionales</div>
+                            </div>
+                        </div>
+
+                        <!-- Medidas de Seguridad -->
+                        <div class="section mb-4">
+                            <h6><i class="fas fa-lock text-warning me-2"></i>Medidas de Seguridad</h6>
+                            <div class="ps-4 text-muted">
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Encriptación de datos sensibles</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Autenticación de dos factores opcional</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Anonimización de datos en caso de eliminación de cuenta</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Auditoría de accesos y cambios en datos personales</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Almacenamiento seguro de contraseñas mediante hash</div>
+                            </div>
+                        </div>
+
+                        <!-- Retención de datos -->
+                        <div class="section">
+                            <h6><i class="fas fa-clock text-warning me-2"></i>Retención de Datos</h6>
+                            <div class="ps-4 text-muted">
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Tus datos se mantienen mientras tu cuenta esté activa</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Al eliminar tu cuenta, tus datos son anonimizados</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Mantenemos logs anonimizados por razones de seguridad</div>
+                                <div class="mb-2"><i class="fas fa-check text-success me-2"></i>Los backups se eliminan según política de retención</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

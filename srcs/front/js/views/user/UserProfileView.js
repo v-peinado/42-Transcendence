@@ -767,25 +767,50 @@ function updateFormFields(userInfo) {
     });
 }
 
-// Añadir la función updateGDPRContent
-function updateGDPRContent(data) {
-    const sections = {
-        'data-collection': data.gdpr_policy?.data_collection || [],
-        'data-usage': data.gdpr_policy?.data_usage || [],
-        'user-rights': data.gdpr_policy?.user_rights || [],
-        'security-measures': data.gdpr_policy?.security_measures || []
+// Reemplazar la función updateGDPRContent actual con esta
+function updateGDPRContent() {
+    const gdprInfo = {
+        'data-collection': [
+            "Nombre de usuario y correo electrónico para identificación",
+            "Datos de inicio de sesión y actividad de la cuenta",
+            "Imagen de perfil (opcional)",
+            "Información de autenticación de dos factores (si está activada)",
+            "Datos de integración con 42 (si aplica)"
+        ],
+        'data-usage': [
+            "Autenticación y gestión de tu cuenta",
+            "Comunicaciones importantes sobre tu cuenta y seguridad",
+            "Mejora de nuestros servicios y experiencia de usuario",
+            "Cumplimiento de obligaciones legales y regulatorias"
+        ],
+        'user-rights': [
+            "Derecho de acceso: Puedes descargar todos tus datos personales",
+            "Derecho al olvido: Puedes solicitar la eliminación de tu cuenta",
+            "Derecho de rectificación: Puedes modificar tus datos personales",
+            "Derecho de portabilidad: Puedes exportar tus datos en formato JSON",
+            "Derecho de oposición: Puedes desactivar funcionalidades opcionales"
+        ],
+        'security-measures': [
+            "Encriptación de datos sensibles",
+            "Autenticación de dos factores opcional",
+            "Anonimización de datos en caso de eliminación de cuenta",
+            "Auditoría de accesos y cambios en datos personales",
+            "Almacenamiento seguro de contraseñas mediante hash"
+        ],
+        'data-retention': [
+            "Tus datos se mantienen mientras tu cuenta esté activa",
+            "Al eliminar tu cuenta, tus datos son anonimizados",
+            "Mantenemos logs anonimizados por razones de seguridad",
+            "Los backups se eliminan según política de retención"
+        ]
     };
 
-    Object.entries(sections).forEach(([id, items]) => {
+    Object.entries(gdprInfo).forEach(([id, items]) => {
         const element = document.getElementById(id);
-        if (element && Array.isArray(items)) {
-            element.textContent = ''; // Limpiar contenido existente
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'mb-2';
-                div.textContent = item;
-                element.appendChild(div);
-            });
+        if (element) {
+            element.innerHTML = items
+                .map(item => `<div class="mb-2"><i class="fas fa-check text-success me-2"></i>${item}</div>`)
+                .join('');
         }
     });
 }
