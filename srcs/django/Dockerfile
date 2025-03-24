@@ -30,9 +30,5 @@ RUN chmod +x /app/django-entrypoint.py && \
 # Setup entry script
 ENV USE_DAPHNE=True
 
-# Set PostgreSQL SSL settings (fallback)
-ENV PGSSLMODE=require
-ENV PGAPPNAME=django_app
-
 # Set default command
 CMD ["python", "django-entrypoint.py"]

@@ -10,7 +10,6 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
     all_objects = models.Manager()
     
-    
     def soft_delete(self):
         self.deleted_at = timezone.now()
         self.save()
