@@ -17,20 +17,20 @@ class QRService:
 # as if it were a regular attribute (without parentheses) while still executing code.
 # This approach allows us to defer the cost of creating the RateLimitService until it's actually
 # required, following the principle of "pay only for what you use".
-# We use here because this method utilizes redis, which is an expensive operation.
+# We use here because this method utilizes redis, which is an expensive operation in ram.
 
     @property
     def rate_limiter(self):
         """Property to access RateLimitService instance"""
         if self._rate_limiter is None:
-            self._rate_limiter = RateLimitService()
+            self._rate_limiter = RateLimitService() # Create RateLimitService instance to combine with QRService (property)
         return self._rate_limiter
 
     def _generate_username_hash(self, username, timestamp):
         """Generates a unique temporary hash for the username and timestamp
         to encript the QR code (to made it more secure) and store it in Redis"""
         data = f"{username}:{timestamp}"
-        return hashlib.sha256(data.encode()).hexdigest()[:16]	# 16 characters
+        return hashlib.sha256(data.encode()).hexdigest()[:16]	# Return first 16 characters of the hash (make it shorter because the QR code has a limit of characters)
 
     def generate_qr(self, username):
         """Generate QR code for username with 8h validity and max 3 uses"""
@@ -41,12 +41,12 @@ class QRService:
                 raise ValueError(f"Demasiados intentos. Intenta de nuevo en {remaining} segundos")
 
             # Generate unique hash for this session
-            timestamp = int(timezone.now().timestamp())
-            username_hash = self._generate_username_hash(username, timestamp)
+            timestamp = int(timezone.now().timestamp())	# Get current timestamp
+            username_hash = self._generate_username_hash(username, timestamp) # Generate hash
             
             # Store in Redis with 8h TTL and 3 uses limit
-            key = f"qr_auth:{username_hash}"
-            uses_key = f"qr_uses:{username_hash}"
+            key = f"qr_auth:{username_hash}" # Store username in Redis
+            uses_key = f"qr_uses:{username_hash}" # Store uses counter in Redis
             
             # We use pipeline for atomicity and performance
             pipe = self.rate_limiter.redis_client.pipeline()
@@ -56,7 +56,7 @@ class QRService:
 
             logger.info(f"QR generated for {username} - valid for 8h, max 3 uses")
 
-            # Immediate verification
+            # Immediate verification (testing purposes)
             stored_value = self.rate_limiter.redis_client.get(key) # Check if stored correctly
             logger.info(f"QR Redis verification: stored_value={stored_value}")
 
@@ -104,7 +104,7 @@ class QRService:
 ############################################################
 
     def pre_validate_qr(self, qr_data):
-        """First phase: validate format and get username"""
+        """QR login user (First phase: validate format and get username)"""
         try:
             hash_code = self._validate_hash_format(qr_data) # Validate QR hash format
             if not hash_code:
@@ -134,13 +134,13 @@ class QRService:
             return False, f"Error al validar el QR: {str(e)}", None
 
     def authenticate_qr(self, username):
-        """Second phase: authenticate user with usage control"""
+        """QR login user (Second phase: authenticate user)"""
         try:
             # Combine QR existence and usage checks
             auth_key = f"qr_auth:{self._current_hash}"	# Get username from Redis
             uses_key = f"qr_uses:{self._current_hash}"	# Get uses from Redis (counter)
             
-            pipe = self.rate_limiter.redis_client.pipeline() # Use pipeline for atomicity and performance
+            pipe = self.rate_limiter.redis_client.pipeline() # Use pipeline to combine commands for atomicity and performance
             pipe.exists(auth_key) # Check if QR exists
             pipe.get(uses_key)   # Get uses counter
             exists, uses = pipe.execute() # Execute both commands atomically
@@ -192,7 +192,7 @@ class QRService:
 
     def _cleanup_qr_keys(self, auth_key, uses_key):
         """Helper method to clean up QR keys in redis"""
-        pipe = self.rate_limiter.redis_client.pipeline() # Use pipeline for atomicity and performance
+        pipe = self.rate_limiter.redis_client.pipeline() # Pipeline to combine commands for atomicity and performance
         pipe.delete(auth_key)	# Delete both keys
         pipe.delete(uses_key)	
         pipe.execute()	# Execute both commands atomically

@@ -1,6 +1,10 @@
 """
 WSGI config for main project.
 
+Web Server Gateway Interface (WSGI) 
+is a specification for simple and universal interface between web servers 
+and web applications or frameworks for the Python programming language.
+
 It exposes the WSGI callable as a module-level variable named ``application``.
 
 For more information on this file, see
