@@ -9,9 +9,9 @@ class GameState:
     CANVAS_HEIGHT = 600
     WINNING_SCORE = 10
     PLAYER_SPEED = 7
-    BALL_SPEED = 15
+    BALL_SPEED = 9
     PADDLE_WIDTH = 10
-    PADDLE_HEIGHT = 160
+    PADDLE_HEIGHT = 100
 
     def __init__(self):
         """Initial game state setup"""
@@ -64,7 +64,7 @@ class GameState:
         """Paddle movement"""
         if side in self.paddles:
             paddle = self.paddles[side]
-            move_amount = self.PLAYER_SPEED * direction
+            move_amount = self.PLAYER_SPEED / 2 * direction
             new_y = paddle.y + move_amount
 
             # To keep paddle within canvas bounds...
