@@ -59,3 +59,9 @@ SSL_KEY_SIZE=2048                          # Key size in bits (min 2048)
 
 # Celery Configuration
 CELERY_USER=celeryuser                     # Celery user
+
+# Celery PostgreSQL SSL Configuration
+CELERY_PGSSLMODE=require                   # PostgreSQL SSL mode for Celery
+CELERY_PGAPPNAME=celery_worker             # PostgreSQL application name for Celery
+CELERY_PGSSLCERT=/home/celeryuser/.postgresql/postgresql.crt  # Path to PostgreSQL SSL certificate
+CELERY_PGSSLKEY=/home/celeryuser/.postgresql/postgresql.key   # Path to PostgreSQL SSL key

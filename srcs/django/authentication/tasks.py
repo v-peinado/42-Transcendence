@@ -34,7 +34,7 @@ def cleanup_inactive_users():
             "PGSERVICE": os.environ.get("PGSERVICE", "Not set"),
         }
         
-        logger.info(f"PostgreSQL SSL configuration: {ssl_vars}")
+        #logger.info(f"PostgreSQL SSL configuration: {ssl_vars}")
         
         # Check if PostgreSQL certificate exists
         cert_paths = [
@@ -47,7 +47,7 @@ def cleanup_inactive_users():
         for path in cert_paths:
             exists = os.path.exists(path)
             readable = os.access(path, os.R_OK) if exists else False
-            logger.info(f"Certificate path {path}: exists={exists}, readable={readable}")
+            #logger.info(f"Certificate path {path}: exists={exists}, readable={readable}")
             
             if exists and readable:
                 logger.info(f"Using PostgreSQL certificate: {path}")

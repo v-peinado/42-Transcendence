@@ -1,8 +1,8 @@
+from main.celery import setup_celery, get_worker_command, get_beat_command
 from main.vault import load_vault_secrets
 import subprocess
 import logging
 import django
-import shutil
 import socket
 import time
 import sys
@@ -131,132 +131,23 @@ def run_command(command, check=True):
         return False, e.stderr
 
 
-def setup_celery(celery_user):
-    """Setup directories and permissions for Celery"""
-    try:
-        # Create required directories
-        os.makedirs("/var/lib/celery", exist_ok=True)
-        
-        # Create PostgreSQL certificate directory for Celery
-        postgres_cert_dir = f"/home/{celery_user}/.postgresql"
-        os.makedirs(postgres_cert_dir, exist_ok=True)
-        
-        # Copy SSL certificates for PostgreSQL
-        ssl_src_dir = "/tmp/ssl"
-        if os.path.exists(f"{ssl_src_dir}/transcendence.crt") and os.path.exists(f"{ssl_src_dir}/transcendence.key"):
-            # Copy to celeryuser's directory
-            shutil.copy(f"{ssl_src_dir}/transcendence.crt", f"{postgres_cert_dir}/postgresql.crt")
-            shutil.copy(f"{ssl_src_dir}/transcendence.key", f"{postgres_cert_dir}/postgresql.key")
-            
-            # Set permissions for PostgreSQL certificates
-            run_command(f"chmod 600 {postgres_cert_dir}/postgresql.crt")
-            run_command(f"chmod 600 {postgres_cert_dir}/postgresql.key")
-            run_command(f"chown -R {celery_user}:{celery_user} {postgres_cert_dir}")
-            
-            # CRITICAL: Make root's directory usable too
-            root_cert_dir = "/root/.postgresql"
-            os.makedirs(root_cert_dir, exist_ok=True)
-            shutil.copy(f"{ssl_src_dir}/transcendence.crt", f"{root_cert_dir}/postgresql.crt")
-            shutil.copy(f"{ssl_src_dir}/transcendence.key", f"{root_cert_dir}/postgresql.key")
-            run_command(f"chmod 644 {root_cert_dir}/postgresql.crt")  # More permissive to avoid permission issues
-            run_command(f"chmod 644 {root_cert_dir}/postgresql.key")  # More permissive to avoid permission issues
-            run_command(f"chmod -R 755 /root/.postgresql")  # Make directory traversable
-            
-            print(f"PostgreSQL certificates copied to both {postgres_cert_dir} and {root_cert_dir}")
-        else:
-            print("Warning: SSL certificates not found for PostgreSQL")
-        
-        # Set ownership for Celery directory
-        run_command(f"chown -R {celery_user}:{celery_user} /var/lib/celery")
-        
-        # Export environment variable for Celery beat
-        os.environ["CELERYBEAT_SCHEDULE_FILENAME"] = "/var/lib/celery/celerybeat-schedule"
-        
-        # Make PostgreSQL certificates accessible to all processes
-        os.environ["PGSSLCERT"] = f"/home/{celery_user}/.postgresql/postgresql.crt"
-        os.environ["PGSSLKEY"] = f"/home/{celery_user}/.postgresql/postgresql.key"
-        os.environ["PGSSLMODE"] = "require"
-        
-        return True
-    except Exception as e:
-        print(f"Error setting up Celery: {e}")
-        return False
-
 def start_celery_services(celery_user):
     """Start Celery worker and beat"""
     try:
-        # Set environment variables for the Celery processes
-        db_host = os.getenv("SQL_HOST", "db")
-        db_port = os.getenv("SQL_PORT", "5432")
-        db_user = os.getenv("POSTGRES_USER", "postgres")
-        db_password = os.getenv("POSTGRES_PASSWORD", "")
-        db_name = os.getenv("POSTGRES_DB", "postgres")
+        # Get commands from celery.py
+        worker_cmd = get_worker_command(celery_user)
+        beat_cmd = get_beat_command(celery_user)
         
-        # Define SSL certificate paths explicitly
-        cert_path = f"/home/{celery_user}/.postgresql/postgresql.crt"
-        key_path = f"/home/{celery_user}/.postgresql/postgresql.key"
-        
-        # Comprehensive environment variables for PostgreSQL SSL
-        env_vars = (
-            f"PGHOST={db_host} "
-            f"PGPORT={db_port} "
-            f"PGUSER={db_user} "
-            f"PGPASSWORD={db_password} "
-            f"PGDATABASE={db_name} "
-            f"PGSSLMODE=require "
-            f"PGSSLCERT={cert_path} "
-            f"PGSSLKEY={key_path} "
-            f"PGSSLROOTCERT={cert_path}"
-        )
-        
-        # Create a custom config file to avoid SSL certificate path issues
-        pg_config_dir = f"/home/{celery_user}/.pg"
-        os.makedirs(pg_config_dir, exist_ok=True)
-        pg_service_file = f"{pg_config_dir}/pg_service.conf"
-        
-        with open(pg_service_file, 'w') as f:
-            f.write(f"[celery_service]\n")
-            f.write(f"host={db_host}\n")
-            f.write(f"port={db_port}\n")
-            f.write(f"user={db_user}\n")
-            f.write(f"password={db_password}\n")
-            f.write(f"dbname={db_name}\n")
-            f.write(f"sslmode=require\n")
-            f.write(f"sslcert={cert_path}\n")
-            f.write(f"sslkey={key_path}\n")
-        
-        run_command(f"chown -R {celery_user}:{celery_user} {pg_config_dir}")
-        run_command(f"chmod 600 {pg_service_file}")
-        
-        # Start worker with the celery user and all environment variables
-        worker_cmd = (
-            f"su -m {celery_user} -c '"
-            f"{env_vars} "
-            f"PGSERVICEFILE={pg_service_file} "
-            f"PGSERVICE=celery_service "
-            f"celery -A main worker --loglevel=info'"
-        )
+        # Start worker
         worker_process = subprocess.Popen(worker_cmd, shell=True)
         
-        # Start beat with the celery user using the same environment setup
-        beat_cmd = (
-            f"su -m {celery_user} -c '"
-            f"{env_vars} "
-            f"PGSERVICEFILE={pg_service_file} "
-            f"PGSERVICE=celery_service "
-            f"celery -A main beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule'"
-        )
+        # Start beat
         beat_process = subprocess.Popen(beat_cmd, shell=True)
         
         return worker_process, beat_process
     except Exception as e:
         print(f"Error starting Celery services: {e}")
         return None, None
-
-# Worker is a process that runs the tasks in the background
-# Beat is a process that schedules tasks to be executed at a specific time
-# The worker and beat are started as separate processes to run in parallel with the Django server
-# but started in the same container with celery user
 
 def main():
     """Main function to start Django and Celery"""
@@ -297,8 +188,8 @@ def main():
         run_command("python manage.py makemigrations game")
         run_command("python manage.py migrate --no-input")
 
-        # Setup Celery
-        if setup_celery(celery_user):
+        # Setup Celery (using the function from main.celery)
+        if setup_celery():
             # Start Celery services
             worker_process, beat_process = start_celery_services(celery_user)
             if not worker_process or not beat_process:
