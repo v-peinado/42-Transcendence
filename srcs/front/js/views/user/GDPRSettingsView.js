@@ -1,4 +1,5 @@
 import AuthService from '../../services/AuthService.js';
+import { AuthGDPR } from '../../services/auth/AuthGDPR.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
 
 export async function GDPRSettingsView() {
@@ -21,69 +22,15 @@ function setupEventHandlers() {
     if (downloadBtn) {
         downloadBtn.addEventListener('click', async () => {
             try {
-                const data = await AuthService.getGDPRSettings();
-                downloadJSON(data, 'mis_datos_personales.json');
+                await AuthGDPR.downloadUserData();
             } catch (error) {
                 showMessage('Error al descargar datos: ' + error.message, 'danger');
-            }
-        });
-    }
-
-    // Nueva implementación del modal
-    const deleteBtn = document.getElementById('deleteAccount');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => {
-            const deleteModal = document.getElementById('deleteModal');
-            if (deleteModal) {
-                // Asegurarnos de que Bootstrap está disponible y cargar el modal
-                if (typeof bootstrap !== 'undefined') {
-                    // Crear nueva instancia del modal
-                    new bootstrap.Modal(deleteModal).show();
-                } else {
-                    // Cargar Bootstrap si no está disponible
-                    const script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js';
-                    script.onload = () => {
-                        new bootstrap.Modal(deleteModal).show();
-                    };
-                    document.head.appendChild(script);
-                }
-            }
-        });
-    }
-
-    // Manejar confirmación de eliminación
-    const confirmDeleteBtn = document.getElementById('confirmDelete');
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', async () => {
-            const deleteModal = document.getElementById('deleteModal');
-            const passwordInput = document.getElementById('deletePassword');
-            
-            if (!passwordInput?.value) {
-                showMessage('Por favor, introduce tu contraseña', 'danger');
-                return;
-            }
-
-            try {
-                await AuthService.deleteAccount(passwordInput.value);
-                if (typeof bootstrap !== 'undefined') {
-                    const modalInstance = bootstrap.Modal.getInstance(deleteModal);
-                    if (modalInstance) {
-                        modalInstance.hide();
-                    }
-                }
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/login';
-            } catch (error) {
-                showMessage(error.message || 'Error al eliminar la cuenta', 'danger');
             }
         });
     }
 }
 
 function downloadJSON(data, filename) {
-    // Filtrar solo los datos relevantes del usuario
     const userData = {
         username: data.personal_info?.username,
         email: data.personal_info?.email,
@@ -114,30 +61,36 @@ function downloadJSON(data, filename) {
 
 async function loadGDPRSettings() {
     try {
-        const data = await AuthService.getGDPRSettings();
-        updateGDPRContent(data);
+        updateGDPRContent();
     } catch (error) {
         showMessage('Error al cargar configuración GDPR: ' + error.message, 'danger');
     }
 }
 
-function updateGDPRContent(data) {
-    // Actualizar secciones de contenido
-    const sections = {
-        'data-collection': data.gdpr_policy?.data_collection || [],
-        'data-usage': data.gdpr_policy?.data_usage || [],
-        'user-rights': data.gdpr_policy?.user_rights || [],
-        'security-measures': data.gdpr_policy?.security_measures || []
-    };
+function updateGDPRContent() {
+    try {
+        const gdprPolicy = AuthGDPR.getDefaultGDPRPolicy();
+        
+        const sections = {
+            'data-collection': gdprPolicy.data_collection,
+            'data-usage': gdprPolicy.data_usage,
+            'user-rights': gdprPolicy.user_rights,
+            'security-measures': gdprPolicy.security_measures,
+            'data-retention': gdprPolicy.data_retention
+        };
 
-    Object.entries(sections).forEach(([id, items]) => {
-        const element = document.getElementById(id);
-        if (element && Array.isArray(items)) {
-            element.innerHTML = items
-                .map(item => `<div class="mb-2">${item}</div>`)
-                .join('');
-        }
-    });
+        Object.entries(sections).forEach(([id, items]) => {
+            const element = document.getElementById(id);
+            if (element && Array.isArray(items)) {
+                element.innerHTML = items
+                    .map(item => `<div class="mb-2"><i class="fas fa-check text-success me-2"></i>${item}</div>`)
+                    .join('');
+            }
+        });
+    } catch (error) {
+        console.error('Error en updateGDPRContent:', error);
+        showMessage('Error al actualizar contenido GDPR', 'danger');
+    }
 }
 
 function showMessage(message, type) {
