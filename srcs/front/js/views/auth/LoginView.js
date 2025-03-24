@@ -48,7 +48,17 @@ export async function LoginView() {
             const hasAcceptedGDPR = localStorage.getItem('42_gdpr_accepted');
             const result = await AuthService.handle42Callback(code);
             
-            // Solo agregar el modal al DOM si es necesario
+            // Si el usuario ya está autenticado o aceptó GDPR, ir directamente a success
+            if (result.returning_user || hasAcceptedGDPR) {
+                if (result.status === 'success') {
+                    localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('username', result.username);
+                    window.location.replace('/game');
+                    return;
+                }
+            }
+
+            // Solo mostrar el modal GDPR si es necesario
             if (!hasAcceptedGDPR && !result.returning_user) {
                 const gdpr42ModalTemplate = document.getElementById('gdpr42ModalTemplate');
                 if (gdpr42ModalTemplate) {
@@ -152,7 +162,7 @@ export async function LoginView() {
                 // Precargar GameView mientras se muestra la carga
                 await import('../game/GameView.js');
                 
-                window.location.replace('/');
+                window.location.replace('/game');
                 return;
             }
 
@@ -206,12 +216,6 @@ function showError(message) {
     
     const errorResult = AuthUtils.mapBackendError(message);
     alertDiv.innerHTML = errorResult.html;
-}
-
-function handleSuccessfulLogin(username) {
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('username', username);
-    window.location.replace('/profile');
 }
 
 // Mover todos los event listeners a una función separada
@@ -428,8 +432,8 @@ async function handle2FASubmit(e) {
             }
 
             // Redirigir después de que todo esté listo
-            console.log('Redirigiendo a profile después de 2FA exitoso');
-            window.location.replace('/'); // Cambiado de '/profile' a '/'
+            console.log('Redirigiendo a game después de 2FA exitoso');
+            window.location.replace('/game');
             return;
         }
     } catch (error) {
@@ -592,7 +596,7 @@ async function processQRCode(username, modal) {
             } else {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', username);
-                window.location.replace('/');
+                window.location.replace('/game');
             }
         }
     } catch (error) {
@@ -675,7 +679,7 @@ async function handleQRFileUpload(e) {
                                 // Login directo
                                 localStorage.setItem('isAuthenticated', 'true');
                                 localStorage.setItem('username', username);
-                                window.location.replace('/'); // Cambiado de '/profile' a '/'
+                                window.location.replace('/game');
                             }
                         } else {
                             throw new Error(result.error || 'Error validando el QR');
