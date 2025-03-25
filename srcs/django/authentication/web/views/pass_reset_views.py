@@ -1,10 +1,10 @@
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
+from authentication.services.password_service import PasswordService
+from authentication.services.token_service import TokenService
+from django.core.exceptions import ValidationError
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.core.exceptions import ValidationError
-from authentication.services.password_service import PasswordService
-from django.shortcuts import redirect
-from authentication.services.token_service import TokenService
 
 
 class CustomPasswordResetView(PasswordResetView):

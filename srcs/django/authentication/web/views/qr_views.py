@@ -1,10 +1,10 @@
-from django.shortcuts import redirect
-from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ...models import CustomUser
+from django.contrib.auth import login as auth_login
+from django.http import HttpResponse, JsonResponse
 from ...services.qr_service import QRService
+from django.shortcuts import redirect
+from ...models import CustomUser
 import json
 
 
