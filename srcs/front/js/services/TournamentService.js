@@ -205,4 +205,27 @@ class TournamentService {
     }
 }
 
+async function startMatch(matchId, matchData) {
+    try {
+        const response = await fetch(`/api/tournament/match/${matchId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(matchData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al actualizar el partido');
+        }
+
+        const data = await response.json();
+        console.log('Respuesta del servidor para siguiente partida:', data); // Debug
+        return data;
+    } catch (error) {
+        console.error('Error en startMatch:', error);
+        throw error;
+    }
+}
+
 export default TournamentService;

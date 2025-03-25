@@ -6,6 +6,8 @@ import { loadHTML } from '../../utils/htmlLoader.js';
 import { soundService } from '../../services/SoundService.js';
 import { TournamentGame } from '../../views/game/components/TournamentGame.js';
 import { TournamentGameView } from './TournamentGameView.js';
+import TournamentModalService from '../../services/TournamentModalService.js';
+import { showTournamentMatchModal } from '../../components/TournamentModals.js';
 
 export async function LocalTournamentView() {
     const app = document.getElementById('app');
@@ -717,12 +719,20 @@ async function loadFinishedTournaments() {
 }
 
 async function startMatch(match, tournament) {
-    console.log('Iniciando partido:', match);
     try {
-        const [gameTemplate, userInfo] = await Promise.all([
+        const [gameTemplate, modalTemplate, userInfo] = await Promise.all([
             loadHTML('/views/game/templates/GameMatch.html'),
+            loadHTML('/views/tournament/templates/TournamentModals.html'),
             AuthService.getUserProfile()
         ]);
+
+        // Asegurar CSS cargado
+        if (!document.querySelector('link[href="/css/tournamentModals.css"]')) {
+            const linkElem = document.createElement('link');
+            linkElem.rel = 'stylesheet';
+            linkElem.href = '/css/tournamentModals.css';
+            document.head.appendChild(linkElem);
+        }
 
         const app = document.getElementById('app');
         app.innerHTML = await getNavbarHTML(true, userInfo);
@@ -730,6 +740,18 @@ async function startMatch(match, tournament) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = gameTemplate;
         app.appendChild(tempDiv.firstElementChild);
+
+        // Añadir el modal al DOM
+        const modalsContainer = document.createElement('div');
+        modalsContainer.id = 'modalsContainer';
+        modalsContainer.innerHTML = modalTemplate;
+        app.appendChild(modalsContainer);
+
+        // Ocultar explícitamente el modal de GameOver al inicio
+        const gameOverScreen = document.getElementById('tournamentGameOverScreen');
+        if (gameOverScreen) {
+            gameOverScreen.style.display = 'none';
+        }
 
         // Configurar el juego
         const canvas = document.getElementById('gameCanvas');
@@ -739,15 +761,13 @@ async function startMatch(match, tournament) {
         // Configurar la UI
         document.querySelector('#leftPlayerName').textContent = match.player1.username;
         document.querySelector('#rightPlayerName').textContent = match.player2.username;
-        document.querySelector('#player1NamePreMatch').textContent = match.player1.username;
-        document.querySelector('#player2NamePreMatch').textContent = match.player2.username;
 
-        // Mostrar el modal inicial
-        const matchFoundModal = document.getElementById('matchFoundModal');
-        matchFoundModal.style.display = 'flex';
+        // Mostrar el modal inicial con los nombres correctos usando TournamentModalService
+        TournamentModalService.showMatchStart(match.player1, match.player2);
 
         await new Promise(resolve => setTimeout(resolve, 2000));
-        matchFoundModal.style.display = 'none';
+        const matchFoundModal = document.getElementById('tournamentMatchFoundModal');
+        if (matchFoundModal) matchFoundModal.style.display = 'none';
 
         // Mostrar countdown
         const countdown = document.getElementById('countdown');
@@ -796,47 +816,56 @@ async function startMatch(match, tournament) {
 
 async function showResultModal(result, match, tournament, player1Points, player2Points, winner) {
     try {
-        // Usar el modal de Game Over existente
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const resultIcon = gameOverScreen.querySelector('.result-icon i');
-        const winnerText = document.getElementById('winnerText');
+        // Obtener detalles actualizados del torneo
+        const tournamentDetails = await TournamentService.getTournamentDetails(tournament.id);
         
-        // Agregar clase para modo torneo
-        gameOverScreen.classList.add('tournament-mode');
+        // Encontrar todos los partidos pendientes
+        const pendingMatches = tournamentDetails.matches.filter(m => !m.winner);
         
-        // Actualizar puntuaciones y nombres
-        document.querySelector('.player1-score').textContent = player1Points;
-        document.querySelector('.player2-score').textContent = player2Points;
-        document.getElementById('finalPlayer1Name').textContent = match.player1.username;
-        document.getElementById('finalPlayer2Name').textContent = match.player2.username;
+        // Encontrar el siguiente partido (el primero pendiente)
+        const nextMatch = pendingMatches.length > 0 ? pendingMatches[0] : null;
 
-        // Configurar victoria
-        resultIcon.className = 'fas fa-trophy';
-        winnerText.textContent = `¡Victoria de ${winner === 'Player1' ? match.player1.username : match.player2.username}!`;
+        console.log('Siguiente partido encontrado:', nextMatch);
 
-        // Mostrar siguiente partido si existe
-        const tournamentNext = gameOverScreen.querySelector('.tournament-next');
-        if (result.next_match) {
-            tournamentNext.style.display = 'block';
-            tournamentNext.querySelector('.next-match-players').innerHTML = `
-                ${result.next_match.player1.username} vs ${result.next_match.player2.username}
-            `;
-            
-            // Configurar botón para siguiente partido
-            document.getElementById('returnToLobby').innerHTML = '<i class="fas fa-play me-2"></i>Siguiente Partido';
-            document.getElementById('returnToLobby').onclick = () => {
-                window.location.href = `/tournament/game/${tournament.id}/${result.next_match.id}`;
-            };
-        } else {
-            tournamentNext.style.display = 'none';
-            document.getElementById('returnToLobby').innerHTML = '<i class="fas fa-home me-2"></i>Volver al Menú';
-            document.getElementById('returnToLobby').onclick = () => {
-                window.location.href = '/tournament/local';
-            };
+        const buttons = [];
+        
+        if (nextMatch) {
+            buttons.push({
+                text: 'Siguiente Partido',
+                onClick: async () => {
+                    // Obtener los detalles del siguiente partido
+                    try {
+                        const matchInfo = await TournamentService.getMatchInfo(tournament.id, nextMatch.id);
+                        // Iniciar directamente el siguiente partido
+                        await startMatch(matchInfo, tournament);
+                    } catch (error) {
+                        console.error('Error al cargar siguiente partido:', error);
+                        window.location.href = '/tournament/local';
+                    }
+                }
+            });
         }
 
-        // Mostrar el modal
-        gameOverScreen.style.display = 'flex';
+        buttons.push({
+            text: 'Volver a Torneos',
+            onClick: () => window.location.href = '/tournament/local#menu'
+        });
+
+        TournamentModalService.showGameOver({
+            final_score: {
+                player1: player1Points,
+                player2: player2Points,
+                player1_name: match.player1.username,
+                player2_name: match.player2.username
+            },
+            winner: winner === 'Player1' ? match.player1.username : match.player2.username,
+            nextMatch: nextMatch ? 
+                `${nextMatch.player1.username} vs ${nextMatch.player2.username}` : 
+                null,
+            customButtons: buttons
+        });
+
+        // ...rest of existing code...
     } catch (error) {
         console.error('Error al mostrar resultado:', error);
         window.location.href = '/tournament/local';
