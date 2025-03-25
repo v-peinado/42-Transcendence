@@ -334,8 +334,8 @@
 }
 
 .pending-tournament-item {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(var(--neon-color-rgb), 0.2);
+    background: linear-gradient(145deg, rgba(22, 87, 114, 0.08), rgba(25, 43, 134, 0.03));
+    border: 1px solid rgba(50, 31, 106, 0.2);
     border-radius: 15px;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
@@ -345,19 +345,17 @@
 
 .pending-tournament-item:hover {
     transform: translateY(-3px);
-    background: linear-gradient(145deg, rgba(var(--neon-color-rgb), 0.08), rgba(var(--neon-color-rgb), 0.03));
-    border-color: rgba(var(--neon-color-rgb), 0.3);
-    box-shadow: 0 8px 25px rgba(var(--neon-color-rgb), 0.15);
+    background: linear-gradient(145deg, rgba(56, 19, 121, 0.12), rgba(47, 31, 172, 0.06));
+    border-color: rgba(38, 15, 82, 0.3);
+    box-shadow: 0 8px 25px rgba(25, 135, 84, 0.2);
 }
 
 .pending-tournament-item .tournament-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin: -1.5rem -1.5rem 1.5rem -1.5rem;
+    border-bottom: 1px solid rgba(25, 135, 84, 0.15);
 }
 
 .pending-tournament-item .title {
@@ -533,26 +531,126 @@
 /* Salón de la fama */
 #tournaments-finished-list {
     padding: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+#tournaments-finished-list.visible {
+    opacity: 1;
 }
 
 #tournaments-finished-list .tournaments-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeInUp 0.5s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 #tournaments-finished-list .tournament-card {
-    background: linear-gradient(45deg, rgba(255, 215, 0, 0.05), rgba(var(--neon-color-rgb), 0.08));
-    border: 1px solid rgba(255, 215, 0, 0.2);
+    background: linear-gradient(145deg, 
+        rgba(103, 58, 183, 0.05),
+        rgba(81, 45, 168, 0.02)
+    );
+    border: 1px solid rgba(103, 58, 183, 0.15);
     border-radius: 15px;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
+    padding: 1.8rem;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 #tournaments-finished-list .tournament-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.15);
-    border-color: rgba(255, 215, 0, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(103, 58, 183, 0.1);
+    border-color: rgba(103, 58, 183, 0.25);
+}
+
+#tournaments-finished-list .tournament-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        rgba(103, 58, 183, 0.4),
+        rgba(81, 45, 168, 0.4)
+    );
+    border-radius: 15px 15px 0 0;
+    opacity: 0.7;
+}
+
+#tournaments-finished-list .tournament-card .title {
+    font-size: 1.4rem;
+    color: white;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+#tournaments-finished-list .tournament-card .tournament-winner {
+    background: rgba(219, 219, 68, 0.08);
+    border: 1px solid rgba(103, 58, 183, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#tournaments-finished-list .tournament-card .tournament-winner i {
+    color: #daf650;
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 5px rgba(226, 231, 64, 0.5));
+}
+
+#tournaments-finished-list .tournament-card .tournament-winner span {
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+#tournaments-finished-list .tournament-card .participant {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+}
+
+#tournaments-finished-list .tournament-card .participant.winner {
+    background: rgba(217, 236, 74, 0.08);
+    border-color: rgba(103, 58, 183, 0.2);
+}
+
+#tournaments-finished-list .tournament-card .participant:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#tournaments-finished-list .tournament-card .participant.winner:hover {
+    background: rgba(103, 58, 183, 0.12);
+}
+
+#tournaments-finished-list .tournament-card .participant i {
+    color: #9575cd;
 }
 
 /* Card States - Necesario para el menú de torneos */
@@ -619,9 +717,40 @@
     display: none;
     opacity: 0;
     transition: all 0.3s ease;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 12px;
     height: 0;
+    padding: 1.5rem;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Estilos específicos para cada tipo de tarjeta cuando se expande */
+#tournaments-pending-btn.expanded .expanded-content {
+    background: linear-gradient(145deg, rgba(78, 70, 180, 0.08), rgba(63, 55, 201, 0.03));
+    border: 1px solid rgba(78, 70, 180, 0.15);
+}
+
+#tournaments-finished.expanded .expanded-content {
+    background: linear-gradient(145deg, rgba(103, 58, 183, 0.08), rgba(81, 45, 168, 0.03));
+    border: 1px solid rgba(103, 58, 183, 0.15);
+}
+
+/* Estilos específicos para cada tipo de tarjeta cuando se expande */
+#tournament-create-btn.expanded {
+    background: linear-gradient(145deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.03));
+    border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+#tournaments-pending-btn.expanded {
+    background: linear-gradient(145deg, rgba(78, 70, 180, 0.08), rgba(63, 55, 201, 0.03));
+    border: 1px solid rgba(78, 70, 180, 0.2);
+    box-shadow: 0 0 20px rgba(78, 70, 180, 0.1);
+}
+
+#tournaments-finished.expanded {
+    background: linear-gradient(145deg, rgba(103, 58, 183, 0.08), rgba(81, 45, 168, 0.03));
+    border: 1px solid rgba(103, 58, 183, 0.2);
+    box-shadow: 0 0 20px rgba(103, 58, 183, 0.1);
 }
 
 /* Expand Button */
@@ -765,4 +894,52 @@
 .game-button.danger:active,
 .game-button.danger-sm:active {
     transform: translateY(1px) !important;
+}
+
+/* Estilos específicos para cada tipo de tarjeta cuando se expande */
+#tournament-create-btn.expanded {
+    background: linear-gradient(145deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.03));
+    border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+#tournaments-pending-btn.expanded {
+    background: linear-gradient(145deg, rgba(78, 70, 180, 0.08), rgba(63, 55, 201, 0.03));
+    border: 1px solid rgba(78, 70, 180, 0.2);
+    box-shadow: 0 0 20px rgba(78, 70, 180, 0.1);
+}
+
+#tournaments-finished.expanded {
+    background: linear-gradient(145deg, rgba(103, 58, 183, 0.08), rgba(81, 45, 168, 0.03));
+    border: 1px solid rgba(103, 58, 183, 0.2);
+    box-shadow: 0 0 20px rgba(103, 58, 183, 0.1);
+}
+
+/* Ajustar el contenido dentro de las tarjetas expandidas */
+.game-mode-card.expanded .tournament-details,
+.game-mode-card.expanded .participants-grid {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+/* Mejorar la visibilidad de los participantes */
+.participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem;
+}
+
+.participant {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.participant:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }

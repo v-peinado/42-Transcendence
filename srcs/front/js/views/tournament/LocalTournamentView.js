@@ -192,11 +192,26 @@ export async function LocalTournamentView() {
             e.stopPropagation();
             const card = document.querySelector('#tournaments-finished');
             
-            // Primero cargar los datos
-            await loadFinishedTournaments();
-            
-            // Luego expandir la tarjeta
+            // Primero expandir la tarjeta
             toggleCardExpansion(card);
+            
+            // Mostrar loader mientras se cargan los datos
+            const container = document.getElementById('tournaments-finished-list');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando torneos...</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Pequeña espera para asegurar que la animación de expansión ha terminado
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Luego cargar los datos
+            await loadFinishedTournaments();
         });
 
     } catch (error) {
@@ -736,52 +751,56 @@ async function loadFinishedTournaments() {
         
         if (!container) return;
 
-        // Mostrar un spinner mientras se cargan los datos
-        container.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando torneos...</span>
+        // Eliminar la clase visible si existe
+        container.classList.remove('visible');
+        
+        // Pequeña espera para asegurar que la transición funcione
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        if (playedTournaments.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-trophy"></i>
+                    <p>No hay torneos finalizados todavía</p>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="tournaments-grid">
+                    ${playedTournaments.map(tournament => {
+                        const winnerName = tournament.winner && tournament.winner.username 
+                            ? tournament.winner.username 
+                            : tournament.winner;
 
-        // Pequeño delay para asegurar que el spinner se muestra
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        container.innerHTML = playedTournaments.length === 0 ? `
-            <div class="empty-state">
-                <i class="fas fa-trophy"></i>
-                <p>No hay torneos finalizados todavía</p>
-            </div>
-        ` : `
-            <div class="tournaments-grid">
-                ${playedTournaments.map(tournament => {
-                    const winnerName = tournament.winner && tournament.winner.username 
-                        ? tournament.winner.username 
-                        : tournament.winner;
-
-                    return `
-                        <div class="tournament-card">
-                            <h3 class="title">${tournament.name}</h3>
-                            <div class="tournament-winner">
-                                <i class="fas fa-crown"></i>
-                                <span>${winnerName || 'Sin ganador'}</span>
-                            </div>
-                            <div class="participants">
-                                <div class="participants-grid">
-                                    ${tournament.participants.map(p => `
-                                        <div class="participant ${winnerName === p.username ? 'winner' : ''}">
-                                            <span class="participant-name">${p.username}</span>
-                                            ${winnerName === p.username ? '<i class="fas fa-crown"></i>' : ''}
-                                        </div>
-                                    `).join('')}
+                        return `
+                            <div class="tournament-card">
+                                <h3 class="title">${tournament.name}</h3>
+                                <div class="tournament-winner">
+                                    <i class="fas fa-crown"></i>
+                                    <span>${winnerName || 'Sin ganador'}</span>
+                                </div>
+                                <div class="participants">
+                                    <div class="participants-grid">
+                                        ${tournament.participants.map(p => `
+                                            <div class="participant ${winnerName === p.username ? 'winner' : ''}">
+                                                <span class="participant-name">${p.username}</span>
+                                                ${winnerName === p.username ? '<i class="fas fa-crown"></i>' : ''}
+                                            </div>
+                                        `).join('')}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // Añadir la clase visible para activar la transición
+        requestAnimationFrame(() => {
+            container.classList.add('visible');
+        });
+
     } catch (error) {
         console.error('Error al cargar torneos finalizados:', error);
         showNotification('Error al cargar el historial de torneos', 'error');
@@ -923,7 +942,7 @@ async function showResultModal(result, match, tournament, player1Points, player2
                 player2: player2Points,
                 player1_name: match.player1.username,
                 player2_name: match.player2.username,
-                tournament_id: tournament.id  // Asegurarnos de pasar el tournament_id
+                tournament_id: tournament.id
             },
             winner: winner === 'Player1' ? match.player1.username : match.player2.username,
             nextMatch: nextMatch ? 
@@ -932,7 +951,6 @@ async function showResultModal(result, match, tournament, player1Points, player2
             customButtons: buttons
         });
 
-        // ...rest of existing code...
     } catch (error) {
         console.error('Error al mostrar resultado:', error);
         window.location.href = '/tournament/local';
