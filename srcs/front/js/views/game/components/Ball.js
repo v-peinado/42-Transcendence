@@ -62,36 +62,65 @@ export class Ball {
     }
 
     collisionWithEdges(canvas) {
-        if (this.pos.y + this.radius > canvas.height || this.pos.y - this.radius < 0) {
+        if (this.pos.y + this.radius >= canvas.height) {
+            // Corrige la posición para que no atraviese el borde inferior
+            this.pos.y = canvas.height - this.radius;
+            this.vel.y *= -1;
+        } else if (this.pos.y - this.radius <= 0) {
+            // Corrige la posición para que no atraviese el borde superior
+            this.pos.y = this.radius;
             this.vel.y *= -1;
         }
     }
-
+    
     collisionWithPaddle(paddle) {
-        const ballLeft = this.pos.x - this.radius;
-        const ballRight = this.pos.x + this.radius;
-        const ballTop = this.pos.y - this.radius;
-        const ballBottom = this.pos.y + this.radius;
-
-        const paddleLeft = paddle.pos.x;
-        const paddleRight = paddle.pos.x + paddle.width;
-        const paddleTop = paddle.pos.y;
-        const paddleBottom = paddle.pos.y + paddle.height;
-
-        if (ballRight >= paddleLeft && 
-            ballLeft <= paddleRight && 
-            ballBottom >= paddleTop && 
-            ballTop <= paddleBottom) {
-            
-            // Calcular punto de impacto relativo
-            const relativeIntersectY = (paddle.pos.y + (paddle.height/2)) - this.pos.y;
-            const normalizedIntersectY = relativeIntersectY / (paddle.height/2);
-            const bounceAngle = normalizedIntersectY * Math.PI/3;
-
-            const speed = Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y);
-            
-            this.vel.x = -this.vel.x;
-            this.vel.y = -speed * Math.sin(bounceAngle);
+        // Calcular la distancia entre el centro de la pelota y el centro de la pala
+        let dx = Math.abs(this.pos.x - paddle.pos.x - paddle.width / 2);
+        let dy = Math.abs(this.pos.y - paddle.pos.y - paddle.height / 2);
+        
+        // Si se detecta colisión
+        if (dx <= (this.radius + paddle.width / 2) && dy <= (this.radius + paddle.height / 2)) {
+            if (dx > paddle.width / 2) {
+                // Colisión en los laterales: usar la lógica de ángulo de rebote
+                let relativeIntersectY = this.pos.y - (paddle.pos.y + paddle.height / 2);
+                let normalizedIntersect = relativeIntersectY / (paddle.height / 2);
+                let bounceAngle = normalizedIntersect * (Math.PI / 4);  // máximo 45 grados
+                
+                // Usar la velocidad actual para mantener la magnitud
+                let speed = Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y);
+                
+                if (this.vel.x < 0) {
+                    this.vel.x = speed * Math.cos(bounceAngle);
+                    this.vel.y = speed * Math.sin(bounceAngle);
+                    this.pos.x = paddle.pos.x + paddle.width + this.radius;
+                } else {
+                    this.vel.x = -speed * Math.cos(bounceAngle);
+                    this.vel.y = speed * Math.sin(bounceAngle);
+                    this.pos.x = paddle.pos.x - this.radius;
+                }
+            } else if (dy > paddle.height / 2) {
+                // Colisión en la parte superior o inferior: invertir velocidad vertical
+                this.vel.y *= -1;
+                if (this.pos.y < paddle.pos.y) {
+                    this.pos.y = paddle.pos.y - this.radius;
+                } else {
+                    this.pos.y = paddle.pos.y + paddle.height + this.radius;
+                }
+            } else {
+                // Colisión en la esquina: invertir ambas velocidades
+                this.vel.x *= -1;
+                this.vel.y *= -1;
+                if (this.pos.x < paddle.pos.x) {
+                    this.pos.x = paddle.pos.x - this.radius;
+                } else if (this.pos.x > paddle.pos.x + paddle.width) {
+                    this.pos.x = paddle.pos.x + paddle.width + this.radius;
+                }
+                if (this.pos.y < paddle.pos.y) {
+                    this.pos.y = paddle.pos.y - this.radius;
+                } else if (this.pos.y > paddle.pos.y + paddle.height) {
+                    this.pos.y = paddle.pos.y + paddle.height + this.radius;
+                }
+            }
         }
     }
 
