@@ -228,4 +228,17 @@ async function startMatch(matchId, matchData) {
     }
 }
 
+async function getTournamentSummary(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/summary`);
+        const data = await response.json();
+        
+        // Procesar y ordenar los jugadores por puntuación
+        return data.players.sort((a, b) => b.totalPoints - a.totalPoints);
+    } catch (error) {
+        console.error('Error fetching tournament summary:', error);
+        throw error;
+    }
+}
+
 export default TournamentService;

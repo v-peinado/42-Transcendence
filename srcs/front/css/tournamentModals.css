@@ -518,3 +518,103 @@
 #tournamentGameOverScreen .tournament-logo-wrapper::after {
     background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
 }
+
+/* Estilos para el resumen del torneo */
+.tournament-summary-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tournament-ranking {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.ranking-position {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4f9fee;
+    margin-right: 1.5rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.ranking-info {
+    flex: 1;
+}
+
+.ranking-name {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.ranking-stats {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Estilos especiales para los primeros lugares */
+.ranking-item:nth-child(1) .ranking-position {
+    color: #ffd700;
+}
+
+.ranking-item:nth-child(2) .ranking-position {
+    color: #c0c0c0;
+}
+
+.ranking-item:nth-child(3) .ranking-position {
+    color: #cd7f32;
+}
+
+.winner-item {
+    text-align: center;
+    padding: 2rem !important;
+    background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05)) !important;
+    border: 1px solid rgba(255, 215, 0, 0.2) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1) !important;
+}
+
+.winner-item .ranking-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.champion-name {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(45deg, #ffd700, #fff8e7);
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.champion-label {
+    color: rgba(255, 215, 0, 0.8);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}

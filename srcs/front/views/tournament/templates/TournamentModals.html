@@ -94,3 +94,31 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Resumen del Torneo -->
+<div id="tournamentSummaryModal" class="tournament-match-modal" style="display: none;">
+    <div class="tournament-match-modal-dialog">
+        <div class="tournament-match-modal-content">
+            <div class="result-header text-center">
+                <div class="tournament-logo-wrapper">
+                    <i class="fas fa-trophy tournament-logo"></i>
+                </div>
+                <h2 class="victory-title">¡Torneo Finalizado!</h2>
+            </div>
+            
+            <div class="tournament-summary-container">
+                <div class="tournament-ranking">
+                    <div class="ranking-list" id="tournamentRankingList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="tournament-action-buttons">
+                <button class="tournament-button primary" onclick="window.location.href='/tournament/local'">
+                    Volver a Torneos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

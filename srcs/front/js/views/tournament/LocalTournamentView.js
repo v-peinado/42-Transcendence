@@ -720,38 +720,34 @@ async function loadFinishedTournaments() {
 
 async function startMatch(match, tournament) {
     try {
-        const [gameTemplate, modalTemplate, userInfo] = await Promise.all([
+        // Cargar templates
+        const [gameTemplate, modalsTemplate, userInfo] = await Promise.all([
             loadHTML('/views/game/templates/GameMatch.html'),
             loadHTML('/views/tournament/templates/TournamentModals.html'),
             AuthService.getUserProfile()
         ]);
 
-        // Asegurar CSS cargado
-        if (!document.querySelector('link[href="/css/tournamentModals.css"]')) {
-            const linkElem = document.createElement('link');
-            linkElem.rel = 'stylesheet';
-            linkElem.href = '/css/tournamentModals.css';
-            document.head.appendChild(linkElem);
-        }
-
         const app = document.getElementById('app');
         app.innerHTML = await getNavbarHTML(true, userInfo);
-        
+
+        // Añadir el template del juego
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = gameTemplate;
         app.appendChild(tempDiv.firstElementChild);
 
-        // Añadir el modal al DOM
-        const modalsContainer = document.createElement('div');
-        modalsContainer.id = 'modalsContainer';
-        modalsContainer.innerHTML = modalTemplate;
-        app.appendChild(modalsContainer);
+        // Añadir todos los modales necesarios
+        const modalsDiv = document.createElement('div');
+        modalsDiv.innerHTML = modalsTemplate;
+        app.appendChild(modalsDiv);
 
-        // Ocultar explícitamente el modal de GameOver al inicio
-        const gameOverScreen = document.getElementById('tournamentGameOverScreen');
-        if (gameOverScreen) {
-            gameOverScreen.style.display = 'none';
-        }
+        // Verificar que todos los modales necesarios estén presentes
+        const requiredModals = ['tournamentMatchFoundModal', 'tournamentGameOverScreen', 'tournamentSummaryModal'];
+        requiredModals.forEach(modalId => {
+            if (!document.getElementById(modalId)) {
+                console.error(`Modal ${modalId} no encontrado en el DOM`);
+            }
+        });
+
 
         // Configurar el juego
         const canvas = document.getElementById('gameCanvas');
@@ -856,7 +852,8 @@ async function showResultModal(result, match, tournament, player1Points, player2
                 player1: player1Points,
                 player2: player2Points,
                 player1_name: match.player1.username,
-                player2_name: match.player2.username
+                player2_name: match.player2.username,
+                tournament_id: tournament.id  // Asegurarnos de pasar el tournament_id
             },
             winner: winner === 'Player1' ? match.player1.username : match.player2.username,
             nextMatch: nextMatch ? 
