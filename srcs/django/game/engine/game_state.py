@@ -64,7 +64,7 @@ class GameState:
         """Paddle movement"""
         if side in self.paddles:
             paddle = self.paddles[side]
-            move_amount = self.PLAYER_SPEED / 2 * direction
+            move_amount = self.PLAYER_SPEED * direction
             new_y = paddle.y + move_amount
 
             # To keep paddle within canvas bounds...

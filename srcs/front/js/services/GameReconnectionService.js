@@ -164,8 +164,7 @@ class GameReconnectionService {
 				direction: 0,
 				side: this.playerSide,
 				player_id: parseInt(userId),
-				timestamp: Date.now(),
-				force_stop: true
+				timestamp: Date.now()
 			});
 		}
 
@@ -195,18 +194,6 @@ class GameReconnectionService {
 			this.playerSide = data.player_side;
 		}
 
-		// Send stop command to server to prevent paddle from moving
-		if (this.playerSide && this.socket && this.socket.readyState === WebSocket.OPEN) {
-			const userId = localStorage.getItem('user_id');
-			this.send({
-				type: 'move_paddle',
-				direction: 0,
-				side: this.playerSide,
-				player_id: parseInt(userId),
-				timestamp: Date.now(),
-				force_stop: true
-			});
-		}
 
 		// Save data
 		const existingData = this.getSavedGameData(this.gameId) || {};

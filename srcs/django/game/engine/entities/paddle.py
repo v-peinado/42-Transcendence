@@ -31,7 +31,6 @@ class Paddle:
             return
             
         self.moving = True
-        old_y = self.y
         
         move_amount = self.speed * int(direction)  # Always use same base speed
         new_y = self.y + move_amount
@@ -80,6 +79,12 @@ class Paddle:
         
         # Important: Do not disable input during reset
         self.ready_for_input = True
+        
+        # IEnsure speed is maintained at original value
+        if not hasattr(self, 'original_speed'):
+            self.original_speed = self.speed
+        else:
+            self.speed = self.original_speed
 
     def serialize(self):
         """Serializes the paddle state"""

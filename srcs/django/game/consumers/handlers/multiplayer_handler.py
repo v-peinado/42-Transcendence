@@ -38,9 +38,14 @@ class MultiplayerHandler:
                     if hasattr(consumer, 'game_state') and consumer.game_state and consumer.game_state.status == 'playing':
                         # Get current position and reset paddle state
                         paddle = consumer.game_state.paddles.get(player_side)
-                        if paddle:
-                            #print(f"Resetting paddle state for {consumer.user.username} ({player_side}) on reconnection") # DEBUG	
+                        if paddle:             
+							# Store current paddle speed before reset
+                            current_speed = paddle.speed
+                            # Reset paddle state
                             paddle.reset_state()
+                            # Ensure we maintain the speed after reset
+                            paddle.speed = current_speed
+                            paddle.original_speed = current_speed if not hasattr(paddle, 'original_speed') else paddle.original_speed
                     
                     # Notify reconnection
                     await consumer.channel_layer.group_send(	# send message to group

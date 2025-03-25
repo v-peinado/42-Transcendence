@@ -13,6 +13,7 @@ class GameStateHandler:
         side = content.get("side")  # Player's side
         direction = content.get("direction", 0)  # Paddle movement direction (0 = still, 1 = up, -1 = down)
         player_id = content.get("player_id")
+        force_stop = content.get("force_stop", False)  # if this is a force_stop command (reconnect)
         
         # Validate player has permission for this side
         is_valid_side = False
@@ -30,6 +31,13 @@ class GameStateHandler:
             pass
 
         if hasattr(consumer, "game_state") and consumer.game_state:
+            # If force_stop is True, restore original speed before moving paddle
+            if force_stop and side in consumer.game_state.paddles:
+                paddle = consumer.game_state.paddles[side]
+                # If paddle has original_speed attribute, restore it
+                if hasattr(paddle, "original_speed"):
+                    paddle.speed = paddle.original_speed
+            
             # Execute paddle movement in game state
             consumer.game_state.move_paddle(side, direction)
 

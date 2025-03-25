@@ -202,18 +202,22 @@ class GameConsumer(BaseGameConsumer):
                         player_side = "right"
                         self.side = "right"
             
-            # Reset paddle state for this player if reconnecting
+            # Restore paddle state for this player if reconnecting
             if player_side and self.game_state.status == 'playing':
                 paddle = self.game_state.paddles.get(player_side)
                 if paddle:
-                    paddle.reset_state(paddle.y)
                     paddle.ready_for_input = True
+                    
+                    # Restore paddle speed if it was modified
+                    paddle.speed = self.game_state.PLAYER_SPEED
+                    paddle.original_speed = self.game_state.PLAYER_SPEED
             
             # Send game state to client
             await self.send(text_data=json.dumps({
                 "type": "game_state", 
                 "state": self.game_state.serialize(),
-                "player_side": player_side
+                "player_side": player_side,
+                "is_reconnection": True
             }))
 
     async def game_start(self, event):
