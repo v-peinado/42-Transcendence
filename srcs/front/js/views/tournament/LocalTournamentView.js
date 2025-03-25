@@ -5,9 +5,7 @@ import { ChatWidget } from '../../components/ChatWidget.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
 import { soundService } from '../../services/SoundService.js';
 import { TournamentGame } from '../../views/game/components/TournamentGame.js';
-import { TournamentGameView } from './TournamentGameView.js';
 import TournamentModalService from '../../services/TournamentModalService.js';
-import { showTournamentMatchModal } from '../../components/TournamentModals.js';
 
 export async function LocalTournamentView() {
     const app = document.getElementById('app');
@@ -189,12 +187,16 @@ export async function LocalTournamentView() {
         }
 
         // Añadir event listener para el Salón de la Fama
-        document.querySelector('#tournaments-finished').addEventListener('click', (e) => {
+        document.querySelector('#tournaments-finished').addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
             const card = document.querySelector('#tournaments-finished');
+            
+            // Primero cargar los datos
+            await loadFinishedTournaments();
+            
+            // Luego expandir la tarjeta
             toggleCardExpansion(card);
-            loadFinishedTournaments();
         });
 
     } catch (error) {
@@ -348,70 +350,126 @@ async function handleFormSubmit(e, elements) {
         const submitButton = elements.form.querySelector('button[type="submit"]');
         if (submitButton) submitButton.disabled = true;
 
-        try {
-            const response = await TournamentService.createTournament(formData);
-            if (response.message) {
-                // Mostrar notificación estilizada
-                const notification = document.createElement('div');
-                notification.className = 'tournament-notification';
-                notification.innerHTML = `
-                    <i class="fas fa-trophy"></i>
-                    <span class="notification-text">Torneo creado con éxito</span>
-                `;
-                document.body.appendChild(notification);
-                
-                // Forzar un reflow
-                notification.offsetHeight;
-                
-                // Mostrar notificación
-                notification.classList.add('show');
-                
-                // Ocultar y eliminar después de 3 segundos
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                    setTimeout(() => notification.remove(), 300);
-                }, 3000);
+        const response = await TournamentService.createTournament(formData);
+        
+        if (response.message) {
+            // 1. Contraer el formulario
+            const createCard = document.querySelector('#tournament-create-btn');
+            createCard.classList.remove('expanded');
+            document.querySelectorAll('.game-mode-card').forEach(c => {
+                c.classList.remove('shrunk');
+            });
+            createCard.closest('.game-modes-grid').classList.remove('has-expanded');
+            
+            // 2. Limpiar el formulario
+            elements.form.reset();
+            updatePlayersFields(elements);
 
-                // Restablecer formulario y actualizar vista
-                elements.form.reset();
-                updatePlayersFields(elements);
-                
-                // Contraer la tarjeta
-                const createCard = document.querySelector('#tournament-create-btn');
-                const grid = createCard.closest('.game-modes-grid');
-                
-                // Remover estados de todas las tarjetas
-                document.querySelectorAll('.game-mode-card').forEach(card => {
-                    card.classList.remove('expanded', 'shrunk');
-                    const btn = card.querySelector('.expand-button');
-                    if (btn) btn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                });
-                
-                // Remover clase del grid
-                grid.classList.remove('has-expanded');
-                
-                // Actualizar torneos y contador
-                const [pending, played] = await Promise.all([
-                    TournamentService.fetchPendingTournaments(),
-                    TournamentService.fetchPlayedTournaments()
-                ]);
-                
-                elements.pendingCount.textContent = pending.length;
-                renderTournaments('pending', pending);
-                renderTournaments('played', played);
-
-                // Expandir la tarjeta de torneos pendientes después de un breve delay
-                setTimeout(() => {
-                    const pendingCard = document.querySelector('#tournaments-pending-btn');
-                    toggleCardExpansion(pendingCard);
-                }, 300);
+            // 3. Actualizar la lista de torneos
+            const pending = await TournamentService.fetchPendingTournaments();
+            
+            // 4. Actualizar el contador
+            const countBadge = document.querySelector('.count-badge');
+            if (countBadge) {
+                countBadge.textContent = pending.length;
             }
-        } finally {
-            if (submitButton) submitButton.disabled = false;
+
+            // 5. Renderizar los torneos pendientes con sus event listeners
+            const pendingList = document.getElementById('tournaments-pending-list');
+            if (pendingList) {
+                pendingList.innerHTML = pending.length === 0 ? 
+                    '<div class="text-center mt-3">No hay torneos pendientes</div>' :
+                    pending.map(tournament => `
+                        <div class="pending-tournament-item">
+                            <div class="tournament-header">
+                                <div class="title-section">
+                                    <h3 class="title">${tournament.name}</h3>
+                                    <div class="tournament-info">
+                                        <span class="info-badge">
+                                            <i class="fas fa-star"></i>
+                                            ${tournament.max_match_points} puntos para ganar
+                                        </span>
+                                        <span class="info-badge">
+                                            <i class="fas fa-users"></i>
+                                            ${tournament.participants.length} jugadores
+                                        </span>
+                                    </div>
+                                </div>
+                                <button class="expand-tournament-btn">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="tournament-details" style="display: none;">
+                                <div class="participants">
+                                    <div class="participants-grid">
+                                        ${tournament.participants.map((participant, index) => `
+                                            <div class="participant">
+                                                <span class="participant-number">#${index + 1}</span>
+                                                <span class="participant-name">${participant.username}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <button class="game-button primary start-tournament" data-id="${tournament.id}">
+                                        <i class="fas fa-play"></i>
+                                        <span>Iniciar Torneo</span>
+                                    </button>
+                                    <button class="game-button danger delete-tournament" data-id="${tournament.id}">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Eliminar Torneo</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                // 6. Reinicializar los event listeners para la nueva lista
+                pendingList.querySelectorAll('.pending-tournament-item').forEach(item => {
+                    const header = item.querySelector('.tournament-header');
+                    const expandBtn = item.querySelector('.expand-tournament-btn');
+                    const details = item.querySelector('.tournament-details');
+                    const startBtn = item.querySelector('.start-tournament');
+                    const deleteBtn = item.querySelector('.delete-tournament');
+
+                    const toggleDetailsOnly = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const isHidden = details.style.display === 'none';
+                        details.style.display = isHidden ? 'block' : 'none';
+                        expandBtn.classList.toggle('expanded');
+                    };
+
+                    header.addEventListener('click', toggleDetailsOnly);
+                    expandBtn.addEventListener('click', toggleDetailsOnly);
+
+                    if (startBtn) {
+                        startBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleStartTournament(startBtn.dataset.id);
+                        });
+                    }
+
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteTournament(deleteBtn.dataset.id);
+                        });
+                    }
+                });
+            }
+
+            // 7. Mostrar notificación de éxito
+            showNotification('Torneo creado con éxito', 'success');
         }
     } catch (error) {
         console.error('Error al crear torneo:', error);
-        showNotification(error.message, 'error');
+        showNotification(error.message || 'Error al crear el torneo', 'error');
+    } finally {
+        const submitButton = elements.form.querySelector('button[type="submit"]');
+        if (submitButton) submitButton.disabled = false;
     }
 }
 
@@ -677,6 +735,18 @@ async function loadFinishedTournaments() {
         const container = document.getElementById('tournaments-finished-list');
         
         if (!container) return;
+
+        // Mostrar un spinner mientras se cargan los datos
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando torneos...</span>
+                </div>
+            </div>
+        `;
+
+        // Pequeño delay para asegurar que el spinner se muestra
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         container.innerHTML = playedTournaments.length === 0 ? `
             <div class="empty-state">
