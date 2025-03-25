@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SERVER_IP = os.environ.get("IP_SERVER", "localhost")
 
 # Basic project configuration
-SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
 DEBUG = os.environ.get("DEBUG", "True") == "False"
 
 # Define allowed hosts in production (by default, no hosts allowed)
@@ -296,7 +296,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
 # JWT token generation settings
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "default-secret-key")
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 JWT_EXPIRATION_TIME = int(os.environ.get("JWT_EXPIRATION_TIME") or 3600)
 
