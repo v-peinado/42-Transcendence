@@ -90,7 +90,10 @@ export async function GameMatchView(gameId) {
     
     console.log('User ID en juego:', userId);  // Debug user_id
 
-    // Setup canvas y contexto
+    // Añadir una variable para rastrear la última notificación de reconexión
+	let lastReconnectNotification = 0;
+
+	// Setup canvas y contexto
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1000;
@@ -220,13 +223,19 @@ export async function GameMatchView(gameId) {
 				if (gameStatus) {
 					gameStatus.textContent = '🎮 Reconectado!';
 				}
-				showGameNotification('¡Reconectado al juego!', 'success');
 
-				// Reiniciar los controles explícitamente tras reconexión
-				if (playerSide) {
-					console.log('Reiniciando controles después de reconexión');
-					activeKeys.clear(); // Limpiar estado de teclas
-					setupControls(); // Reconfigurar controles
+				// Evitar mostrar múltiples notificaciones en un período corto de tiempo
+				const now = Date.now();
+				if (now - lastReconnectNotification > 3000) { // Solo una notificación cada 3 segundos
+					showGameNotification('¡Reconectado al juego!', 'success');
+					lastReconnectNotification = now;
+				}
+
+			// Reiniciar los controles explícitamente tras reconexión
+			if (playerSide) {
+				console.log('Reiniciando controles después de reconexión');
+				activeKeys.clear(); // Limpiar estado de teclas
+				setupControls(); // Reconfigurar controles
 				}
 			},
 			onReconnectFailed: () => {
