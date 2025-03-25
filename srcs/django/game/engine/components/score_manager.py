@@ -49,5 +49,6 @@ class ScoreManager:
         )  # Set ball direction after scoring
         angle = random.uniform(-0.5, 0.5)
 
+		# Set ball speed based on direction and angle
         self.game_state.ball.speed_x = self.game_state.BALL_SPEED * direction
         self.game_state.ball.speed_y = self.game_state.BALL_SPEED * math.sin(angle)
