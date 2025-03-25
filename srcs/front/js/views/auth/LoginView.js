@@ -44,104 +44,101 @@ export async function LoginView() {
                 app.appendChild(loadingTemplate.content.cloneNode(true));
             }
 
-            // Verificar si ya aceptó GDPR previamente
-            const hasAcceptedGDPR = localStorage.getItem('42_gdpr_accepted');
             const result = await AuthService.handle42Callback(code);
-            
-            // Si el usuario ya está autenticado o aceptó GDPR, ir directamente a success
-            if (result.returning_user || hasAcceptedGDPR) {
-                if (result.status === 'success') {
-                    localStorage.setItem('isAuthenticated', 'true');
-                    localStorage.setItem('username', result.username);
-                    window.location.replace('/game');
-                    return;
-                }
-            }
-
-            // Solo mostrar el modal GDPR si es necesario
-            if (!hasAcceptedGDPR && !result.returning_user) {
-                const gdpr42ModalTemplate = document.getElementById('gdpr42ModalTemplate');
-                if (gdpr42ModalTemplate) {
-                    app.appendChild(gdpr42ModalTemplate.content.cloneNode(true));
-                }
-
-                const gdpr42ModalElement = document.getElementById('gdpr42Modal');
-                if (!gdpr42ModalElement) {
-                    throw new Error('Modal GDPR no encontrado');
-                }
-                
-                const gdpr42Modal = new bootstrap.Modal(gdpr42ModalElement, {
-                    backdrop: 'static',
-                    keyboard: false
-                });
-                
-                // Esperar respuesta del usuario
-                await new Promise((resolve, reject) => {
-                    const acceptBtn = document.getElementById('accept42GDPRBtn');
-                    if (acceptBtn) {
-                        acceptBtn.onclick = () => {
-                            localStorage.setItem('42_gdpr_accepted', 'true');
-                            gdpr42Modal.hide();
-                            resolve(true);
-                        };
-                    }
-                    
-                    gdpr42ModalElement.addEventListener('hidden.bs.modal', () => {
-                        if (!localStorage.getItem('42_gdpr_accepted')) {
-                            reject('GDPR not accepted');
-                        }
-                    });
-                    
-                    gdpr42Modal.show();
-                });
-            }
-
             console.log('Resultado 42 callback:', result);
 
-            // Obtener los templates necesarios primero
-            const mainTemplate = document.getElementById('mainLoginTemplate');
-            const twoFactorModalTemplate = document.getElementById('twoFactorModalTemplate');
-
-            // Limpiar vista
-            app.innerHTML = getNavbarHTML(false);
-
+            // Primero manejar 2FA si es necesario
             if (result.status === 'pending_2fa' || result.require_2fa) {
-                if (mainTemplate && twoFactorModalTemplate) {
-                    // Limpiar la URL del código 42
-                    window.history.replaceState({}, '', '/login');
-                    
-                    // Mostrar vista base y modal
-                    app.appendChild(mainTemplate.content.cloneNode(true));
-                    app.appendChild(twoFactorModalTemplate.content.cloneNode(true));
-                    
-                    // Configurar estado
-                    sessionStorage.setItem('pendingAuth', 'true');
-                    sessionStorage.setItem('fortytwo_user', 'true');
-                    sessionStorage.setItem('pendingUsername', result.username);
+                // Obtener los templates necesarios primero
+                const mainTemplate = document.getElementById('mainLoginTemplate');
+                const twoFactorModalTemplate = document.getElementById('twoFactorModalTemplate');
 
-                    // IMPORTANTE: Configurar los event listeners antes de mostrar el modal
-                    setupEventListeners();
+                // Limpiar vista
+                app.innerHTML = getNavbarHTML(false);
 
-                    // Mostrar modal
-                    const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
-                    modal.show();
+                if (result.status === 'pending_2fa' || result.require_2fa) {
+                    if (mainTemplate && twoFactorModalTemplate) {
+                        // Limpiar la URL del código 42
+                        window.history.replaceState({}, '', '/login');
+                        
+                        // Mostrar vista base y modal
+                        app.appendChild(mainTemplate.content.cloneNode(true));
+                        app.appendChild(twoFactorModalTemplate.content.cloneNode(true));
+                        
+                        // Configurar estado
+                        sessionStorage.setItem('pendingAuth', 'true');
+                        sessionStorage.setItem('fortytwo_user', 'true');
+                        sessionStorage.setItem('pendingUsername', result.username);
 
-                    // Enfocar el input del código
-                    document.getElementById('code').value = '';
-                    document.getElementById('code').focus();
+                        // IMPORTANTE: Configurar los event listeners antes de mostrar el modal
+                        setupEventListeners();
+
+                        // Mostrar modal
+                        const modal = new bootstrap.Modal(document.getElementById('twoFactorModal'));
+                        modal.show();
+
+                        // Enfocar el input del código
+                        document.getElementById('code').value = '';
+                        document.getElementById('code').focus();
+                    }
+                    return;
                 }
                 return;
             }
 
+            // Manejar verificación pendiente y mostrar GDPR
             if (result.status === 'pending_verification' || 
                 (result.status === 'error' && result.message?.includes('verification'))) {
+                
+                // Mostrar GDPR primero si no lo ha aceptado
+                const hasAcceptedGDPR = localStorage.getItem('42_gdpr_accepted');
+                if (!hasAcceptedGDPR) {
+                    const gdpr42ModalTemplate = document.getElementById('gdpr42ModalTemplate');
+                    if (gdpr42ModalTemplate) {
+                        app.appendChild(gdpr42ModalTemplate.content.cloneNode(true));
+                        
+                        const gdpr42ModalElement = document.getElementById('gdpr42Modal');
+                        if (!gdpr42ModalElement) {
+                            throw new Error('Modal GDPR no encontrado');
+                        }
+                        
+                        const gdpr42Modal = new bootstrap.Modal(gdpr42ModalElement, {
+                            backdrop: 'static',
+                            keyboard: false
+                        });
+                        
+                        // Esperar respuesta del usuario
+                        await new Promise((resolve, reject) => {
+                            const acceptBtn = document.getElementById('accept42GDPRBtn');
+                            if (acceptBtn) {
+                                acceptBtn.onclick = () => {
+                                    localStorage.setItem('42_gdpr_accepted', 'true');
+                                    gdpr42Modal.hide();
+                                    resolve(true);
+                                };
+                            }
+                            
+                            gdpr42ModalElement.addEventListener('hidden.bs.modal', () => {
+                                if (!localStorage.getItem('42_gdpr_accepted')) {
+                                    reject('GDPR not accepted');
+                                }
+                            });
+                            
+                            gdpr42Modal.show();
+                        });
+                    }
+                }
+
+                // Después de GDPR, mostrar mensaje de verificación
                 const verify42MessageTemplate = document.getElementById('verify42MessageTemplate');
                 if (verify42MessageTemplate) {
+                    app.innerHTML = getNavbarHTML(false);
                     app.appendChild(verify42MessageTemplate.content.cloneNode(true));
                 }
                 return;
             }
 
+            // Resto del flujo para éxito o otros estados
             if (result.status === 'success') {
                 localStorage.setItem('isAuthenticated', 'true');
                 localStorage.setItem('username', result.username);

@@ -106,12 +106,3 @@
     }
 }
 
-/* Eliminar secciones que puedan estar relacionadas con el modal de Game Over */
-.modal-content,
-.modal-header,
-.modal-body,
-.modal-button,
-.button-content,
-.button-background {
-    /* Eliminar estos estilos si son específicos del modal de Game Over */
-}
