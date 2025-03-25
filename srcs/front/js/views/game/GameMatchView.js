@@ -233,7 +233,6 @@ export async function GameMatchView(gameId) {
 
 			// Reiniciar los controles explícitamente tras reconexión
 			if (playerSide) {
-				console.log('Reiniciando controles después de reconexión');
 				activeKeys.clear(); // Limpiar estado de teclas
 				setupControls(); // Reconfigurar controles
 				}
