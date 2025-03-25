@@ -86,6 +86,9 @@ export class Ball {
                 let normalizedIntersect = relativeIntersectY / (paddle.height / 2);
                 let bounceAngle = normalizedIntersect * (Math.PI / 4);  // máximo 45 grados
                 
+                // Añadir variación aleatoria al ángulo de rebote (±0.05 radianes)
+                bounceAngle += (Math.random() * 0.1 - 0.05);
+                
                 // Usar la velocidad actual para mantener la magnitud
                 let speed = Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y);
                 
