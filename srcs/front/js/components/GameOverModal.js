@@ -1,4 +1,4 @@
-export function showGameOverModal(winner, player1, player2, scores, isTournament = false) {
+export function showGameOverModal(winner, player1, player2, scores, options = {}) {
     // Salir del modo pantalla completa si está activo
     if (document.fullscreenElement) {
         if (document.exitFullscreen) {
@@ -41,34 +41,47 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
         // Determinar el nombre del ganador basado en el username correcto
         const winnerName = winner === player1.username ? player1.username : player2.username;
         
-        // Actualizar textos
+        // Actualizar textos - asegurarnos de que los nombres se establecen correctamente
+        console.log('Actualizando nombres:', {
+            player1: player1.username,
+            player2: player2.username
+        });
+        
+        // Actualizar el texto del ganador
         requiredElements.winnerText.textContent = `¡${winnerName} ha ganado!`;
-        requiredElements.finalPlayer1Name.textContent = player1.username;
-        requiredElements.finalPlayer2Name.textContent = player2.username;
         
-        // Asegurarnos que los scores son números
-        const score1 = typeof scores.player1 === 'number' ? scores.player1 : parseInt(scores.player1) || 0;
-        const score2 = typeof scores.player2 === 'number' ? scores.player2 : parseInt(scores.player2) || 0;
+        // Actualizar nombres de jugadores
+        if (requiredElements.finalPlayer1Name) {
+            requiredElements.finalPlayer1Name.textContent = player1.username || 'Jugador 1';
+        }
+        if (requiredElements.finalPlayer2Name) {
+            requiredElements.finalPlayer2Name.textContent = player2.username || 'Jugador 2';
+        }
         
-        requiredElements.player1Score.textContent = score1;
-        requiredElements.player2Score.textContent = score2;
+        // Actualizar puntuaciones
+        if (requiredElements.player1Score) {
+            requiredElements.player1Score.textContent = scores.player1;
+        }
+        if (requiredElements.player2Score) {
+            requiredElements.player2Score.textContent = scores.player2;
+        }
 
-        console.log('Actualizando scores:', score1, score2); // Debug
+        console.log('Actualizando scores:', scores.player1, scores.player2); // Debug
 
         // Actualizar avatares
         updatePlayerAvatar('.player-column:first-child', player1);
         updatePlayerAvatar('.player-column:last-child', player2);
 
         // Aplicar estilos de ganador/perdedor
-        const player1Result = document.querySelector('.player-column:first-child .player-result');
-        const player2Result = document.querySelector('.player-column:last-child .player-result');
+        const player1Column = document.querySelector('.player-column:first-child');
+        const player2Column = document.querySelector('.player-column:last-child');
         
         if (winnerName === player1.username) {
-            player1Result.classList.add('winner');
-            player2Result.classList.add('loser');
+            player1Column?.classList.add('winner');
+            player2Column?.classList.add('loser');
         } else {
-            player2Result.classList.add('winner');
-            player1Result.classList.add('loser');
+            player2Column?.classList.add('winner');
+            player1Column?.classList.add('loser');
         }
 
         // Configurar botones
@@ -77,13 +90,52 @@ export function showGameOverModal(winner, player1, player2, scores, isTournament
             playAgainButton.style.display = 'none'; // Ocultarlo en matchmaking
         }
 
+        // Limpiar y actualizar la sección de botones
+        const actionsContainer = document.querySelector('.game-over-screen .action-buttons');
+        if (actionsContainer) {
+            actionsContainer.innerHTML = '';
+            
+            // Verificar si hay botones personalizados y es un array
+            if (options.customButtons && Array.isArray(options.customButtons)) {
+                console.log('Botones a renderizar:', options.customButtons); // Debug
+                
+                options.customButtons.forEach(btn => {
+                    if (!btn || !btn.text || !btn.onClick) return;
+                    
+                    const button = document.createElement('button');
+                    button.className = 'game-button primary d-flex align-items-center justify-content-center w-100 mb-3';
+                    button.innerHTML = btn.text;
+                    button.onclick = btn.onClick;
+                    actionsContainer.appendChild(button);
+                });
+            } else {
+                // Fallback a botón por defecto
+                const defaultButton = document.createElement('button');
+                defaultButton.className = 'game-button primary d-flex align-items-center justify-content-center w-100 mb-3';
+                defaultButton.innerHTML = '<i class="fas fa-home me-2"></i>Volver al Menú';
+                defaultButton.onclick = () => window.location.href = '/game';
+                actionsContainer.appendChild(defaultButton);
+            }
+            
+            // Añadir información de siguiente partida si existe
+            if (options.nextMatch) {
+                const nextMatchInfo = document.createElement('div');
+                nextMatchInfo.className = 'next-match-info mt-3 text-center';
+                nextMatchInfo.innerHTML = `
+                    <h4 class="text-primary mb-2">Siguiente Partido</h4>
+                    <p class="mb-0">${options.nextMatch}</p>
+                `;
+                actionsContainer.appendChild(nextMatchInfo);
+            }
+        }
+
         // Mostrar modal
         gameOverScreen.style.display = 'flex';
         gameOverScreen.style.opacity = '1';
         gameOverScreen.style.visibility = 'visible';
     } catch (error) {
         console.error('Error al actualizar el modal:', error);
-        console.error('Datos recibidos:', { winner, player1, player2, scores }); // Debug adicional
+        console.error('Datos recibidos:', { winner, player1, player2, scores, options }); // Debug adicional
     }
 }
 

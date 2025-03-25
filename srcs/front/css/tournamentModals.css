@@ -1,0 +1,620 @@
+/* Modal base styles */
+.tournament-match-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.tournament-match-modal-dialog {
+    width: 100%;
+    max-width: 600px; /* Aumentado de 400px */
+    margin: 0 auto;
+    position: relative;
+}
+
+.tournament-match-modal-content {
+    background: rgba(33, 37, 41, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+    padding: 3rem; /* Aumentado de 2.5rem */
+    transform: scale(0.95);
+    animation: modalEnter 0.3s ease-out forwards;
+}
+
+/* Logo Section */
+.tournament-logo-wrapper {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.tournament-logo-wrapper::after {
+    content: '';
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%); /* Cambiado a dorado */
+    animation: pulse 2s infinite;
+}
+
+.tournament-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+    animation: floatLogo 3s ease-in-out infinite;
+    color: #ffd700; /* Cambiado de #4f9fee a dorado */
+    font-size: 3rem;
+    animation: trophyGlow 3s ease-in-out infinite;
+}
+
+/* Content */
+.tournament-match-content {
+    text-align: center;
+}
+
+.tournament-match-content h4 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: linear-gradient(45deg, #fff 60%, rgba(255, 255, 255, 0.8) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 2rem;
+    animation: titleGlow 2s infinite;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* Players Section */
+.tournament-players {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 2.5rem 0; /* Aumentado de 2rem */
+    position: relative;
+    padding: 2.5rem; /* Aumentado de 2rem */
+    background: rgba(255,255,255,0.03);
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 30px rgba(0,0,0,0.2);
+}
+
+.tournament-player {
+    text-align: center;
+    flex: 1;
+}
+
+.tournament-player-name {
+    color: white;
+    font-size: 2rem; /* Aumentado de 1.5rem */
+    margin: 1.5rem 0; /* Añadido margen vertical */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    font-weight: bold;
+    background: linear-gradient(45deg, #fff, #4f9fee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: namePulse 2s infinite;
+    letter-spacing: 0.5px; /* Mejor legibilidad */
+    text-transform: uppercase; /* Añadido para unificar */
+}
+
+/* VS Section */
+.tournament-vs {
+    margin: 0 2rem;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    position: relative;
+}
+
+.tournament-vs span {
+    font-size: 2.5rem; /* Aumentado de 2rem */
+    font-weight: bold;
+    color: #4f9fee;
+    text-shadow: 0 0 15px rgba(79, 159, 238, 0.5);
+    animation: vsGlow 1.5s infinite;
+}
+
+.tournament-vs-line {
+    width: 50px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #4f9fee, transparent);
+    margin: 0.5rem auto;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #4f9fee, transparent);
+    box-shadow: 0 0 10px rgba(79, 159, 238, 0.5);
+}
+
+/* Status text */
+.tournament-status-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    margin: 1.5rem 0;
+    color: rgba(255,255,255,0.8);
+    font-style: italic;
+    animation: statusPulse 2s infinite;
+}
+
+/* Controles de jugadores */
+.tournament-controls {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 15px;
+}
+
+.tournament-control-group {
+    text-align: center;
+    flex: 1;
+}
+
+.tournament-control-group h5 {
+    color: #4f9fee;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+/* Controles de jugadores */
+.tournament-control-keys {
+    display: flex;
+    gap: 1rem;  /* Aumentado de 0.5rem */
+    justify-content: center;
+    align-items: center;
+}
+
+.tournament-key {
+    background: rgba(79, 159, 238, 0.1);
+    border: 1px solid rgba(79, 159, 238, 0.3);
+    padding: 0.5rem 1rem;  /* Aumentado de 0.3rem 0.6rem */
+    border-radius: 6px;    /* Aumentado de 4px */
+    color: #fff;
+    font-size: 1.2rem;    /* Aumentado de 0.8rem */
+    min-width: 45px;      /* Aumentado de 30px */
+    height: 45px;         /* Añadido para hacer los controles cuadrados */
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;     /* Añadido para hacer las letras más bold */
+    box-shadow: 0 0 15px rgba(79, 159, 238, 0.1); /* Añadido para más profundidad */
+}
+
+/* Estilos del modal de Game Over */
+.tournament-modal.game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    background: rgba(16, 19, 34, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.game-over-content {
+    width: 100%;
+    max-width: 600px;
+    padding: 3rem;
+    background: rgba(33, 37, 41, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+}
+
+/* Ajustes para los resultados del juego */
+.player-result {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.player-result .tournament-player {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.victory-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, #fff 60%, rgba(255, 255, 255, 0.8) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: titleGlow 2s infinite;
+}
+
+.player-name.gradient-text {
+    color: #fff;
+    background: none;
+    -webkit-text-fill-color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.victory-title.gradient-text {
+    color: #fff;
+    background: none;
+    -webkit-text-fill-color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.score-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+}
+
+.player-column {
+    flex: 1;
+    text-align: center;
+}
+
+.player-name {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.score-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.score {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #4f9fee;
+    text-shadow: 0 0 15px rgba(79, 159, 238, 0.5);
+}
+
+.points-label {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.vs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.vs-text {
+    font-size: 2rem;
+    color: #4f9fee;
+}
+
+.vs-line {
+    width: 2px;
+    height: 50px;
+    background: linear-gradient(to bottom, transparent, #4f9fee, transparent);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+/* Limpiar y reescribir estilos del Game Over */
+#tournamentGameOverScreen .tournament-match-modal-content {
+    text-align: center;
+}
+
+#tournamentGameOverScreen .result-header {
+    margin-bottom: 2rem;
+}
+
+#tournamentGameOverScreen .victory-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    margin: 1rem 0;
+}
+
+#tournamentGameOverScreen .score-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#tournamentGameOverScreen .player-name {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+#tournamentGameOverScreen .score {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #4f9fee;
+    text-shadow: 0 0 15px rgba(79, 159, 238, 0.5);
+}
+
+/* Sobrescribir estilos del winner en el modal de torneo */
+#tournamentGameOverScreen .player-column {
+    background: none !important;
+    border: none !important;
+}
+
+#tournamentGameOverScreen .player-column.winner,
+#tournamentGameOverScreen .player-column.loser {
+    background: none !important;
+    border: none !important;
+}
+
+#tournamentGameOverScreen .player-column::before,
+#tournamentGameOverScreen .player-column::after {
+    display: none !important;
+}
+
+/* Estilos específicos para los botones del modal de torneo */
+.tournament-action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.tournament-button {
+    padding: 0.8rem 2rem;
+    min-width: 180px;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(79, 159, 238, 0.1);
+    color: #4f9fee;
+    cursor: pointer;
+}
+
+.tournament-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 159, 238, 0.2);
+    background: rgba(79, 159, 238, 0.15);
+}
+
+.tournament-button:active {
+    transform: translateY(1px);
+}
+
+.tournament-button.primary {
+    background: rgba(79, 159, 238, 0.2);
+    border-color: rgba(79, 159, 238, 0.3);
+}
+
+.tournament-button.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Animations */
+@keyframes floatLogo {
+    0%, 100% { 
+        transform: translateY(0) rotate(0deg); 
+    }
+    50% { 
+        transform: translateY(-10px) rotate(2deg); 
+    }
+}
+
+/* Nuevas animaciones */
+@keyframes modalEnter {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+    100% { transform: scale(1); opacity: 0.5; }
+}
+
+@keyframes titleGlow {
+    0%, 100% { 
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+    }
+    50% { 
+        filter: drop-shadow(0 0 20px #fff);
+    }
+}
+
+@keyframes namePulse {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+}
+
+@keyframes vsGlow {
+    0%, 100% { text-shadow: 0 0 10px rgba(79, 159, 238, 0.5); }
+    50% { text-shadow: 0 0 20px rgba(79, 159, 238, 0.8); }
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+@keyframes trophyGlow {
+    0%, 100% { 
+        filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+    }
+    50% { 
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.5));
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .tournament-match-modal-content {
+        padding: 2rem; /* Aumentado de 1.5rem */
+    }
+
+    .tournament-player-name {
+        font-size: 1.5rem; /* Aumentado de 1rem */
+    }
+}
+
+/* Asegurar que todos los trofeos sean dorados */
+.tournament-logo {
+    color: #ffd700;
+    animation: trophyGlow 3s ease-in-out infinite;
+}
+
+#tournamentGameOverScreen .tournament-logo {
+    color: #ffd700;  /* Asegurar que el trofeo de fin de partida también sea dorado */
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3));
+}
+
+#tournamentGameOverScreen .tournament-logo-wrapper::after {
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+}
+
+/* Estilos para el resumen del torneo */
+.tournament-summary-container {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tournament-ranking {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    transition: transform 0.2s;
+}
+
+.ranking-position {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #4f9fee;
+    margin-right: 1.5rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.ranking-info {
+    flex: 1;
+}
+
+.ranking-name {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.ranking-stats {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Estilos especiales para los primeros lugares */
+.ranking-item:nth-child(1) .ranking-position {
+    color: #ffd700;
+}
+
+.ranking-item:nth-child(2) .ranking-position {
+    color: #c0c0c0;
+}
+
+.ranking-item:nth-child(3) .ranking-position {
+    color: #cd7f32;
+}
+
+.winner-item {
+    text-align: center;
+    padding: 2rem !important;
+    background: linear-gradient(45deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05)) !important;
+    border: 1px solid rgba(255, 215, 0, 0.2) !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1) !important;
+}
+
+.winner-item .ranking-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.champion-name {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(45deg, #ffd700, #fff8e7);
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5) !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.champion-label {
+    color: rgba(255, 215, 0, 0.8);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}

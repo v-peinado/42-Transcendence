@@ -1,0 +1,124 @@
+<!-- Modal de Inicio de Partida de Torneo -->
+<div id="tournamentMatchFoundModal" class="tournament-match-modal" style="display: none;">
+    <div class="tournament-match-modal-dialog">
+        <div class="tournament-match-modal-content">
+            <div class="tournament-logo-wrapper">
+                <i class="fas fa-trophy tournament-logo"></i>
+            </div>
+            
+            <div class="tournament-match-content">
+                <h4>¡Partido de Torneo!</h4>
+                
+                <div class="tournament-players">
+                    <div class="tournament-player">
+                        <div class="tournament-player-name" id="player1NamePreMatch"></div>
+                    </div>
+                    
+                    <div class="tournament-vs">
+                        <span>VS</span>
+                        <div class="tournament-vs-line"></div>
+                    </div>
+                    
+                    <div class="tournament-player">
+                        <div class="tournament-player-name" id="player2NamePreMatch"></div>
+                    </div>
+                </div>
+                
+                <div class="tournament-status-text">
+                    Preparando la partida...
+                </div>
+            </div>
+            
+            <div class="tournament-controls">
+                <div class="tournament-control-group">
+                    <div class="tournament-control-keys">
+                        <span class="tournament-key">W</span>
+                        <span class="tournament-key">S</span>
+                    </div>
+                </div>
+                
+                <div class="tournament-control-group">
+                    <div class="tournament-control-keys">
+                        <span class="tournament-key">↑</span>
+                        <span class="tournament-key">↓</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tournament-action-buttons">
+                <!-- Los botones se insertarán dinámicamente aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Game Over de Torneo -->
+<div id="tournamentGameOverScreen" class="tournament-match-modal" style="display: none;">
+    <div class="tournament-match-modal-dialog">
+        <div class="tournament-match-modal-content">
+            <div class="result-header text-center">
+                <div class="tournament-logo-wrapper">
+                    <i class="fas fa-trophy tournament-logo"></i>
+                </div>
+                <h2 id="winnerText" class="victory-title"></h2>
+            </div>
+            
+            <div class="score-container">
+                <div class="score-details">
+                    <div class="player-column">
+                        <h3 class="player-name" id="finalPlayer1Name"></h3>
+                        <div class="score-display">
+                            <span class="player1-score score">0</span>
+                            <span class="points-label">puntos</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tournament-vs">
+                        <span>VS</span>
+                        <div class="tournament-vs-line"></div>
+                    </div>
+                    
+                    <div class="player-column">
+                        <h3 class="player-name" id="finalPlayer2Name"></h3>
+                        <div class="score-display">
+                            <span class="player2-score score">0</span>
+                            <span class="points-label">puntos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tournament-action-buttons">
+                <!-- Los botones se insertarán dinámicamente aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Resumen del Torneo -->
+<div id="tournamentSummaryModal" class="tournament-match-modal" style="display: none;">
+    <div class="tournament-match-modal-dialog">
+        <div class="tournament-match-modal-content">
+            <div class="result-header text-center">
+                <div class="tournament-logo-wrapper">
+                    <i class="fas fa-trophy tournament-logo"></i>
+                </div>
+                <h2 class="victory-title">¡Torneo Finalizado!</h2>
+            </div>
+            
+            <div class="tournament-summary-container">
+                <div class="tournament-ranking">
+                    <div class="ranking-list" id="tournamentRankingList">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="tournament-action-buttons">
+                <button class="tournament-button primary" onclick="window.location.href='/tournament/local'">
+                    Volver a Torneos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

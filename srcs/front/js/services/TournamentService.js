@@ -205,4 +205,40 @@ class TournamentService {
     }
 }
 
+async function startMatch(matchId, matchData) {
+    try {
+        const response = await fetch(`/api/tournament/match/${matchId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(matchData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al actualizar el partido');
+        }
+
+        const data = await response.json();
+        console.log('Respuesta del servidor para siguiente partida:', data); // Debug
+        return data;
+    } catch (error) {
+        console.error('Error en startMatch:', error);
+        throw error;
+    }
+}
+
+async function getTournamentSummary(tournamentId) {
+    try {
+        const response = await fetch(`/api/tournaments/${tournamentId}/summary`);
+        const data = await response.json();
+        
+        // Procesar y ordenar los jugadores por puntuación
+        return data.players.sort((a, b) => b.totalPoints - a.totalPoints);
+    } catch (error) {
+        console.error('Error fetching tournament summary:', error);
+        throw error;
+    }
+}
+
 export default TournamentService;

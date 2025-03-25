@@ -5,7 +5,9 @@ class GameModalService {
         this.currentModal = null;
     }
 
-    showGameOver({ final_score, winner, returnUrl, returnText, playerSide, isTournament = false }) {
+    showGameOver({ final_score, winner, returnUrl, returnText, playerSide, isTournament = false, nextMatch = null, customButtons = [] }) {
+        console.log('GameModalService - customButtons:', customButtons); // Debug
+
         const scores = {
             player1: final_score?.player1 || 0,
             player2: final_score?.player2 || 0
@@ -21,12 +23,10 @@ class GameModalService {
             ...final_score?.player2_info
         };
 
+        // Asegurar que siempre pasamos un array de botones
         const options = {
-            customButton: isTournament ? {
-                icon: 'fas fa-trophy',
-                text: 'Ver Torneo',
-                onClick: () => window.location.href = returnUrl
-            } : null
+            customButtons: Array.isArray(customButtons) ? customButtons : [],
+            nextMatch
         };
 
         showGameOverModal(winner, player1, player2, scores, options);
