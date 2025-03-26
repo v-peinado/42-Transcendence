@@ -4,7 +4,7 @@ import time
 
 
 class Ball:
-    def __init__(self, x, y, radius=10, base_speed=7):  
+    def __init__(self, x, y, radius=10, base_speed=9):  
         """Set initial ball values"""
         self.x = x
         self.y = y
