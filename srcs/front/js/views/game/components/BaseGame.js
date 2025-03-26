@@ -15,7 +15,7 @@ export class BaseGame {
         // Configuración básica común
         this.difficulty = {
             PADDLE_HEIGHT: 100,
-            BALL_SPEED: 7,  // Esta velocidad base está sobreescribiendo la velocidad de la dificultad
+            BALL_SPEED: 6.4,  // Esta velocidad base está sobreescribiendo la velocidad de la dificultad
             PADDLE_SPEED: 7
         };
 
@@ -171,21 +171,12 @@ export class BaseGame {
     }
 
     respawnBall() {
-        // Coloca la pelota en el centro del canvas
         this.ball.pos.x = this.canvas.width / 2;
         this.ball.pos.y = this.canvas.height / 2;
-        
-        // Invierte la dirección X como en la versión original
         this.ball.vel.x *= -1;
-        
-        // Calcula la velocidad actual
-        const speed = Math.sqrt(this.ball.vel.x * this.ball.vel.x + this.ball.vel.y * this.ball.vel.y);
-        
-        // Genera un ángulo aleatorio entre -0.5 y 0.5 radianes como en Python
-        const angle = Math.random() * 1 - 0.5;
-        
-        // Mantén la magnitud de vel.x pero ajusta vel.y según el ángulo
-        this.ball.vel.y = speed * Math.sin(angle);
+        if (Math.random() > 0.5) {
+            this.ball.vel.y *= -1;
+        }
     }
 
     getState() {
