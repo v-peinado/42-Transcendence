@@ -122,9 +122,9 @@ def notify_next_match(tournament):
     """
     Notify the creator of the next match in the tournament.
     """
-    pendientes = tournament.matches.filter(played=False).order_by('id')
-    if pendientes.exists():
-        next_match = pendientes.first()
+    pending = tournament.matches.filter(played=False).order_by('id')
+    if pending.exists():
+        next_match = pending.first()
         NotificationsConsumer.send_notification(
             tournament.creator.id,
             f"La siguiente partida será {next_match.player1.username} vs {next_match.player2.username}."
