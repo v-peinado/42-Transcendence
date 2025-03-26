@@ -104,7 +104,7 @@ def check_tournament_winner(tournament):
         
         logger.info(f"Tournament winner determined: {winner.username}")
 
-        tournament.winner = winner.username  # Guardar el nombre del ganador
+        tournament.winner = winner.username
         tournament.finished = True
         tournament.save()
         logger.info(f"Tournament ID: {tournament.id} marked as finished.")
