@@ -518,8 +518,10 @@ export class ChatWidget {
         const messageContent = data.message || data.content;
         if (!messageContent) return;
         
-        // Ignorar mensajes del sistema si no soy el creador del torneo
-        if (data.username === 'Sistema' && !data.is_tournament_creator) {
+        const currentUserId = parseInt(localStorage.getItem('user_id'));
+        
+        // Mostrar todos los mensajes del sistema a menos que sea un mensaje específico con recipient_id
+        if (data.username === 'Sistema' && data.recipient_id && data.recipient_id !== currentUserId) {
             return;
         }
         

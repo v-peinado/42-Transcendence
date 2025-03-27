@@ -73,15 +73,15 @@ export function showGameOverModal(winner, player1, player2, scores, options = {}
         updatePlayerAvatar('.player-column:last-child', player2);
 
         // Aplicar estilos de ganador/perdedor
-        const player1Column = document.querySelector('.player-column:first-child');
-        const player2Column = document.querySelector('.player-column:last-child');
+        const player1Result = document.getElementById('player1Result');
+        const player2Result = document.getElementById('player2Result');
         
         if (winnerName === player1.username) {
-            player1Column?.classList.add('winner');
-            player2Column?.classList.add('loser');
+            player1Result?.classList.add('winner');
+            player2Result?.classList.add('loser');
         } else {
-            player2Column?.classList.add('winner');
-            player1Column?.classList.add('loser');
+            player2Result?.classList.add('winner');
+            player1Result?.classList.add('loser');
         }
 
         // Configurar botones

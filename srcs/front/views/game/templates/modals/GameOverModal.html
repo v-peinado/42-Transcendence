@@ -12,7 +12,7 @@
         <div class="score-container glass-effect">
             <div class="score-details">
                 <div class="player-column">
-                    <div class="player-result">
+                    <div class="player-result" id="player1Result">
                         <div class="go-avatar">
                             <img src="" alt="Player Avatar">
                         </div>
@@ -27,7 +27,7 @@
                 </div>
                 
                 <div class="player-column">
-                    <div class="player-result">
+                    <div class="player-result" id="player2Result">
                         <div class="go-avatar">
                             <img src="" alt="Player Avatar">
                         </div>
@@ -39,9 +39,12 @@
         </div>
 
         <div class="action-buttons">
-            <button id="returnToLobby" class="btn btn-outline-info d-flex align-items-center w-100 mb-3">
-                <i class="fas fa-home"></i>
-                <span class="ms-2">Volver al Menú Principal</span>
+            <button id="returnToLobby" class="modal-button primary">
+                <div class="button-background"></div>
+                <div class="button-content">
+                    <i class="fas fa-home"></i>
+                    <span>Volver al Menú Principal</span>
+                </div>
             </button>
         </div>
     </div>

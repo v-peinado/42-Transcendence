@@ -1,18 +1,5 @@
 .matchmaking-modal {
-    background: rgba(16, 19, 34, 0.95);
     backdrop-filter: blur(10px);
-}
-
-.matchmaking-modal-dialog {
-    max-width: 400px;
-    margin: 2rem auto;
-}
-
-.matchmaking-modal-content {
-    background: rgba(33, 37, 41, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
 }
 
 .modal-body {
