@@ -140,9 +140,15 @@ export function showGameOverModal(winner, player1, player2, scores, options = {}
 }
 
 function updatePlayerAvatar(selector, player) {
-    // Actualizar el selector para que busque específicamente la clase go-avatar
     const avatarContainer = document.querySelector(`${selector} .go-avatar`);
     if (avatarContainer) {
+        // Si es CPU, mostrar el icono del robot
+        if (player.is_cpu) {
+            avatarContainer.innerHTML = `<i class="fas fa-robot"></i>`;
+            avatarContainer.closest('.player-column').setAttribute('data-player', 'cpu');
+            return;
+        }
+        
         const avatarUrl = player.fortytwo_image || 
                          player.profile_image || 
                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${player.username}`;
