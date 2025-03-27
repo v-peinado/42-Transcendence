@@ -753,13 +753,20 @@ export class PrivateChat {
         const otherUserId = currentUserId === from_user_id ? to_user_id : from_user_id;
 
         if (action === 'challenge' && currentUserId === to_user_id) {
-            // Añadir botones de respuesta para el receptor
+            // Crear un ID único para los botones
+            const responseId = `challenge-${Date.now()}`;
             const responseButtons = `
-                <div class="cw-challenge-response">
-                    <button class="cw-accept-challenge" onclick="window.acceptChallenge(${from_user_id}, '${data.from_username}', '${channel_name}')">
+                <div class="cw-challenge-response" id="${responseId}">
+                    <button class="cw-accept-challenge" onclick="(e => {
+                        e.target.closest('.cw-challenge-response').remove();
+                        window.acceptChallenge(${from_user_id}, '${data.from_username}', '${channel_name}');
+                    })(event)">
                         <i class="fas fa-check"></i> Aceptar
                     </button>
-                    <button class="cw-reject-challenge" onclick="window.rejectChallenge(${from_user_id}, '${data.from_username}', '${channel_name}')">
+                    <button class="cw-reject-challenge" onclick="(e => {
+                        e.target.closest('.cw-challenge-response').remove();
+                        window.rejectChallenge(${from_user_id}, '${data.from_username}', '${channel_name}');
+                    })(event)">
                         <i class="fas fa-times"></i> Rechazar
                     </button>
                 </div>
@@ -778,6 +785,21 @@ export class PrivateChat {
                 username: 'Sistema',
                 isSystem: true
             });
+
+            // Auto-eliminar botones después de 30 segundos
+            setTimeout(() => {
+                const responseDiv = document.getElementById(responseId);
+                if (responseDiv) {
+                    responseDiv.remove();
+                    // Añadir mensaje de expiración
+                    this.addMessageToChat(from_user_id, {
+                        content: 'La invitación ha expirado',
+                        user_id: 'system',
+                        username: 'Sistema',
+                        isSystem: true
+                    });
+                }
+            }, 30000);
         } else if (action === 'accept' || action === 'reject') {
             // Mostrar respuesta para ambos usuarios
             this.addMessageToChat(otherUserId, {

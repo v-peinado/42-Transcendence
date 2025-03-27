@@ -251,56 +251,6 @@
     }
 }
 
-/* Matchmaking Modal Styles */
-.matchmaking-modal {
-    background: rgba(16, 19, 34, 0.98);
-    backdrop-filter: blur(10px);
-}
-
-.matchmaking-modal-dialog {
-    max-width: 500px;
-}
-
-.matchmaking-modal-content {
-    background: linear-gradient(145deg, 
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-}
-
-.matchmaking-content {
-    padding: 2.5rem;
-    text-align: center;
-}
-
-.modal-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.modal-title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.modal-title i {
-    font-size: 2rem;
-    animation: pulse 2s ease-in-out infinite;
-    color: #4facfe;
-    opacity: 0.9;
-}
-
-.modal-title h2 {
-    font-size: 2rem;
-    margin: 0;
-    background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
 
 .pong-logo-wrapper {
     width: 100px;
