@@ -5,7 +5,7 @@ set -e
 
 # This script handles the initial configuration of PostgreSQL when the container starts.
 # It only runs its configuration if postgresql.conf doesn't exist,
-# which allows for persistent configuration across container restarts.
+# In next runs, entrypoint.sh will start PostgreSQL without reconfiguring it. via ssl_library.sh
 
 # Note: Most database initialization is handled by the official PostgreSQL
 # Docker image using environment variables (POSTGRES_USER, POSTGRES_PASSWORD, etc.)

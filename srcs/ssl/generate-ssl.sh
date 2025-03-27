@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-trap 'cleanup' EXIT
+trap 'cleanup' EXIT # Cleanup on exit
 
 # Color definitions for messages
 RED='\033[0;31m'
@@ -12,7 +12,7 @@ NC='\033[0m'
 SSL_DIR="/ssl"
 KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
-CONF_FILE="${SSL_DIR}/openssl.cnf"
+CONF_FILE="${SSL_DIR}/openssl.cnf" # Configuration file for openssl
 
 cleanup() {
     if [ $? -ne 0 ]; then

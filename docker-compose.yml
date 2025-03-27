@@ -1,10 +1,71 @@
 networks:
   transcendence-backend:
+    # This network is used for the backend services
     driver: bridge
   app-network:
+    # This network is used for the frontend to connect to the backend
     driver: bridge
 
 services:
+
+  ssl-manager:
+    build:
+      context: ./srcs/ssl
+    volumes:
+      - ssl_certs:/ssl:rw
+    env_file:
+      - ./srcs/.env
+    networks:
+      - transcendence-backend
+
+  vault:
+    build:
+      context: .
+      dockerfile: srcs/vault/Dockerfile
+    # ports:
+    #   - "8200:8200" # Vault UI
+    expose:
+      - "8200" # Vault API
+    networks:
+      - transcendence-backend
+    volumes:
+      - ssl_certs:/tmp/ssl
+      - vault_data:/etc/vault.d/data
+    env_file:
+      - ./srcs/.env
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "vault status -tls-skip-verify || exit 0" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  db:
+    build:
+      context: ./srcs/db
+    expose:
+      - "5432"
+    networks:
+      - transcendence-backend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ssl_certs:/tmp/ssl:rw
+    depends_on:
+      ssl-manager:
+        condition: service_completed_successfully
+      vault:
+        condition: service_healthy
+    env_file:
+      - ./srcs/.env # only for root, we use vault for the rest of the users (see Dockerfile)
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   web:
     build:
       context: ./srcs/django
@@ -34,30 +95,14 @@ services:
       retries: 3
       start_period: 30s
 
-  db:
-    build:
-      context: ./srcs/db
+  redis:
+    image: redis:latest
     expose:
-      - "5432"
+      - "6379"
     networks:
       - transcendence-backend
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ssl_certs:/tmp/ssl:rw
-    depends_on:
-      ssl-manager:
-        condition: service_completed_successfully
-      vault:
-        condition: service_healthy
-    env_file:
-      - ./srcs/.env # only for root, we use vault for the rest of the users (see Dockerfile)
     restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ] # We don't need persistence
 
   nginx:
     build:
@@ -71,13 +116,7 @@ services:
       - transcendence-backend
       - app-network
     volumes:
-      - type: volume
-        source: nginx_static
-        target: /usr/share/nginx/html
-      - type: volume
-        source: django_media
-        target: /usr/share/nginx/html/media:rw
-      - django_static:/usr/share/nginx/html/static:ro
+      - django_media:/usr/share/nginx/html/media:rw
       - ssl_certs:/tmp/ssl:ro
     depends_on:
       ssl-manager:
@@ -104,7 +143,6 @@ services:
       - app-network
     volumes:
       - ssl_certs:/tmp/ssl:ro
-      - waf_logs:/var/log/nginx
       - django_media:/usr/share/nginx/html/media:rw
       - ./srcs/waf/custom-nginx.conf.template:/etc/nginx/nginx.conf.template
     env_file:
@@ -127,38 +165,6 @@ services:
       retries: 3
       start_period: 15s
 
-  vault:
-    build:
-      context: .
-      dockerfile: srcs/vault/Dockerfile
-    # ports:
-    #   - "8200:8200" # Vault UI
-    expose:
-      - "8200" # Vault API
-    networks:
-      - transcendence-backend
-    volumes:
-      - ssl_certs:/tmp/ssl
-      - vault_data:/etc/vault.d/data
-    env_file:
-      - ./srcs/.env
-    restart: always
-    healthcheck:
-      test: [ "CMD-SHELL", "vault status -tls-skip-verify || exit 0" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
-  redis:
-    image: redis:latest
-    expose:
-      - "6379"
-    networks:
-      - transcendence-backend
-    restart: always
-    command: [ "redis-server", "--save", "", "--appendonly", "no" ] # We don't need persistence
-
   front:
     build: ./srcs/front
     container_name: front
@@ -172,24 +178,9 @@ services:
       - app-network
     restart: always
 
-  ssl-manager:
-    build:
-      context: ./srcs/ssl
-    volumes:
-      - ssl_certs:/ssl:rw
-    env_file:
-      - ./srcs/.env
-    networks:
-      - transcendence-backend
-
 volumes:
-  django_media:
-    name: django_media
-  django_static:
-  nginx_static:
-  waf_logs:
   ssl_certs:
-    name: ssl_certs
+  postgres_data:
+  django_media:
   vault_data:
     driver: local
-  postgres_data:
