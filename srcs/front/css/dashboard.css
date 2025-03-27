@@ -7,8 +7,8 @@
     text-align: center;
     margin: 1rem auto 2rem;
     padding: 2rem;
-    max-width: 300px; /* Contenedor más ancho */
-    position: relative;  /* Asegurar posicionamiento relativo */
+    max-width: 300px;
+    position: relative;
 }
 
 .profile-header h3 {
@@ -69,21 +69,7 @@
     padding: 1.5rem;
 }
 
-/* Eliminar estos bloques antiguos */
-.ratio-progress-container,
-.ratio-content,
-.ratio-ring,
-.ratio-container,
-.victory-stats,
-.victory-progress,
-.victory-ring,
-.victory-ratio,
-.win-ratio-container,
-.win-ratio,
-.avatar-progress,
-.ratio-badge {
-    display: none;
-}
+
 
 /* Mantener solo los nuevos estilos de ratio */
 .ratio-details {
@@ -122,16 +108,7 @@
     overflow: hidden;
 }
 
-.ratio-progress {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: linear-gradient(90deg, #00bcd4, #00e5ff);
-    width: var(--progress);
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 10px rgba(0, 188, 212, 0.3);
-}
+
 
 .ratio-markers {
     position: absolute;
@@ -962,20 +939,6 @@
     min-width: 300px; /* Asegurar un ancho mínimo para la columna del perfil */
 }
 
-/* Estilos mejorados para la tarjeta de ratio */
-.ratio-container {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-    width: 100%;
-    padding: 0.5rem;
-}
-
-.ratio-progress {
-    position: relative;
-    min-width: 100px;
-    height: 100px;
-}
 
 .ratio-ring {
     position: absolute;
@@ -1083,7 +1046,7 @@
     left: 0;
     height: 100%;
     background: linear-gradient(90deg, #00bcd4, #00e5ff);
-    width: var(--progress);
+    width: 0%;
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 10px rgba(0, 188, 212, 0.3);
 }

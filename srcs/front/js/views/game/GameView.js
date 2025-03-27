@@ -1,19 +1,19 @@
 import { gameWebSocketService } from '../../services/GameWebSocketService.js';
 import AuthService from '../../services/AuthService.js';
 import { loadHTML } from '../../utils/htmlLoader.js';
-import { getNavbarHTML } from '../../components/Navbar.js';
 import { ChatWidget } from '../../components/ChatWidget.js';
 import { initializeMenuAnimations } from './GameMenuAnimations.js';
 import { GameThemes, getThemeIcon } from './components/GameThemes.js';
 
 export default async function GameView(userInfo = null) {
     const app = document.getElementById('app');
-    const [template, navbarHtml] = await Promise.all([
+    const [template, navbarHtml, footerHtml] = await Promise.all([
         loadHTML('/views/game/templates/GameMenu.html'),
         loadHTML('/views/components/NavbarAuthenticated.html'),
+        loadHTML('/views/components/Footer.html')
     ]);
 
-    app.innerHTML = navbarHtml + template;
+    app.innerHTML = navbarHtml + template + footerHtml;
 
     // Actualizar la información del usuario en el navbar
     if (userInfo) {

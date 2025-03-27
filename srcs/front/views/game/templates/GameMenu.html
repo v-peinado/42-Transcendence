@@ -1,103 +1,107 @@
-<div class="hero-section">
-    <div class="container position-relative"> <!-- Añadido position-relative -->
-        <!-- Mensaje de bienvenida -->
-        <div class="welcome-message">
-            <h1 class="display-4 fw-bold">¡Hola, <span id="username-placeholder"></span>!</h1>
-        </div>
-
-        <!-- Contenedor del menú -->
-        <div class="game-menu-container">
-            <div class="row justify-content-center">
-                <div class="col-md-10 text-center">
-                    <div class="menu-header position-relative mb-4">
-                        <h1 class="display-4 text-gradient">Elige tu modo</h1>
-                        <button class="customize-button" id="customizeGameBtn">
-                            <i class="fas fa-paint-brush"></i>
-                            Personalizar tema
-                        </button>
-                    </div>
-                    <div class="game-modes">
-                        <div class="game-modes-grid">
-                            <!-- Classic Matchmaking -->
-                            <div class="game-mode-card active" id="matchmakingBtn">
-                                <div class="card-glow"></div>
-                                <div class="card-content">
-                                    <div class="card-icon">
-                                        <i class="fas fa-gamepad"></i>
-                                    </div>
-                                    <h3>Partida Rápida</h3>
-                                    <p>1 vs 1 Online</p>
-                                    <div class="mode-details">
-                                        <i class="fas fa-signal"></i>
-                                        <span>Matchmaking</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- AI Training -->
-                            <div class="game-mode-card disabled" id="aiBtn">
-                                <div class="card-glow"></div>
-                                <div class="card-content">
-                                    <div class="card-icon">
-                                        <i class="fas fa-robot"></i>
-                                    </div>
-                                    <h3>Modo IA</h3>
-                                    <p>Entrenamiento</p>
-                                    <div class="difficulty-badges">
-                                        <span class="badge">Fácil</span>
-                                        <span class="badge">Normal</span>
-                                        <span class="badge">Difícil</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Local Tournament -->
-                            <div class="game-mode-card" id="localTournamentBtn">
-                                <div class="card-glow"></div>
-                                <div class="card-content">
-                                    <div class="card-icon">
-                                        <i class="fas fa-trophy"></i> <!-- Cambiado de fa-table-tennis a fa-trophy -->
-                                    </div>
-                                    <h3>Torneo Local</h3>
-                                    <p>Compite en el mismo dispositivo</p>
-                                    <div class="tournament-info">
-                                        <span>2-8 jugadores</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            
-
-            <div id="status" class="matchmaking-status" style="display: none;">
-                <div class="status-content">
-                    <div class="spinner-border text-light" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <span id="status-text">Iniciando...</span>
-                </div>
+<div class="main-content">
+    <div class="hero-section">
+        <div class="container position-relative">
+            <!-- Mensaje de bienvenida -->
+            <div class="welcome-message">
+                <h1 class="display-4 fw-bold">¡Hola, <span id="username-placeholder"></span>!</h1>
             </div>
 
-            <!-- Modal de matchmaking -->
-            <div class="modal matchmaking-modal" id="matchmakingModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-body text-center">
-                            <div class="matchmaking-content">
-                                <div class="search-status">
-                                    <div class="matchmaking-logo-wrapper">
-                                        <img src="/public/pong-logo.svg" alt="Pong Logo" class="matchmaking-logo">
-                                    </div>
-                                    <div class="search-indicator">
-                                        <div class="ping-circle"></div>
-                                    </div>
-                                    <h3>Buscando partida</h3>
-                                    <div id="modal-status-text" class="status-message">
-                                        <span id="search-time">0:00</span>
+            <!-- Contenedor del menú -->
+            <div class="game-menu-container">
+                <div class="row justify-content-center">
+                    <div class="col-md-10 text-center">
+                        <div class="menu-header position-relative mb-4">
+                            <h1 class="display-4 text-gradient">Elige tu modo</h1>
+                            <button class="customize-button" id="customizeGameBtn">
+                                <i class="fas fa-paint-brush"></i>
+                                Personalizar tema
+                            </button>
+                        </div>
+                        <div class="game-modes">
+                            <div class="game-modes-grid">
+                                <!-- Classic Matchmaking -->
+                                <div class="game-mode-card active" id="matchmakingBtn">
+                                    <div class="card-glow"></div>
+                                    <div class="card-content">
+                                        <div class="card-icon">
+                                            <i class="fas fa-gamepad"></i>
+                                        </div>
+                                        <h3>Partida Rápida</h3>
+                                        <p>1 vs 1 Online</p>
+                                        <div class="mode-details">
+                                            <i class="fas fa-signal"></i>
+                                            <span>Matchmaking</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <button id="cancelMatchmaking" class="btn-cancel">
-                                    Cancelar
-                                </button>
+
+                                <!-- AI Training -->
+                                <div class="game-mode-card disabled" id="aiBtn">
+                                    <div class="card-glow"></div>
+                                    <div class="card-content">
+                                        <div class="card-icon">
+                                            <i class="fas fa-robot"></i>
+                                        </div>
+                                        <h3>Modo IA</h3>
+                                        <p>Entrenamiento</p>
+                                        <div class="difficulty-badges">
+                                            <span class="badge">Fácil</span>
+                                            <span class="badge">Normal</span>
+                                            <span class="badge">Difícil</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Local Tournament -->
+                                <div class="game-mode-card" id="localTournamentBtn">
+                                    <div class="card-glow"></div>
+                                    <div class="card-content">
+                                        <div class="card-icon">
+                                            <i class="fas fa-trophy"></i> <!-- Cambiado de fa-table-tennis a fa-trophy -->
+                                        </div>
+                                        <h3>Torneo Local</h3>
+                                        <p>Compite en el mismo dispositivo</p>
+                                        <div class="tournament-info">
+                                            <span>2-8 jugadores</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="status" class="matchmaking-status" style="display: none;">
+                                    <div class="status-content">
+                                        <div class="spinner-border text-light" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <span id="status-text">Iniciando...</span>
+                                    </div>
+                                </div>
+
+                                <!-- Modal de matchmaking -->
+                                <div class="modal matchmaking-modal" id="matchmakingModal" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-body text-center">
+                                                <div class="matchmaking-content">
+                                                    <div class="search-status">
+                                                        <div class="matchmaking-logo-wrapper">
+                                                            <img src="/public/pong-logo.svg" alt="Pong Logo" class="matchmaking-logo">
+                                                        </div>
+                                                        <div class="search-indicator">
+                                                            <div class="ping-circle"></div>
+                                                        </div>
+                                                        <h3>Buscando partida</h3>
+                                                        <div id="modal-status-text" class="status-message">
+                                                            <span id="search-time">0:00</span>
+                                                        </div>
+                                                    </div>
+                                                    <button id="cancelMatchmaking" class="btn-cancel">
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -95,6 +95,32 @@ footer {
     flex-shrink: 0;
 }
 
+.author-wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.easter-egg {
+    position: absolute;
+    left: 0;
+    top: 25px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-style: italic;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.author-wrapper:hover .easter-egg {
+    opacity: 1;
+}
+
+.author {
+    text-decoration: none;
+    color: inherit;
+}
+
 /* Botón de volver personalizado */
 .btn-back {
     background: linear-gradient(135deg, #2b2b4d 0%, #1a1a38 100%);

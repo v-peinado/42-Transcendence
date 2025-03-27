@@ -2,21 +2,24 @@ import AuthService from '../../services/AuthService.js';
 import { Auth2FA } from '../../services/auth/Auth2FA.js';
 import { AuthGDPR } from '../../services/auth/AuthGDPR.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
+import { loadHTML } from '../../utils/htmlLoader.js';  // Añadir esta importación
 
 export async function UserProfileView() {
     document.body.setAttribute('data-page', 'profile');
     const app = document.getElementById('app');
     
     try {
-        const [userInfo, twoFactorStatus] = await Promise.all([
+        const [userInfo, twoFactorStatus, viewHtml, footerHtml] = await Promise.all([
             AuthService.getUserProfile(),
-            Auth2FA.get2FAStatus()
+            Auth2FA.get2FAStatus(),
+            loadHTML('/views/user/UserProfile.html'),
+            loadHTML('/views/components/Footer.html')
         ]);
-        const viewHtml = await fetch('/views/user/UserProfile.html').then(r => r.text());
+
         const navbar = await getNavbarHTML(true, userInfo, true);
 
-        // Renderizar vista base
-        renderBaseView(app, navbar, viewHtml);
+        // Renderizar vista base con footer
+        app.innerHTML = navbar + viewHtml + footerHtml;
         
         // Renderizar información del usuario
         await renderUserInfo(userInfo);
