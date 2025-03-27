@@ -84,6 +84,14 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .matchmaking-modal {
+        align-items: flex-start;
+    }
+    
+    .matchmaking-modal .modal-dialog {
+        margin: 1rem auto;
+    }
+
     .modal-body {
         padding: 1.5rem;
     }

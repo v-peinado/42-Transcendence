@@ -102,6 +102,20 @@ async function DashboardView() {
         updateWithAnimation('gamesWonRatio', stats.games_won);
         updateWithAnimation('gamesTotalRatio', stats.games_played);
         
+        // Actualizar la barra de progreso del ratio
+        const ratioProgressBar = document.querySelector('.ratio-progress');
+        if (ratioProgressBar) {
+            // Asegurarnos de que empiece en 0
+            ratioProgressBar.style.width = '0%';
+            // Forzar un reflow
+            ratioProgressBar.offsetHeight;
+            
+            // Actualizar al valor real después de un pequeño delay
+            requestAnimationFrame(() => {
+                ratioProgressBar.style.width = `${stats.win_ratio}%`;
+            });
+        }
+
         // Actualizar el anillo de ratio con animación suave
         const ratioRing = document.querySelector('.ratio-ring');
         if (ratioRing) {
