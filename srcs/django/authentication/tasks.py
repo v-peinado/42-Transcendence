@@ -22,7 +22,10 @@ def cleanup_inactive_users():
         logger.info("🔄 ====== STARTING CLEANUP TASK ======")
         
         # Verify database connection configuration
-        celery_user = os.environ.get("CELERY_USER", "celeryuser")
+        celery_user = os.environ.get("CELERY_USER")
+        if not celery_user:
+            logger.warning("CELERY_USER environment variable not set, using fallback 'celeryuser'")
+            celery_user = "celeryuser"
         
         # Log all SSL-related environment variables
         ssl_vars = {

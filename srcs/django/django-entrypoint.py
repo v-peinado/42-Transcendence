@@ -153,10 +153,24 @@ def main():
     """Main function to start Django and Celery"""
     try:
         # Get environment variables
-        db_host = os.getenv("SQL_HOST", "db")
-        db_port = int(os.getenv("SQL_PORT", "5432"))
-        celery_user = os.getenv("CELERY_USER", "celeryuser")
-        use_daphne = os.getenv("USE_DAPHNE", "False").lower() == "true"
+        db_host = os.getenv("SQL_HOST")
+        if not db_host:
+            logger.warning("SQL_HOST environment variable not set, using fallback 'db'")
+            db_host = "db"
+            
+        db_port_str = os.getenv("SQL_PORT")
+        if not db_port_str:
+            logger.warning("SQL_PORT environment variable not set, using fallback '5432'")
+            db_port_str = "5432"
+        db_port = int(db_port_str)
+        
+        celery_user = os.getenv("CELERY_USER")
+        if not celery_user:
+            logger.warning("CELERY_USER environment variable not set, using fallback 'celeryuser'")
+            celery_user = "celeryuser"
+            
+        use_daphne_str = os.getenv("USE_DAPHNE", "False")
+        use_daphne = use_daphne_str.lower() == "true"
 
         # Verify required system user exists before starting services
         if not check_system_user(celery_user):

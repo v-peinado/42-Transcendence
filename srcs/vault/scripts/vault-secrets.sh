@@ -20,21 +20,57 @@ store_secrets() {
         return 1
     fi
 
+    # Verify critical environment variables exist
+    local missing_vars=()
+    
+    # Check critical database variables
+    for var in SQL_ENGINE POSTGRES_DB POSTGRES_USER SQL_HOST SQL_PORT; do
+        if [ -z "${!var}" ]; then
+            missing_vars+=("$var")
+        fi
+    done
+    
+    # Check OAuth variables
+    for var in FORTYTWO_CLIENT_ID FORTYTWO_CLIENT_SECRET FORTYTWO_REDIRECT_URI; do
+        if [ -z "${!var}" ]; then
+            missing_vars+=("$var")
+        fi
+    done
+    
+    # Check JWT variables
+    if [ -z "$JWT_SECRET_KEY" ]; then
+        missing_vars+=("JWT_SECRET_KEY")
+    fi
+    
+    # Check encryption key
+    if [ -z "$ENCRYPTION_KEY" ]; then
+        missing_vars+=("ENCRYPTION_KEY")
+    fi
+    
+    # Report missing variables
+    if [ ${#missing_vars[@]} -gt 0 ]; then
+        log "WARNING" "Missing critical environment variables:"
+        for var in "${missing_vars[@]}"; do
+            log "WARNING" "- $var"
+        done
+        log "WARNING" "Some secrets may not be stored properly in Vault"
+    fi
+
     # Database secrets
     vault kv put secret/django/database \
-        ENGINE="${SQL_ENGINE}" \
-        NAME="${POSTGRES_DB}" \
-        USER="${POSTGRES_USER}" \
-        PASSWORD="${POSTGRES_PASSWORD}" \
-        HOST="${SQL_HOST}" \
-        PORT="${SQL_PORT}" >/dev/null 2>&1 && \
+        ENGINE="${SQL_ENGINE:-}" \
+        NAME="${POSTGRES_DB:-}" \
+        USER="${POSTGRES_USER:-}" \
+        PASSWORD="${POSTGRES_PASSWORD:-}" \
+        HOST="${SQL_HOST:-}" \
+        PORT="${SQL_PORT:-}" >/dev/null 2>&1 && \
         log_secret "django/database"
 
     # OAuth secrets
     vault kv put secret/django/oauth \
-        FORTYTWO_CLIENT_ID="${FORTYTWO_CLIENT_ID}" \
-        FORTYTWO_CLIENT_SECRET="${FORTYTWO_CLIENT_SECRET}" \
-        FORTYTWO_REDIRECT_URI="${FORTYTWO_REDIRECT_URI}" \
+        FORTYTWO_CLIENT_ID="${FORTYTWO_CLIENT_ID:-}" \
+        FORTYTWO_CLIENT_SECRET="${FORTYTWO_CLIENT_SECRET:-}" \
+        FORTYTWO_REDIRECT_URI="${FORTYTWO_REDIRECT_URI:-}" \
         FORTYTWO_API_UID="${FORTYTWO_API_UID}" \
         FORTYTWO_API_SECRET="${FORTYTWO_API_SECRET}" >/dev/null 2>&1 && \
         log_secret "django/oauth"
@@ -58,14 +94,14 @@ store_secrets() {
 
     # JWT settings
     vault kv put secret/django/jwt \
-        JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
+        JWT_SECRET_KEY="${JWT_SECRET_KEY:-}" \
         JWT_ALGORITHM="${JWT_ALGORITHM}" \
         JWT_EXPIRATION_TIME="${JWT_EXPIRATION_TIME:-3600}" >/dev/null 2>&1 && \
         log_secret "django/jwt"
 
     # GDPR encryption key
     vault kv put secret/django/gdpr \
-        ENCRYPTION_KEY="${ENCRYPTION_KEY}" >/dev/null 2>&1 && \
+        ENCRYPTION_KEY="${ENCRYPTION_KEY:-}" >/dev/null 2>&1 && \
         log_secret "django/gdpr"
 
     # Celery settings

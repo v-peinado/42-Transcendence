@@ -32,13 +32,14 @@ def get_encryption_key():
         else:
             # If not in Vault, try environment variable
             env_key = os.environ.get('ENCRYPTION_KEY')
-            if env_key:
-                if not env_key.endswith('='):
-                    env_key += '=' * (-len(env_key) % 4)
-                encryption_key = env_key.encode()
-                logger.warning("Using ENCRYPTION_KEY from environment (Vault not available)")
-            else:
+            if not env_key:
+                logger.critical("ENCRYPTION_KEY not found in Vault or environment")
                 raise ValueError("ENCRYPTION_KEY not found in Vault or environment")
+                
+            if not env_key.endswith('='):
+                env_key += '=' * (-len(env_key) % 4)
+            encryption_key = env_key.encode()
+            logger.warning("Using ENCRYPTION_KEY from environment (Vault not available)")
 
         # Validate the key format
         try:

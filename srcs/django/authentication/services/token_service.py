@@ -34,6 +34,13 @@ logger = logging.getLogger(__name__)
 class TokenService:
     def __init__(self):
         self._rate_limiter = None
+        # Validate critical JWT settings on initialization
+        if not hasattr(settings, 'JWT_SECRET_KEY') or not settings.JWT_SECRET_KEY:
+            logger.critical("JWT_SECRET_KEY not configured - this is a critical security issue")
+            raise RuntimeError("JWT_SECRET_KEY must be set for token operations")
+        
+        if not hasattr(settings, 'JWT_ALGORITHM') or not settings.JWT_ALGORITHM:
+            logger.warning("JWT_ALGORITHM not configured, using default 'HS256'")
 
 # @property decorator transforms a method into a virtual attribute, allowing you to access it
 # as if it were a regular attribute (without parentheses) while still executing code.
@@ -74,6 +81,11 @@ class TokenService:
             logger.warning(f"Rate limit exceeded for user {user.id} on email verification")
             raise ValidationError(f"Please wait {remaining_time} seconds before requesting another verification email")
         
+        # Validate JWT_SECRET_KEY explicitly
+        if not settings.JWT_SECRET_KEY:
+            logger.critical("Cannot generate token: JWT_SECRET_KEY not set")
+            raise ValidationError("Server error: JWT_SECRET_KEY not set")
+            
         expiry_minutes = service.rate_limiter.get_token_expiry('email_verify')
         jwt_token = jwt.encode( # encode following dictionary...
             {

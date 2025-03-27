@@ -61,8 +61,8 @@ class CustomUser(AbstractUser):
     def decrypted_email(self):
         """Returns the decrypted email for use in the application"""
         try:
-            if not hasattr(settings, 'ENCRYPTION_KEY'):
-                logger.error("ENCRYPTION_KEY not found in settings")
+            if not hasattr(settings, 'ENCRYPTION_KEY') or not settings.ENCRYPTION_KEY:
+                logger.error("ENCRYPTION_KEY not found in settings or is empty")
                 return self.email
                 
             if self.email:
@@ -92,8 +92,8 @@ class CustomUser(AbstractUser):
         """Encrypt email before saving"""
         if self.email and not self.email.startswith('gAAAAAB'):
             try:
-                if not hasattr(settings, 'ENCRYPTION_KEY'):
-                    logger.error("ENCRYPTION_KEY not found in settings")
+                if not hasattr(settings, 'ENCRYPTION_KEY') or not settings.ENCRYPTION_KEY:
+                    logger.error("ENCRYPTION_KEY not found in settings or is empty")
                     super().save(*args, **kwargs)
                     return
                     

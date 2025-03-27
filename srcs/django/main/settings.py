@@ -22,15 +22,30 @@ logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Get server IP from environment
-SERVER_IP = os.environ.get("IP_SERVER", "localhost")
+SERVER_IP = os.environ.get("IP_SERVER")
+if not SERVER_IP:
+    logger.warning("IP_SERVER environment variable not set, using fallback 'localhost'")
+    SERVER_IP = "localhost"
 
 # Basic project configuration
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
-DEBUG = os.environ.get("DEBUG", "True") == "False"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    logger.warning("DJANGO_SECRET_KEY environment variable not set, generating random key (not suitable for production)")
+    SECRET_KEY = get_random_secret_key()
 
-# Define allowed hosts in production (by default, no hosts allowed)
-# ALLOWED_HOSTS = []
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG_STR = os.environ.get("DEBUG")
+if DEBUG_STR:
+    DEBUG = DEBUG_STR == "True"
+else:
+    logger.warning("DEBUG environment variable not set, using fallback 'False' (production mode)")
+    DEBUG = False
+
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+    CORS_ALLOW_ALL_ORIGINS = False
 
 # Define installed applications in the project
 INSTALLED_APPS = [
@@ -78,13 +93,6 @@ CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS + [
     f"wss://{SERVER_IP}:8445",
 ]
 
-if DEBUG:
-    ALLOWED_HOSTS = ["*"]
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
-    CORS_ALLOW_ALL_ORIGINS = False
-
 # Template and static files configuration
 ROOT_URLCONF = "main.urls"
 TEMPLATES = [
@@ -121,12 +129,12 @@ CHANNEL_LAYERS = {
 # Database configuration
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("SQL_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("POSTGRES_DB", "db.sqlite3"),
-        "USER": os.environ.get("POSTGRES_USER", "user"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "password"),
-        "HOST": os.environ.get("SQL_HOST", "localhost"),
-        "PORT": os.environ.get("SQL_PORT", "5432"),
+        "ENGINE": os.environ.get("SQL_ENGINE"),
+        "NAME": os.environ.get("POSTGRES_DB"),
+        "USER": os.environ.get("POSTGRES_USER"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
+        "HOST": os.environ.get("SQL_HOST"),
+        "PORT": os.environ.get("SQL_PORT"),
         "OPTIONS": {
             # SSL/TLS configuration for PostgreSQL database
             "sslmode": "require",  # require because we are using SSL/TLS auto signed certificates
@@ -135,6 +143,15 @@ DATABASES = {
         }
     }
 }
+
+# Validate critical database settings
+for key in ["ENGINE", "NAME", "USER", "PASSWORD", "HOST", "PORT"]:
+    if not DATABASES["default"][key]:
+        if key in ["ENGINE", "NAME", "USER", "HOST", "PORT"]:
+            logger.critical(f"Missing critical database setting: {key}")
+            raise ValueError(f"Database configuration error: {key} environment variable not set")
+        else:
+            logger.warning(f"Database setting {key} not provided")
 
 # Password validation for users (secure passwords)
 AUTH_PASSWORD_VALIDATORS = [
@@ -261,27 +278,62 @@ LOGOUT_REDIRECT_URL = "login"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Environment variables for 42 authentication
-FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")  #
+FORTYTWO_CLIENT_ID = os.environ.get("FORTYTWO_CLIENT_ID")
+if not FORTYTWO_CLIENT_ID:
+    logger.warning("FORTYTWO_CLIENT_ID environment variable not set, OAuth authentication will not work")
+
 FORTYTWO_CLIENT_SECRET = os.environ.get("FORTYTWO_CLIENT_SECRET")
+if not FORTYTWO_CLIENT_SECRET:
+    logger.warning("FORTYTWO_CLIENT_SECRET environment variable not set, OAuth authentication will not work")
+
 FORTYTWO_REDIRECT_URI = os.environ.get("FORTYTWO_REDIRECT_URI")
+if not FORTYTWO_REDIRECT_URI:
+    logger.warning("FORTYTWO_REDIRECT_URI environment variable not set, OAuth authentication will not work")
+
 FORTYTWO_API_UID = os.environ.get("FORTYTWO_API_UID")
-FORTYTWO_API_SECRET = os.environ.get("FORTYTWO_API_SECRET")
+if not FORTYTWO_API_UID:
+    logger.warning("FORTYTWO_API_UID environment variable not set, OAuth API will not work")
+
+FORTYTWO_API_SECRET = os.environ.get("FORTYTWO_API_SECRET") 
+if not FORTYTWO_API_SECRET:
+    logger.warning("FORTYTWO_API_SECRET environment variable not set, OAuth API will not work")
+
 FORTYTWO_API_URL = os.environ.get("FORTYTWO_API_URL")
+if not FORTYTWO_API_URL:
+    logger.warning("FORTYTWO_API_URL environment variable not set, OAuth API will not work")
 
 # Environment variables for sending emails (SMTP)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Use this backend to print emails in the console
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'		# Use this backend to send real emails
 EMAIL_HOST = os.environ.get("EMAIL_HOST")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
-EMAIL_USE_TLS = (
-    os.environ.get("EMAIL_USE_TLS") == "True"
-)  # Use TLS to send emails (TLS is a secure version of SSL)
+if not EMAIL_HOST:
+    logger.warning("EMAIL_HOST environment variable not set, email sending will not work")
+
+EMAIL_PORT_STR = os.environ.get("EMAIL_PORT")
+if EMAIL_PORT_STR:
+    EMAIL_PORT = int(EMAIL_PORT_STR)
+else:
+    logger.warning("EMAIL_PORT environment variable not set, using fallback port 587")
+    EMAIL_PORT = 587
+
+EMAIL_USE_TLS_STR = os.environ.get("EMAIL_USE_TLS")
+if EMAIL_USE_TLS_STR:
+    EMAIL_USE_TLS = EMAIL_USE_TLS_STR == "True"
+else:
+    logger.warning("EMAIL_USE_TLS environment variable not set, using fallback 'True'")
+    EMAIL_USE_TLS = True
+
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+if not EMAIL_HOST_USER:
+    logger.warning("EMAIL_HOST_USER environment variable not set, email sending will not work")
+
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+if not EMAIL_HOST_PASSWORD:
+    logger.warning("EMAIL_HOST_PASSWORD environment variable not set, email sending will not work")
+
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
-ACCOUNT_EMAIL_VERIFICATION = (
-    "mandatory"  # Email address verification is required to activate the account
-)
+if not DEFAULT_FROM_EMAIL:
+    logger.warning("DEFAULT_FROM_EMAIL environment variable not set, email sending may not work correctly")
 
 # Frontend settings
 FRONTEND_URL = f"https://{SERVER_IP}:8445"
@@ -297,8 +349,21 @@ X_FRAME_OPTIONS = "DENY"
 
 # JWT token generation settings
 JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
-JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
-JWT_EXPIRATION_TIME = int(os.environ.get("JWT_EXPIRATION_TIME") or 3600)
+if not JWT_SECRET_KEY:
+    logger.critical("JWT_SECRET_KEY environment variable not set - this is critical for security!")
+    raise ValueError("JWT_SECRET_KEY must be set in production")
+
+JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM")
+if not JWT_ALGORITHM:
+    logger.warning("JWT_ALGORITHM environment variable not set, using fallback 'HS256'")
+    JWT_ALGORITHM = "HS256"
+
+JWT_EXPIRATION_TIME_STR = os.environ.get("JWT_EXPIRATION_TIME")
+if JWT_EXPIRATION_TIME_STR:
+    JWT_EXPIRATION_TIME = int(JWT_EXPIRATION_TIME_STR)
+else:
+    logger.warning("JWT_EXPIRATION_TIME environment variable not set, using fallback '3600'")
+    JWT_EXPIRATION_TIME = 3600
 
 # Logging configuration
 LOGGING = {
