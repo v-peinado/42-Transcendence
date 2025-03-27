@@ -132,6 +132,30 @@ class TournamentService {
         }
     }
 
+    static async startMatchNotification(matchId) {
+        try {
+            const response = await fetch(`${this.API_URL}/start_match_notification/${matchId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.cookie.split('; ')
+                        .find(row => row.startsWith('csrftoken='))
+                        ?.split('=')[1]
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error al notificar inicio de partida: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error en startMatchNotification:', error);
+            throw error;
+        }
+    }
+
     static async determineTournamentWinner(tournamentId) {
         if (!tournamentId) {
             console.error('No se proporcionó tournament_id');

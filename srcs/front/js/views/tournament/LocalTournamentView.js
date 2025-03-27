@@ -608,6 +608,9 @@ async function loadTournaments() {
 
 async function handleStartTournament(tournamentId) {
     try {
+        // Primero iniciar el torneo para que envíe la notificación
+        await TournamentService.startTournament(tournamentId);
+        
         const tournamentDetails = await TournamentService.getTournamentDetails(tournamentId);
         const nextMatch = tournamentDetails.matches.find(match => !match.played);
         
@@ -815,6 +818,9 @@ async function startMatch(match, tournament) {
             loadHTML('/views/tournament/templates/TournamentModals.html'),
             AuthService.getUserProfile()
         ]);
+
+        // Primero notificar el inicio de partida antes de cargar la UI
+        await TournamentService.startMatchNotification(match.id);
 
         const app = document.getElementById('app');
         app.innerHTML = await getNavbarHTML(true, userInfo);
