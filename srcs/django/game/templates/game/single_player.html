@@ -94,51 +94,74 @@
         }
       
         collisionWithPaddle(paddle) {
-          // Calcular la distancia entre el centro de la pelota y el centro de la pala
+          // 1. CÁLCULO DE DISTANCIAS RELATIVAS
+          // Calcula la distancia entre el centro de la pelota y el centro de la pala
           let dx = Math.abs(this.pos.x - paddle.pos.x - paddle.width / 2);
           let dy = Math.abs(this.pos.y - paddle.pos.y - paddle.height / 2);
       
-          // Si se detecta colisión
+          // 2. DETECCIÓN DE COLISIÓN
+          // Verifica si hay colisión usando el método de "cajas delimitadoras ampliadas"
           if (dx <= (this.rad + paddle.width / 2) && dy <= (this.rad + paddle.height / 2)) {
+            // Hay colisión, ahora determina el tipo de colisión para calcular el rebote
+            // 3. MANEJO DE COLISIONES LATERALES (REBOTE ANGULAR)
             if (dx > paddle.width / 2) {
               // Colisión en los laterales: usar la lógica de ángulo de rebote
+            
+              // Calcula dónde golpeó la pelota en relación al centro vertical de la pala
               let relativeIntersectY = this.pos.y - (paddle.pos.y + paddle.height / 2);
+              // Normaliza el punto de intersección a un valor entre -1 y 1
               let normalizedIntersect = relativeIntersectY / (paddle.height / 2);
+              // Convierte el valor normalizado en un ángulo de rebote (máximo 45 grados)
               let bounceAngle = normalizedIntersect * (Math.PI / 4);  // máximo 45 grados
       
-              // Usar la velocidad actual para mantener la magnitud
+              // 4. CÁLCULO DE LA NUEVA VELOCIDAD
+              // Mantiene la magnitud de la velocidad (conservación de energía)
               let speed = Math.sqrt(this.vel.x * this.vel.x + this.vel.y * this.vel.y);
       
               if (this.vel.x < 0) {
-                this.vel.x = speed * Math.cos(bounceAngle);
-                this.vel.y = speed * Math.sin(bounceAngle);
+                // La pelota venía desde la izquierda
+                // Calcula componentes x e y del vector de velocidad usando trigonometría
+                this.vel.x = speed * Math.cos(bounceAngle); // Componente horizontal positiva
+                this.vel.y = speed * Math.sin(bounceAngle); // Componente vertical según el ángulo
+                // Reposiciona la pelota justo a la derecha de la pala
                 this.pos.x = paddle.pos.x + paddle.width + this.rad;
               } else {
-                this.vel.x = -speed * Math.cos(bounceAngle);
-                this.vel.y = speed * Math.sin(bounceAngle);
+                // La pelota venía desde la derecha
+                this.vel.x = -speed * Math.cos(bounceAngle); // Componente horizontal negativa
+                this.vel.y = speed * Math.sin(bounceAngle);  // Componente vertical según el ángulo
+                // Reposiciona la pelota justo a la izquierda de la pala
                 this.pos.x = paddle.pos.x - this.rad;
               }
+            // 5. MANEJO DE COLISIONES VERTICALES
             } else if (dy > paddle.height / 2) {
               // Colisión en la parte superior o inferior: invertir velocidad vertical
               this.vel.y *= -1;
+              
+              // Reposiciona la pelota para evitar que quede "atrapada" en la pala
               if (this.pos.y < paddle.pos.y) {
-                this.pos.y = paddle.pos.y - this.rad;
+                  // Colisión desde arriba: coloca la pelota justo encima de la pala
+                  this.pos.y = paddle.pos.y - this.rad;
               } else {
-                this.pos.y = paddle.pos.y + paddle.height + this.rad;
+                  // Colisión desde abajo: coloca la pelota justo debajo de la pala
+                  this.pos.y = paddle.pos.y + paddle.height + this.rad;
               }
             } else {
-              // Colisión en la esquina: invertir ambas velocidades
+              // Colisión en la esquina o centro: invertir ambas velocidades
               this.vel.x *= -1;
               this.vel.y *= -1;
+            
+              // Reposicionamiento completo para evitar comportamientos extraños
+              // Comprueba las 4 posibles direcciones y ajusta la posición
               if (this.pos.x < paddle.pos.x) {
-                this.pos.x = paddle.pos.x - this.rad;
+                  this.pos.x = paddle.pos.x - this.rad; // Izquierda
               } else if (this.pos.x > paddle.pos.x + paddle.width) {
-                this.pos.x = paddle.pos.x + paddle.width + this.rad;
+                  this.pos.x = paddle.pos.x + paddle.width + this.rad; // Derecha
               }
+              
               if (this.pos.y < paddle.pos.y) {
-                this.pos.y = paddle.pos.y - this.rad;
+                  this.pos.y = paddle.pos.y - this.rad; // Arriba
               } else if (this.pos.y > paddle.pos.y + paddle.height) {
-                this.pos.y = paddle.pos.y + paddle.height + this.rad;
+                  this.pos.y = paddle.pos.y + paddle.height + this.rad; // Abajo
               }
             }
           }
@@ -294,37 +317,58 @@
         }
       
         player2AI(timestamp) {
+          // Solo actualiza la IA en intervalos definidos para un rendimiento óptimo
+          // y para simular un tiempo de decisión humano
           if (timestamp - this.lastAIUpdate >= this.AI_INTERVAL) {
-            this.lastAIUpdate = timestamp;
-      
-            let predictedY = this.predictBallY();
-      
-            const randomness = Math.random() * this.difficulty.RANDOMNESS - (this.difficulty.RANDOMNESS / 2);
-            let targetY = predictedY + randomness;
-      
-            if (Math.random() < this.difficulty.MISS_CHANCE) {
-              targetY = Math.random() * this.canvas.height;
-            }
-            this.paddle2.targetY = targetY;
-      
-            const paddleCenter = this.paddle2.pos.y + this.paddle2.height / 2;
-            if (paddleCenter < this.paddle2.targetY - 5) {
-              this.simulateKeyDown(this.KEY_DOWN);
-              this.simulateKeyUp(this.KEY_UP);
-            } else if (paddleCenter > this.paddle2.targetY + 5) {
-              this.simulateKeyDown(this.KEY_UP);
-              this.simulateKeyUp(this.KEY_DOWN);
-            } else {
-              this.simulateKeyUp(this.KEY_UP);
-              this.simulateKeyUp(this.KEY_DOWN);
-            }
-      
-            setTimeout(() => {
-              this.simulateKeyUp(this.KEY_UP);
-              this.simulateKeyUp(this.KEY_DOWN);
-            }, this.difficulty.AI_REACTION_DELAY + Math.random() * 200);
+              // Actualiza el timestamp para la próxima decisión
+              this.lastAIUpdate = timestamp;
+              
+              // Predice dónde estará la pelota verticalmente cuando llegue a la paleta
+              let predictedY = this.predictBallY();
+              
+              // Añade imprecisión aleatoria a la predicción para que la IA no sea perfecta
+              // Genera un valor aleatorio entre -RANDOMNESS/2 y +RANDOMNESS/2
+              const randomness = Math.random() * this.difficulty.RANDOMNESS - (this.difficulty.RANDOMNESS / 2);
+              let targetY = predictedY + randomness;
+              
+              // Simula errores completos - a veces la IA irá a una posición completamente aleatoria
+              // Esto ocurre con una probabilidad definida por MISS_CHANCE
+              if (Math.random() < this.difficulty.MISS_CHANCE) {
+                  targetY = Math.random() * this.canvas.height;
+              }
+              
+              // Establece la posición objetivo para la paleta
+              this.paddle2.targetY = targetY;
+              
+              // Calcula la posición actual del centro de la paleta
+              const paddleCenter = this.paddle2.pos.y + this.paddle2.height / 2;
+              
+              // Decide cómo mover la paleta basándose en dónde está ahora
+              // respecto a dónde debería estar
+              if (paddleCenter < this.paddle2.targetY - 5) {
+                  // Si la paleta está demasiado arriba, muévela hacia abajo
+                  this.simulateKeyDown(this.KEY_DOWN);
+                  this.simulateKeyUp(this.KEY_UP);
+              } else if (paddleCenter > this.paddle2.targetY + 5) {
+                  // Si la paleta está demasiado abajo, muévela hacia arriba
+                  this.simulateKeyDown(this.KEY_UP);
+                  this.simulateKeyUp(this.KEY_DOWN);
+              } else {
+                  // Si la paleta está cerca de la posición objetivo, detén el movimiento
+                  this.simulateKeyUp(this.KEY_UP);
+                  this.simulateKeyUp(this.KEY_DOWN);
+              }
+              
+              // Simula tiempo de reacción humano soltando las teclas después de un retraso
+              // El retraso tiene un componente base (AI_REACTION_DELAY) más un componente
+              // aleatorio (hasta 200ms adicionales)
+              setTimeout(() => {
+                  // Suelta ambas teclas
+                  this.simulateKeyUp(this.KEY_UP);
+                  this.simulateKeyUp(this.KEY_DOWN);
+              }, this.difficulty.AI_REACTION_DELAY + Math.random() * 200);
           }
-        }
+      }
       
         paddleUpdate(paddle) {
           const paddleCenter = paddle.pos.y + paddle.height / 2;
@@ -339,35 +383,50 @@
         }
       
         predictBallY() {
-          if (this.ball.vel.x <= 0) {
-            return this.ball.pos.y;
+        // Si la pelota está moviéndose hacia la izquierda (o está parada),
+            // no es necesario calcular nada porque no llegará a la paleta 2
+            if (this.ball.vel.x <= 0) {
+              return this.ball.pos.y;
           }
           
+          // Crea una copia de la pelota para simular su movimiento
+          // sin afectar al juego real
           let tempBall = {
-            pos: { x: this.ball.pos.x, y: this.ball.pos.y },
-            vel: { x: this.ball.vel.x, y: this.ball.vel.y },
-            rad: this.ball.rad
+              pos: { x: this.ball.pos.x, y: this.ball.pos.y }, // Posición actual
+              vel: { x: this.ball.vel.x, y: this.ball.vel.y }, // Velocidad actual
+              rad: this.ball.rad                              // Radio de la pelota
           };
           
+          // Establece un límite máximo de iteraciones para prevenir bucles infinitos
+          // en caso de que haya algún error en la simulación
           let maxIterations = 500;
           let iterations = 0;
           
+          // Simula el movimiento de la pelota hasta que:
+          // 1. Alcance horizontalmente la posición de la paleta del jugador 2, o
+          // 2. Se alcance el número máximo de iteraciones (protección)
           while (tempBall.pos.x < this.paddle2.pos.x && iterations < maxIterations) {
+            // Actualiza la posición de la pelota virtual basándose en su velocidad
             tempBall.pos.x += tempBall.vel.x;
             tempBall.pos.y += tempBall.vel.y;
             iterations++;
             
+            // Simula rebotes en los bordes superior e inferior del campo de juego
+            
+            // Rebote en el borde inferior
             if (tempBall.pos.y + tempBall.rad >= this.canvas.height) {
-              tempBall.pos.y = this.canvas.height - tempBall.rad;
-              tempBall.vel.y *= -1;
-            } else if (tempBall.pos.y - tempBall.rad <= 0) {
-              tempBall.pos.y = tempBall.rad;
-              tempBall.vel.y *= -1;
+                // Corrige la posición para que no se salga del límite
+                tempBall.pos.y = this.canvas.height - tempBall.rad;
+                // Invierte la dirección vertical (rebote)
+                tempBall.vel.y *= -1;
+            } 
+            // Rebote en el borde superior
+            else if (tempBall.pos.y - tempBall.rad <= 0) {
+                // Corrige la posición para que no se salga del límite
+                tempBall.pos.y = tempBall.rad;
+                // Invierte la dirección vertical (rebote)
+                tempBall.vel.y *= -1;
             }
-          }
-          
-          if (iterations === maxIterations) {
-            console.warn("predictBallY reached maximum iterations.");
           }
       
           const errorMargin = 15;
