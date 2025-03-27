@@ -27,6 +27,12 @@ services:
     env_file:
       - ./srcs/.env
     restart: always
+    healthcheck:
+      test: [ "CMD", "curl", "-k", "--fail", "http://localhost:8000/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   db:
     build:
