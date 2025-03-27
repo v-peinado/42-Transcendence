@@ -1,5 +1,6 @@
 from django.db.models import Sum
 from game.models import Game
+from django.db.models import Q
 
 def get_player_stats(user):
     games_played = Game.objects.filter(player1=user).count() + Game.objects.filter(player2=user).count()
@@ -30,5 +31,10 @@ def get_player_stats(user):
     }
 
 def get_player_games(user):
-    games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
+    games = Game.objects.filter(
+        Q(player1=user) | Q(player2=user)
+    )
+    games = games.exclude(
+        Q(score_player1=0) & Q(score_player2=0)
+    )
     return games
