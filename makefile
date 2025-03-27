@@ -92,6 +92,33 @@ view-table:
 		echo "$(COLOR_RED)Error: Base de datos no encontrada. Ejecuta 'make up' primero.$(COLOR_RESET)"; \
 	fi
 
+# Elimina un usuario de la base de datos por ID o nombre de usuario
+delete-user:
+	@echo "$(COLOR_GREEN)Eliminando usuario de la base de datos...$(COLOR_RESET)"
+	@echo "Introduce el ID o nombre de usuario a eliminar:"
+	@read USER_IDENTIFIER; \
+	if [ "$$(docker ps -q -f name=db)" ]; then \
+		if docker exec $$(docker ps -q -f name=db) pg_isready >/dev/null 2>&1; then \
+			if [[ "$$USER_IDENTIFIER" =~ ^[0-9]+$$ ]]; then \
+				echo "$(COLOR_GREEN)Eliminando usuario con ID: $$USER_IDENTIFIER...$(COLOR_RESET)"; \
+				docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" $$(docker ps -q -f name=db) psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
+					-c "DELETE FROM authentication_customuser WHERE id = $$USER_IDENTIFIER RETURNING id, username;" && \
+				echo "$(COLOR_GREEN)Usuario eliminado correctamente.$(COLOR_RESET)" || \
+				echo "$(COLOR_RED)Error: No se pudo eliminar el usuario o no existe.$(COLOR_RESET)"; \
+			else \
+				echo "$(COLOR_GREEN)Eliminando usuario con nombre: $$USER_IDENTIFIER...$(COLOR_RESET)"; \
+				docker exec -e PGPASSWORD="$(POSTGRES_PASSWORD)" $$(docker ps -q -f name=db) psql -U "$(POSTGRES_USER)" -d "$(POSTGRES_DB)" \
+					-c "DELETE FROM authentication_customuser WHERE username = '$$USER_IDENTIFIER' RETURNING id, username;" && \
+				echo "$(COLOR_GREEN)Usuario eliminado correctamente.$(COLOR_RESET)" || \
+				echo "$(COLOR_RED)Error: No se pudo eliminar el usuario o no existe.$(COLOR_RESET)"; \
+			fi; \
+		else \
+			echo "$(COLOR_RED)Error: La base de datos no está lista$(COLOR_RESET)"; \
+		fi \
+	else \
+		echo "$(COLOR_RED)Error: Base de datos no encontrada. Ejecuta 'make up' primero.$(COLOR_RESET)"; \
+	fi
+
 # muestra los logs de los servicios
 logs:
 	@$(COMPOSE_CMD) -f $(COMPOSE_FILE) logs -f
@@ -104,6 +131,7 @@ help:
 	@echo "  make re                  - Limpieza completa y redespliega todo"
 	@echo "  make down                - Detiene todos los servicios"
 	@echo "  make view-users          - Muestra todos los usuarios de la base de datos"
+	@echo "  make delete-user         - Elimina un usuario de la base de datos por ID o nombre de usuario"
 	@echo "  make view-table          - Muestra la estructura de la tabla CustomUser"
 	@echo "  make logs                - Muestra los logs de los servicios"
 	@echo "  make clean               - Limpia todos los recursos (imágenes, contenedores, volúmenes y redes)"
@@ -124,4 +152,4 @@ help:
 	@echo "  http://$(IP_SERVER):8000/api/ninja/docs - Apis"
 	@echo ""
 
-.PHONY: all up down clean fclean re help down_volumes fcleandb view-users logs view-table
+.PHONY: all up down clean fclean re help down_volumes fcleandb view-users logs view-table delete-user
