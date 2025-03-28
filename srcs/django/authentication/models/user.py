@@ -7,6 +7,8 @@ from django.apps import apps
 import logging
 import hashlib
 
+# This model is used to store the user information and manage the user's account
+
 logger = logging.getLogger(__name__)
 
 class CustomUser(AbstractUser):
