@@ -1,7 +1,7 @@
 #!/bin/bash
 
-set -e
-trap 'cleanup' EXIT # Cleanup on exit
+set -e # Exit on error
+trap 'cleanup' EXIT # Cleanup when script exits (normal or error)
 
 # Color definitions for messages
 RED='\033[0;31m'
@@ -14,8 +14,9 @@ KEY_FILE="${SSL_DIR}/transcendence.key"
 CERT_FILE="${SSL_DIR}/transcendence.crt"
 CONF_FILE="${SSL_DIR}/openssl.cnf" # Configuration file for openssl
 
+# Cleanup function to remove the configuration file if the script fails
 cleanup() {
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ]; then # If the script failed
         rm -f "$CONF_FILE"
         log_error "Script terminated with errors"
     fi
@@ -33,7 +34,7 @@ log_error() {
 
 # Validate required environment variables
 validate_env_vars() {
-    local required_vars=(
+    local required_vars=( # List of required environment variables to parse
         "SSL_COUNTRY"
         "SSL_STATE"
         "SSL_LOCALITY"
@@ -158,10 +159,12 @@ generate_certificates() {
             log_error "VAULT_ROOT_TOKEN is not defined"
             return 1
         fi
-        
+    
+	# Encode the certificate and key as base64
         cert_data=$(base64 -w 0 "$CERT_FILE")
         key_data=$(base64 -w 0 "$KEY_FILE")
-        
+    
+	# Store the certificate and key in Vault utilizing the token and address
         curl -k -H "X-Vault-Token: ${VAULT_ROOT_TOKEN}" \
              -X PUT \
              -d "{\"data\": {\"ssl_certificate\": \"${cert_data}\", \"ssl_certificate_key\": \"${key_data}\"}}" \

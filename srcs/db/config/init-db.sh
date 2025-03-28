@@ -89,7 +89,7 @@ if [ -f "${PGDATA}/postgresql.conf" ] && ! grep -q "^ssl = on" "${PGDATA}/postgr
     echo "Adding SSL configuration to postgresql.conf..."
     cat >> "${PGDATA}/postgresql.conf" <<EOF
 
-# SSL Configuration - Added $(date)
+# SSL Configuration
 ssl = on
 ssl_cert_file = '/var/lib/postgresql/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/ssl/server.key'

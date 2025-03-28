@@ -11,7 +11,6 @@ RUN apk add --no-cache \
 	bash \
 	gettext \
 	ncurses \
-	ca-certificates \
 	&& curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip \
 	&& unzip vault.zip \
 	&& mv vault /usr/local/bin/ \
@@ -69,9 +68,6 @@ EXPOSE 8200
 # Set healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 	CMD vault status -tls-skip-verify && test -f /tmp/ssl/django_token || exit 1
-
-# Don't use unprivileged user (run as root)
-# Removed: USER vaultuser
 
 # Set the startup command with permissions check
 CMD ["sh", "-c", "chmod -R 777 /tmp/ssl || true && /usr/local/bin/vault-setup.sh"]

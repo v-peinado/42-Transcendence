@@ -59,6 +59,12 @@ initialize_vault() {
     if [ "${VAULT_MODE}" != "production" ]; then
         return 0
     fi
+    
+    # Verify Vault is ready before proceeding
+    if ! curl -s -k "${VAULT_ADDR}/v1/sys/health" >/dev/null 2>&1; then
+        log "ERROR" "Vault is not ready for initialization"
+        wait_for_vault
+    fi
         
     if ! vault operator init -status > /dev/null 2>&1; then
         log_message "Initializing Vault..."
@@ -96,6 +102,14 @@ initialize_vault() {
             vault login "$ROOT_TOKEN" >/dev/null 2>&1
         fi
     fi
+    
+    # Verify Vault is fully initialized and unsealed
+    if ! vault status >/dev/null 2>&1; then
+        log "ERROR" "❌ Failed to initialize or unseal Vault"
+        return 1
+    fi
+    
+    log "INFO" "✅ Vault is initialized and unsealed"
 }
 
 configure_vault() {

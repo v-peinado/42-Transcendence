@@ -2,7 +2,7 @@ from django.contrib.auth.forms import UserCreationForm
 from authentication.models import CustomUser
 from django import forms
 
-# Forms are used to validate user input and to save data to the database
+# Forms are used to validate user input and to save data to the database using the models.
 # This form is used to register a new user, it extends the UserCreationForm class from Django.
 
 # It adds an email field and a privacy_policy field to the form fields.

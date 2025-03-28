@@ -59,53 +59,21 @@ ensure_ssl_dir() {
     return 0
 }
 
-wait_for_vault_ready() {
-    local max_attempts=15
-    local attempt=1
-    
-    log_message "Waiting for Vault to be fully ready..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s -k "${VAULT_ADDR}/v1/sys/health" >/dev/null 2>&1; then
-            log_message "✅ Vault is ready"
-            return 0
-        fi
-        log_message "⏳ Attempt $attempt/$max_attempts - Waiting for Vault to be ready..."
-        attempt=$((attempt + 1))
-        sleep 2
-    done
-    
-    log_message "⚠️ Warning: Timed out waiting for Vault, continuing anyway..."
-    return 0
-}
-
 # Main setup function
 setup() {
     # Ensure SSL directory exists and has proper permissions
     ensure_ssl_dir
     
-    # Start Vault server
+    # Start Vault server (vault-init.sh)
     start_vault
     
-    # Wait for Vault to be fully ready
-    wait_for_vault_ready
-    
-    # Initialize and unseal Vault
+    # Initialize and unseal Vault (vault-init.sh)
     initialize_vault
     
-    # Wait for Vault to be ready after unsealing
-    wait_for_vault_ready
-    
-    # Configure Vault and policies
+    # Configure Vault and policies (vault-init.sh)
     configure_vault
     
-    # Wait for policies to be applied (implementing a proper check)
-    if vault policy list >/dev/null 2>&1; then
-        log_message "✅ Vault policies applied successfully"
-    else
-        log_message "⚠️ Warning: Could not verify policies, continuing anyway..."
-    fi
-    
-    # Store secrets
+    # Store secrets (vault-secrets.sh)
     store_secrets
     
     # Keep vault running in foreground

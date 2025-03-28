@@ -1,14 +1,14 @@
 class GameReconnectionService {
 	constructor() { // Inicialize variables
-		this.socket = null;
+		this.socket = null; // socket where the connection will be stored
 		this.gameId = null;
 		this.playerSide = null;
-		this.reconnecting = false;
+		this.reconnecting = false; // Variable to know if the connection is reconnecting
 		this.reconnectAttempts = 0;
 		this.MAX_RECONNECT_ATTEMPTS = 15;
-		this.RECONNECT_INTERVAL = 2000;
-		this.lastMessageTime = Date.now();
-		this._lastStopCommandTime = 0;
+		this.RECONNECT_INTERVAL = 2000; // ms
+		this.lastMessageTime = Date.now(); // time from the last message received by the server
+		this._lastStopCommandTime = 0; // Last stop command time to avoid jitter
 	}
 
 	// Config websockets connection for game with fast reconnect
@@ -35,7 +35,7 @@ class GameReconnectionService {
 				console.error('Error closing socket:', e);
 			}
 		}
-		// Create a new connection
+		// Create a new connection with the server when the connection is closed
 		try {
 			this.socket = new WebSocket(wsUrl);
 
@@ -59,7 +59,7 @@ class GameReconnectionService {
 						timestamp: Date.now()
 					});
 
-					// fallback to full state request if no response in 200ms
+					// fallback to full state request if no response in 200ms (to more long disconnects)
 					setTimeout(() => {
 						if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 							this.send({
