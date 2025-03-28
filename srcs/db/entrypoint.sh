@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -e # Exit on error
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 # Function to print formatted messages
 log() {
-  local level=$1
+  local level=$1 # INFO, WARN, ERROR
   local message=$2
   
   case $level in
@@ -29,13 +29,27 @@ log() {
   esac
 }
 
-# Source the SSL library functions
-if [ -f "/usr/local/bin/ssl_library.sh" ]; then
-  source /usr/local/bin/ssl_library.sh
-else
-  echo "ERROR: SSL library not found"
-  exit 1
-fi
+# Copy certificates from shared location to PostgreSQL directory
+copy_certs_to_postgres() {
+  log "INFO" "Copying certificates to PostgreSQL directory..."
+  
+  mkdir -p /var/lib/postgresql/ssl
+  chmod 755 /var/lib/postgresql/ssl
+  
+  if [ -f "/tmp/ssl/transcendence.crt" ] && [ -f "/tmp/ssl/transcendence.key" ]; then
+    cp /tmp/ssl/transcendence.crt /var/lib/postgresql/ssl/server.crt
+    cp /tmp/ssl/transcendence.key /var/lib/postgresql/ssl/server.key
+    chmod 644 /var/lib/postgresql/ssl/server.crt
+    chmod 600 /var/lib/postgresql/ssl/server.key
+    chown postgres:postgres /var/lib/postgresql/ssl/server.crt
+    chown postgres:postgres /var/lib/postgresql/ssl/server.key
+    log "INFO" "✅ Certificates copied successfully"
+    return 0
+  else
+    log "ERROR" "Required certificates not found in /tmp/ssl"
+    return 1
+  fi
+}
 
 # Wait for Vault to be ready
 log "INFO" "Loading credentials from Vault..."
@@ -84,17 +98,10 @@ mkdir -p /var/lib/postgresql/ssl
 chmod 755 /var/lib/postgresql/ssl
 chown postgres:postgres /var/lib/postgresql/ssl
 
-# Fix certificate permissions and copy to PostgreSQL directory
-configure_cert_permissions > /dev/null 2>&1
+# Fix certificate permissions and copy to PostgreSQL directory (persistent volume)
 if ! copy_certs_to_postgres; then
   log "ERROR" "Failed to copy certificates"
   exit 1
-fi
-
-# Configure PostgreSQL if data directory exists
-if [ -f "${PGDATA}/postgresql.conf" ]; then
-  configure_postgresql_ssl > /dev/null 2>&1
-  configure_pghba_ssl > /dev/null 2>&1
 fi
 
 # Start PostgreSQL

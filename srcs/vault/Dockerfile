@@ -11,7 +11,6 @@ RUN apk add --no-cache \
 	bash \
 	gettext \
 	ncurses \
-	ca-certificates \
 	&& curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip -o vault.zip \
 	&& unzip vault.zip \
 	&& mv vault /usr/local/bin/ \
