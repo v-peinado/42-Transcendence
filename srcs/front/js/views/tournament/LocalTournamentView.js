@@ -52,14 +52,6 @@ export async function LocalTournamentView() {
             toggleCardExpansion(elements.pendingBtn);
         });
 
-        // Reemplazar las secciones de inicialización de eventos
-        // Remover todos los event listeners duplicados y mantener solo estos
-        elements.createBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleCardExpansion(elements.createBtn);
-        });
-
         elements.playersSelect.addEventListener('change', () => {
             updatePlayersFields(elements);
         });

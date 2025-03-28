@@ -88,8 +88,6 @@ export async function GameMatchView(gameId) {
     let movementInterval = null;
     const userId = localStorage.getItem('user_id');
     
-    console.log('User ID en juego:', userId);  // Debug user_id
-
     // Añadir una variable para rastrear la última notificación de reconexión
 	let lastReconnectNotification = 0;
 
