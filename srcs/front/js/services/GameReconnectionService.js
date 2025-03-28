@@ -14,14 +14,14 @@ class GameReconnectionService {
 	// Config websockets connection for game with fast reconnect
 	setupConnection(gameId, callbacks = {}) {
 		this.gameId = gameId;
-		this.callbacks = callbacks;
+		this.callbacks = callbacks; // Callbacks to handle the connection 
 
 		console.log(`Setting up connection for game ${gameId}`);
 
 		const userId = localStorage.getItem('user_id');
 
 		// Recover reconnection data
-		this.recoverReconnectionData(gameId);
+		this.recoverReconnectionData(gameId); // Recover data from localStorage
 
 		// Websockets data for connection
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; // Check if the protocol is https or http
