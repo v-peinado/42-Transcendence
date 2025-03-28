@@ -4,6 +4,7 @@ import { loadHTML } from '../../utils/htmlLoader.js';
 import { ChatWidget } from '../../components/ChatWidget.js';
 import { initializeMenuAnimations } from './GameMenuAnimations.js';
 import { GameThemes, getThemeIcon } from './components/GameThemes.js';
+import { ThemePreview } from './components/ThemePreview.js';
 
 export default async function GameView(userInfo = null) {
     const app = document.getElementById('app');
@@ -216,16 +217,17 @@ export default async function GameView(userInfo = null) {
                                 <i class="fas fa-paint-brush me-2"></i>
                                 Personaliza tu juego
                             </h2>
-                            <p class="text-white-50 mb-0 mt-2">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Los temas se aplicarán en Torneo Local y Modo IA
-                            </p>
                         </div>
+                        
+                        <div class="preview-container">
+                            <div class="preview-title">Vista previa del tema</div>
+                            <canvas id="themePreviewCanvas" class="game-theme-preview"></canvas>
+                        </div>
+
                         <div class="game-theme-selector">
-                            <div class="game-theme-options">
-                                ${themeButtons}
-                            </div>
+                            ${themeButtons}
                         </div>
+                        
                         <div class="game-pause-actions">
                             <button class="game-pause-resume-btn">
                                 <i class="fas fa-check me-2"></i>Aceptar
@@ -236,18 +238,28 @@ export default async function GameView(userInfo = null) {
 
                 document.body.appendChild(pauseMenu);
                 
-                // Event listeners del menú
-                pauseMenu.querySelector('.game-pause-resume-btn').onclick = () => {
-                    pauseMenu.remove();
-                };
+                // Inicializar el preview después de añadir el modal al DOM
+                const previewCanvas = document.getElementById('themePreviewCanvas');
+                // Obtener el tema actual o usar el clásico por defecto
+                const currentTheme = GameThemes[localStorage.getItem('currentTheme') || 'classic'];
+                const preview = new ThemePreview(previewCanvas, currentTheme);
 
+                // Manejar cambios de tema
                 pauseMenu.querySelectorAll('.game-theme-btn').forEach(btn => {
                     btn.onclick = () => {
-                        const theme = GameThemes[btn.dataset.theme];
-                        localStorage.setItem('pongTheme', JSON.stringify(theme));
-                        pauseMenu.querySelectorAll('.game-theme-btn').forEach(b => b.classList.remove('active'));
+                        const themeKey = btn.dataset.theme;
+                        const newTheme = GameThemes[themeKey];
+                        preview.updateTheme(newTheme);
+                        
+                        // Guardar el tema seleccionado
+                        localStorage.setItem('currentTheme', themeKey);
+                        
+                        // Actualizar clases active
+                        pauseMenu.querySelectorAll('.game-theme-btn').forEach(b => 
+                            b.classList.remove('active')
+                        );
                         btn.classList.add('active');
-                    }
+                    };
                 });
             });
         }

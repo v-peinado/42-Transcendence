@@ -35,7 +35,6 @@ class FriendService {
 
     cancelFriendRequest(requestId) {
         return new Promise((resolve) => {
-            console.log('Enviando cancelación de solicitud:', requestId);
             webSocketService.send({
                 type: 'reject_friend_request',
                 request_id: requestId

@@ -51,7 +51,6 @@ export function hideTournamentGameOverModal() {
 }
 
 export function showTournamentMatchModal(player1, player2) {
-    console.log('Mostrando modal de inicio con jugadores:', { player1, player2 }); // Debug
 
     const matchFoundModal = document.getElementById('tournamentMatchFoundModal');
     if (!matchFoundModal) {
@@ -69,13 +68,6 @@ export function showTournamentMatchModal(player1, player2) {
         // Asegurarnos que los elementos existen y actualizar nombres
         const player1Element = matchFoundModal.querySelector('#player1NamePreMatch');
         const player2Element = matchFoundModal.querySelector('#player2NamePreMatch');
-
-        console.log('Elementos encontrados:', { 
-            player1Element, 
-            player2Element,
-            player1Name: player1?.username,
-            player2Name: player2?.username
-        }); // Debug
 
         if (player1Element && player2Element) {
             player1Element.textContent = player1.username || 'Jugador 1';

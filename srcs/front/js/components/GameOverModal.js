@@ -41,11 +41,6 @@ export function showGameOverModal(winner, player1, player2, scores, options = {}
         // Determinar el nombre del ganador basado en el username correcto
         const winnerName = winner === player1.username ? player1.username : player2.username;
         
-        // Actualizar textos - asegurarnos de que los nombres se establecen correctamente
-        console.log('Actualizando nombres:', {
-            player1: player1.username,
-            player2: player2.username
-        });
         
         // Actualizar el texto del ganador
         requiredElements.winnerText.textContent = `¡${winnerName} ha ganado!`;
@@ -65,8 +60,6 @@ export function showGameOverModal(winner, player1, player2, scores, options = {}
         if (requiredElements.player2Score) {
             requiredElements.player2Score.textContent = scores.player2;
         }
-
-        console.log('Actualizando scores:', scores.player1, scores.player2); // Debug
 
         // Actualizar avatares
         updatePlayerAvatar('.player-column:first-child', player1);
@@ -97,7 +90,6 @@ export function showGameOverModal(winner, player1, player2, scores, options = {}
             
             // Verificar si hay botones personalizados y es un array
             if (options.customButtons && Array.isArray(options.customButtons)) {
-                console.log('Botones a renderizar:', options.customButtons); // Debug
                 
                 options.customButtons.forEach(btn => {
                     if (!btn || !btn.text || !btn.onClick) return;

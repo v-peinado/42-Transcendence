@@ -31,7 +31,6 @@ export class FriendList {
     }
 
     updateFriendsList(data) {
-        console.log('Actualizando lista de amigos con data:', data); // Debug
         const friendsList = this.container.querySelector('#widget-friends-list');
         if (!friendsList) return;
 
@@ -57,7 +56,6 @@ export class FriendList {
 
             // Usar this.onlineUsers en lugar de data.users
             const isOnline = this.onlineUsers.has(friendId);
-            console.log(`Amigo ${friendUsername} (${friendId}) online:`, isOnline, 'onlineUsers:', this.onlineUsers);
 
             const friendElement = document.createElement('div');
             friendElement.className = 'cw-user-item';
@@ -111,7 +109,6 @@ export class FriendList {
     }
 
     updatePendingRequests(data) {
-        console.log('Actualizando solicitudes pendientes:', data);
         const requestsList = this.container.querySelector('#widget-requests-list');
         if (!requestsList) {
             console.error('No se encontró el contenedor de solicitudes');
@@ -160,7 +157,6 @@ export class FriendList {
             const acceptBtn = requestElement.querySelector('.cw-accept-btn');
             acceptBtn.addEventListener('click', async () => {
                 try {
-                    console.log('Aceptando solicitud:', requestId);
                     await friendService.acceptFriendRequest(requestId);
                     requestElement.remove();
                     this.updateRequestsCount(requestsList.querySelectorAll('.cw-request-item').length);
@@ -172,7 +168,6 @@ export class FriendList {
             const rejectBtn = requestElement.querySelector('.cw-reject-btn');
             rejectBtn.addEventListener('click', async () => {
                 try {
-                    console.log('Rechazando solicitud:', requestId);
                     await friendService.rejectFriendRequest(requestId);
                     requestElement.remove();
                     this.updateRequestsCount(requestsList.querySelectorAll('.cw-request-item').length);

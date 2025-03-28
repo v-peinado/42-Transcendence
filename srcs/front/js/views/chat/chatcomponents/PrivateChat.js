@@ -8,9 +8,14 @@ export class PrivateChat {
         this.activeChats = new Map(); // userId -> {channelName, username}
         this.messageHistory = new Map(); // channelName -> messages[]
         this.closedChats = new Set(this.loadClosedChats()); // Añadir esto
-        this.loadSavedChats();
+        
+        // Primero inicializar la interfaz
         this.initializePrivateTabs();
-        this.setupMainTabsListeners(); // Añadir esta línea
+        this.setupMainTabsListeners();
+        
+        // Después cargar los datos
+        this.loadSavedChats();
+        
         this.pendingChallenges = new Set();
 
         document.addEventListener('block-status-changed', () => {
@@ -105,7 +110,6 @@ export class PrivateChat {
 
         // Verificar bloqueos antes de crear el chat
         if (blockService.isBlocked(userId)) {
-            console.log('Chat bloqueado:', userId);
             return;
         }
 
@@ -147,7 +151,6 @@ export class PrivateChat {
     }
 
     showChat(userId) {
-        console.log('Mostrando chat:', userId);
         
         // Mostrar el chat privado seleccionado
         const chatContainer = this.container.querySelector(`#private-chat-${userId}`);
@@ -343,7 +346,6 @@ export class PrivateChat {
 
         // No procesar mensajes si el usuario está bloqueado
         if (blockService.isBlocked(otherUserId)) {
-            console.log('Mensaje de usuario bloqueado ignorado:', otherUserId);
             return;
         }
 
@@ -390,7 +392,6 @@ export class PrivateChat {
     }
 
     addMessageToChat(userId, message) {
-        console.log('Añadiendo mensaje a chat:', userId, message);
         const chatContainer = this.container.querySelector(`#private-chat-${userId}`);
         if (!chatContainer) {
             console.error('No se encontró el contenedor del chat:', userId);
@@ -412,7 +413,6 @@ export class PrivateChat {
     }
 
     closeChat(userId) {
-        console.log('Cerrando chat:', userId);
         
         // Notificar al servidor
         const chatData = this.activeChats.get(userId);
@@ -494,7 +494,6 @@ export class PrivateChat {
         // Solo añadir al historial si el usuario no está bloqueado
         const messageUserId = parseInt(message.user_id);
         if (blockService.isBlocked(messageUserId)) {
-            console.log('Mensaje de usuario bloqueado no guardado en historial:', messageUserId);
             return;
         }
 
@@ -561,7 +560,6 @@ export class PrivateChat {
 
     // Método para manejar la lista de canales privados (similar a chat.html)
     handlePrivateChannelList(channels) {
-        console.log('Recibiendo lista de canales privados:', channels);
 
         // Limpiar chats que ya no existen en el servidor
         const activeChannelIds = new Set(channels.map(channel => {

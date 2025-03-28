@@ -6,7 +6,6 @@ class GameModalService {
     }
 
     showGameOver({ final_score, winner, returnUrl, returnText, playerSide, isTournament = false, nextMatch = null, customButtons = [] }) {
-        console.log('GameModalService - customButtons:', customButtons); // Debug
 
         const scores = {
             player1: final_score?.player1 || 0,

@@ -27,11 +27,9 @@ class GameWebSocketService {
         const baseUrl = window.location.origin.replace('http:', 'ws:').replace('https:', 'wss:');
         const wsUrl = `${baseUrl}/ws/matchmaking/`;
 
-        console.log('🔄 Conectando a matchmaking:', wsUrl);
         this.socket = new WebSocket(wsUrl);
         
         this.socket.onopen = () => {
-            console.log('✅ Conectado al matchmaking');
             
             // Si estaba buscando partida, reanudar búsqueda
             if (this.isSearching) {

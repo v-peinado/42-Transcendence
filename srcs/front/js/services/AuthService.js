@@ -64,9 +64,7 @@ class AuthService {
     }
 
     static mapLoginError(error) {
-        console.log('Mapping error:', error); // Debug
         
-        // Si el error viene como array serializado en string
         if (typeof error.message === 'string' && 
             error.message.includes('Incorrect username or password')) {
             return messages.AUTH.ERRORS.INVALID_CREDENTIALS;

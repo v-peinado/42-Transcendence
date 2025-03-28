@@ -172,24 +172,16 @@ class Router {
         '/dashboard/': DashboardView,
         '/tournament/local': LocalTournamentView,
         '/tournament/local/': LocalTournamentView,
-        // Primera ruta específica para el torneo
         '/tournament/game/:tournamentId/:matchId': (params) => {
-            console.log('Cargando partida específica:', params);
             return TournamentGameView(params.tournamentId, params.matchId);
         },
-        // Luego la ruta general del torneo
         '/tournament/game/:tournamentId': async (params) => {
-            console.log('Iniciando torneo:', params.tournamentId);
             try {
-                // Primero iniciar el torneo
                 await TournamentService.startTournament(params.tournamentId);
-                // Obtener detalles después de iniciarlo
                 const tournament = await TournamentService.getTournamentDetails(params.tournamentId);
-                console.log('Detalles del torneo:', tournament);
                 
                 if (tournament.pending_matches && tournament.pending_matches.length > 0) {
                     const match = tournament.pending_matches[0];
-                    console.log('Redirigiendo a primera partida:', match.id);
                     window.location.href = `/tournament/game/${params.tournamentId}/${match.id}`;
                 } else {
                     console.error('No hay partidas pendientes');
@@ -299,23 +291,18 @@ class Router {
             return;
         }
 
-        // Manejar rutas de juego específicamente 
         if (path.startsWith('/game/')) {
             const gameMatch = path.match(/^\/game\/(\d+)$/);
             if (gameMatch) {
                 const gameId = gameMatch[1];
 
-                // Verificar que es un número válido
                 if (!isNaN(parseInt(gameId))) {
-                    console.log('Cargando partida:', gameId);
                     try {
-                        // Verificar autenticación primero
                         if (localStorage.getItem('isAuthenticated') !== 'true') {
                             window.location.href = '/login?redirect=' + path;
                             return;
                         }
 
-                        // Verificar si hay datos de sesión guardados (para reconexión)
                         const savedData = localStorage.getItem(`game_${gameId}`);
                         if (savedData) {
                             console.log('Datos de reconexión encontrados para partida', {
@@ -324,52 +311,43 @@ class Router {
                             });
                         }
 
-                        // Intentar cargar la vista incluso si hay error de API
                         await GameMatchView(gameId);
                         return;
                     } catch (error) {
                         console.error('Error cargando partida inicial:', error);
-                        // Continuar al manejo normal de rutas que mostrará 404
                     }
                 }
             }
         }
 
-        // Manejar código de 42 primero
         const searchParams = new URLSearchParams(window.location.search);
         const code = searchParams.get('code');
 
         if (path.startsWith('/login') && code) {
-            // Render inmediato de LoginView
             LoginView();
             return;
         }
 
-        // Manejar verificación de email
         if (path.includes('/verify-email/')) {
             const parts = path.split('/verify-email/')[1].split('/');
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
                 const token = parts[1].replace('/', '');
-                console.log('Verificando email (inicial):', { uidb64, token });
                 VerifyEmailView(uidb64, token);
                 return;
             }
         }
 
-        // Verificar cambio de email
         if (path.includes('/verify-email-change/')) {
             const parts = path.split('/verify-email-change/')[1].split('/');
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
                 const token = parts[1].replace('/', '');
-                console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
                 return;
             }
         }
 
-        // Añadir manejo de reset de contraseña
         if (path.includes('/reset/')) {
             const parts = path.split('/reset/')[1].split('/');
             if (parts.length >= 2) {
@@ -385,7 +363,7 @@ class Router {
         
         if (typeof route === 'function') {
             if (route.constructor.name === 'AsyncFunction') {
-                route().catch(console.error);  // Manejar promesas rechazadas
+                route().catch(console.error);
             } else {
                 route();
             }
@@ -394,33 +372,25 @@ class Router {
 
     async handleRoute() {
         const path = window.location.pathname + window.location.search;
-        console.log('Manejando ruta completa:', path);
 
-        // Verificar rutas protegidas primero
         if (this.checkProtectedRoute(path)) {
             return;
         }
 
-        // Reset data-page attribute
         document.body.removeAttribute('data-page');
 
-        // Manejar rutas de juego específicamente
         if (path.startsWith('/game/')) {
             const gameMatch = path.match(/^\/game\/(\d+)$/);
             if (gameMatch) {
                 const gameId = gameMatch[1];
 
-                // Verificar que es un número válido
                 if (!isNaN(parseInt(gameId))) {
-                    console.log('Cargando partida:', gameId);
                     try {
-                        // Verificar autenticación primero
                         if (localStorage.getItem('isAuthenticated') !== 'true') {
                             window.location.href = '/login?redirect=' + path;
                             return;
                         }
 
-                        // Verificar si hay datos de sesión guardados (para reconexión)
                         const savedData = localStorage.getItem(`game_${gameId}`);
                         if (savedData) {
                             console.log('Datos de reconexión encontrados para partida', {
@@ -479,7 +449,6 @@ class Router {
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
                 const token = parts[1].replace('/', '');
-                console.log('Verificando email:', { uidb64, token });
                 VerifyEmailView(uidb64, token);
                 return;
             }
@@ -491,7 +460,6 @@ class Router {
             if (parts.length >= 2) {
                 const uidb64 = parts[0];
                 const token = parts[1];
-                console.log('Verificando cambio de email:', { uidb64, token });
                 VerifyEmailChangeView(uidb64, token);
                 return;
             }

@@ -24,7 +24,6 @@ export class UserList {
 
         // Añadir listener para cambios de estado de bloqueo
         document.addEventListener('block-status-changed', (event) => {
-            console.log('Estado de bloqueo cambiado:', event.detail);
             this.handleBlockStatusChange(event.detail);
         });
 
@@ -64,7 +63,6 @@ export class UserList {
     }
 
     updateSentRequests(requests) {
-        console.log('Actualizando solicitudes enviadas:', requests);
         this.sentRequests.clear();
         
         if (Array.isArray(requests)) {
@@ -85,7 +83,6 @@ export class UserList {
     }
 
     updateList(data) {
-        console.log('Actualizando lista de usuarios:', data);
         this.lastUserData = data;
         
         const usersList = this.container.querySelector('#widget-users-list');
@@ -302,7 +299,6 @@ export class UserList {
                 );
                 
                 if (friendship) {
-                    console.log('Eliminando amistad:', friendship);
                     friendService.deleteFriendship(friendship.id);
                     
                     // Actualizar UI y estado
@@ -324,7 +320,6 @@ export class UserList {
             cancelRequestBtn.addEventListener('click', async () => {
                 const requestId = cancelRequestBtn.dataset.requestId;
                 if (requestId) {
-                    console.log('Cancelando solicitud:', requestId);
                     
                     // Enviar la cancelación
                     webSocketService.send({
@@ -352,14 +347,12 @@ export class UserList {
         return new Promise((resolve) => {
             const handler = (event) => {
                 if (typeof event === 'object') {
-                    console.log('Recibiendo respuesta de solicitudes enviadas:', event);
                     const pending = event.pending || [];
                     const request = pending.find(req => 
                         parseInt(req.to_user_id) === parseInt(userId)
                     );
                     
                     if (request) {
-                        console.log('Solicitud encontrada:', request);
                         webSocketService.off('sent_friend_requests', handler);
                         resolve(request);
                     }
@@ -373,7 +366,6 @@ export class UserList {
             // Timeout de seguridad
             setTimeout(() => {
                 webSocketService.off('sent_friend_requests', handler);
-                console.log('Timeout al buscar solicitud');
                 resolve(null);
             }, 3000);
         });
@@ -595,7 +587,6 @@ export class UserList {
 
     setCurrentFriendships(friendships) {
         this.currentFriendships = friendships;
-        console.log('Amistades actualizadas:', friendships);
     }
 
     // Método para establecer el callback de chat
@@ -644,7 +635,6 @@ export class UserList {
     }
 
     handleUserStatus(userId, isOnline) {
-        console.log('Actualizando estado de usuario:', userId, isOnline); // Log añadido
         if (isOnline) {
             this.onlineUsers.add(userId);
         } else {
@@ -669,7 +659,6 @@ export class UserList {
         if (userElement) {
             const statusDot = userElement.querySelector('.cw-user-status');
             if (statusDot) {
-                console.log('Actualizando dot de usuario:', userId, isOnline); // Log añadido
                 statusDot.classList.toggle('online', isOnline);
             }
         }

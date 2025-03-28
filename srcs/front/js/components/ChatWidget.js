@@ -443,11 +443,6 @@ export class ChatWidget {
             }
         });
 
-        // Añadir listener para usuarios bloqueados
-        webSocketService.on('blocked_users', (data) => {
-            blockService.handleBlockedUsersList(data.blocked_users);
-        });
-
         webSocketService.on('unblocked', (data) => {
             blockService.handleBlockedUsers({
                 type: 'unblocked',
