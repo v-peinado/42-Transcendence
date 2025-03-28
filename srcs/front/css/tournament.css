@@ -59,7 +59,7 @@
 .tournament-form {
     color: white;
     max-width: 800px;
-    margin: 0 auto;
+    margin: 2rem auto;  /* Aumentar margen superior */
     padding: 2rem;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 15px;
@@ -68,6 +68,16 @@
     gap: 1.5rem;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(var(--neon-color-rgb), 0.1);
+    min-height: min-content; /* Asegurar que el contenedor se expande con el contenido */
+    height: auto;
+    overflow: visible; /* Permitir que el contenido crezca naturalmente */
+    position: relative;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+    padding-bottom: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 
 /* Título y campos principales */
@@ -665,6 +675,7 @@
     transform: none !important;
     box-shadow: none !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
+    padding-top: 90px; /* Dar espacio extra arriba para el navbar */
 }
 
 .game-mode-card.expanded:hover {
@@ -722,6 +733,11 @@
     height: 0;
     padding: 1.5rem;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: visible;
+    height: auto;
+    min-height: min-content;
+    padding-bottom: 2rem;
 }
 
 /* Estilos específicos para cada tipo de tarjeta cuando se expande */
@@ -1057,4 +1073,125 @@
     .participant-number {
         font-size: 0.85rem;
     }
+}
+
+/* Grid de jugadores mejorado */
+#tournament-players {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin: 1rem 0;
+    transition: height 0.3s ease-out; /* Añadir transición suave para el cambio de altura */
+    will-change: height; /* Optimizar las animaciones */
+    transform: translateZ(0); /* Forzar aceleración por hardware */
+    position: relative;
+    height: auto;
+    min-height: 100px;
+    overflow: visible;
+    transition: height 0.3s ease-out;
+    margin: 1rem 0;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: auto;
+    min-height: 100px;
+    overflow: visible;
+    transition: all 0.3s ease-out;
+    max-height: 400px; /* Altura para aprox. 4 jugadores (2 filas) */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--neon-color-rgb), 0.5) rgba(0, 0, 0, 0.2);
+}
+
+/* Estilos para el scrollbar en navegadores WebKit */
+#tournament-players::-webkit-scrollbar {
+    width: 8px;
+}
+
+#tournament-players::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+#tournament-players::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--neon-color-rgb), 0.5);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+#tournament-players::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--neon-color-rgb), 0.7);
+}
+
+/* Grid para filas de jugadores */
+.players-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+/* Ajuste para el último jugador cuando es impar */
+.players-row.odd-last {
+    grid-template-columns: minmax(0, 400px);
+    justify-content: center;
+}
+
+/* Contenedor del campo de jugador */
+.player-field-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+}
+
+/* Estilos del campo de entrada */
+.player-field-container input {
+    width: 100%;
+    height: 3rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(var(--neon-color-rgb), 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.player-field-container input:focus {
+    border-color: var(--neon-color);
+    box-shadow: 0 0 0 2px rgba(var(--neon-color-rgb), 0.1);
+    outline: none;
+}
+
+/* Media queries para responsividad */
+@media (max-width: 768px) {
+    .players-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .players-row.odd-last {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ajustar la sección hero para dar espacio al navbar */
+.hero-section {
+    padding-top: var(--navbar-height);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;
 }

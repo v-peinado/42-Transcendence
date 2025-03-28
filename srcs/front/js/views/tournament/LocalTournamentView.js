@@ -214,62 +214,78 @@ export async function LocalTournamentView() {
 
 // Funciones auxiliares
 function updatePlayersFields(elements) {
+    const container = elements.playersContainer;
+    const form = elements.form;
+    
+    // Guardar la posición actual de scroll
+    const formRect = form.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const formTopRelative = formRect.top + scrollTop;
+    
+    // Actualizar contenido
     const numPlayers = parseInt(elements.playersSelect.value);
-    elements.playersContainer.innerHTML = '';
+    container.innerHTML = '';
 
-    // Crear filas de dos jugadores
+    // Procesar los jugadores en pares
     for (let i = 0; i < numPlayers; i += 2) {
-        const row = document.createElement('div');
-        row.className = 'form-row d-flex gap-3 mb-3';
-
-        // Primer jugador de la fila
-        const firstPlayerDiv = createPlayerField(i + 1);
-        firstPlayerDiv.classList.add('flex-1');
-        row.appendChild(firstPlayerDiv);
-
-        // Segundo jugador de la fila (si existe)
-        if (i + 1 < numPlayers) {
-            const secondPlayerDiv = createPlayerField(i + 2);
-            secondPlayerDiv.classList.add('flex-1');
-            row.appendChild(secondPlayerDiv);
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'players-row';
+        
+        // Si es el último jugador y es impar
+        if (i === numPlayers - 1) {
+            rowDiv.classList.add('odd-last');
+            rowDiv.appendChild(createPlayerField(i + 1));
+        } 
+        // Si quedan dos jugadores (par)
+        else {
+            rowDiv.appendChild(createPlayerField(i + 1));
+            if (i + 1 < numPlayers) {
+                rowDiv.appendChild(createPlayerField(i + 2));
+            }
         }
-
-        elements.playersContainer.appendChild(row);
+        
+        container.appendChild(rowDiv);
     }
+
+    // Asegurar que el scroll muestra el formulario completo
+    const navbarHeight = 76; // altura del navbar
+    const buffer = 20; // espacio extra
+    const targetScroll = formTopRelative - navbarHeight - buffer;
+    
+    window.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+    });
 }
 
 function createPlayerField(playerNumber) {
-    const div = document.createElement('div');
-    div.className = 'form-group';
+    const container = document.createElement('div');
+    container.className = 'player-field-container';
 
     const label = document.createElement('label');
     label.className = 'form-label neon-text';
     label.htmlFor = `player${playerNumber}`;
-    label.textContent = `Participante ${playerNumber}`;
+    label.textContent = `Jugador ${playerNumber}`;
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'form-control custom-input';
+    input.className = 'player-field';
     input.id = `player${playerNumber}`;
     input.name = `player${playerNumber}`;
     input.required = true;
     input.maxLength = 50;
+    input.placeholder = 'Nombre del jugador';
 
-    // Añadir validación en tiempo real
-    input.addEventListener('input', function() {
-        validatePlayerName(this);
-    });
+    // Mantener los event listeners existentes
+    input.addEventListener('input', () => validatePlayerName(input));
+    input.addEventListener('blur', () => validatePlayerName(input));
 
-    input.addEventListener('blur', function() {
-        validatePlayerName(this);
-    });
+    container.appendChild(label);
+    container.appendChild(input);
 
-    div.appendChild(label);
-    div.appendChild(input);
-    return div;
+    return container;
 }
 
-// Añadir estas nuevas funciones
 function validatePlayerName(input) {
     const allInputs = document.querySelectorAll('.tournament-form input[type="text"]');
     const currentValue = input.value.trim().toLowerCase();
