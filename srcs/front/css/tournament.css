@@ -676,6 +676,11 @@
     box-shadow: none !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
     padding-top: 90px; /* Dar espacio extra arriba para el navbar */
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--neon-color-rgb), 0.5) rgba(0, 0, 0, 0.2);
 }
 
 .game-mode-card.expanded:hover {
@@ -721,6 +726,20 @@
     pointer-events: none;
     transform: scale(0.8);
     overflow: hidden;
+}
+
+.game-mode-card.expanded::-webkit-scrollbar {
+    width: 8px;
+}
+
+.game-mode-card.expanded::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.game-mode-card.expanded::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--neon-color-rgb), 0.5);
+    border-radius: 4px;
 }
 
 /* Expanded Content */
@@ -769,6 +788,27 @@
     box-shadow: 0 0 20px rgba(103, 58, 183, 0.1);
 }
 
+/* Ajustes específicos para el formulario de crear torneo */
+#tournament-create-btn.expanded .tournament-form {
+    max-width: 100%;
+    margin: 0;
+    padding: 1rem;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+}
+
+#tournament-create-btn.expanded .form-group {
+    margin-bottom: 1.5rem;
+}
+
+#tournament-create-btn.expanded .players-grid {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 2rem;
+    border-radius: 12px;
+    margin: 1.5rem 0;
+}
+
 /* Expand Button */
 .expand-button {
     position: absolute;
@@ -811,6 +851,25 @@
 
     .pending-tournament-item {
         padding: 1rem;
+    }
+
+    .game-mode-card.expanded {
+        grid-column: span 1;
+        max-height: 85vh;
+        padding: 1rem;
+    }
+
+    #tournament-create-btn.expanded .players-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #tournament-create-btn.expanded {
+        padding: 1rem;
+        padding-top: 76px; /* Ajustar el padding superior en móvil */
+    }
+    
+    #tournament-create-btn.expanded .tournament-form {
+        padding: 0;
     }
 }
 
