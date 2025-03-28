@@ -2,19 +2,29 @@ from django.contrib.auth import update_session_auth_hash
 from ...services.profile_service import ProfileService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.http import JsonResponse
 from django.views import View
 import json
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class EditProfileAPIView(View):
+class EditProfileAPIView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Autentication required"}, status=401)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
         """View user profile"""
         try:
             profile_data = ProfileService.get_user_profile_data(request.user)
             return JsonResponse(profile_data)
+        except ValidationError as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"error": str(e)}, status=403)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
@@ -83,18 +93,32 @@ class EditProfileAPIView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class UserProfileAPIView(View):
+class UserProfileAPIView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Autentication required"}, status=401)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request, *args, **kwargs):
         """Get user profile"""
         try:
             profile_data = ProfileService.get_user_profile_data(request.user)
             return JsonResponse(profile_data)
+        except ValidationError as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"error": str(e)}, status=403)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class DeleteAccountAPIView(View):
+class DeleteAccountAPIView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Autentication required"}, status=401)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request, *args, **kwargs):
         """Delete user account"""
         try:
@@ -112,6 +136,8 @@ class DeleteAccountAPIView(View):
 
         except ValidationError as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
         except json.JSONDecodeError:
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON data"}, status=400
