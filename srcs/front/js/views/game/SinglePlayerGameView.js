@@ -4,6 +4,7 @@ import AuthService from '../../services/AuthService.js';
 import { getNavbarHTML } from '../../components/Navbar.js';
 import { SinglePlayerGame } from './components/SinglePlayerGame.js';
 import { showGameOverModal, hideGameOverModal } from '../../components/GameOverModal.js';
+import { DIFFICULTY_LEVELS } from '../../config/GameConfig.js';
 
 export async function SinglePlayerGameView() {
     const app = document.getElementById('app');
@@ -120,43 +121,17 @@ export async function SinglePlayerGameView() {
     const difficultyModal = document.getElementById('difficultyModal');
     difficultyModal.style.display = 'flex';
 
-    // Configuración de dificultades con más parámetros
-    const difficultyConfig = {
-        easy: {
-            RANDOMNESS: 60,
-            MISS_CHANCE: 0.3,
-            AI_REACTION_DELAY: 300,
-            BALL_SPEED: 7,
-            PADDLE_SPEED: 7
-        },
-        medium: {
-            RANDOMNESS: 40,
-            MISS_CHANCE: 0.1,
-            AI_REACTION_DELAY: 200,
-            BALL_SPEED: 7,
-            PADDLE_SPEED: 7
-        },
-        hard: {
-            RANDOMNESS: 20,
-            MISS_CHANCE: 0.05,
-            AI_REACTION_DELAY: 100,
-            BALL_SPEED: 9,
-            PADDLE_SPEED: 8
-        }
-    };
-
-    // Esperar a que el usuario seleccione una dificultad y luego iniciar la cuenta regresiva
     await new Promise(resolve => {
         const difficultyCards = document.querySelectorAll('.game-mode-card');
         difficultyCards.forEach(card => {
             card.onclick = () => {
-                // Remover clase active de todas las tarjetas
                 difficultyCards.forEach(c => c.classList.remove('active'));
-                // Añadir clase active a la tarjeta seleccionada
                 card.classList.add('active');
                 
                 difficultyModal.style.display = 'none';
-                resolve(difficultyConfig[card.dataset.difficulty]);
+                resolve({
+                    difficulty: card.dataset.difficulty
+                });
             };
         });
     }).then(async (difficultySettings) => {
