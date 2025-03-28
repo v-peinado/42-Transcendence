@@ -18,47 +18,40 @@ export class Ball {
     }
 
     draw(ctx, theme) {
-        // Calcular posiciones redondeadas para el dibujo
-        const drawX = Math.round(this.pos.x);
-        const drawY = Math.round(this.pos.y);
-    
         // Dibujar trail si está activo
         if (theme.trail) {
-            this.drawTrailRounded(ctx, theme, drawX, drawY);
+            this.drawTrail(ctx, theme);
         }
-    
+
         // Aplicar glow si existe
         if (theme.glow) {
             ctx.shadowBlur = 15;
             ctx.shadowColor = theme.glow;
         }
-    
+
         ctx.fillStyle = theme.color;
         ctx.beginPath();
-        ctx.arc(drawX, drawY, theme.size, 0, Math.PI * 2);
+        ctx.arc(this.pos.x, this.pos.y, theme.size, 0, Math.PI * 2);
         ctx.fill();
-    
+
         // Restaurar contexto
         ctx.shadowBlur = 0;
-    
-        // Actualizar trail con posiciones redondeadas
+
+        // Actualizar trail
         if (theme.trail) {
-            this.trailPoints.unshift({x: drawX, y: drawY});
+            this.trailPoints.unshift({x: this.pos.x, y: this.pos.y});
             if (this.trailPoints.length > 5) {
                 this.trailPoints.pop();
             }
         }
     }
-    
-    // Nueva función para dibujar el trail con posiciones redondeadas
-    drawTrailRounded(ctx, theme, currentX, currentY) {
-        const points = [{x: currentX, y: currentY}, ...this.trailPoints.slice(0, 4)];
-        
-        points.forEach((point, index) => {
-            const alpha = (1 - index / points.length) * 0.3;
+
+    drawTrail(ctx, theme) {
+        this.trailPoints.forEach((point, index) => {
+            const alpha = (1 - index / this.trailPoints.length) * 0.3;
             ctx.fillStyle = `${theme.color}${Math.floor(alpha * 255).toString(16).padStart(2, '0')}`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, theme.size * (1 - index / points.length), 0, Math.PI * 2);
+            ctx.arc(point.x, point.y, theme.size * (1 - index / this.trailPoints.length), 0, Math.PI * 2);
             ctx.fill();
         });
     }

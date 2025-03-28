@@ -197,59 +197,17 @@ export class BaseGame {
     }
 
     start() {
-        // Método de inicialización
-        this.lastTimestamp = performance.now();
-        this.gameEnded = false;
-        
-        // Detener cualquier intervalo existente
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
+        if (!this.gameEnded) {
+            this.animationFrameId = requestAnimationFrame(this.loop);
         }
-        
-        // Crear un intervalo fijo de 60fps (16.67ms)
-        this.intervalId = setInterval(() => {
-            const now = performance.now();
-            const deltaTime = (now - this.lastTimestamp) / 1000; // en segundos
-            this.lastTimestamp = now;
-            
-            if (!this.gameEnded) {
-                this.update(deltaTime);
-                this.draw();
-            } else {
-                clearInterval(this.intervalId);
-            }
-        }, 1000/60);
-        
-        // Eliminar requestAnimationFrame si existe
-        if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null;
-        }
-        
         return this;
     }
-    
+
     stop() {
-        // Método para detener el juego
         this.gameEnded = true;
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-        }
+        cancelAnimationFrame(this.animationFrameId);
         return this;
     }
-
-    // start() {
-    //     if (!this.gameEnded) {
-    //         this.animationFrameId = requestAnimationFrame(this.loop);
-    //     }
-    //     return this;
-    // }
-
-    // stop() {
-    //     this.gameEnded = true;
-    //     cancelAnimationFrame(this.animationFrameId);
-    //     return this;
-    // }
 
     destroy() {
         this.gameEnded = true;
