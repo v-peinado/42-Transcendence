@@ -3,7 +3,7 @@ export const DIFFICULTY_LEVELS = {
         RANDOMNESS: 60,
         MISS_CHANCE: 0.3,
         AI_REACTION_DELAY: 300,
-        BALL_SPEED: 2,
+        BALL_SPEED: 6,
         PADDLE_SPEED: 7
     },
     medium: {
