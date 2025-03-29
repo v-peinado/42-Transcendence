@@ -16,10 +16,6 @@ export class AuthProfile {
                 credentials: 'include'
             });
 
-            if (response.status === 500 && window.location.pathname === '/') {
-                return { isAuthenticated: false };
-            }
-
             if (response.status === 401 || response.status === 403) {
                 localStorage.clear();
                 sessionStorage.clear();
