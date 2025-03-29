@@ -251,8 +251,16 @@ export default async function GameView(userInfo = null) {
                         const newTheme = GameThemes[themeKey];
                         preview.updateTheme(newTheme);
                         
-                        // Guardar el tema seleccionado
+                        // Guardar el tema de la misma forma que en BaseGame
+                        localStorage.setItem('pongTheme', JSON.stringify(newTheme));
+                        
+                        // También mantener el themeKey para consistencia
                         localStorage.setItem('currentTheme', themeKey);
+                        
+                        // Emitir el evento con el tema completo
+                        document.dispatchEvent(new CustomEvent('themeChanged', {
+                            detail: { theme: newTheme }
+                        }));
                         
                         // Actualizar clases active
                         pauseMenu.querySelectorAll('.game-theme-btn').forEach(b => 
@@ -261,6 +269,12 @@ export default async function GameView(userInfo = null) {
                         btn.classList.add('active');
                     };
                 });
+
+                // Simplificar el botón de aceptar para que solo cierre el modal
+                const resumeBtn = pauseMenu.querySelector('.game-pause-resume-btn');
+                if (resumeBtn) {
+                    resumeBtn.onclick = () => pauseMenu.remove();
+                }
             });
         }
 
