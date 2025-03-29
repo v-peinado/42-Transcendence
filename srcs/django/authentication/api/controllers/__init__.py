@@ -3,6 +3,7 @@ from authentication.services import ProfileService
 from ninja import Router, UploadedFile
 from django.http import JsonResponse
 from typing import Dict, Optional
+from django.core.exceptions import ValidationError, PermissionDenied
 from ..schemas import *
 from ..views import *
 
@@ -109,6 +110,12 @@ def restore_image(request, data: RestoreImageSchema) -> Dict:
 def update_profile_image(request, profile_image: UploadedFile) -> Dict:
     """Update profile image"""
     try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Autenticación requerida'
+            }, status=401)
+            
         result = ProfileService.update_profile(
             user=request.user,
             data={},
@@ -119,16 +126,23 @@ def update_profile_image(request, profile_image: UploadedFile) -> Dict:
             'message': 'Imagen de perfil actualizada correctamente',
             'data': result
         }
+    except ValidationError as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    except PermissionDenied as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=403)
     except Exception as e:
-        return {
-            'status': 'error', 
-            'message': str(e)
-        }
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-@router.post("/profile/delete", tags=["profile"])  # Cambiado de delete a post
+@router.post("/profile/delete", tags=["profile"])
 def delete_account(request, data: DeleteAccountSchema) -> Dict:
     """Delete user account (soft delete GDPR)"""
     try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Autenticación requerida'
+            }, status=401)
+            
         result = ProfileService.delete_user_account(
             user=request.user,
             password=data.confirm_password if not request.user.is_fortytwo_user else None
@@ -137,15 +151,22 @@ def delete_account(request, data: DeleteAccountSchema) -> Dict:
             'status': 'success',
             'message': 'Cuenta eliminada correctamente'
         }
+    except ValidationError as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    except PermissionDenied as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=403)
     except Exception as e:
-        return {
-            'status': 'error',
-            'message': str(e)
-        }
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @router.get("/profile/user", tags=["profile"], response=UserProfileSchema)
 def get_user_profile(request) -> Dict:
     try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Autenticación requerida'
+            }, status=401)
+            
         profile_data = ProfileService.get_user_profile_data(request.user)
         return {
             'id': profile_data['user'].id,
@@ -160,6 +181,10 @@ def get_user_profile(request) -> Dict:
             'last_login': profile_data['user'].last_login.isoformat() if profile_data['user'].last_login else None,
             'show_qr': profile_data['show_qr']
         }
+    except ValidationError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except PermissionDenied as e:
+        return JsonResponse({'error': str(e)}, status=403)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

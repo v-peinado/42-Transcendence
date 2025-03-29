@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth import login as auth_login
+from django.core.exceptions import ValidationError, PermissionDenied
 from authentication.models import CustomUser
 from django.shortcuts import redirect
 from django.contrib import messages
@@ -43,13 +44,17 @@ class FortyTwoLoginAPIView(View):
     """API view for 42 login"""
 
     def get(self, request):
-        success, auth_url, error = FortyTwoAuthService.handle_login(
-            request, is_api=True
-        )
-        if success:
-            return JsonResponse({"status": "success", "auth_url": auth_url})
-        return JsonResponse({"status": "error", "message": error})
-
+        try:
+            success, auth_url, error = FortyTwoAuthService.handle_login(
+                request, is_api=True
+            )
+            if success:
+                return JsonResponse({"status": "success", "auth_url": auth_url})
+            return JsonResponse({"status": "error", "message": error}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 # Decorator used to exempt the view from CSRF verification 
 # Cross-Site Request Forgery or CSRF is a type of attack that occurs when a malicious web site, email, blog, instant message, 
@@ -99,6 +104,10 @@ class FortyTwoCallbackAPIView(View):
             return JsonResponse(
                 {"status": "error", "message": "Formato JSON inválido"}, status=400
             )
+        except ValidationError as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
@@ -128,7 +137,7 @@ class FortyTwoVerify2FAView(View):
                         "status": "error",
                         "message": "No hay verificación 2FA pendiente para usuario de 42",
                     },
-                    status=400,
+                    status=401,
                 )
 
             try:
@@ -159,5 +168,9 @@ class FortyTwoVerify2FAView(View):
             return JsonResponse(
                 {"status": "error", "message": "Formato JSON inválido"}, status=400
             )
+        except ValidationError as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)

@@ -1,7 +1,7 @@
 from ...services.auth_service import AuthenticationService
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.http import JsonResponse
 from django.views import View
 import json
@@ -29,7 +29,7 @@ class LoginAPIView(View):
             else:
                 data = json.loads(request.body)
                 
-			# Clean residual session data
+            # Clean residual session data
             request.session.flush()
 
             # Verify if there is an active session
@@ -61,10 +61,14 @@ class LoginAPIView(View):
 
         except ValidationError as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
         except json.JSONDecodeError:
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON data"}, status=400
             )
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -86,10 +90,14 @@ class LogoutAPIView(View):
             )
         except ValidationError as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
+        except PermissionDenied as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=403)
         except json.JSONDecodeError:
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON data"}, status=400
             )
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -142,6 +150,8 @@ class RegisterAPIView(View):
                 return JsonResponse(
                     {"status": "error", "message": str(service_error)}, status=400
                 )
+            except PermissionDenied as e:
+                return JsonResponse({"status": "error", "message": str(e)}, status=403)
 
         except json.JSONDecodeError as json_error:
             return JsonResponse(
