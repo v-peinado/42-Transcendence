@@ -187,43 +187,42 @@ class MainChatConsumer(
         """
         logger.debug(f"Handling message type: {message_type}")
 
-        if message_type == "chat_message" and channel_name:
-            await self.handle_message(data, channel_name)
-        elif message_type == "create_group":
-            await self.create_group(data)
-        elif message_type == "add_user_to_group":
-            await self.add_user_to_group(data)
-        elif message_type == "create_private_channel":
-            await self.create_private_channel(data)
-        elif message_type == "block_user":
-            await self.block_or_unblock_user(data)
-        elif message_type == "send_friend_request":
-            await self.send_friend_request(data)
-        elif message_type == "accept_friend_request":
-            await self.accept_friend_request(data)
-        elif message_type == "reject_friend_request":
-            await self.reject_friend_request(data)
-        elif message_type == "cancel_friend_request":
-            await self.cancel_friend_request(data)
-        elif message_type == "delete_friendship":
-            await self.delete_friendship(data.get("friendship_id"))
-        elif message_type == "delete_private_channel":
-            await self.delete_private_channel(data)
-        elif message_type == "leave_group":
-            await self.leave_group(data)
-        elif message_type == "challenge_action" and channel_name:
-            await self.handle_challenge_action(data, channel_name)
-        elif message_type == "request_channel_messages":
-            await self.load_unarchived_messages(self.scope["user"].id)
-        elif message_type == "request_online_users":
-            await self.user_list_update()
-        elif message_type == "get_user_list":
-            await self.user_list_update()
-        elif message_type == "get_friend_list":
-            await self.send_friend_list(self.scope["user"].id)
-        elif message_type == "get_pending_requests":
-            await self.notify_pending_requests(self.scope["user"].id)
-        elif message_type == "get_sent_requests":
-            await self.notify_pending_requests(self.scope["user"].id, sent=True)
-        else:
-            logger.warning(f"Unknown message type: {message_type}")
+        match message_type:
+            case "chat_message" if channel_name:
+                await self.handle_message(data, channel_name)
+            case "create_group":
+                await self.create_group(data)
+            case "add_user_to_group":
+                await self.add_user_to_group(data)
+            case "create_private_channel":
+                await self.create_private_channel(data)
+            case "block_user":
+                await self.block_or_unblock_user(data)
+            case "send_friend_request":
+                await self.send_friend_request(data)
+            case "accept_friend_request":
+                await self.accept_friend_request(data)
+            case "reject_friend_request":
+                await self.reject_friend_request(data)
+            case "cancel_friend_request":
+                await self.cancel_friend_request(data)
+            case "delete_friendship":
+                await self.delete_friendship(data.get("friendship_id"))
+            case "delete_private_channel":
+                await self.delete_private_channel(data)
+            case "leave_group":
+                await self.leave_group(data)
+            case "challenge_action" if channel_name:
+                await self.handle_challenge_action(data, channel_name)
+            case "request_channel_messages":
+                await self.load_unarchived_messages(self.scope["user"].id)
+            case "request_online_users" | "get_user_list":  # Multiple cases in one
+                await self.user_list_update()
+            case "get_friend_list":
+                await self.send_friend_list(self.scope["user"].id)
+            case "get_pending_requests":
+                await self.notify_pending_requests(self.scope["user"].id)
+            case "get_sent_requests":
+                await self.notify_pending_requests(self.scope["user"].id, sent=True)
+            case _:  # Default case (equivalent to else)
+                logger.warning(f"Unknown message type: {message_type}")
