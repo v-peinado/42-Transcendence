@@ -1,5 +1,5 @@
 # env
-#.env
+.env
 #.env.*
 
 # Logs and temporary files
