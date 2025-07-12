@@ -1,34 +1,44 @@
-# Pong Game Platform
+# 🏓 Pong Game Platform
 
 A modern web-based implementation of the classic Pong game built with Django and vanilla JavaScript. This comprehensive gaming platform features real-time multiplayer capabilities, AI opponents, tournament system, and a complete social gaming experience.
 
-## Features
+## ✨ Features
 
-- **Classic Pong Gameplay**: Traditional paddle-and-ball mechanics with modern responsive design
-- **Multiple Game Modes**: 
-  - Online multiplayer with matchmaking system
-  - Local games against AI opponents
-  - Private matches via chat invitations
-- **Tournament System**: Organized competitive brackets with multiple players
-- **Real-time Chat System**: Integrated messaging with game invitation functionality
-- **User Authentication**: Secure login system with 42 OAuth integration
-- **Data Protection**: GDPR-compliant user data handling and privacy controls
-- **Containerized Architecture**: Full Docker deployment with microservices
-- **Security Features**: WAF (Web Application Firewall) protection and secure communications
-- **Responsive Design**: Optimized for desktop and mobile gaming
+- 🎮 **Classic Pong Gameplay**: Traditional paddle-and-ball mechanics with modern responsive design
+- 🎯 **Multiple Game Modes**: 
+  - 🌐 Online multiplayer with matchmaking system
+  - 🤖 Local games against AI opponents
+  - 💌 Private matches via chat invitations
+- 🏆 **Tournament System**: Organized competitive brackets with multiple players
+- 💬 **Real-time Chat System**: Integrated messaging with game invitation functionality
+- 🔐 **User Authentication**: Secure login system with 42 OAuth integration
+- 🛡️ **Data Protection**: GDPR-compliant user data handling and privacy controls
+- 🐳 **Containerized Architecture**: Full Docker deployment with microservices
+- 🔒 **Security Features**: WAF (Web Application Firewall) protection and secure communications
+- 📱 **Responsive Design**: Optimized for desktop and mobile gaming
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- **Backend**: Django (Python)
-- **Frontend**: Vanilla JavaScript, HTML5 Canvas
-- **Database**: PostgreSQL
-- **Infrastructure**: Docker containers
-- **Security**: WAF, JWT authentication, data encryption
-- **Real-time**: WebSocket connections for chat and gaming
+- **Backend**: 🐍 Django (Python)
+- **Frontend**: ⚡ Vanilla JavaScript, HTML5 Canvas
+- **Database**: 🐘 PostgreSQL
+- **Infrastructure**: 🐳 Docker containers
+- **Security**: 🛡️ WAF, JWT authentication, data encryption
+- **Real-time**: 🔌 WebSocket connections for chat and gaming
+
+## 👥 Team
+
+This project was developed through excellent teamwork and collaboration:
+
+- **[Victor Peinado](https://github.com/v-peinado)** - Full-stack development
+- **[Miguel Lezcano](https://github.com/mikelezc)** - Full-stack development  
+- **[Amparo Jiménez](https://github.com/Amparojd)** - Full-stack development
+
+🙏 **Special thanks to the entire team for their dedication, creativity, and outstanding collaboration that made this project possible!**
 
 ---
 
-# Project Configuration
+# ⚙️ Project Configuration
 
 ## Environment Variables
 
