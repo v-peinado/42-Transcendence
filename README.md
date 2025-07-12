@@ -2,6 +2,12 @@
 
 A modern web-based implementation of the classic Pong game built with Django and vanilla JavaScript. This comprehensive gaming platform features real-time multiplayer capabilities, AI opponents, tournament system, and a complete social gaming experience.
 
+## 🎥 Demo
+
+> **Demo video coming soon!** 🎬  
+> _A comprehensive walkthrough showcasing all platform features including gameplay, tournaments, chat system, and matchmaking._
+
+
 ## ✨ Features
 
 - 🎮 **Classic Pong Gameplay**: Traditional paddle-and-ball mechanics with modern responsive design
