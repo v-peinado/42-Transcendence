@@ -36,9 +36,9 @@ A modern web-based implementation of the classic Pong game built with Django and
 
 This project was developed through excellent teamwork and collaboration:
 
-- **[Victor Peinado](https://github.com/v-peinado)** - Full-stack development
 - **[Miguel Lezcano](https://github.com/mikelezc)** - Full-stack development  
 - **[Amparo Jiménez](https://github.com/Amparojd)** - Full-stack development
+- **[Victor Peinado](https://github.com/v-peinado)** - Full-stack development
 
 🙏 **Special thanks to the entire team for their dedication, creativity, and outstanding collaboration that made this project possible!**
 
