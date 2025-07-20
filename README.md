@@ -4,7 +4,13 @@ A modern web-based implementation of the classic Pong game built with Django and
 
 ## 🎥 Demo
 
-https://youtu.be/FnZU91BxllY
+<div align="center">
+
+[![Pong Game Demo](https://img.youtube.com/vi/FnZU91BxllY/maxresdefault.jpg)](https://youtu.be/FnZU91BxllY)
+
+### 🎮 Click to watch the full demo!
+
+</div>
 
 
 ## ✨ Features
