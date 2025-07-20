@@ -4,8 +4,7 @@ A modern web-based implementation of the classic Pong game built with Django and
 
 ## 🎥 Demo
 
-> **Demo video coming soon!** 🎬  
-> _A comprehensive walkthrough showcasing all platform features including gameplay, tournaments, chat system, and matchmaking._
+https://youtu.be/FnZU91BxllY
 
 
 ## ✨ Features
